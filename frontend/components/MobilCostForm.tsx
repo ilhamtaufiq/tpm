@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TextInput, ActivityIndicator, Alert, Platform, StyleSheet, KeyboardAvoidingView, Pressable } from 'react-native';
+import { View, ScrollView, TextInput, ActivityIndicator, Platform, StyleSheet, KeyboardAvoidingView, Pressable } from 'react-native';
 // import { Pressable } from '@gorhom/bottom-sheet'; // Removed due to web compatibility issues
 import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';

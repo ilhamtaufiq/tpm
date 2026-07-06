@@ -864,7 +864,7 @@ export default function SlipGajiScreen() {
 
             {/* Date Picker Modal */}
             <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
-                <View className="flex-1 justify-center bg-black/50 px-6">
+                <View className="flex-1 items-center justify-center bg-black/50 px-6">
                     <Card className="rounded-[40px] overflow-hidden p-0 border border-gray-100 shadow-2xl">
                         <View className="bg-primary p-6 flex-row justify-between items-center">
                             <Typography weight="bold" className="text-white text-lg">

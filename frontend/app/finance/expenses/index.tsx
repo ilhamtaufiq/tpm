@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator } from 'react-native';
+import { appAlert } from '../../../utils/appAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
@@ -49,14 +50,6 @@ const BISNIS_KATEGORI = [
 export default function ExpensesScreen() {
     const router = useRouter();
 
-    const showAlert = (title: string, message: string) => {
-        if (Platform.OS === 'web') {
-            alert(`${title}: ${message}`);
-        } else {
-            Alert.alert(title, message);
-        }
-    };
-
     const [showForm, setShowForm] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -101,13 +94,13 @@ export default function ExpensesScreen() {
 
     const handleSave = async () => {
         if (!jumlah || !deskripsi) {
-            showAlert('Validasi', 'Mohon isi jumlah dan keterangan');
+            appAlert('Validasi', 'Mohon isi jumlah dan keterangan');
             return;
         }
 
         if (!payMetode) {
             console.log('Validation failed: payMetode is empty');
-            showAlert('Validasi', 'Mohon pilih metode pembayaran');
+            appAlert('Validasi', 'Mohon pilih metode pembayaran');
             return;
         }
 
@@ -131,7 +124,7 @@ export default function ExpensesScreen() {
         if (payMetode === 'SPLIT') {
             const totalSplit = splitPayments.reduce((acc, curr) => acc + parseNumber(curr.jumlah), 0);
             if (totalSplit !== totalAmount) {
-                showAlert(
+                appAlert(
                     'Validasi Split Payment',
                     `Total pembayaran split (${formatCurrency(totalSplit)}) harus sama dengan total pengeluaran (${formatCurrency(totalAmount)}).\n\nSelisih: ${formatCurrency(totalAmount - totalSplit)}`
                 );
@@ -163,7 +156,7 @@ export default function ExpensesScreen() {
                     { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
                 ]);
                 setAllowNegative(false);
-                showAlert('Offline Mode', 'Pengeluaran telah disimpan dalam antrean offline.');
+                appAlert('Offline Mode', 'Pengeluaran telah disimpan dalam antrean offline.');
                 return;
             }
 
@@ -184,10 +177,10 @@ export default function ExpensesScreen() {
                 { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
             ]);
             setAllowNegative(false);
-            showAlert('Sukses', 'Pengeluaran berhasil dicatat');
+            appAlert('Sukses', 'Pengeluaran berhasil dicatat');
         } catch (error: any) {
             console.error('Failed to save expense:', error);
-            showAlert(
+            appAlert(
                 'Gagal',
                 error?.response?.data?.detail || 'Terjadi kesalahan saat menyimpan data'
             );

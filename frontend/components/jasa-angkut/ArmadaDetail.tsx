@@ -1,5 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, ActivityIndicator, RefreshControl, Modal, Alert } from 'react-native';
+import { View, ScrollView, Pressable, ActivityIndicator, RefreshControl, Modal } from 'react-native';
 import { Typography } from '../ui/Typography';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -118,7 +119,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
             refetch();
         } catch (error) {
             console.error(error);
-            Alert.alert('Gagal', 'Terjadi kesalahan saat menyimpan biaya operasional');
+            appAlert('Gagal', 'Terjadi kesalahan saat menyimpan biaya operasional');
         } finally {
             setSubmittingExpense(false);
         }

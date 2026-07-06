@@ -1,14 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import {
-    View,
-    Text,
-    useWindowDimensions,
-    StyleSheet,
-    Pressable,
-    Animated,
-    Modal,
-    ScrollView,
-} from 'react-native';
+import { View, Text, useWindowDimensions, StyleSheet, Pressable, Animated, Modal, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react-native';
 
@@ -79,16 +70,7 @@ export const AlertDialog = ({
             statusBarTranslucent
             onRequestClose={onClose}
         >
-            <View
-                style={[
-                    styles.overlay,
-                    {
-                        paddingTop: insets.top + 16,
-                        paddingBottom: insets.bottom + 16,
-                        paddingHorizontal: 16,
-                    },
-                ]}
-            >
+            <View style={[styles.overlay, { paddingHorizontal: 16 }]}>
                 <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
                     <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: opacityAnim }]} />
                 </Pressable>

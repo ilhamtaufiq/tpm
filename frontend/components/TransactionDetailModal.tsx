@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Modal,
-    Pressable,
-    ScrollView,
-    ActivityIndicator,
-    Dimensions,
-    SafeAreaView,
-    Share,
-    Platform
-} from 'react-native';
+import { View, Modal, Pressable, ScrollView, ActivityIndicator, Dimensions, SafeAreaView, Share, Platform } from 'react-native';
 import {
     X,
     Wallet,

@@ -1,5 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert, Platform, Modal, StyleSheet } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Platform, Modal, StyleSheet } from 'react-native';
 import { format, startOfMonth, isValid, parse } from 'date-fns';
 import { Stack, useRouter } from 'expo-router';
 import {
@@ -127,7 +128,7 @@ export default function LaporanKeuanganScreen() {
             }
         } catch (error) {
             console.error('Error fetching report:', error);
-            Alert.alert('Error', 'Gagal memuat laporan');
+            appAlert('Error', 'Gagal memuat laporan');
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
@@ -136,7 +137,7 @@ export default function LaporanKeuanganScreen() {
 
     const handleSetupSubmit = async () => {
         if (!setupForm.modal_awal && !setupForm.bca && !setupForm.kas_tunai) {
-            Alert.alert('Peringatan', 'Harap isi minimal 1 saldo awal');
+            appAlert('Peringatan', 'Harap isi minimal 1 saldo awal');
             return;
         }
 
@@ -184,7 +185,7 @@ export default function LaporanKeuanganScreen() {
             fetchReport();
         } catch (error) {
             console.error('Error setup financial:', error);
-            Alert.alert('Error', 'Gagal memproses migrasi data');
+            appAlert('Error', 'Gagal memproses migrasi data');
         } finally {
             setIsSubmitting(false);
         }
@@ -204,7 +205,7 @@ export default function LaporanKeuanganScreen() {
         const sampaiValid = isValid(parse(tempDateRange.sampai, 'yyyy-MM-dd', new Date()));
 
         if (!dariValid || !sampaiValid) {
-            Alert.alert('Kesalahan', 'Format tanggal tidak valid (Gunakan YYYY-MM-DD)');
+            appAlert('Kesalahan', 'Format tanggal tidak valid (Gunakan YYYY-MM-DD)');
             return;
         }
 

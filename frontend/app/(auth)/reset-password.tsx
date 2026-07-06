@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Pressable } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
+import { appAlert } from '../../utils/appAlert';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -30,27 +31,27 @@ export default function ResetPasswordScreen() {
 
     const handleResetPassword = async () => {
         if (!password || !confirmPassword) {
-            Alert.alert('Error', 'Semua field harus diisi');
+            appAlert('Error', 'Semua field harus diisi');
             return;
         }
 
         if (password.length < 8) {
-            Alert.alert('Error', 'Password minimal 8 karakter');
+            appAlert('Error', 'Password minimal 8 karakter');
             return;
         }
 
         if (!PASSWORD_REGEX.test(password)) {
-            Alert.alert('Error', 'Password harus mengandung huruf besar, huruf kecil, dan angka');
+            appAlert('Error', 'Password harus mengandung huruf besar, huruf kecil, dan angka');
             return;
         }
 
         if (password !== confirmPassword) {
-            Alert.alert('Error', 'Password konfirmasi tidak cocok');
+            appAlert('Error', 'Password konfirmasi tidak cocok');
             return;
         }
 
         if (!token) {
-            Alert.alert('Error', 'Token tidak valid atau tidak ditemukan');
+            appAlert('Error', 'Token tidak valid atau tidak ditemukan');
             return;
         }
 
@@ -65,7 +66,7 @@ export default function ResetPasswordScreen() {
             if (__DEV__) {
                 console.error('Reset password error:', error.response?.data || error.message);
             }
-            Alert.alert(
+            appAlert(
                 'Gagal',
                 getSafeErrorMessage(error, 'Gagal mereset password. Token mungkin sudah kadaluarsa.')
             );

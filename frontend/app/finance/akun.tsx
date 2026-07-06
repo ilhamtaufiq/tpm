@@ -1,5 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, Alert, Platform, Modal, StyleSheet } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, Platform, Modal, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import {
@@ -191,7 +192,7 @@ export default function AkunKeuanganScreen() {
             setHutangSummary(hutangData);
         } catch (error) {
             console.error('Error fetching data:', error);
-            Alert.alert('Error', 'Gagal memuat data keuangan');
+            appAlert('Error', 'Gagal memuat data keuangan');
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
@@ -217,7 +218,7 @@ export default function AkunKeuanganScreen() {
 
     const handleAdjustSubmit = async () => {
         if (!selectedAccount || !newNominal || !keterangan) {
-            Alert.alert('Peringatan', 'Harap isi semua field');
+            appAlert('Peringatan', 'Harap isi semua field');
             return;
         }
 

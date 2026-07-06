@@ -1,5 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, KeyboardAvoidingView, Alert } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -220,7 +221,7 @@ export default function KaryawanScreen() {
                 } else {
                     createKaryawanMutation.mutate({ ...data, status: 'AKTIF' });
                 }
-                Alert.alert('Offline Mode', `Data ${formData.nama} telah disimpan di antrean offline.`);
+                appAlert('Offline Mode', `Data ${formData.nama} telah disimpan di antrean offline.`);
                 handleCloseSheet();
                 return;
             }

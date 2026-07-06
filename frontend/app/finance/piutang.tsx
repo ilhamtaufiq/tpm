@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Alert, TextInput, Platform, Modal } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, TextInput, Platform, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';

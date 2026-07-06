@@ -42,7 +42,7 @@ import {
     useLowStockParts
 } from '../../hooks';
 import { onlineManager } from '@tanstack/react-query';
-import { Alert } from 'react-native';
+import { appAlert, appConfirm } from '../../utils/appAlert';
 import { FILE_URL } from '../../utils/api';
 
 export default function SparePartMasterScreen() {
@@ -108,30 +108,18 @@ export default function SparePartMasterScreen() {
         const confirmDelete = () => {
             if (!onlineManager.isOnline()) {
                 deleteMutation.mutate(id);
-                if (Platform.OS === 'web') {
-                    alert('Barang telah dijadwalkan untuk dihapus saat online.');
-                } else {
-                    Alert.alert('Offline Mode', 'Barang telah dijadwalkan untuk dihapus saat online.');
-                }
+                appAlert('Offline Mode', 'Barang telah dijadwalkan untuk dihapus saat online.');
                 return;
             }
             deleteMutation.mutate(id);
         };
 
-        if (Platform.OS === 'web') {
-            if (window.confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
-                confirmDelete();
-            }
-        } else {
-            Alert.alert(
-                'Hapus Barang',
-                'Apakah Anda yakin ingin menghapus barang ini?',
-                [
-                    { text: 'Batal', style: 'cancel' },
-                    { text: 'Hapus', style: 'destructive', onPress: confirmDelete }
-                ]
-            );
-        }
+        appConfirm(
+            'Hapus Barang',
+            'Apakah Anda yakin ingin menghapus barang ini?',
+            confirmDelete,
+            { confirmText: 'Hapus', variant: 'warning' }
+        );
     };
 
     // Import Progress States
@@ -215,11 +203,7 @@ export default function SparePartMasterScreen() {
             : sparePartsList;
 
         if (!listToPrint || listToPrint.length === 0) {
-            if (Platform.OS === 'web') {
-                alert('Tidak ada data untuk dicetak.');
-            } else {
-                Alert.alert('Info', 'Tidak ada data untuk dicetak.');
-            }
+            appAlert('Info', 'Tidak ada data untuk dicetak.');
             return;
         }
 
@@ -306,7 +290,7 @@ export default function SparePartMasterScreen() {
             }
         } catch (error) {
             console.error('Print error:', error);
-            Alert.alert('Error', 'Gagal mencetak label.');
+            appAlert('Error', 'Gagal mencetak label.');
         }
     };
 
@@ -317,38 +301,18 @@ export default function SparePartMasterScreen() {
             try {
                 await bulkDeleteMutation.mutateAsync(selectedIds);
                 setSelectedIds([]);
-                if (Platform.OS === 'web') {
-                    alert('Item berhasil dihapus.');
-                } else {
-                    Alert.alert('Sukses', 'Item berhasil dihapus.');
-                }
+                appAlert('Sukses', 'Item berhasil dihapus.');
             } catch (error) {
-                if (Platform.OS === 'web') {
-                    alert('Gagal menghapus item.');
-                } else {
-                    Alert.alert('Error', 'Gagal menghapus item.');
-                }
+                appAlert('Error', 'Gagal menghapus item.');
             }
         };
 
-        if (Platform.OS === 'web') {
-            if (window.confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.length} item terpilih?`)) {
-                executeDelete();
-            }
-        } else {
-            Alert.alert(
-                'Hapus Masal',
-                `Apakah Anda yakin ingin menghapus ${selectedIds.length} item terpilih?`,
-                [
-                    { text: 'Batal', style: 'cancel' },
-                    {
-                        text: 'Hapus',
-                        style: 'destructive',
-                        onPress: executeDelete
-                    }
-                ]
-            );
-        }
+        appConfirm(
+            'Hapus Masal',
+            `Apakah Anda yakin ingin menghapus ${selectedIds.length} item terpilih?`,
+            executeDelete,
+            { confirmText: 'Hapus', variant: 'warning' }
+        );
     };
 
     const handleBulkExport = async (ids?: number[]) => {
@@ -365,10 +329,10 @@ export default function SparePartMasterScreen() {
                 link.click();
                 link.remove();
             } else {
-                Alert.alert('Export', 'Fitur download di mobile akan segera hadir. Gunakan format Web untuk export.');
+                appAlert('Export', 'Fitur download di mobile akan segera hadir. Gunakan format Web untuk export.');
             }
         } catch (error) {
-            Alert.alert('Error', 'Gagal mengekspor data.');
+            appAlert('Error', 'Gagal mengekspor data.');
         }
     };
 

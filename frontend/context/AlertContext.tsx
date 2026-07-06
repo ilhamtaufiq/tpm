@@ -1,19 +1,8 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { AlertDialog } from '../components/ui/AlertDialog';
+import { setAppAlertHandler, type AppAlertOptions } from '../utils/appAlert';
 
-type AlertVariant = 'success' | 'error' | 'warning' | 'info';
-type AlertType = 'alert' | 'confirm';
-
-interface AlertOptions {
-    title: string;
-    message: string;
-    variant?: AlertVariant;
-    type?: AlertType;
-    confirmText?: string;
-    cancelText?: string;
-    onConfirm?: () => void;
-    onClose?: () => void;
-}
+export type AlertOptions = AppAlertOptions;
 
 interface AlertContextData {
     showAlert: (options: AlertOptions) => void;
@@ -45,6 +34,11 @@ export const AlertProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setVisible(false);
         if (config.onConfirm) config.onConfirm();
     }, [config]);
+
+    useEffect(() => {
+        setAppAlertHandler(showAlert);
+        return () => setAppAlertHandler(null);
+    }, [showAlert]);
 
     return (
         <AlertContext.Provider value={{ showAlert, hideAlert }}>

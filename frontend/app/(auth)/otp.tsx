@@ -1,5 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React, { useState, useEffect, useRef } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions, Pressable } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Dimensions, Pressable } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -45,31 +46,31 @@ export default function OTPScreen() {
 
         const parsedUserId = parseInt(user_id as string, 10);
         if (isNaN(parsedUserId)) {
-            Alert.alert('Error', 'ID pengguna tidak valid');
+            appAlert('Error', 'ID pengguna tidak valid');
             return;
         }
 
         try {
             await api.post('/auth/resend-otp', { user_id: parsedUserId });
-            Alert.alert('Berhasil', 'Kode OTP telah dikirim ulang');
+            appAlert('Berhasil', 'Kode OTP telah dikirim ulang');
             startCooldown();
         } catch (error: any) {
             if (__DEV__) {
                 console.error('Resend OTP error:', error.response?.data || error.message);
             }
-            Alert.alert('Gagal', 'Gagal mengirim ulang kode OTP');
+            appAlert('Gagal', 'Gagal mengirim ulang kode OTP');
         }
     };
 
     const handleVerify = async () => {
         if (otp.length !== 6) {
-            Alert.alert('Error', 'Kode OTP harus 6 digit');
+            appAlert('Error', 'Kode OTP harus 6 digit');
             return;
         }
 
         const parsedUserId = parseInt(user_id as string, 10);
         if (isNaN(parsedUserId)) {
-            Alert.alert('Error', 'ID pengguna tidak valid');
+            appAlert('Error', 'ID pengguna tidak valid');
             return;
         }
 
@@ -87,7 +88,7 @@ export default function OTPScreen() {
             if (__DEV__) {
                 console.error('OTP verification error:', error.response?.data || error.message);
             }
-            Alert.alert('Gagal', 'Kode OTP salah atau sudah kadaluarsa');
+            appAlert('Gagal', 'Kode OTP salah atau sudah kadaluarsa');
         } finally {
             setLoading(false);
         }

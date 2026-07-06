@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ActivityIndicator, Alert, Text, ScrollView, Platform, StyleSheet, KeyboardAvoidingView, Pressable, TouchableOpacity } from 'react-native';
+import { View, ActivityIndicator, Text, ScrollView, Platform, StyleSheet, KeyboardAvoidingView, Pressable, TouchableOpacity } from 'react-native';
 import { Typography } from '../ui/Typography';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';

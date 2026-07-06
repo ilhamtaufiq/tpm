@@ -1,5 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Alert, Platform } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -163,7 +164,7 @@ export default function BackupScreen() {
     const handleRestoreConfirm = async () => {
         if (!selectedBackup) return;
         if (!restorePassword) {
-            Alert.alert('Eits!', 'Harap masukkan password admin untuk melanjutkan.');
+            appAlert('Eits!', 'Harap masukkan password admin untuk melanjutkan.');
             return;
         }
 

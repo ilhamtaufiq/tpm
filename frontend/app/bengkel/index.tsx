@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, Pressable, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl, Share, Alert } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl, Share } from 'react-native';
+import { appAlert } from '../../utils/appAlert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -842,7 +843,7 @@ export default function BengkelScreen() {
         const sampaiValid = isValid(parse(tempDateRange.sampai, 'yyyy-MM-dd', new Date()));
 
         if (!dariValid || !sampaiValid) {
-            Alert.alert('Kesalahan', 'Format tanggal tidak valid (Gunakan YYYY-MM-DD)');
+            appAlert('Kesalahan', 'Format tanggal tidak valid (Gunakan YYYY-MM-DD)');
             return;
         }
 
@@ -1822,7 +1823,7 @@ export default function BengkelScreen() {
                             loading={createExpenseMutation.isPending || createTransactionMutation.isPending || transferMutation.isPending || createPiutangMutation.isPending}
                             onPress={async () => {
                                 if (!expenseAmount || !expenseNote) {
-                                    Alert.alert('Gagal', 'Mohon isi nominal dan keterangan');
+                                    appAlert('Gagal', 'Mohon isi nominal dan keterangan');
                                     return;
                                 }
 
@@ -1904,7 +1905,7 @@ export default function BengkelScreen() {
                                     refetch();
                                     refetchSummary();
                                 } catch (e: any) {
-                                    Alert.alert('Gagal', e?.response?.data?.detail || 'Gagal mencatat transaksi');
+                                    appAlert('Gagal', e?.response?.data?.detail || 'Gagal mencatat transaksi');
                                 }
                             }}
                             className={`h-16 rounded-[28px] mt-2 ${expenseMode === 'KELUAR' ? 'bg-rose-600 shadow-rose-600/30' : expenseMode === 'MASUK' ? 'bg-emerald-600 shadow-emerald-600/30' : expenseMode === 'PIUTANG' ? 'bg-amber-600 shadow-amber-600/30' : 'bg-blue-600 shadow-blue-600/30'} shadow-xl`}

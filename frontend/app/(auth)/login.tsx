@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Pressable } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
+import { appAlert } from '../../utils/appAlert';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -57,7 +58,7 @@ export default function LoginScreen() {
 
     const handleLogin = async () => {
         if (!username || !password) {
-            Alert.alert('Error', 'Username dan password harus diisi');
+            appAlert('Error', 'Username dan password harus diisi');
             return;
         }
 
@@ -90,7 +91,7 @@ export default function LoginScreen() {
             if (__DEV__) {
                 console.error('Login error:', error.response?.data || error.message);
             }
-            Alert.alert(
+            appAlert(
                 'Gagal Masuk',
                 getSafeErrorMessage(error, 'Username atau password salah')
             );

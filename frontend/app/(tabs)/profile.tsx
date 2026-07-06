@@ -1,5 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React from 'react';
-import { View, ScrollView, Alert, Pressable, Platform, Image, StatusBar } from 'react-native';
+import { View, ScrollView, Pressable, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw, SlidersHorizontal, UserPlus, Bell } from 'lucide-react-native';
@@ -54,7 +55,7 @@ export default function ProfileScreen() {
 
     const handleCheckUpdate = async () => {
         if (__DEV__) {
-            Alert.alert('Info', 'Manual update hanya tersedia pada aplikasi production / standalone.');
+            appAlert('Info', 'Manual update hanya tersedia pada aplikasi production / standalone.');
             return;
         }
 
@@ -74,16 +75,16 @@ export default function ProfileScreen() {
                             await Updates.fetchUpdateAsync();
                             await Updates.reloadAsync();
                         } catch (error) {
-                            Alert.alert('Gagal Update', 'Terjadi kesalahan saat mendownload update.');
+                            appAlert('Gagal Update', 'Terjadi kesalahan saat mendownload update.');
                         }
                     }
                 });
             } else {
-                Alert.alert('Aplikasi Terupdate', 'Anda sudah menggunakan versi terbaru.');
+                appAlert('Aplikasi Terupdate', 'Anda sudah menggunakan versi terbaru.');
             }
         } catch (error) {
             console.error('Update Check Error:', error);
-            Alert.alert('Error', 'Gagal mengecek update ke server');
+            appAlert('Error', 'Gagal mengecek update ke server');
         } finally {
             setIsCheckingUpdate(false);
         }
@@ -153,7 +154,7 @@ export default function ProfileScreen() {
             console.error('Failed to update web access setting', error);
             // Revert on failure
             syncWithBackend(isPinEnabled, originalFeatures);
-            Alert.alert('Error', 'Gagal memperbarui pengaturan ke server');
+            appAlert('Error', 'Gagal memperbarui pengaturan ke server');
         }
     };
 
@@ -317,7 +318,7 @@ export default function ProfileScreen() {
                                 className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                                 onPress={async () => {
                                     if (!isPinEnabled) {
-                                        Alert.alert('Peringatan', 'Aktifkan PIN terlebih dahulu untuk menggunakan Biometrik');
+                                        appAlert('Peringatan', 'Aktifkan PIN terlebih dahulu untuk menggunakan Biometrik');
                                         return;
                                     }
                                     // Always require PIN verification before toggling biometrics for safety

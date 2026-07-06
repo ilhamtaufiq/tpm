@@ -1,5 +1,6 @@
+import { appAlert } from '../utils/appAlert';
 import React, { useState, useMemo, useRef } from 'react';
-import { View, Pressable, ScrollView, Platform, Modal, StyleSheet, Alert } from 'react-native';
+import { View, Pressable, ScrollView, Platform, Modal, StyleSheet } from 'react-native';
 import { onlineManager } from '@tanstack/react-query';
 import { Typography } from './ui/Typography';
 import { Card } from './ui/Card';
@@ -171,7 +172,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 } else {
                     hutangMutation.mutate(payload);
                 }
-                Alert.alert('Offline Mode', 'Pembayaran telah disimpan di antrean offline.');
+                appAlert('Offline Mode', 'Pembayaran telah disimpan di antrean offline.');
                 onSuccess();
                 onClose();
                 return;

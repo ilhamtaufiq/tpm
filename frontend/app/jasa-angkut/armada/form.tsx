@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Pressable, Switch, ActivityIndicator, Alert, StatusBar } from 'react-native';
+import { View, ScrollView, Pressable, Switch, ActivityIndicator, StatusBar } from 'react-native';
+import { appAlert, appConfirm } from '../../../utils/appAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, Save, Trash2 } from 'lucide-react-native';
@@ -49,7 +50,7 @@ export default function ArmadaFormScreen() {
                 catatan: data.catatan || ''
             });
         } catch (error) {
-            Alert.alert('Error', 'Gagal memuat data armada');
+            appAlert('Error', 'Gagal memuat data armada');
             router.back();
         } finally {
             setLoading(false);
@@ -62,7 +63,7 @@ export default function ArmadaFormScreen() {
 
     const handleSubmit = async () => {
         if (!formData.nama || !formData.nopol) {
-            Alert.alert('Peringatan', 'Nama dan No. Polisi wajib diisi');
+            appAlert('Peringatan', 'Nama dan No. Polisi wajib diisi');
             return;
         }
 
@@ -75,7 +76,7 @@ export default function ArmadaFormScreen() {
                 } else {
                     createArmada.mutate(formData);
                 }
-                Alert.alert('Offline Mode', 'Data armada telah disimpan di antrean offline.');
+                appAlert('Offline Mode', 'Data armada telah disimpan di antrean offline.');
                 router.back();
                 return;
             }
@@ -87,42 +88,36 @@ export default function ArmadaFormScreen() {
             }
             router.back();
         } catch (error) {
-            Alert.alert('Error', getErrorMessage(error, 'Gagal menyimpan data armada'));
+            appAlert('Error', getErrorMessage(error, 'Gagal menyimpan data armada'));
         } finally {
             setSubmitting(false);
         }
     };
 
     const handleDelete = () => {
-        Alert.alert(
+        appConfirm(
             'Hapus Armada',
             'Apakah Anda yakin ingin menghapus armada ini?',
-            [
-                { text: 'Batal', style: 'cancel' },
-                {
-                    text: 'Hapus',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            setSubmitting(true);
+            async () => {
+                try {
+                    setSubmitting(true);
 
-                            if (!onlineManager.isOnline()) {
-                                deleteArmada.mutate(parseInt(id));
-                                Alert.alert('Offline Mode', 'Data armada telah dijadwalkan untuk dihapus saat online.');
-                                router.back();
-                                return;
-                            }
-
-                            await deleteArmada.mutateAsync(parseInt(id));
-                            router.back();
-                        } catch (error) {
-                            Alert.alert('Error', getErrorMessage(error, 'Gagal menghapus armada'));
-                        } finally {
-                            setSubmitting(false);
-                        }
+                    if (!onlineManager.isOnline()) {
+                        deleteArmada.mutate(parseInt(id));
+                        appAlert('Offline Mode', 'Data armada telah dijadwalkan untuk dihapus saat online.');
+                        router.back();
+                        return;
                     }
+
+                    await deleteArmada.mutateAsync(parseInt(id));
+                    router.back();
+                } catch (error) {
+                    appAlert('Error', getErrorMessage(error, 'Gagal menghapus armada'));
+                } finally {
+                    setSubmitting(false);
                 }
-            ]
+            },
+            { confirmText: 'Hapus', variant: 'warning' }
         );
     };
 

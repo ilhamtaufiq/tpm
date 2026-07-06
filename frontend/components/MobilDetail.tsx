@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { View, ScrollView, Image, Pressable, Alert, ActivityIndicator, FlatList, Dimensions, StatusBar, Modal, TextInput, TouchableOpacity, Platform, Share, Linking } from 'react-native';
+import { View, ScrollView, Image, Pressable, ActivityIndicator, FlatList, Dimensions, StatusBar, Modal, TextInput, TouchableOpacity, Platform, Share, Linking } from 'react-native';
+import { appAlert } from '../utils/appAlert';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -146,14 +147,14 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
             try {
                 if (!onlineManager.isOnline()) {
                     uploadMediaAction.mutate({ id: activeUnit.id, files });
-                    Alert.alert('Offline Mode', 'Media akan diunggah saat koneksi tersedia.');
+                    appAlert('Offline Mode', 'Media akan diunggah saat koneksi tersedia.');
                     return;
                 }
                 await uploadMediaAction.mutateAsync({ id: activeUnit.id, files });
-                Alert.alert('Berhasil', 'Media berhasil diunggah');
+                appAlert('Berhasil', 'Media berhasil diunggah');
             } catch (error) {
                 console.error('Upload error:', error);
-                Alert.alert('Gagal Upload', 'Terjadi kesalahan saat mengunggah media. Silakan coba lagi.');
+                appAlert('Gagal Upload', 'Terjadi kesalahan saat mengunggah media. Silakan coba lagi.');
             }
         }
     };
@@ -161,7 +162,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     const handleShareGallery = async () => {
         const galleryToken = activeUnit.public_gallery_token;
         if (!galleryToken) {
-            Alert.alert('Token Tidak Tersedia', 'Token publik detail mobil belum tersedia. Jalankan migrasi database lalu muat ulang data.');
+            appAlert('Token Tidak Tersedia', 'Token publik detail mobil belum tersedia. Jalankan migrasi database lalu muat ulang data.');
             return;
         }
 
@@ -194,7 +195,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
         } catch (error: any) {
             if (error?.message !== 'Share dismissed') {
                 console.error('Share error:', error);
-                Alert.alert('Gagal', 'Tidak dapat membagikan galeri');
+                appAlert('Gagal', 'Tidak dapat membagikan galeri');
             }
         }
     };
@@ -202,7 +203,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     const handleShareReceipt = async () => {
         const receiptToken = activeTx?.public_receipt_token;
         if (!receiptToken) {
-            Alert.alert('Token Tidak Tersedia', 'Token publik faktur belum tersedia. Jalankan migrasi database lalu muat ulang data.');
+            appAlert('Token Tidak Tersedia', 'Token publik faktur belum tersedia. Jalankan migrasi database lalu muat ulang data.');
             return;
         }
         
@@ -220,7 +221,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
             }
         } catch (error: any) {
             console.error('Error sharing link:', error);
-            Alert.alert('Gagal', getErrorMessage(error, 'Gagal membagikan link struk'));
+            appAlert('Gagal', getErrorMessage(error, 'Gagal membagikan link struk'));
         }
     };
 
@@ -233,7 +234,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     id: activeUnit.id,
                     mediaId: deleteDialog.mediaId
                 });
-                Alert.alert('Offline Mode', 'Penghapusan media telah dijadwalkan.');
+                appAlert('Offline Mode', 'Penghapusan media telah dijadwalkan.');
                 setDeleteDialog({ visible: false, mediaId: null });
                 return;
             }
@@ -952,8 +953,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                 if (!activeTx) {
                                                     const msg = 'Data transaksi booking tidak ditemukan. Silakan refresh halaman.';
                                                     setCancelError(msg);
-                                                    if (Platform.OS === 'web') window.alert(msg);
-                                                    else Alert.alert('Error', msg);
+                                                    appAlert('Error', msg);
                                                     return;
                                                 }
 
@@ -981,8 +981,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                                 const detail = err?.response?.data?.detail;
                                                                 const errorMsg = typeof detail === 'string' ? detail : (detail?.message || JSON.stringify(detail) || 'Gagal membatalkan booking');
                                                                 setCancelError(errorMsg);
-                                                                if (Platform.OS === 'web') window.alert(errorMsg);
-                                                                else Alert.alert('Error', errorMsg);
+                                                                appAlert('Error', errorMsg);
                                                             },
                                                         },
                                                     );
@@ -1019,7 +1018,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     onClose={() => setPaymentModalVisible(false)}
                     onSuccess={() => {
                         setPaymentModalVisible(false);
-                        Alert.alert('Sukses', 'Pembayaran berhasil dicatat');
+                        appAlert('Sukses', 'Pembayaran berhasil dicatat');
                         onClose();
                     }}
                     id={activeTx.piutang_id}
@@ -1036,7 +1035,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     onClose={() => setHutangModalVisible(false)}
                     onSuccess={() => {
                         setHutangModalVisible(false);
-                        Alert.alert('Sukses', 'Pelunasan hutang berhasil dicatat');
+                        appAlert('Sukses', 'Pelunasan hutang berhasil dicatat');
                         onClose();
                     }}
                     id={activeHutang.id}

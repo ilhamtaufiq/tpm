@@ -1,22 +1,10 @@
 ﻿import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import {
-    View,
-    ScrollView,
-    Pressable,
-    TextInput,
-    StatusBar,
-    Alert,
-    RefreshControl as RNRefreshControl,
-    ActivityIndicator,
-    FlatList,
-    Image,
-    Platform,
-    Modal
-} from 'react-native';
+import { View, ScrollView, Pressable, TextInput, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, FlatList, Image, Platform, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Typography } from '../../components/ui/Typography';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { appAlert } from '../../utils/appAlert';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import {
@@ -176,10 +164,10 @@ export default function InventoryScreen() {
                 link.click();
                 link.remove();
             } else {
-                Alert.alert('Export', 'Fitur download di mobile akan segera hadir. Gunakan format Web untuk export.');
+                appAlert('Export', 'Fitur download di mobile akan segera hadir. Gunakan format Web untuk export.');
             }
         } catch (error) {
-            Alert.alert('Error', 'Gagal mengekspor data.');
+            appAlert('Error', 'Gagal mengekspor data.');
         }
     };
 
@@ -212,11 +200,11 @@ export default function InventoryScreen() {
                     harga_jual: parseFloat(formData.harga_jual) || 0
                 }
             });
-            Alert.alert('Sukses', 'Data sparepart berhasil diperbarui');
+            appAlert('Sukses', 'Data sparepart berhasil diperbarui');
             setIsEditing(false);
             refetch();
         } catch (error) {
-            Alert.alert('Error', 'Gagal memperbarui data sparepart');
+            appAlert('Error', 'Gagal memperbarui data sparepart');
         }
     };
 
@@ -236,7 +224,7 @@ export default function InventoryScreen() {
             return true;
         }
 
-        Alert.alert('Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di database.`);
+        appAlert('Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di database.`);
         return false;
     };
 
@@ -253,7 +241,7 @@ export default function InventoryScreen() {
             setScannedPart(null);
             refetch();
         } catch (error) {
-            Alert.alert('Error', 'Gagal memperbarui stok.');
+            appAlert('Error', 'Gagal memperbarui stok.');
         }
     };
 

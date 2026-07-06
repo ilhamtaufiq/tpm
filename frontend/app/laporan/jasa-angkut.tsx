@@ -1,9 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import {
-    View, ScrollView, Pressable, StatusBar,
-    RefreshControl as RNRefreshControl, ActivityIndicator,
-    Alert
-} from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -327,7 +324,7 @@ export default function JasaAngkutReportScreen() {
                 dateRange: getFormattedDate(),
             });
         } catch {
-            Alert.alert('Error', 'Gagal mencetak laporan');
+            appAlert('Error', 'Gagal mencetak laporan');
         }
     }, [summary, buildExportHtml, getFormattedDate]);
 
@@ -340,7 +337,7 @@ export default function JasaAngkutReportScreen() {
                 dateRange: getFormattedDate(),
             });
         } catch {
-            Alert.alert('Error', 'Gagal membuat PDF');
+            appAlert('Error', 'Gagal membuat PDF');
         }
     }, [summary, buildExportHtml, getFormattedDate]);
 

@@ -1,5 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Modal, Alert, Platform } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Modal, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import {
@@ -161,7 +162,7 @@ export default function LabaRugiScreen() {
                 }
             }
         } catch (e) {
-            Alert.alert('Error', 'Gagal memproses laporan');
+            appAlert('Error', 'Gagal memproses laporan');
         } finally {
             setIsExporting(false);
         }

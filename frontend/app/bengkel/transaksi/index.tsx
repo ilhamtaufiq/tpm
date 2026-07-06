@@ -1644,7 +1644,7 @@ export default function BengkelTransaksiScreen() {
                 </BottomSheetContainer>
             </Modal>
             <Modal visible={confirmSubmitOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setConfirmSubmitOpen(false)}>
-                <ModalThemeView className="flex-1 justify-center px-5" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)', paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }}>
+                <ModalThemeView className="flex-1 items-center justify-center px-5" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
                     <View className="bg-white rounded-[28px] w-full max-w-sm overflow-hidden" style={{ maxHeight: '88%' }}>
                         <ScrollView
                             bounces={false}
@@ -1687,7 +1687,7 @@ export default function BengkelTransaksiScreen() {
             </Modal>
 
             <Modal visible={successModalOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }}>
-                <ModalThemeView className="flex-1 justify-center px-5" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)', paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }}>
+                <ModalThemeView className="flex-1 items-center justify-center px-5" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
                     <View className="bg-white rounded-[28px] w-full max-w-sm overflow-hidden items-center" style={{ maxHeight: '88%' }}>
                         <ScrollView
                             bounces={false}

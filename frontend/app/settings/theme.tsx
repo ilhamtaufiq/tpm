@@ -9,7 +9,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { authService } from '../../services/auth';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getFileUrl } from '../../utils/image';
-import { Alert, ActivityIndicator, Image } from 'react-native';
+import { ActivityIndicator, Image } from 'react-native';
+import { appAlert, appConfirm } from '../../utils/appAlert';
 
 export default function ThemeSettingsScreen() {
     const { themeColors, setThemeColor, resetTheme } = useUIStore();
@@ -19,7 +20,7 @@ export default function ThemeSettingsScreen() {
     const pickBackground = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert("Izin Ditolak", "Maaf, kami memerlukan izin galeri untuk mengganti latar belakang.");
+            appAlert("Izin Ditolak", "Maaf, kami memerlukan izin galeri untuk mengganti latar belakang.");
             return;
         }
 
@@ -40,37 +41,31 @@ export default function ThemeSettingsScreen() {
         try {
             const updatedUser = await authService.uploadHomeBackground(uri);
             setAuth(updatedUser, token || '');
-            Alert.alert("Sukses", "Latar belakang beranda berhasil diperbarui.");
+            appAlert("Sukses", "Latar belakang beranda berhasil diperbarui.");
         } catch (error) {
             console.error('Failed to upload background:', error);
-            Alert.alert("Gagal Upload", "Terjadi kesalahan saat mengunggah latar belakang.");
+            appAlert("Gagal Upload", "Terjadi kesalahan saat mengunggah latar belakang.");
         } finally {
             setIsUploading(false);
         }
     };
 
-    const handleRemoveBackground = async () => {
-        Alert.alert(
+    const handleRemoveBackground = () => {
+        appConfirm(
             "Hapus Latar Belakang",
             "Anda yakin ingin menghapus latar belakang kustom dan kembali ke default?",
-            [
-                { text: "Batal", style: "cancel" },
-                { 
-                    text: "Hapus", 
-                    style: "destructive",
-                    onPress: async () => {
-                        setIsUploading(true);
-                        try {
-                            const updatedUser = await authService.updateMe({ home_background: null });
-                            setAuth(updatedUser, token || '');
-                        } catch (error) {
-                            console.error('Failed to remove background:', error);
-                        } finally {
-                            setIsUploading(false);
-                        }
-                    }
+            async () => {
+                setIsUploading(true);
+                try {
+                    const updatedUser = await authService.updateMe({ home_background: null });
+                    setAuth(updatedUser, token || '');
+                } catch (error) {
+                    console.error('Failed to remove background:', error);
+                } finally {
+                    setIsUploading(false);
                 }
-            ]
+            },
+            { confirmText: 'Hapus', variant: 'warning' }
         );
     };
 

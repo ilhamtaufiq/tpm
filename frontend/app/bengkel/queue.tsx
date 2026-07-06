@@ -1,19 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-    View,
-    ScrollView,
-    Pressable,
-    TextInput,
-    Modal,
-    StatusBar,
-    ActivityIndicator,
-    Alert,
-    Platform,
-    Share,
-    FlatList,
-    RefreshControl as RNRefreshControl
-} from 'react-native';
+import { View, ScrollView, Pressable, TextInput, Modal, StatusBar, ActivityIndicator, Platform, Share, FlatList, RefreshControl as RNRefreshControl } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';

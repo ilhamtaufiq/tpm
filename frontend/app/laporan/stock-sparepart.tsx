@@ -1,5 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, ScrollView, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { View, ScrollView, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Package, AlertTriangle, Coins, BarChart3 } from 'lucide-react-native';
@@ -171,7 +172,7 @@ export default function StockSparepartReportScreen() {
                 dateRange: getFormattedDate(),
             });
         } catch {
-            Alert.alert('Error', 'Gagal mencetak laporan');
+            appAlert('Error', 'Gagal mencetak laporan');
         }
     }, [stockStats, buildExportHtml, getFormattedDate]);
 
@@ -184,7 +185,7 @@ export default function StockSparepartReportScreen() {
                 dateRange: getFormattedDate(),
             });
         } catch {
-            Alert.alert('Error', 'Gagal membuat PDF');
+            appAlert('Error', 'Gagal membuat PDF');
         }
     }, [stockStats, buildExportHtml, getFormattedDate]);
 

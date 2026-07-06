@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Pressable, ScrollView, Image, Platform, TextInput, Alert } from 'react-native';
+import { View, Pressable, ScrollView, Image, Platform, TextInput } from 'react-native';
+import { appAlert, appConfirm } from '../../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Typography } from '../ui/Typography';
@@ -67,14 +68,14 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') { Alert.alert('Izin Ditolak', 'Maaf, kami butuh izin galeri untuk mengunggah gambar.'); return; }
+        if (status !== 'granted') { appAlert('Izin Ditolak', 'Maaf, kami butuh izin galeri untuk mengunggah gambar.'); return; }
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
         if (!result.canceled) setForm(prev => ({ ...prev, imageUri: result.assets[0].uri }));
     };
 
     const takePhoto = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') { Alert.alert('Izin Ditolak', 'Maaf, kami butuh izin kamera untuk mengambil foto.'); return; }
+        if (status !== 'granted') { appAlert('Izin Ditolak', 'Maaf, kami butuh izin kamera untuk mengambil foto.'); return; }
         const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 });
         if (!result.canceled) setForm(prev => ({ ...prev, imageUri: result.assets[0].uri }));
     };
@@ -85,7 +86,7 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
             if (!onlineManager.isOnline()) {
                 if (isEditing && form.id) updateMutation.mutate({ id: form.id, data: payload });
                 else createMutation.mutate(payload);
-                Alert.alert('Offline Mode', 'Data barang telah disimpan di antrean offline.');
+                appAlert('Offline Mode', 'Data barang telah disimpan di antrean offline.');
                 onSuccess?.(); return;
             }
             let savedPart;
@@ -102,16 +103,14 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
         } catch (error) {
             console.error('Failed to save sparepart:', error);
             const msg = 'Gagal menyimpan data barang. Periksa kembali input Anda.';
-            Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
+            appAlert('Error', msg);
         }
     };
 
     const handleDelete = () => {
         if (!form.id) return;
         const act = () => { deleteMutation.mutate(form.id!); onSuccess?.(); };
-        Platform.OS === 'web'
-            ? (window.confirm('Apakah Anda yakin ingin menghapus barang ini?') && act())
-            : Alert.alert('Hapus Barang', 'Apakah Anda yakin ingin menghapus barang ini?', [{ text: 'Batal', style: 'cancel' }, { text: 'Hapus', style: 'destructive', onPress: act }]);
+        appConfirm('Hapus Barang', 'Apakah Anda yakin ingin menghapus barang ini?', act, { confirmText: 'Hapus', variant: 'warning' });
     };
 
     return (

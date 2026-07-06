@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { appAlert } from '../../utils/appAlert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Trash2, RotateCcw, AlertTriangle, ShieldCheck } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
@@ -65,7 +66,7 @@ export default function TrashScreen() {
                         type: 'alert'
                     });
                 } catch (error: any) {
-                    Alert.alert('Error', error.response?.data?.detail || 'Gagal mengembalikan data');
+                    appAlert('Error', error.response?.data?.detail || 'Gagal mengembalikan data');
                 }
             }
         });
@@ -89,7 +90,7 @@ export default function TrashScreen() {
                         type: 'alert'
                     });
                 } catch (error: any) {
-                    Alert.alert('Error', error.response?.data?.detail || 'Gagal menghapus data');
+                    appAlert('Error', error.response?.data?.detail || 'Gagal menghapus data');
                 }
             }
         });
@@ -117,7 +118,7 @@ export default function TrashScreen() {
                         type: 'alert'
                     });
                 } catch (error: any) {
-                    Alert.alert('Error', error.response?.data?.detail || 'Gagal mengosongkan tempat sampah');
+                    appAlert('Error', error.response?.data?.detail || 'Gagal mengosongkan tempat sampah');
                 }
             }
         });

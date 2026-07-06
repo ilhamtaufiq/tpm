@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, ScrollView, Pressable, TextInput, StatusBar, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, StatusBar, Modal, ActivityIndicator } from 'react-native';
+import { appAlert } from '../../../utils/appAlert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../../components/ui/CustomTabBar';
 import { Typography } from '../../../components/ui/Typography';
@@ -158,7 +159,7 @@ export default function PurchaseScreen() {
             } catch (error: any) {
                 const errorDetail = error.response?.data?.detail;
                 const message = typeof errorDetail === 'string' ? errorDetail : 'Gagal memuat detail pembelian';
-                Alert.alert('Error', message);
+                appAlert('Error', message);
                 handleBack();
             } finally {
                 setIsLoadingDetail(false);
@@ -994,7 +995,12 @@ export default function PurchaseScreen() {
             {/* Confirm Submit Modal */}
             <Modal visible={confirmSubmitOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setConfirmSubmitOpen(false)}>
                 <CenterModalContainer onClose={() => setConfirmSubmitOpen(false)} insets={insets}>
-                    <View className="p-5">
+                    <ScrollView
+                        bounces={false}
+                        showsVerticalScrollIndicator={false}
+                        style={{ flexShrink: 1 }}
+                        contentContainerStyle={{ padding: 20, paddingBottom: 12 }}
+                    >
                         <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-4">
                             <Wallet size={22} color="#023C69" />
                         </View>
@@ -1011,10 +1017,10 @@ export default function PurchaseScreen() {
                             <View className="h-[1px] bg-slate-200 my-2" />
                             <SummaryRow label="Total" value={formatCurrency(total)} />
                         </View>
-                        <View className="flex-row gap-3 mt-5">
-                            <Button title="Batal" variant="outline" className="flex-1" onPress={() => setConfirmSubmitOpen(false)} />
-                            <Button title={isEditMode ? 'Update' : 'Simpan'} className="flex-1" onPress={handleSubmit} loading={createPembelianMutation.isPending || updatePembelianMutation.isPending} />
-                        </View>
+                    </ScrollView>
+                    <View className="flex-row gap-3 px-5 pb-5 pt-3 border-t border-gray-100">
+                        <Button title="Batal" variant="outline" size="sm" className="flex-1 min-w-0" onPress={() => setConfirmSubmitOpen(false)} />
+                        <Button title={isEditMode ? 'Update' : 'Simpan'} size="sm" className="flex-1 min-w-0" onPress={handleSubmit} loading={createPembelianMutation.isPending || updatePembelianMutation.isPending} />
                     </View>
                 </CenterModalContainer>
             </Modal>
@@ -1022,7 +1028,13 @@ export default function PurchaseScreen() {
             {/* Success Modal */}
             <Modal visible={successModalOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }}>
                 <CenterModalContainer onClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }} insets={insets}>
-                    <View className="p-6 items-center">
+                    <ScrollView
+                        bounces={false}
+                        showsVerticalScrollIndicator={false}
+                        style={{ flexShrink: 1 }}
+                        contentContainerStyle={{ padding: 24, paddingBottom: 12, alignItems: 'center' }}
+                        className="w-full"
+                    >
                         <View className="w-16 h-16 rounded-full bg-emerald-50 items-center justify-center border border-emerald-100 mb-4">
                             <CheckCircle2 size={34} color="#10B981" />
                         </View>
@@ -1034,10 +1046,12 @@ export default function PurchaseScreen() {
                                 ? 'Transaksi pembelian dan pembayaran berhasil diproses.'
                                 : 'Data pembelian sparepart berhasil disimpan.'}
                         </Typography>
+                    </ScrollView>
+                    <View className="w-full px-6 pb-6 pt-2 border-t border-gray-100">
                         <Button
                             title="OK"
                             variant="outline"
-                            className="w-full mt-6"
+                            className="w-full"
                             onPress={closeAfterSubmit}
                         />
                     </View>

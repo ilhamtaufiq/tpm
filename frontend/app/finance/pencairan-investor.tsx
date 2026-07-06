@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator, Image, Platform, TextInput, Modal, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator, Image, Platform, TextInput, Modal, StyleSheet } from 'react-native';
+import { appConfirm } from '../../utils/appAlert';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -197,13 +198,11 @@ export default function PencairanInvestorScreen() {
             }
         };
 
-        Alert.alert(
+        appConfirm(
             'Reversal Pencairan Investor',
             `Batalkan pencairan untuk ${transaksiLabel}? Saldo kas dan status pencairan akan dikembalikan sesuai reversal.`,
-            [
-                { text: 'Batal', style: 'cancel' },
-                { text: 'Reversal', style: 'destructive', onPress: executeReverse },
-            ]
+            executeReverse,
+            { confirmText: 'Reversal', variant: 'warning' }
         );
     };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Pressable, ViewStyle, StyleSheet } from 'react-native';
+import { View, Pressable, ViewStyle, StyleSheet, useWindowDimensions } from 'react-native';
 import { ModalThemeView } from './ModalThemeView';
 
 /** Flex backdrop — does not steal touches from the sheet panel below. */
@@ -63,21 +63,20 @@ export function CenterModalContainer({
     backdropColor?: string;
     maxWidth?: number;
 }) {
+    const { height: screenHeight } = useWindowDimensions();
+    const maxContentHeight = screenHeight - insets.top - insets.bottom - 24;
+
     return (
-        <ModalThemeView
-            style={[
-                styles.centerRoot,
-                {
-                    backgroundColor: backdropColor,
-                    paddingTop: insets.top + 12,
-                    paddingBottom: insets.bottom + 12,
-                },
-            ]}
-        >
+        <ModalThemeView style={[styles.centerRoot, { backgroundColor: backdropColor }]}>
             {onClose ? (
                 <Pressable style={[StyleSheet.absoluteFillObject, { zIndex: 0 }]} onPress={onClose} />
             ) : null}
-            <View style={[styles.centerContent, { maxWidth, zIndex: 2, elevation: 24 }]}>
+            <View
+                style={[
+                    styles.centerContent,
+                    { maxWidth, maxHeight: maxContentHeight, zIndex: 2, elevation: 24 },
+                ]}
+            >
                 {children}
             </View>
         </ModalThemeView>
@@ -122,5 +121,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: 28,
         overflow: 'hidden',
+        flexDirection: 'column',
     },
 });

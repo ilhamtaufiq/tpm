@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Pressable } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
+import { appAlert } from '../../utils/appAlert';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -25,12 +26,12 @@ export default function ForgotPasswordScreen() {
 
     const handleForgotPassword = async () => {
         if (!email) {
-            Alert.alert('Error', 'Email harus diisi');
+            appAlert('Error', 'Email harus diisi');
             return;
         }
 
         if (!EMAIL_REGEX.test(email)) {
-            Alert.alert('Error', 'Format email tidak valid');
+            appAlert('Error', 'Format email tidak valid');
             return;
         }
 
@@ -42,7 +43,7 @@ export default function ForgotPasswordScreen() {
             if (__DEV__) {
                 console.error('Forgot password error:', error.response?.data || error.message);
             }
-            Alert.alert(
+            appAlert(
                 'Gagal',
                 getSafeErrorMessage(error, 'Gagal mengirim email reset password')
             );

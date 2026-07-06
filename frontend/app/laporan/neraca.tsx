@@ -1,5 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Alert, Platform, Modal } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useNavigation } from 'expo-router';
 import {
@@ -506,7 +507,7 @@ export default function NeracaScreen() {
                 }
             }
         } catch (e) {
-            Alert.alert('Error', 'Gagal memproses laporan');
+            appAlert('Error', 'Gagal memproses laporan');
         } finally {
             setIsExporting(false);
         }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, Platform, Modal, Alert } from 'react-native';
+import { View, ScrollView, Pressable, Platform, Modal } from 'react-native';
+import { appAlert, appConfirm } from '../../utils/appAlert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, RotateCcw, ChevronRight, SlidersHorizontal, Check, Home, ShieldCheck, Wrench, CarFront, Truck, BarChart3, History, Receipt, User, Plus, X } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
@@ -117,20 +118,14 @@ export default function NavigationSettingsScreen() {
     }
 
     const handleReset = () => {
-        Alert.alert(
+        appConfirm(
             "Reset Navigasi",
             "Apakah Anda yakin ingin mengembalikan bottom navigasi ke pilihan bawaan pabrik?",
-            [
-                { text: "Batal", style: "cancel" },
-                { 
-                    text: "Reset", 
-                    style: "destructive",
-                    onPress: () => {
-                        resetSlots();
-                        Alert.alert("Sukses", "Bottom navigasi berhasil di-reset ke bawaan default.");
-                    }
-                }
-            ]
+            () => {
+                resetSlots();
+                appAlert("Sukses", "Bottom navigasi berhasil di-reset ke bawaan default.");
+            },
+            { confirmText: 'Reset', variant: 'warning' }
         );
     };
 

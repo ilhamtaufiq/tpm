@@ -22,7 +22,7 @@ import {
 } from '../../hooks';
 import { formatNumber, parseNumber } from '../../utils/format';
 import { onlineManager } from '@tanstack/react-query';
-import { Alert } from 'react-native';
+import { appAlert } from '../../utils/appAlert';
 
 interface JasaServisForm {
     id?: number;
@@ -141,7 +141,7 @@ export default function JasaServisScreen() {
                 } else {
                     createMutation.mutate(payload);
                 }
-                Alert.alert('Offline Mode', 'Data jasa telah disimpan di antrean offline.');
+                appAlert('Offline Mode', 'Data jasa telah disimpan di antrean offline.');
                 handleCloseSheet();
                 return;
             }
@@ -161,7 +161,7 @@ export default function JasaServisScreen() {
     const handleDelete = (id: number) => {
         if (!onlineManager.isOnline()) {
             deleteMutation.mutate(id);
-            Alert.alert('Offline Mode', 'Jasa telah dijadwalkan untuk dihapus saat online.');
+            appAlert('Offline Mode', 'Jasa telah dijadwalkan untuk dihapus saat online.');
             return;
         }
         deleteMutation.mutate(id);

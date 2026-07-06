@@ -1,5 +1,6 @@
+import { appAlert } from '../../utils/appAlert';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, Alert } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -225,7 +226,7 @@ export default function AbsensiScreen() {
                     karyawanId: selectedKaryawan.id,
                     dates: attendanceRecords
                 });
-                Alert.alert('Offline Mode', `Data absensi ${selectedKaryawan.nama} telah disimpan di antrean offline.`);
+                appAlert('Offline Mode', `Data absensi ${selectedKaryawan.nama} telah disimpan di antrean offline.`);
                 setSelectedKaryawan(null);
                 setSelectedDates({});
                 return;
