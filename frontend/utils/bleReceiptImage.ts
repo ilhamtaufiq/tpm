@@ -57,14 +57,22 @@ export async function buildBleImagePayload(
 
     const cacheDir = FileSystem.cacheDirectory;
     const cacheFile = `tpm_receipt_${Date.now()}.${mime.includes('png') ? 'png' : 'jpg'}`;
+    let absoluteCachePath = '';
     if (cacheDir) {
-        await FileSystem.writeAsStringAsync(`${cacheDir}${cacheFile}`, base64, {
+        const cacheUri = `${cacheDir}${cacheFile}`;
+        await FileSystem.writeAsStringAsync(cacheUri, base64, {
             encoding: FileSystem.EncodingType.Base64,
         });
+        const cacheInfo = await FileSystem.getInfoAsync(cacheUri);
+        if (!cacheInfo.exists) {
+            throw new Error('Gagal menyimpan gambar struk ke cache aplikasi.');
+        }
+        absoluteCachePath = stripFileScheme(cacheUri);
     }
 
     const normalized = normalizeFileUri(imageSource);
-    const absolutePath = stripFileScheme(normalized);
+    const sourcePath = stripFileScheme(normalized);
+    const primaryPath = absoluteCachePath || sourcePath;
 
     const payload: Record<string, string | number> = {
         cacheFile,
@@ -72,8 +80,9 @@ export async function buildBleImagePayload(
         maxWidth: raster.targetWidthPx,
         maxHeight: raster.maxHeightPx,
         paperSize: raster.paperSize,
-        url: normalized,
-        path: absolutePath,
+        url: primaryPath.startsWith('/') ? `file://${primaryPath}` : normalized,
+        path: primaryPath,
+        absoluteCachePath: primaryPath,
         imageBase64: base64,
     };
 
@@ -91,9 +100,10 @@ export function buildBleCacheOnlyPayload(imagePayload: string): string | null {
             paperSize?: string;
             url?: string;
             path?: string;
+            absoluteCachePath?: string;
         };
 
-        if (!parsed.cacheFile && !parsed.path && !parsed.url) {
+        if (!parsed.cacheFile && !parsed.path && !parsed.url && !parsed.absoluteCachePath) {
             return null;
         }
 
@@ -104,7 +114,8 @@ export function buildBleCacheOnlyPayload(imagePayload: string): string | null {
             maxHeight: parsed.maxHeight,
             paperSize: parsed.paperSize,
             url: parsed.url,
-            path: parsed.path,
+            path: parsed.path ?? parsed.absoluteCachePath,
+            absoluteCachePath: parsed.absoluteCachePath,
         });
     } catch {
         return null;

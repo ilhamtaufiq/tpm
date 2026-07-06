@@ -46,6 +46,7 @@
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",
     "html5-qrcode": "^2.3.8",
+    "jpeg-js": "^0.4.4",
     "jspdf": "^4.2.1",
     "lodash": "^4.17.23",
     "lucide-react-native": "^0.563.0",
