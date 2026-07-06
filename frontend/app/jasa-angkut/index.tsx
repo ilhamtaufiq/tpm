@@ -57,7 +57,11 @@ import { PaymentModal } from '../../components/PaymentModal';
 import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 
 import { formatNumber, parseNumber } from '../../utils/format';
-import { FILE_URL } from '../../utils/api';
+import {
+    buildPublicReceiptShareUrl,
+    resolvePublicReceiptShareId,
+    sharePublicReceiptLink,
+} from '../../utils/sharePublicReceipt';
 
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
@@ -383,44 +387,42 @@ export default function JasaAngkutScreen() {
     };
 
     const handleShareLink = async (trip: any) => {
-        const shareUrl = `${FILE_URL}/api/v1/public/receipt/view/jasa_angkut/${trip.id}`;
-        const shareMessage = `Halo, ini adalah rincian ritase/angkutan Anda di Tiga Putra Motor: ${shareUrl}`;
+        const receiptId = resolvePublicReceiptShareId('jasa_angkut', trip);
+        if (!receiptId) {
+            setDialogConfig({
+                visible: true,
+                title: 'Struk Tidak Tersedia',
+                message: 'Data ritase belum memiliki ID yang valid untuk dibagikan.',
+                variant: 'error',
+                type: 'alert',
+            });
+            return;
+        }
 
         try {
-            if (Platform.OS === 'web' && !navigator.share) {
-                // Fallback for web browser that doesn't support Web Share API
-                await navigator.clipboard.writeText(shareMessage);
-                setDialogConfig({
-                    visible: true,
-                    title: 'Berhasil',
-                    message: 'Link struk telah disalin ke clipboard.',
-                    variant: 'success',
-                    type: 'alert'
-                });
-                return;
-            }
-
-            await Share.share({
-                message: shareMessage,
-                url: shareUrl,
-                title: 'Bagikan Struk Digital'
-            });
-        } catch (error: any) {
-            console.error('Error sharing link:', error);
-            if (error?.message?.includes('not supported') || Platform.OS === 'web') {
-                try {
-                    await navigator.clipboard.writeText(shareMessage);
+            const shareUrl = await buildPublicReceiptShareUrl('jasa_angkut', receiptId);
+            await sharePublicReceiptLink({
+                shareUrl,
+                transactionNumber: trip?.nomor_transaksi,
+                onCopied: () => {
                     setDialogConfig({
                         visible: true,
                         title: 'Berhasil',
                         message: 'Link struk telah disalin ke clipboard.',
                         variant: 'success',
-                        type: 'alert'
+                        type: 'alert',
                     });
-                } catch (clipError) {
-                    console.error('Clipboard fallback also failed:', clipError);
-                }
-            }
+                },
+            });
+        } catch (error: any) {
+            console.error('Error sharing link:', error);
+            setDialogConfig({
+                visible: true,
+                title: 'Gagal',
+                message: getErrorMessage(error, 'Gagal membagikan link struk'),
+                variant: 'error',
+                type: 'alert',
+            });
         }
     };
 

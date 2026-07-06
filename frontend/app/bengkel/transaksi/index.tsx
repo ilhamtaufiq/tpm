@@ -19,7 +19,10 @@ import { isBengkelTransactionLocked } from '../../../utils/bengkelTransaction';
 import { getCustomTabBarHeight } from '../../../components/ui/CustomTabBar';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../../utils/printSettings';
-import { buildPublicReceiptUrl } from '../../../utils/publicReceiptUrl';
+import {
+    buildPublicReceiptShareUrl,
+    sharePublicReceiptLink,
+} from '../../../utils/sharePublicReceipt';
 import api from '../../../utils/api';
 import { useScanSound } from '../../../utils/sounds';
 import { BottomSheetContainer } from '../../../components/ui/BottomSheetContainer';
@@ -675,26 +678,11 @@ export default function BengkelTransaksiScreen() {
         } catch (error: any) {
             const token = createdTransaction?.public_receipt_token;
             if (token) {
-                const shareUrl = buildPublicReceiptUrl('bengkel', token);
-                if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: 'Struk Tiga Putra Motor',
-                            text: `Struk transaksi ${createdTransaction?.nomor_transaksi || ''}`,
-                            url: shareUrl,
-                        });
-                        setReceiptActionMessage('Link struk berhasil dibagikan.');
-                        return;
-                    } catch {
-                        // fall through to clipboard/message fallback
-                    }
-                }
-                if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-                    await navigator.clipboard.writeText(shareUrl);
-                    setReceiptActionMessage('Link struk disalin ke clipboard.');
-                    return;
-                }
-                await Share.share({ message: shareUrl, url: shareUrl, title: 'Bagikan Struk' });
+                const shareUrl = await buildPublicReceiptShareUrl('bengkel', token);
+                await sharePublicReceiptLink({
+                    shareUrl,
+                    transactionNumber: createdTransaction?.nomor_transaksi,
+                });
                 setReceiptActionMessage('Link struk berhasil dibagikan.');
                 return;
             }

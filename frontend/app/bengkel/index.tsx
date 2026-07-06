@@ -67,7 +67,10 @@ import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { FILE_URL } from '../../utils/api';
-import { buildPublicReceiptUrl } from '../../utils/publicReceiptUrl';
+import {
+    buildPublicReceiptShareUrl,
+    sharePublicReceiptLink,
+} from '../../utils/sharePublicReceipt';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
@@ -595,43 +598,30 @@ export default function BengkelScreen() {
             return;
         }
 
-        const shareUrl = buildPublicReceiptUrl('bengkel', receiptToken);
-        const shareMessage = `Halo, ini adalah struk transaksi Anda di Tiga Putra Motor: ${shareUrl}`;
-
         try {
-            if (Platform.OS === 'web' && !navigator.share) {
-                await navigator.clipboard.writeText(shareMessage);
-                setDialogConfig({
-                    visible: true,
-                    title: 'Berhasil',
-                    message: 'Link struk telah disalin ke clipboard.',
-                    variant: 'success',
-                    type: 'alert'
-                });
-                return;
-            }
-
-            await Share.share({
-                message: shareMessage,
-                url: shareUrl,
-                title: 'Bagikan Struk Digital'
-            });
-        } catch (error: any) {
-            console.error('Error sharing link:', error);
-            if (error?.message?.includes('not supported') || Platform.OS === 'web') {
-                try {
-                    await navigator.clipboard.writeText(shareMessage);
+            const shareUrl = await buildPublicReceiptShareUrl('bengkel', receiptToken);
+            await sharePublicReceiptLink({
+                shareUrl,
+                transactionNumber: item.nomor_transaksi,
+                onCopied: () => {
                     setDialogConfig({
                         visible: true,
                         title: 'Berhasil',
                         message: 'Link struk telah disalin ke clipboard.',
                         variant: 'success',
-                        type: 'alert'
+                        type: 'alert',
                     });
-                } catch (clipError) {
-                    console.error('Clipboard fallback also failed:', clipError);
-                }
-            }
+                },
+            });
+        } catch (error: any) {
+            console.error('Error sharing link:', error);
+            setDialogConfig({
+                visible: true,
+                title: 'Gagal',
+                message: getErrorMessage(error, 'Gagal membagikan link struk'),
+                variant: 'error',
+                type: 'alert',
+            });
         }
     };
 

@@ -70,7 +70,10 @@ import {
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { printReceipt, PrintReceiptData } from '../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
-import { buildPublicReceiptUrl } from '../../utils/publicReceiptUrl';
+import {
+    buildPublicReceiptShareUrl,
+    sharePublicReceiptLink,
+} from '../../utils/sharePublicReceipt';
 import { getErrorMessage } from '../../utils/error';
 
 export default function QueueScreen() {
@@ -329,41 +332,21 @@ export default function QueueScreen() {
             return;
         }
 
-        const shareUrl = buildPublicReceiptUrl('bengkel', receiptToken);
-        const shareMessage = `Halo, ini adalah struk transaksi Anda di Tiga Putra Motor: ${shareUrl}`;
-
         try {
-            if (Platform.OS === 'web' && typeof navigator !== 'undefined' && !navigator.share) {
-                await navigator.clipboard.writeText(shareMessage);
-                setDialogConfig({
-                    visible: true,
-                    title: 'Berhasil',
-                    message: 'Link struk publik telah disalin ke clipboard.',
-                    variant: 'success',
-                });
-                return;
-            }
-
-            await Share.share({
-                message: shareMessage,
-                url: shareUrl,
-                title: 'Bagikan Struk Publik',
-            });
-        } catch (error: any) {
-            if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
-                try {
-                    await navigator.clipboard.writeText(shareMessage);
+            const shareUrl = await buildPublicReceiptShareUrl('bengkel', receiptToken);
+            await sharePublicReceiptLink({
+                shareUrl,
+                transactionNumber: item?.nomor_transaksi,
+                onCopied: () => {
                     setDialogConfig({
                         visible: true,
                         title: 'Berhasil',
                         message: 'Link struk publik telah disalin ke clipboard.',
                         variant: 'success',
                     });
-                    return;
-                } catch {
-                    // fall through
-                }
-            }
+                },
+            });
+        } catch (error: any) {
             setDialogConfig({
                 visible: true,
                 title: 'Gagal',

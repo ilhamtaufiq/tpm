@@ -36,8 +36,12 @@ import { useMobilDetail, useUploadMedia, useDeleteMedia, usePenjualanMobilList, 
 import { onlineManager } from '@tanstack/react-query';
 import { useHutangList } from '../hooks/useKeuangan';
 import { FILE_URL } from '../utils/api';
-import { buildPublicReceiptUrl } from '../utils/publicReceiptUrl';
+import {
+    buildPublicReceiptShareUrl,
+    sharePublicReceiptLink,
+} from '../utils/sharePublicReceipt';
 import { formatCurrency, parseNumber, formatNumber, formatDate } from '../utils/format';
+import { getErrorMessage } from '../utils/error';
 import { RelatedBengkelTransactions } from './RelatedBengkelTransactions';
 import { PaymentModal } from './PaymentModal';
 import { AlertDialog } from './ui/AlertDialog';
@@ -202,31 +206,21 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
             return;
         }
         
-        const shareUrl = buildPublicReceiptUrl('mobil', receiptToken);
-        const shareMessage = `Halo, ini adalah faktur penjualan unit mobil ${activeUnit.merek} ${activeUnit.model} Anda: ${shareUrl}`;
-        
         try {
-            if (Platform.OS === 'web') {
-                if (navigator && navigator.clipboard) {
-                    await navigator.clipboard.writeText(shareMessage);
-                }
-                // Open in new tab so user can see it
-                window.open(shareUrl, '_blank');
-                return;
-            }
-
-            await Share.share({
-                message: shareMessage,
-                url: shareUrl,
-                title: 'Bagikan Faktur Penjualan'
+            const shareUrl = await buildPublicReceiptShareUrl('mobil', receiptToken);
+            const transactionNumber = activeTx?.nomor_transaksi
+                || `${activeUnit.merek} ${activeUnit.model}`.trim();
+            const result = await sharePublicReceiptLink({
+                shareUrl,
+                transactionNumber,
             });
+
+            if (result === 'copied' && Platform.OS === 'web') {
+                window.open(shareUrl, '_blank');
+            }
         } catch (error: any) {
             console.error('Error sharing link:', error);
-            if (Platform.OS === 'web') {
-                window.open(shareUrl, '_blank');
-            } else {
-                Alert.alert('Info', 'Faktur dapat dilihat pada: ' + shareUrl);
-            }
+            Alert.alert('Gagal', getErrorMessage(error, 'Gagal membagikan link struk'));
         }
     };
 

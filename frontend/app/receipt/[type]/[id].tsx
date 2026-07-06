@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View,
     ScrollView,
     ActivityIndicator,
     Platform,
-    Share,
     Pressable,
     useWindowDimensions,
 } from 'react-native';
@@ -33,7 +32,12 @@ import {
 import { printReceipt, PrintReceiptData, ensureLogoBase64 } from '../../../utils/printReceipt';
 import { PublicReceiptCard, PublicReceiptData } from '../../../components/receipt/PublicReceiptCard';
 import { getErrorMessage } from '../../../utils/error';
-import { buildPublicReceiptUrl, PublicReceiptType } from '../../../utils/publicReceiptUrl';
+import { PublicReceiptType } from '../../../utils/publicReceiptUrl';
+import {
+    buildPublicReceiptShareUrl,
+    copyPublicReceiptLink,
+    sharePublicReceiptLink,
+} from '../../../utils/sharePublicReceipt';
 
 type ReceiptType = 'bengkel' | 'jasa_angkut' | 'mobil';
 
@@ -104,10 +108,21 @@ export default function PublicReceiptPage() {
         }
     };
 
-    const shareUrl = useMemo(
-        () => buildPublicReceiptUrl(type as PublicReceiptType, id),
-        [type, id],
-    );
+    const [shareUrl, setShareUrl] = useState('');
+
+    useEffect(() => {
+        let mounted = true;
+        buildPublicReceiptShareUrl(type as PublicReceiptType, id)
+            .then((url) => {
+                if (mounted) setShareUrl(url);
+            })
+            .catch(() => {
+                if (mounted) setShareUrl('');
+            });
+        return () => {
+            mounted = false;
+        };
+    }, [type, id]);
     const contentMaxWidth = Math.min(width - 32, 480);
 
     const loadReceipt = useCallback(async () => {
@@ -174,43 +189,29 @@ export default function PublicReceiptPage() {
     };
 
     const handleShareLink = async () => {
-        if (!receipt) return;
-        const message = `Struk transaksi ${receipt.transactionNumber} — Tiga Putra Motor\n${shareUrl}`;
+        if (!receipt || !shareUrl) return;
         try {
             setActionLoading('share');
-            if (Platform.OS === 'web') {
-                if (typeof navigator !== 'undefined' && navigator.share) {
-                    await navigator.share({
-                        title: 'Struk Tiga Putra Motor',
-                        text: message,
-                        url: shareUrl,
-                    });
-                    return;
-                }
-                if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-                    await navigator.clipboard.writeText(shareUrl);
-                    showToast('Link struk disalin');
-                    return;
-                }
+            const result = await sharePublicReceiptLink({
+                shareUrl,
+                transactionNumber: receipt.transactionNumber,
+                onCopied: () => showToast('Link struk disalin'),
+            });
+            if (result === 'shared') {
+                showToast('Link struk berhasil dibagikan');
             }
-            await Share.share({ message, url: shareUrl, title: 'Bagikan Struk' });
         } catch (err: any) {
-            if (!String(err?.message || '').toLowerCase().includes('cancel')) {
-                showToast(getErrorMessage(err, 'Gagal membagikan link'));
-            }
+            showToast(getErrorMessage(err, 'Gagal membagikan link'));
         } finally {
             setActionLoading(null);
         }
     };
 
     const handleCopyLink = async () => {
+        if (!receipt || !shareUrl) return;
         try {
-            if (Platform.OS === 'web' && navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(shareUrl);
-                showToast('Link disalin ke clipboard');
-            } else {
-                await handleShareLink();
-            }
+            await copyPublicReceiptLink(shareUrl, receipt.transactionNumber);
+            showToast('Link struk disalin');
         } catch {
             showToast('Gagal menyalin link');
         }

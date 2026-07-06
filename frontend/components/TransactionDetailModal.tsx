@@ -47,7 +47,12 @@ import {
     buildPrintReceiptDataForUnit,
     ReceiptBusinessUnit,
 } from '../utils/buildPrintReceiptData';
-import { buildPublicReceiptUrl } from '../utils/publicReceiptUrl';
+import {
+    buildPublicReceiptShareUrl,
+    resolvePublicReceiptShareId,
+    sharePublicReceiptLink,
+} from '../utils/sharePublicReceipt';
+import { getErrorMessage } from '../utils/error';
 import { useAuthStore } from '../store/useAuthStore';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -79,13 +84,6 @@ function getPrintSourceData(
         return subDetails?.type === 'workshop' ? subDetails : details;
     }
     return details;
-}
-
-function getPublicReceiptId(unit: ReceiptBusinessUnit, source: any, fallbackId: number): string {
-    if (unit === 'mobil' || unit === 'bengkel') {
-        return source?.public_receipt_token || String(source?.id || fallbackId);
-    }
-    return String(source?.id || fallbackId);
 }
 
 interface TransactionDetailModalProps {
@@ -250,44 +248,43 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
         }
 
         const source = getPrintSourceData(unit, details, subDetails);
-        const receiptId = getPublicReceiptId(unit, source, item.original_id);
-        const shareUrl = buildPublicReceiptUrl(unit, receiptId);
-        const shareMessage = `Halo, ini adalah rincian transaksi Anda di Tiga Putra Motor: ${shareUrl}`;
+        const receiptId = resolvePublicReceiptShareId(unit, source, item.original_id);
+        if (!receiptId) {
+            setDialogConfig({
+                visible: true,
+                title: 'Token Tidak Tersedia',
+                message: 'Token struk publik belum tersedia untuk transaksi ini.',
+                variant: 'error',
+                type: 'alert',
+            });
+            return;
+        }
 
         try {
-            if (Platform.OS === 'web' && !navigator.share) {
-                await navigator.clipboard.writeText(shareMessage);
-                setDialogConfig({
-                    visible: true,
-                    title: 'Berhasil',
-                    message: 'Link struk telah disalin ke clipboard.',
-                    variant: 'success',
-                    type: 'alert'
-                });
-                return;
-            }
-
-            await Share.share({
-                message: shareMessage,
-                url: shareUrl,
-                title: 'Bagikan Struk Digital'
-            });
-        } catch (error: any) {
-            console.error('Error sharing link:', error);
-            if (error?.message?.includes('not supported') || Platform.OS === 'web') {
-                try {
-                    await navigator.clipboard.writeText(shareMessage);
+            const shareUrl = await buildPublicReceiptShareUrl(unit, receiptId);
+            const transactionNumber = source?.nomor_transaksi || item.title;
+            await sharePublicReceiptLink({
+                shareUrl,
+                transactionNumber,
+                onCopied: () => {
                     setDialogConfig({
                         visible: true,
                         title: 'Berhasil',
                         message: 'Link struk telah disalin ke clipboard.',
                         variant: 'success',
-                        type: 'alert'
+                        type: 'alert',
                     });
-                } catch (clipError) {
-                    console.error('Clipboard fallback failed:', clipError);
-                }
-            }
+                },
+            });
+        } catch (error: any) {
+            console.error('Error sharing link:', error);
+            setDialogConfig({
+                visible: true,
+                title: 'Gagal',
+                message: getErrorMessage(error, 'Gagal membagikan link struk'),
+                variant: 'error',
+                type: 'alert',
+            });
         }
     };
 
