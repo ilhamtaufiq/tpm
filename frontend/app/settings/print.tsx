@@ -282,8 +282,8 @@ export default function PrintSettingsScreen() {
                 paid: 50000,
                 paymentMethod: 'TUNAI',
             };
-            const { html, settings: processedSettings } = await prepareReceiptHtml(testData, latestSettings);
-            await executeAndroidThermalPrint(testData, processedSettings, html);
+            const { settings: processedSettings } = await prepareReceiptHtml(testData, latestSettings);
+            await executeAndroidThermalPrint(testData, processedSettings);
 
             setDialogConfig({
                 visible: true,

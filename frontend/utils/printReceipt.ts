@@ -166,7 +166,7 @@ export async function printReceipt(data: PrintReceiptData, settings?: PrintSetti
         if (Platform.OS === 'web') {
             await printHtmlOnWeb(html, processedSettings);
         } else if (Platform.OS === 'android') {
-            await executeAndroidThermalPrint(data, processedSettings, html);
+            await executeAndroidThermalPrint(data, processedSettings);
         } else {
             await Print.printAsync({ html, width: paperWidthPoints });
         }

@@ -78,3 +78,43 @@ export async function buildBleImagePayload(
 
     return JSON.stringify(payload);
 }
+
+function normalizeFileUri(uri: string): string {
+    if (uri.startsWith('file://')) {
+        return uri;
+    }
+    if (uri.startsWith('/')) {
+        return `file://${uri}`;
+    }
+    return uri;
+}
+
+/** Cache-only payload for native BLE decode — avoids large base64 over RN bridge. */
+export async function buildBleImagePayloadFromFile(
+    fileUri: string,
+    paperSize?: string | null,
+): Promise<string> {
+    const raster = getBleRasterSpec(paperSize);
+    const cacheDir = FileSystem.cacheDirectory;
+    if (!cacheDir) {
+        throw new Error('Cache aplikasi tidak tersedia untuk cetak struk.');
+    }
+
+    const normalized = normalizeFileUri(fileUri);
+    const info = await FileSystem.getInfoAsync(normalized);
+    if (!info.exists) {
+        throw new Error('Gambar struk tidak ditemukan setelah capture.');
+    }
+
+    const cacheFile = `tpm_receipt_${Date.now()}.jpg`;
+    const targetUri = `${cacheDir}${cacheFile}`;
+    await FileSystem.copyAsync({ from: normalized, to: targetUri });
+
+    return JSON.stringify({
+        cacheFile,
+        mime: 'image/jpeg',
+        maxWidth: raster.targetWidthPx,
+        maxHeight: raster.maxHeightPx,
+        paperSize: raster.paperSize,
+    });
+}

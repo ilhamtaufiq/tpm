@@ -28,12 +28,11 @@ export async function getSavedBlePrinterMac(): Promise<string> {
 export async function executeAndroidThermalPrint(
     data: PrintReceiptData,
     settings: PrintSettings,
-    receiptHtml: string,
 ): Promise<void> {
     if (Platform.OS !== 'android') {
         throw new Error('Cetak thermal Bluetooth hanya tersedia di Android.');
     }
 
     const macAddress = await getSavedBlePrinterMac();
-    await printBleReceipt(data, settings, macAddress, receiptHtml);
+    await printBleReceipt(data, settings, macAddress);
 }

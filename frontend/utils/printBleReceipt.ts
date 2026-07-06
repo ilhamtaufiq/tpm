@@ -3,11 +3,12 @@ import { PrintReceiptData } from './printReceipt';
 import { PrintSettings } from './printSettings';
 import { getBLEPrinter } from './blePrinter';
 import { getPaperDimensions } from './paperSize';
-import { captureReceiptHtmlToImage } from './receiptHtmlCapture';
+import { captureReceiptForBle } from './receiptCapture';
+import { prepareReceiptAssets } from './prepareReceiptAssets';
 
 const RNBLEPrinter = Platform.OS === 'android' ? NativeModules.RNBLEPrinter : null;
 
-const NATIVE_PRINT_SUCCESS_MS = 10000;
+const NATIVE_PRINT_SUCCESS_MS = 15000;
 
 function invokeNative(method: 'printRawData' | 'printQrCode' | 'printImageData', value: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -61,14 +62,12 @@ async function cutBlePaper(): Promise<void> {
 }
 
 /**
- * Print receipt on BLE thermal: same HTML as QZ Tray → WebView raster → printRawData.
- * Avoids native bitmap decode (printImageData) which caused "image not found".
+ * Android BLE: native thermal view → view-shot → cache file → printImageData.
  */
 export async function printBleReceipt(
-    _data: PrintReceiptData,
+    data: PrintReceiptData,
     settings: PrintSettings,
     macAddress: string,
-    receiptHtml: string,
 ): Promise<void> {
     const printer = getBLEPrinter();
     if (!printer) {
@@ -81,18 +80,18 @@ export async function printBleReceipt(
         paperSize: paper.paperSize,
     };
 
-    const escPosBase64 = await captureReceiptHtmlToImage(receiptHtml, normalizedSettings);
-    if (!escPosBase64 || escPosBase64.length < 32) {
+    const { settings: preparedSettings, qrImageDataUrl } = await prepareReceiptAssets(data, normalizedSettings);
+    const imagePayload = await captureReceiptForBle(data, preparedSettings, qrImageDataUrl);
+
+    if (!imagePayload || imagePayload.length < 32) {
         throw new Error('Gagal render struk visual untuk printer thermal.');
     }
 
     try {
         await printer.init();
         await printer.connectPrinter(macAddress);
-
-        await invokeNative('printRawData', escPosBase64);
-
-        await delay(300);
+        await invokeNative('printImageData', imagePayload);
+        await delay(400);
         await cutBlePaper();
     } finally {
         try {
@@ -106,7 +105,6 @@ export async function printBleReceipt(
 export async function printBleTestReceipt(
     settings: PrintSettings,
     macAddress: string,
-    receiptHtml: string,
 ): Promise<void> {
     const paper = getPaperDimensions(settings.paperSize);
     await printBleReceipt(
@@ -129,6 +127,5 @@ export async function printBleTestReceipt(
         },
         { ...settings, footer: `Test ${paper.paperSize} • ${new Date().toLocaleString('id-ID')}` },
         macAddress,
-        receiptHtml,
     );
 }

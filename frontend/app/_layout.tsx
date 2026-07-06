@@ -30,8 +30,7 @@ import { AlertProvider } from '../context/AlertContext';
 import { CustomTabBar } from '../components/ui/CustomTabBar';
 import { useRealtimeSync } from '../services/realtime';
 import { usePushNotifications } from '../services/pushNotifications';
-import { ReceiptHtmlCaptureHost } from '../components/print/ReceiptHtmlCaptureHost';
-import { preloadHtml2CanvasScript } from '../utils/html2canvasBundle';
+import { ReceiptNativeCaptureHost } from '../components/print/ReceiptNativeCaptureHost';
 
 // Configure online manager to listen to NetInfo
 onlineManager.setEventListener((setOnline) => {
@@ -130,12 +129,6 @@ function RootLayoutContent() {
 
     useRealtimeSync();
     usePushNotifications();
-
-    useEffect(() => {
-        if (Platform.OS === 'android') {
-            preloadHtml2CanvasScript();
-        }
-    }, []);
 
     const theme = vars({
         '--color-primary': themeColors.primary,
@@ -350,7 +343,7 @@ function RootLayoutContent() {
 
     const appContent = (
         <>
-            {Platform.OS === 'android' ? <ReceiptHtmlCaptureHost /> : null}
+            {Platform.OS === 'android' ? <ReceiptNativeCaptureHost /> : null}
             <ConnectivityBanner />
             <ErrorBoundary>
                 <BottomSheetModalProvider>
