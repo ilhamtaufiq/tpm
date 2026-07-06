@@ -11,7 +11,7 @@ function invokeNative(method: 'printQrCode' | 'printImageData', value: string): 
     return new Promise((resolve, reject) => {
         const native = RNBLEPrinter?.[method];
         if (!native) {
-            resolve();
+            reject(new Error(`Native printer method "${method}" tidak tersedia. Rebuild aplikasi setelah update printer.`));
             return;
         }
 
@@ -75,12 +75,19 @@ export async function printBleReceipt(
         maxWidth: paper.bleImageWidthPx,
     });
 
-    await printer.init();
-    await printer.connectPrinter(macAddress);
-
-    await invokeNative('printImageData', imagePayload);
-    await delay(250);
-    await cutBlePaper();
+    try {
+        await printer.init();
+        await printer.connectPrinter(macAddress);
+        await invokeNative('printImageData', imagePayload);
+        await delay(250);
+        await cutBlePaper();
+    } finally {
+        try {
+            await printer.closeConn();
+        } catch {
+            // ignore disconnect errors
+        }
+    }
 }
 
 export async function printBleTestReceipt(

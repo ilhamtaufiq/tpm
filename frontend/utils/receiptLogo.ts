@@ -30,6 +30,52 @@ function blobToDataUrl(blob: Blob): Promise<string | null> {
     });
 }
 
+function guessImageMime(uri: string, contentType?: string | null): string {
+    if (contentType && contentType.startsWith('image/')) {
+        return contentType.split(';')[0].trim();
+    }
+    const lower = uri.toLowerCase();
+    if (lower.includes('.jpg') || lower.includes('.jpeg')) return 'image/jpeg';
+    if (lower.includes('.webp')) return 'image/webp';
+    if (lower.includes('.gif')) return 'image/gif';
+    return 'image/png';
+}
+
+async function readFileUriAsDataUrl(uri: string): Promise<string | null> {
+    try {
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+        });
+        if (!base64) return null;
+        return `data:${guessImageMime(uri)};base64,${base64}`;
+    } catch {
+        return null;
+    }
+}
+
+export async function fetchImageAsDataUrl(uri: string): Promise<string | null> {
+    const cacheDir = FileSystem.cacheDirectory;
+    if (!cacheDir) return null;
+
+    const extension = guessImageMime(uri) === 'image/jpeg' ? 'jpg' : 'png';
+    const targetUri = `${cacheDir}tpm_logo_${Date.now()}.${extension}`;
+
+    try {
+        const downloaded = await FileSystem.downloadAsync(uri, targetUri);
+        if (downloaded.status < 200 || downloaded.status >= 300) {
+            return null;
+        }
+        const mime = guessImageMime(uri, downloaded.headers?.['Content-Type']);
+        const base64 = await FileSystem.readAsStringAsync(downloaded.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+        });
+        if (!base64) return null;
+        return `data:${mime};base64,${base64}`;
+    } catch {
+        return null;
+    }
+}
+
 function convertImageViaCanvas(uri: string, maxWidth: number): Promise<string | null> {
     return new Promise((resolve) => {
         const img = new window.Image();
@@ -82,23 +128,23 @@ async function convertUriToBase64(uri: string, maxWidth = 160): Promise<string |
     }
 
     try {
-        if (uri.startsWith('file://')) {
-            const base64 = await FileSystem.readAsStringAsync(uri, {
-                encoding: FileSystem.EncodingType.Base64,
-            });
-            const mime = uri.toLowerCase().includes('.jpg') || uri.toLowerCase().includes('.jpeg')
-                ? 'image/jpeg'
-                : 'image/png';
-            return `data:${mime};base64,${base64}`;
+        if (uri.startsWith('file://') || uri.startsWith('content://')) {
+            return readFileUriAsDataUrl(uri);
         }
 
         const fetchUri = uri.startsWith('/') && FILE_URL
             ? `${FILE_URL.replace(/\/$/, '')}${uri}`
             : uri;
-        const response = await fetch(fetchUri);
-        if (!response.ok) return null;
-        const blob = await response.blob();
-        return blobToDataUrl(blob);
+
+        if (fetchUri.startsWith('http://') || fetchUri.startsWith('https://')) {
+            return fetchImageAsDataUrl(fetchUri);
+        }
+
+        if (fetchUri.startsWith('file://') || fetchUri.startsWith('content://')) {
+            return readFileUriAsDataUrl(fetchUri);
+        }
+
+        return fetchImageAsDataUrl(fetchUri);
     } catch (e) {
         console.warn('Logo convert failed:', e);
         return null;
@@ -112,10 +158,14 @@ async function loadDefaultLogoBase64(): Promise<string | null> {
         const asset = Asset.fromModule(DEFAULT_LOGO);
         await asset.downloadAsync();
         const sourceUri = asset.localUri || asset.uri;
-        const converted = sourceUri ? await convertUriToBase64(sourceUri, 160) : null;
-        if (converted) {
-            defaultLogoCache = converted;
-            return converted;
+        if (sourceUri) {
+            const converted = Platform.OS === 'web'
+                ? await convertUriToBase64(sourceUri, 160)
+                : await readFileUriAsDataUrl(sourceUri);
+            if (converted) {
+                defaultLogoCache = converted;
+                return converted;
+            }
         }
     } catch (e) {
         console.warn('expo-asset default logo failed:', e);
@@ -141,15 +191,19 @@ async function loadDefaultLogoBase64(): Promise<string | null> {
  * Resolve any logo setting to an inline data URL suitable for QZ Tray / thermal HTML.
  */
 export async function ensureLogoBase64(uri: string | null | undefined): Promise<string | null> {
-    if (!uri) return null;
+    if (!uri) return loadDefaultLogoBase64();
     if (uri === 'tpm_default') return loadDefaultLogoBase64();
     if (uri.startsWith('data:')) return uri;
 
     if (logoCache.has(uri)) return logoCache.get(uri)!;
 
     const converted = await convertUriToBase64(uri, 160);
-    if (converted) logoCache.set(uri, converted);
-    return converted;
+    if (converted) {
+        logoCache.set(uri, converted);
+        return converted;
+    }
+
+    return loadDefaultLogoBase64();
 }
 
 export function buildReceiptLogoHtml(logoUri: string | null | undefined, maxPx = 80): string {

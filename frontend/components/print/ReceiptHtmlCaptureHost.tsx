@@ -9,11 +9,11 @@ import {
 import { getPaperDimensions } from '../../utils/paperSize';
 import { buildReceiptRasterHtml } from '../../utils/receiptHtmlRaster';
 
-const CAPTURE_TIMEOUT_MS = 25000;
+const CAPTURE_TIMEOUT_MS = 45000;
+const CAPTURE_WEBVIEW_HEIGHT = 6000;
 
 export function ReceiptHtmlCaptureHost() {
     const [job, setJob] = useState<ReceiptHtmlCaptureJob | null>(null);
-    const activeJobRef = useRef(false);
     const jobRef = useRef<ReceiptHtmlCaptureJob | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -28,7 +28,6 @@ export function ReceiptHtmlCaptureHost() {
         clearCaptureTimeout();
         const current = jobRef.current;
         jobRef.current = null;
-        activeJobRef.current = false;
         setJob(null);
         if (current && handler) {
             handler(current);
@@ -37,12 +36,6 @@ export function ReceiptHtmlCaptureHost() {
 
     useEffect(() => {
         registerReceiptHtmlCaptureHost((captureJob) => {
-            if (activeJobRef.current) {
-                captureJob.reject(new Error('Render struk sedang berjalan. Tunggu sebentar.'));
-                return;
-            }
-
-            activeJobRef.current = true;
             jobRef.current = captureJob;
             setJob(captureJob);
 
@@ -66,6 +59,11 @@ export function ReceiptHtmlCaptureHost() {
 
         try {
             const payload = JSON.parse(event.nativeEvent.data);
+
+            if (payload?.type === 'height') {
+                return;
+            }
+
             if (!payload?.ok || !payload?.data) {
                 throw new Error(payload?.error || 'Gagal render struk');
             }
@@ -92,10 +90,10 @@ export function ReceiptHtmlCaptureHost() {
     const rasterHtml = buildReceiptRasterHtml(job.receiptHtml, paper);
 
     return (
-        <View style={[styles.host, { width: paper.widthPx }]} pointerEvents="none">
+        <View style={[styles.host, { width: paper.widthPx, height: CAPTURE_WEBVIEW_HEIGHT }]} pointerEvents="none">
             <WebView
                 source={{ html: rasterHtml }}
-                style={{ width: paper.widthPx, minHeight: 1200, backgroundColor: '#ffffff' }}
+                style={{ width: paper.widthPx, height: CAPTURE_WEBVIEW_HEIGHT, backgroundColor: '#ffffff' }}
                 onMessage={handleMessage}
                 originWhitelist={['*']}
                 mixedContentMode="always"

@@ -7,12 +7,39 @@ export interface ReceiptHtmlCaptureJob {
     reject: (error: Error) => void;
 }
 
-type ReceiptHtmlCaptureHandler = ((job: ReceiptHtmlCaptureJob) => void) | null;
+type ReceiptHtmlCaptureRunner = ((job: ReceiptHtmlCaptureJob) => void) | null;
 
-let captureHandler: ReceiptHtmlCaptureHandler = null;
+let captureRunner: ReceiptHtmlCaptureRunner = null;
+let pendingJobs: ReceiptHtmlCaptureJob[] = [];
+let activeJob: ReceiptHtmlCaptureJob | null = null;
 
-export function registerReceiptHtmlCaptureHost(handler: ReceiptHtmlCaptureHandler): void {
-    captureHandler = handler;
+function pumpCaptureQueue(): void {
+    if (activeJob || pendingJobs.length === 0 || !captureRunner) {
+        return;
+    }
+
+    const job = pendingJobs.shift()!;
+    activeJob = job;
+
+    captureRunner({
+        receiptHtml: job.receiptHtml,
+        settings: job.settings,
+        resolve: (fileUri: string) => {
+            job.resolve(fileUri);
+            activeJob = null;
+            pumpCaptureQueue();
+        },
+        reject: (error: Error) => {
+            job.reject(error);
+            activeJob = null;
+            pumpCaptureQueue();
+        },
+    });
+}
+
+export function registerReceiptHtmlCaptureHost(runner: ReceiptHtmlCaptureRunner): void {
+    captureRunner = runner;
+    pumpCaptureQueue();
 }
 
 export function captureReceiptHtmlToImage(
@@ -20,16 +47,17 @@ export function captureReceiptHtmlToImage(
     settings: PrintSettings,
 ): Promise<string> {
     return new Promise((resolve, reject) => {
-        if (!captureHandler) {
+        if (!captureRunner) {
             reject(new Error('Layanan render struk belum siap. Tutup dan buka ulang aplikasi.'));
             return;
         }
 
-        captureHandler({
+        pendingJobs.push({
             receiptHtml,
             settings,
             resolve,
             reject,
         });
+        pumpCaptureQueue();
     });
 }

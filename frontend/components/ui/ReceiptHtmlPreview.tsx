@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { PrintReceiptData, generateReceiptHTML } from '../../utils/printReceipt';
 import { PrintSettings } from '../../utils/printSettings';
-import { ensureLogoBase64 } from '../../utils/receiptLogo';
+import { prepareReceiptHtml } from '../../utils/prepareReceiptHtml';
 import { getPaperDimensions } from '../../utils/paperSize';
 
 interface ReceiptHtmlPreviewProps {
@@ -25,21 +25,15 @@ export const ReceiptHtmlPreview: React.FC<ReceiptHtmlPreviewProps> = ({
         let cancelled = false;
 
         (async () => {
-            const logoUri = settings.logoUri
-                ? await ensureLogoBase64(settings.logoUri)
-                : null;
+            const prepared = await prepareReceiptHtml(data, settings);
             if (cancelled) return;
-            setResolvedSettings({
-                ...settings,
-                paperSize: paper.paperSize,
-                logoUri: logoUri || settings.logoUri,
-            });
+            setResolvedSettings(prepared.settings);
         })();
 
         return () => {
             cancelled = true;
         };
-    }, [settings, paper.paperSize]);
+    }, [data, settings, paper.paperSize]);
 
     const html = useMemo(
         () => generateReceiptHTML(data, resolvedSettings),

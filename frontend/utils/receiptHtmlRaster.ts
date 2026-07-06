@@ -10,37 +10,56 @@ export function buildReceiptRasterHtml(fullReceiptHtml: string, paper: PaperDime
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
 <script>
 (function () {
-  function send(ok, data, error) {
+  function send(payload) {
     if (window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ ok: ok, data: data, error: error }));
+      window.ReactNativeWebView.postMessage(JSON.stringify(payload));
     }
+  }
+
+  function measureHeight() {
+    var body = document.body;
+    var html = document.documentElement;
+    return Math.max(
+      body.scrollHeight,
+      body.offsetHeight,
+      body.clientHeight,
+      html ? html.scrollHeight : 0,
+      480
+    );
   }
 
   function capture() {
     if (!window.html2canvas) {
-      send(false, null, 'html2canvas tidak termuat');
+      send({ ok: false, data: null, error: 'html2canvas tidak termuat' });
       return;
     }
+
+    var height = measureHeight();
+    send({ type: 'height', value: height });
 
     html2canvas(document.body, {
       scale: ${scale},
       useCORS: true,
-      allowTaint: false,
+      allowTaint: true,
       backgroundColor: '#ffffff',
       logging: false,
       width: ${paper.widthPx},
+      height: height,
       windowWidth: ${paper.widthPx},
+      windowHeight: height,
+      scrollX: 0,
+      scrollY: 0,
     }).then(function (canvas) {
-      send(true, canvas.toDataURL('image/png', 1.0), null);
+      send({ ok: true, data: canvas.toDataURL('image/png', 1.0), error: null });
     }).catch(function (err) {
-      send(false, null, String(err));
+      send({ ok: false, data: null, error: String(err) });
     });
   }
 
   function waitForImages() {
     var imgs = Array.prototype.slice.call(document.images || []);
     if (!imgs.length) {
-      setTimeout(capture, 120);
+      setTimeout(capture, 180);
       return;
     }
 
@@ -48,7 +67,7 @@ export function buildReceiptRasterHtml(fullReceiptHtml: string, paper: PaperDime
     var done = function () {
       pending -= 1;
       if (pending <= 0) {
-        setTimeout(capture, 120);
+        setTimeout(capture, 180);
       }
     };
 
