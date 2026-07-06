@@ -169,7 +169,7 @@ export async function printReceipt(data: PrintReceiptData, settings?: PrintSetti
                     const savedPrinter = await AsyncStorage.getItem('bluetooth_printer');
                     if (savedPrinter) {
                         const device = JSON.parse(savedPrinter);
-                        await printBleReceipt(data, processedSettings, device.inner_mac_address);
+                        await printBleReceipt(data, normalizedSettings, device.inner_mac_address);
                         return;
                     }
                 } catch (e) {

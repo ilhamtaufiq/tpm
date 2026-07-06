@@ -40,8 +40,35 @@ from app.services.kas_bank_integration import create_kas_entry
 class TransaksiBengkelService:
     """Service for workshop sales transactions."""
 
+    INTERNAL_KATEGORI = ("jasa_angkut", "jual_beli_mobil")
+
     def __init__(self, db: Session):
         self.db = db
+
+    @classmethod
+    def _is_internal_kategori(cls, kategori: Optional[str]) -> bool:
+        return (kategori or "umum") in cls.INTERNAL_KATEGORI
+
+    @classmethod
+    def _resolve_status_bayar(
+        cls,
+        kategori: Optional[str],
+        grand_total: Decimal,
+        jumlah_bayar: Decimal,
+    ) -> tuple[PaymentStatus, Decimal]:
+        """Resolve customer-facing payment status. Internal unit transfers skip tunai flow."""
+        if cls._is_internal_kategori(kategori):
+            return PaymentStatus.INTERNAL, Decimal("0")
+
+        kembalian = Decimal("0")
+        if grand_total <= 0:
+            return PaymentStatus.LUNAS, jumlah_bayar
+        if jumlah_bayar >= grand_total:
+            kembalian = jumlah_bayar - grand_total
+            return PaymentStatus.LUNAS, kembalian
+        if jumlah_bayar > 0:
+            return PaymentStatus.CICILAN, kembalian
+        return PaymentStatus.BELUM_LUNAS, kembalian
 
     def _emit_change(self, transaksi: TransaksiPenjualanBengkel, action: str) -> None:
         scopes = {"bengkel"}
@@ -307,18 +334,13 @@ class TransaksiBengkelService:
         
         # For jasa_angkut / jual_beli_mobil: payment method is INTERNAL
         # Cost is deducted from Laba TPM (jasa_angkut) or added to HPP (mobil)
-        is_internal_jasa_angkut = bool(getattr(data, "kategori", "umum") == "jasa_angkut")
-        is_internal_mobil = bool(getattr(data, "kategori", "umum") == "jual_beli_mobil" and getattr(data, "mobil_id", None))
-        
-        if is_internal_jasa_angkut and should_finalize_finance:
-            # Internal JA: hutang/piutang antar unit — tidak memotong dompet fisik unit.
-            total_pembayaran = Decimal("0")
-            metode_utama = PaymentMethod.INTERNAL
-        elif is_internal_jasa_angkut:
-            total_pembayaran = Decimal("0")
-            metode_utama = PaymentMethod.KREDIT
-        elif is_internal_mobil:
-            # Internal JB Mobil: hutang/piutang internal — dompet unit tidak dipotong.
+        kategori = getattr(data, "kategori", "umum") or "umum"
+        is_internal_jasa_angkut = kategori == "jasa_angkut"
+        is_internal_mobil = kategori == "jual_beli_mobil"
+        is_internal = is_internal_jasa_angkut or is_internal_mobil
+
+        if is_internal:
+            # Internal JA/JBM: hutang/piutang antar unit — tidak ada alur tunai pelanggan.
             total_pembayaran = Decimal("0")
             metode_utama = PaymentMethod.INTERNAL
         elif data.payments:
@@ -333,15 +355,11 @@ class TransaksiBengkelService:
             total_pembayaran = data.jumlah_bayar
             metode_utama = data.metode_bayar
 
-        # Calculate payment status and change
-        kembalian = Decimal("0")
-        if total_pembayaran >= grand_total:
-            kembalian = total_pembayaran - grand_total
-            status_bayar = PaymentStatus.LUNAS
-        elif total_pembayaran > 0:
-            status_bayar = PaymentStatus.CICILAN
-        else:
-            status_bayar = PaymentStatus.BELUM_LUNAS
+        status_bayar, kembalian = self._resolve_status_bayar(
+            kategori,
+            grand_total,
+            total_pembayaran,
+        )
 
         # Customer name from customer record or input
         nama_customer = data.nama_customer
@@ -387,8 +405,10 @@ class TransaksiBengkelService:
             if sp.stok != 999:
                 sp.stok -= item.qty
 
-        # Create piutang if not fully paid (external customers + internal unit transfers)
-        if should_finalize_finance and status_bayar != PaymentStatus.LUNAS and grand_total > 0:
+        # Create piutang if not fully paid (external) or internal unit transfer
+        if should_finalize_finance and grand_total > 0 and (
+            is_internal or status_bayar not in (PaymentStatus.LUNAS,)
+        ):
             debtor_name = nama_customer or (customer.nama if customer else "Guest")
             if is_internal_mobil:
                 debtor_name = f"JB MOBIL - {data.nomor_plat}"
@@ -766,20 +786,15 @@ class TransaksiBengkelService:
 
         requested_work_status = data.status_pengerjaan or transaksi.status_pengerjaan
 
-        # Open bill: determine status_bayar from existing DP vs new grand_total
-        # Preserve jumlah_bayar (DP already paid) — don't recalculate from frontend
-        if grand_total <= 0:
-            status_bayar = PaymentStatus.LUNAS
-            kembalian = transaksi.jumlah_bayar
-        elif transaksi.jumlah_bayar >= grand_total:
-            status_bayar = PaymentStatus.LUNAS
-            kembalian = transaksi.jumlah_bayar - grand_total
-        elif transaksi.jumlah_bayar > 0:
-            status_bayar = PaymentStatus.CICILAN
-            kembalian = Decimal("0")
-        else:
-            status_bayar = PaymentStatus.BELUM_LUNAS
-            kembalian = Decimal("0")
+        kategori = data.kategori or transaksi.kategori or "umum"
+        is_internal = self._is_internal_kategori(kategori)
+        preserved_jumlah_bayar = Decimal("0") if is_internal else transaksi.jumlah_bayar
+
+        status_bayar, kembalian = self._resolve_status_bayar(
+            kategori,
+            grand_total,
+            preserved_jumlah_bayar,
+        )
 
         # 5. Update main record
         transaksi.tanggal = effective_tanggal
@@ -799,6 +814,10 @@ class TransaksiBengkelService:
         transaksi.hpp_parts = hpp_parts
         transaksi.laba_kotor = laba_kotor
         transaksi.status_bayar = status_bayar
+        if is_internal:
+            transaksi.metode_bayar = PaymentMethod.INTERNAL
+            transaksi.jumlah_bayar = Decimal("0")
+            transaksi.kembalian = Decimal("0")
         transaksi.status_pengerjaan = requested_work_status
         transaksi.catatan = data.catatan
         transaksi.detail_parts = detail_parts_records
@@ -815,7 +834,7 @@ class TransaksiBengkelService:
             PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
             PiutangUsaha.sumber == PiutangSource.BENGKEL
         ).first()
-        is_not_internal = data.kategori not in ('jasa_angkut', 'jual_beli_mobil')
+        is_not_internal = not self._is_internal_kategori(kategori)
         should_invoice_finance = grand_total > 0
         if (
             not existing_piutang
@@ -1109,19 +1128,28 @@ class TransaksiBengkelService:
 
         total_count = query.count()
         
-        # Payment status counts
-        lunas_count = query.filter(TransaksiPenjualanBengkel.status_bayar == PaymentStatus.LUNAS).count()
-        
-        # Belum Lunas (Partial): Some paid, some unpaid
-        belum_lunas_partial = query.filter(
-            TransaksiPenjualanBengkel.status_bayar == PaymentStatus.BELUM_LUNAS,
-            TransaksiPenjualanBengkel.jumlah_bayar > 0
+        external_only = TransaksiPenjualanBengkel.kategori.notin_(self.INTERNAL_KATEGORI)
+
+        # Payment status counts (umum saja — internal JA/JBM tidak masuk alur tunai)
+        lunas_count = query.filter(
+            external_only,
+            TransaksiPenjualanBengkel.status_bayar == PaymentStatus.LUNAS,
         ).count()
-        
-        # Belum Bayar (Full Debt): Zero paid
-        belum_bayar_full = query.filter(
+
+        belum_lunas_partial = query.filter(
+            external_only,
             TransaksiPenjualanBengkel.status_bayar == PaymentStatus.BELUM_LUNAS,
-            TransaksiPenjualanBengkel.jumlah_bayar == 0
+            TransaksiPenjualanBengkel.jumlah_bayar > 0,
+        ).count()
+
+        belum_bayar_full = query.filter(
+            external_only,
+            TransaksiPenjualanBengkel.status_bayar == PaymentStatus.BELUM_LUNAS,
+            TransaksiPenjualanBengkel.jumlah_bayar == 0,
+        ).count()
+
+        internal_count = query.filter(
+            TransaksiPenjualanBengkel.status_bayar == PaymentStatus.INTERNAL,
         ).count()
         
         batal_count = query.filter(TransaksiPenjualanBengkel.status_bayar == PaymentStatus.BATAL).count()
@@ -1139,9 +1167,10 @@ class TransaksiBengkelService:
         ).first()
 
 
-        # Unpaid transactions (For Separated Stats)
+        # Unpaid transactions (external customers only)
         unpaid_query = query.filter(
-            TransaksiPenjualanBengkel.status_bayar == PaymentStatus.BELUM_LUNAS
+            external_only,
+            TransaksiPenjualanBengkel.status_bayar == PaymentStatus.BELUM_LUNAS,
         )
         unpaid_count = unpaid_query.count()
         unpaid_value = (
@@ -1223,6 +1252,7 @@ class TransaksiBengkelService:
             "belum_lunas_count": belum_lunas_partial,
             "belum_bayar_count": belum_bayar_full,
             "batal_count": batal_count,
+            "internal_count": internal_count,
             "antre": status_map.get("antre", 0),
             "proses": status_map.get("proses", 0),
             "selesai": status_map.get("selesai", 0),
@@ -1289,6 +1319,12 @@ class TransaksiBengkelService:
         and auto-update status_pengerjaan to SELESAI.
         """
         transaksi = self.get_by_id(transaksi_id)
+
+        if self._is_internal_kategori(transaksi.kategori):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Transaksi internal (Jasa Angkut / Jual Beli Mobil) tidak memiliki alur pembayaran tunai",
+            )
 
         if transaksi.status_bayar == PaymentStatus.LUNAS:
             raise HTTPException(

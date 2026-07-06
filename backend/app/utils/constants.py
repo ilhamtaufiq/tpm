@@ -84,6 +84,7 @@ class PaymentStatus(str, Enum):
     BELUM_LUNAS = "BELUM_LUNAS"
     CICILAN = "CICILAN"
     BATAL = "BATAL"
+    INTERNAL = "INTERNAL"
 
     @classmethod
     def _missing_(cls, value: object) -> "PaymentStatus | None":

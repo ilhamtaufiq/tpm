@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, useWindowDimensions, StyleSheet, Pressable, Animated, Modal, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react-native';
+import { ModalThemeView } from './ModalThemeView';
 
 interface AlertDialogProps {
     visible: boolean;
@@ -50,10 +51,10 @@ export const AlertDialog = ({
 
     const isConfirm = type === 'confirm';
     const modalWidth = Math.min(screenWidth > 480 ? 400 : screenWidth - 48, screenWidth - 32);
-    const maxCardHeight = screenHeight - insets.top - insets.bottom - 32;
-    // Reserve space for action buttons so they never get clipped by overflow:hidden
+    const verticalPadding = 16;
+    const maxCardHeight = screenHeight - insets.top - insets.bottom - verticalPadding * 2;
     const actionsHeight = isConfirm ? 156 : 92;
-    const maxScrollHeight = Math.max(100, maxCardHeight - actionsHeight);
+    const maxScrollHeight = Math.max(80, maxCardHeight - actionsHeight);
 
     const ui = {
         success: { color: '#10B981', bg: '#F0FDF4', icon: <CheckCircle size={32} color="#10B981" strokeWidth={2.5} /> },
@@ -70,9 +71,23 @@ export const AlertDialog = ({
             statusBarTranslucent
             onRequestClose={onClose}
         >
-            <View style={[styles.overlay, { paddingHorizontal: 16 }]}>
-                <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
-                    <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: opacityAnim }]} />
+            <ModalThemeView
+                style={[
+                    styles.overlay,
+                    {
+                        paddingTop: insets.top + verticalPadding,
+                        paddingBottom: insets.bottom + verticalPadding,
+                        paddingHorizontal: 16,
+                    },
+                ]}
+            >
+                <Pressable
+                    style={[StyleSheet.absoluteFillObject, styles.backdropPressable]}
+                    onPress={onClose}
+                    accessibilityRole="button"
+                    accessibilityLabel="Tutup dialog"
+                >
+                    <Animated.View style={[StyleSheet.absoluteFillObject, styles.backdrop, { opacity: opacityAnim }]} />
                 </Pressable>
 
                 <Animated.View
@@ -86,59 +101,58 @@ export const AlertDialog = ({
                         },
                     ]}
                 >
-                    <View style={[styles.body, { maxHeight: maxCardHeight }]}>
-                        <ScrollView
-                            bounces={false}
-                            nestedScrollEnabled
-                            showsVerticalScrollIndicator={false}
-                            style={[styles.scrollArea, { maxHeight: maxScrollHeight }]}
-                            contentContainerStyle={styles.scrollContent}
-                        >
-                            <View style={[styles.iconContainer, { backgroundColor: ui.bg, borderColor: `${ui.color}20` }]}>
-                                {ui.icon}
-                            </View>
-                            <Text style={styles.titleText}>{title}</Text>
-                            <Text style={styles.messageText}>{message}</Text>
-                        </ScrollView>
+                    <ScrollView
+                        bounces={false}
+                        nestedScrollEnabled
+                        showsVerticalScrollIndicator={false}
+                        style={[styles.scrollArea, { maxHeight: maxScrollHeight }]}
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <View style={[styles.iconContainer, { backgroundColor: ui.bg, borderColor: `${ui.color}20` }]}>
+                            {ui.icon}
+                        </View>
+                        <Text style={styles.titleText}>{title}</Text>
+                        <Text style={styles.messageText}>{message}</Text>
+                    </ScrollView>
 
-                        <View style={styles.actionsBox}>
-                            {isConfirm ? (
-                                <Pressable
-                                    onPress={onClose}
-                                    disabled={loading}
-                                    style={({ pressed }) => [
-                                        styles.btnBase,
-                                        styles.cancelBtn,
-                                        styles.btnFullWidth,
-                                        { opacity: pressed ? 0.7 : 1 },
-                                    ]}
-                                >
-                                    <Text style={styles.cancelText} numberOfLines={1}>
-                                        {cancelText}
-                                    </Text>
-                                </Pressable>
-                            ) : null}
-
+                    <View style={styles.actionsBox} collapsable={false}>
+                        {isConfirm ? (
                             <Pressable
-                                onPress={() => {
-                                    if (onConfirm) onConfirm();
-                                    else onClose();
-                                }}
+                                onPress={onClose}
                                 disabled={loading}
                                 style={({ pressed }) => [
                                     styles.btnBase,
+                                    styles.cancelBtn,
                                     styles.btnFullWidth,
-                                    { backgroundColor: ui.color, opacity: pressed ? 0.8 : 1 },
+                                    { opacity: pressed ? 0.7 : 1 },
                                 ]}
                             >
-                                <Text style={styles.confirmText} numberOfLines={1}>
-                                    {loading ? '...' : confirmText}
+                                <Text style={styles.cancelText} numberOfLines={1}>
+                                    {cancelText}
                                 </Text>
                             </Pressable>
-                        </View>
+                        ) : null}
+
+                        <Pressable
+                            onPress={() => {
+                                if (onConfirm) onConfirm();
+                                else onClose();
+                            }}
+                            disabled={loading}
+                            style={({ pressed }) => [
+                                styles.btnBase,
+                                styles.btnFullWidth,
+                                { backgroundColor: ui.color, opacity: pressed ? 0.8 : 1 },
+                            ]}
+                        >
+                            <Text style={styles.confirmText} numberOfLines={1}>
+                                {loading ? '...' : confirmText}
+                            </Text>
+                        </Pressable>
                     </View>
                 </Animated.View>
-            </View>
+            </ModalThemeView>
         </Modal>
     );
 };
@@ -148,6 +162,9 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    backdropPressable: {
+        zIndex: 0,
     },
     backdrop: {
         backgroundColor: 'rgba(15, 23, 42, 0.65)',
@@ -159,11 +176,8 @@ const styles = StyleSheet.create({
         borderColor: '#F1F5F9',
         elevation: 24,
         zIndex: 2,
-        overflow: 'hidden',
-    },
-    body: {
         flexDirection: 'column',
-        width: '100%',
+        overflow: 'hidden',
     },
     scrollArea: {
         flexGrow: 0,
@@ -211,6 +225,8 @@ const styles = StyleSheet.create({
         borderTopColor: '#F1F5F9',
         backgroundColor: '#FFFFFF',
         flexShrink: 0,
+        zIndex: 3,
+        elevation: 24,
     },
     btnFullWidth: {
         width: '100%',

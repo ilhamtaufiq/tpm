@@ -183,13 +183,15 @@ export default function QueueScreen() {
         const paid = Number(item?.jumlah_bayar || 0);
         const total = Number(item?.grand_total || 0);
         const paymentStatus = getBengkelQueuePaymentStatus(item, soldCars);
+        const isInternal = paymentStatus === 'INTERNAL';
         const isLunas = paymentStatus === 'LUNAS';
         return {
             paid: isLunas && paid < total ? total : paid,
             total,
             isLunas,
+            isInternal,
             hasPartialPayment: paymentStatus === 'BELUM_LUNAS',
-            remaining: isLunas ? 0 : Math.max(0, total - paid),
+            remaining: isInternal || isLunas ? 0 : Math.max(0, total - paid),
         };
     }, [soldCars]);
 
@@ -198,11 +200,12 @@ export default function QueueScreen() {
             const status = getQueuePaymentStatus(item);
             acc.total += 1;
             if (status === 'BATAL') acc.BATAL += 1;
+            else if (status === 'INTERNAL') acc.INTERNAL += 1;
             else if (status === 'LUNAS') acc.LUNAS += 1;
             else if (status === 'BELUM_LUNAS') acc.BELUM_LUNAS += 1;
             else acc.BELUM_BAYAR += 1;
             return acc;
-        }, { total: 0, LUNAS: 0, BELUM_LUNAS: 0, BELUM_BAYAR: 0, BATAL: 0 });
+        }, { total: 0, LUNAS: 0, BELUM_LUNAS: 0, BELUM_BAYAR: 0, BATAL: 0, INTERNAL: 0 });
     }, [getQueuePaymentStatus, todayQueue]);
 
     const queueWorkStatusStats = useMemo(() => {
@@ -423,6 +426,7 @@ export default function QueueScreen() {
 
     const getPaymentBadgeVariant = (item: any): 'success' | 'warning' | 'error' | 'info' | 'neutral' => {
         const status = getQueuePaymentStatus(item);
+        if (status === 'INTERNAL') return 'neutral';
         if (status === 'LUNAS') return 'success';
         if (status === 'BATAL') return 'error';
         if (status === 'BELUM_LUNAS') return 'warning';

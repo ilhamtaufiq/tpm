@@ -13,6 +13,8 @@ import { getPaperDimensions } from '../../utils/paperSize';
 import { settingsService } from '../../services/settings';
 import * as ImagePicker from 'expo-image-picker';
 import { Tabs } from '../../components/ui/Tabs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { printBleTestReceipt } from '../../utils/printBleReceipt';
 
 export default function PrintSettingsScreen() {
     const [settings, setSettings] = useState<PrintSettings | null>(null);
@@ -239,6 +241,49 @@ export default function PrintSettingsScreen() {
             });
         } finally {
             setCheckingQz(false);
+        }
+    };
+
+    const handleMobileBleTestPrint = async () => {
+        if (!settings || Platform.OS !== 'android') return;
+
+        try {
+            setTestingPrint(true);
+            await printSettingsService.saveSettings(settings);
+
+            const savedPrinter = await AsyncStorage.getItem('bluetooth_printer');
+            if (!savedPrinter) {
+                setDialogConfig({
+                    visible: true,
+                    title: 'Printer Belum Terhubung',
+                    message: 'Hubungkan printer Bluetooth di Pengaturan > Pairing terlebih dahulu.',
+                    variant: 'warning',
+                    type: 'alert',
+                });
+                return;
+            }
+
+            const device = JSON.parse(savedPrinter);
+            const latestSettings = await printSettingsService.getSettings();
+            await printBleTestReceipt(latestSettings, device.inner_mac_address);
+
+            setDialogConfig({
+                visible: true,
+                title: 'Test Print Berhasil',
+                message: `Struk test ${latestSettings.paperSize} dikirim ke printer Bluetooth.`,
+                variant: 'success',
+                type: 'alert',
+            });
+        } catch (err: any) {
+            setDialogConfig({
+                visible: true,
+                title: 'Test Print Gagal',
+                message: err?.message || 'Gagal mencetak struk test ke printer Bluetooth.',
+                variant: 'error',
+                type: 'alert',
+            });
+        } finally {
+            setTestingPrint(false);
         }
     };
 
@@ -598,9 +643,21 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
 
                     <View className="mt-4 p-4 bg-blue-50 rounded-2xl">
                         <Typography variant="caption" className="text-blue-700">
-                            ℹ️ Pilih ukuran sesuai dengan thermal printer Anda
+                            Pilih lebar kertas fisik printer (58 mm atau 80 mm), lalu simpan sebelum mencetak. Diameter gulungan (30/37/40 mm) hanya memengaruhi panjang roll — tidak mengubah layout struk.
                         </Typography>
                     </View>
+
+                    {Platform.OS === 'android' ? (
+                        <View className="mt-4">
+                            <Button
+                                title={testingPrint ? 'Mencetak...' : 'Test Print Bluetooth'}
+                                onPress={handleMobileBleTestPrint}
+                                loading={testingPrint}
+                                variant="outline-neutral"
+                                className="h-14 rounded-2xl"
+                            />
+                        </View>
+                    ) : null}
                 </Card>
 
                 {/* Action Buttons */}

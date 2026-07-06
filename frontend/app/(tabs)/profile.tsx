@@ -1,6 +1,6 @@
 import { appAlert } from '../../utils/appAlert';
 import React from 'react';
-import { View, ScrollView, Pressable, Platform, Image, StatusBar } from 'react-native';
+import { View, ScrollView, Pressable, Platform, Image, StatusBar, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw, SlidersHorizontal, UserPlus, Bell } from 'lucide-react-native';
@@ -124,10 +124,14 @@ export default function ProfileScreen() {
     }, [resetTransactions]);
 
     React.useEffect(() => {
-        if (resetConfirm === '1') {
+        if (resetConfirm !== '1') return;
+
+        const task = InteractionManager.runAfterInteractions(() => {
             showResetConfirmDialog();
             router.setParams({ resetConfirm: undefined });
-        }
+        });
+
+        return () => task.cancel();
     }, [resetConfirm, showResetConfirmDialog]);
 
     const handleReset = () => {

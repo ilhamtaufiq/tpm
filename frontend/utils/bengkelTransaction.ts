@@ -1,10 +1,17 @@
+export const isInternalBengkelKategori = (kategori?: string | null) => {
+    const raw = String(kategori || 'umum').toLowerCase();
+    return raw === 'jasa_angkut' || raw === 'jual_beli_mobil';
+};
+
 export const isBengkelTransactionLocked = (item?: {
     status_pengerjaan?: string | null;
     status_bayar?: string | null;
+    kategori?: string | null;
 } | null) => {
     if (!item) return false;
     const workStatus = String(item.status_pengerjaan || '').toUpperCase();
     const payStatus = String(item.status_bayar || '').toUpperCase();
+    if (workStatus.includes('SELESAI') && payStatus === 'INTERNAL') return true;
     return workStatus.includes('SELESAI') && payStatus === 'LUNAS';
 };
 
@@ -29,6 +36,7 @@ export const formatBengkelWorkStatusLabel = (status?: string | null) => {
 export const formatBengkelPaymentStatusLabel = (status?: string | null) => {
     const raw = String(status || '').toUpperCase();
     if (raw === 'BATAL') return 'Dibatalkan';
+    if (raw === 'INTERNAL') return 'Internal';
     if (raw === 'LUNAS') return 'Lunas';
     if (raw === 'CICILAN') return 'Cicilan';
     if (raw === 'BELUM_LUNAS') return 'Belum Lunas';
@@ -76,8 +84,8 @@ export const getBengkelQueuePaymentStatus = (
     item?: { status_bayar?: string | null; jumlah_bayar?: number | string | null; kategori?: string | null; mobil_id?: number | string | null } | null,
     soldMobilIds?: Set<string>,
 ) => {
-    if (isSoldJbmWorkshopItem(item, soldMobilIds)) {
-        return 'LUNAS';
+    if (isInternalBengkelKategori(item?.kategori) || String(item?.status_bayar || '').toUpperCase() === 'INTERNAL') {
+        return 'INTERNAL';
     }
 
     const status = String(item?.status_bayar || '').toUpperCase();

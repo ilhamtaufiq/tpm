@@ -92,7 +92,10 @@ async function convertUriToBase64(uri: string, maxWidth = 160): Promise<string |
             return `data:${mime};base64,${base64}`;
         }
 
-        const response = await fetch(uri);
+        const fetchUri = uri.startsWith('/') && FILE_URL
+            ? `${FILE_URL.replace(/\/$/, '')}${uri}`
+            : uri;
+        const response = await fetch(fetchUri);
         if (!response.ok) return null;
         const blob = await response.blob();
         return blobToDataUrl(blob);
@@ -153,4 +156,37 @@ export function buildReceiptLogoHtml(logoUri: string | null | undefined, maxPx =
     if (!logoUri) return '';
     const safeSrc = logoUri.replace(/"/g, '&quot;');
     return `<img src="${safeSrc}" width="${maxPx}" height="auto" style="max-width:${maxPx}px;height:auto;display:block;margin:0 auto 6px" alt="Logo" />`;
+}
+
+function stripDataUrlPrefix(dataUrl: string): string | null {
+    const match = dataUrl.match(/^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/);
+    return match?.[1] ?? null;
+}
+
+/**
+ * Writes the resolved logo to cache and returns a JSON payload for the patched BLE
+ * printImageData native method ({ url, maxWidth }).
+ */
+export async function prepareBleLogoPayload(
+    logoUri: string | null | undefined,
+    maxWidthPx: number,
+): Promise<string | null> {
+    const dataUrl = await ensureLogoBase64(logoUri);
+    if (!dataUrl) return null;
+
+    const base64 = stripDataUrlPrefix(dataUrl);
+    if (!base64) return null;
+
+    const cacheDir = FileSystem.cacheDirectory;
+    if (!cacheDir) return null;
+
+    const fileUri = `${cacheDir}tpm_receipt_logo.png`;
+    await FileSystem.writeAsStringAsync(fileUri, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+    });
+
+    return JSON.stringify({
+        url: fileUri,
+        maxWidth: Math.max(64, Math.round(maxWidthPx * 0.55)),
+    });
 }

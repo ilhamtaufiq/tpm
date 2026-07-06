@@ -374,7 +374,7 @@ export default function BengkelScreen() {
             acc.total += 1;
             acc[status] += 1;
             return acc;
-        }, { total: 0, LUNAS: 0, BELUM_LUNAS: 0, BELUM_BAYAR: 0, BATAL: 0 });
+        }, { total: 0, LUNAS: 0, BELUM_LUNAS: 0, BELUM_BAYAR: 0, BATAL: 0, INTERNAL: 0 });
     }, [getQueuePaymentStatus, todayQueue]);
     const queueWorkStatusStats = useMemo(() => {
         return todayQueue.reduce((acc: any, item: any) => {
@@ -420,6 +420,7 @@ export default function BengkelScreen() {
         let lunas = 0, partial = 0, unpaid = 0, batal = 0;
         queue.forEach((item: any) => {
             const status = getBengkelQueuePaymentStatus(item, soldCars);
+            if (status === 'INTERNAL') return;
             if (status === 'LUNAS') lunas++;
             else if (status === 'BATAL') batal++;
             else if (status === 'BELUM_LUNAS') partial++;
@@ -927,7 +928,8 @@ export default function BengkelScreen() {
         const isSoldJbm = isSoldJbmWorkshopItem(selectedItem, soldCars);
         const isVoided = selectedItem.status_bayar === 'batal' || selectedItem.status_bayar === 'BATAL';
         const isLocked = isBengkelTransactionLocked(selectedItem);
-        const canSettlePayment = !isPaid && !isVoided && outstanding > 0 && selectedItem.kategori !== 'jual_beli_mobil';
+        const isInternalPayment = paymentStatus === 'INTERNAL';
+        const canSettlePayment = !isInternalPayment && !isPaid && !isVoided && outstanding > 0;
         return (
             <>
                 <View className="flex-row justify-between items-start mb-4">

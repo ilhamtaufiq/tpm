@@ -16,9 +16,12 @@ export interface PaperDimensions {
     qrSizePx: number;
     /** Max logo width in pixels for HTML receipts */
     logoMaxPx: number;
+    /** Printable raster width in dots for BLE thermal image/logo output (203dpi) */
+    bleImageWidthPx: number;
 }
 
 const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
+    /** 58 mm paper — printable ~48 mm @ 203 dpi; roll diameter (30/37/40 mm) is irrelevant to layout */
     '58mm': {
         widthMm: 58,
         widthPx: 220,
@@ -31,6 +34,7 @@ const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
         charWidth: 32,
         qrSizePx: 56,
         logoMaxPx: 64,
+        bleImageWidthPx: 384,
     },
     '80mm': {
         widthMm: 80,
@@ -44,6 +48,7 @@ const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
         charWidth: 48,
         qrSizePx: 80,
         logoMaxPx: 80,
+        bleImageWidthPx: 576,
     },
 };
 

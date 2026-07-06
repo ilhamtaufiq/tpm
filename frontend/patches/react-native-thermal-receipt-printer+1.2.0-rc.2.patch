@@ -46,10 +46,27 @@ index 209c18a..18fb257 100644
  
  
 diff --git a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
-index 431c179..c5e1676 100644
+index 431c179..95e8df8 100644
 --- a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
 +++ b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
-@@ -132,11 +132,15 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+@@ -26,6 +26,7 @@ import java.util.UUID;
+ import android.content.Context;
+ import android.graphics.Bitmap;
+ import android.graphics.Color;
++import android.net.Uri;
+ import android.net.wifi.WifiManager;
+ import android.os.Build;
+ import android.util.Base64;
+@@ -43,6 +44,8 @@ import com.facebook.react.bridge.Callback;
+ import com.facebook.react.bridge.ReactApplicationContext;
+ import com.facebook.react.bridge.WritableArray;
+ import com.facebook.react.bridge.WritableMap;
++
++import org.json.JSONObject;
+ import com.facebook.react.modules.core.DeviceEventManagerModule;
+ import com.google.zxing.qrcode.QRCodeWriter;
+ import com.google.zxing.qrcode.encoder.ByteMatrix;
+@@ -132,11 +135,15 @@ public class BLEPrinterAdapter implements PrinterAdapter{
          BluetoothAdapter bluetoothAdapter = getBTAdapter();
          List<PrinterDevice> printerDevices = new ArrayList<>();
          if(bluetoothAdapter == null) {
@@ -67,3 +84,88 @@ index 431c179..c5e1676 100644
              return printerDevices;
          }
          Set<BluetoothDevice> pairedDevices = getBTAdapter().getBondedDevices();
+@@ -243,7 +250,36 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+     
+ 
+     public static Bitmap getBitmapFromURL(String src) {
++        return decodeBitmapSource(src);
++    }
++
++    public static Bitmap decodeBitmapSource(String src) {
++        if (src == null || src.isEmpty()) {
++            return null;
++        }
++
+         try {
++            if (src.startsWith("data:")) {
++                int comma = src.indexOf(',');
++                if (comma < 0) {
++                    return null;
++                }
++                byte[] bytes = Base64.decode(src.substring(comma + 1), Base64.DEFAULT);
++                return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
++            }
++
++            if (src.startsWith("file://")) {
++                String path = Uri.parse(src).getPath();
++                if (path == null) {
++                    return null;
++                }
++                return BitmapFactory.decodeFile(path);
++            }
++
++            if (src.startsWith("/")) {
++                return BitmapFactory.decodeFile(src);
++            }
++
+             URL url = new URL(src);
+             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+             connection.setDoInput(true);
+@@ -256,15 +292,45 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+ 
+             return myBitmap;
+         } catch (IOException e) {
+-            // Log exception
++            Log.w(LOG_TAG, "decodeBitmapSource failed", e);
+             return null;
+         }
+     }
+ 
++    private static Bitmap scaleBitmapToWidth(Bitmap source, int maxWidth) {
++        if (source == null || maxWidth <= 0) {
++            return source;
++        }
++
++        int width = source.getWidth();
++        int height = source.getHeight();
++        if (width <= maxWidth) {
++            return source;
++        }
++
++        int newHeight = Math.max(1, Math.round((float) height * maxWidth / width));
++        return Bitmap.createScaledBitmap(source, maxWidth, newHeight, true);
++    }
++
+     @Override
+     public void printImageData(String imageUrl, Callback errorCallback) {
++        String source = imageUrl;
++        int maxWidth = 0;
++
++        if (imageUrl != null && imageUrl.trim().startsWith("{")) {
++            try {
++                JSONObject payload = new JSONObject(imageUrl);
++                source = payload.optString("url", imageUrl);
++                maxWidth = payload.optInt("maxWidth", 0);
++            } catch (Exception e) {
++                Log.w(LOG_TAG, "printImageData payload parse failed", e);
++            }
++        }
+ 
+-        final Bitmap bitmapImage = getBitmapFromURL(imageUrl);
++        Bitmap bitmapImage = decodeBitmapSource(source);
++        if (maxWidth > 0) {
++            bitmapImage = scaleBitmapToWidth(bitmapImage, maxWidth);
++        }
+ 
+         if (bitmapImage == null) {
+             errorCallback.invoke("image not found");

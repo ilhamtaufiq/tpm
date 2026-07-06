@@ -9,7 +9,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
-import { useCreateTransaksiBengkel, useSparePartsList, useTransaksiBengkelDetail, useTransaksiBengkelList, useUpdateTransaksiBengkel } from '../../../hooks/useBengkel';
+import { useCreateTransaksiBengkel, useSparePartsList, useTransaksiBengkelDetail, useTransaksiBengkelList, useUpdateTransaksiBengkel, useUpdateTransaksiBengkelPayment } from '../../../hooks/useBengkel';
 import { useDebounce } from '../../../hooks';
 import { useJasaList } from '../../../hooks/useJasaServis';
 import { useActiveArmada } from '../../../hooks/useJasaAngkut';
@@ -146,6 +146,7 @@ export default function BengkelTransaksiScreen() {
     });
     const createMutation = useCreateTransaksiBengkel();
     const updateMutation = useUpdateTransaksiBengkel();
+    const updatePaymentMutation = useUpdateTransaksiBengkelPayment();
     const { data: editingTransaction, isLoading: isEditingTransactionLoading } = useTransaksiBengkelDetail(editTransactionId);
     const {
         data: selectedOpenTransactionDetail,
@@ -302,7 +303,9 @@ export default function BengkelTransaksiScreen() {
         setNote(editingTransaction.catatan || '');
         setDiscount(formatNumber(Number(editingTransaction.diskon || 0) || 0));
         setPaymentMode(editingTransaction.metode_bayar === 'TRANSFER' ? 'TRANSFER' : editingTransaction.metode_bayar === 'SPLIT' ? 'SPLIT' : 'TUNAI');
-        setPaymentAmount(Number(editingTransaction.jumlah_bayar || 0) > 0 ? formatNumber(Number(editingTransaction.jumlah_bayar || 0)) : '');
+        setPaymentAmount('');
+        setSplitTunai('');
+        setSplitTransfer('');
 
         if (editingTransaction.customer_id) {
             setSelectedCustomerTransaction({
@@ -394,9 +397,12 @@ export default function BengkelTransaksiScreen() {
     const visibleParts = parts;
     const visibleServices = serviceSearch.trim() || showServiceCatalog ? filteredServices : filteredServices.slice(0, 10);
     const getEditablePaymentStatus = (item: any) => {
+        const itemKategori = String(item?.kategori || kategori || 'umum').toLowerCase();
+        if (itemKategori === 'jasa_angkut' || itemKategori === 'jual_beli_mobil') return 'INTERNAL';
         const status = String(item.status_bayar || '').toUpperCase();
         const paidAmount = Number(item.jumlah_bayar || 0);
 
+        if (status === 'INTERNAL') return 'INTERNAL';
         if (status === 'LUNAS' || status === 'BATAL') return status;
         if (paidAmount > 0) return 'BELUM_LUNAS';
         return 'BELUM_BAYAR';
@@ -647,6 +653,9 @@ export default function BengkelTransaksiScreen() {
     };
 
     const openPaymentSheet = () => {
+        setPaymentAmount('');
+        setSplitTunai('');
+        setSplitTransfer('');
         setPaymentSheetOpen(true);
     };
 
@@ -800,9 +809,30 @@ export default function BengkelTransaksiScreen() {
                             ],
                 catatan: note || selectedOpenTransactionDetail?.catatan || editingTransaction?.catatan || '',
             };
-            const transaction = transactionToUpdateId
-                ? await updateMutation.mutateAsync({ id: transactionToUpdateId, data: payload })
-                : await createMutation.mutateAsync(payload);
+            let transaction: any;
+            if (transactionToUpdateId) {
+                transaction = await updateMutation.mutateAsync({ id: transactionToUpdateId, data: payload });
+                if (shouldPay && kategori === 'umum') {
+                    const incrementalPayment = paymentMode === 'SPLIT' ? splitTotal : receivedAmount;
+                    const splitPayments = paymentMode === 'SPLIT'
+                        ? [
+                            ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
+                            ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
+                        ]
+                        : undefined;
+                    transaction = await updatePaymentMutation.mutateAsync({
+                        id: transactionToUpdateId,
+                        data: {
+                            jumlah_bayar: incrementalPayment,
+                            metode_bayar: paymentMode,
+                            payments: splitPayments,
+                            status_pengerjaan: willBeLunas ? 'SELESAI' : undefined,
+                        },
+                    });
+                }
+            } else {
+                transaction = await createMutation.mutateAsync(payload);
+            }
             setCreatedTransaction(transaction);
             setReceiptActionMessage('');
             setConfirmSubmitOpen(false);
@@ -1427,7 +1457,7 @@ export default function BengkelTransaksiScreen() {
                             size="sm"
                             className="w-full"
                             onPress={() => confirmSubmit(false)}
-                            loading={createMutation.isPending || updateMutation.isPending}
+                            loading={createMutation.isPending || updateMutation.isPending || updatePaymentMutation.isPending}
                         />
                         <Button
                             title="Lanjut Pembayaran"
@@ -1475,7 +1505,7 @@ export default function BengkelTransaksiScreen() {
                         <Button
                             title="Simpan & Proses Pembayaran"
                             onPress={() => confirmSubmit(true)}
-                            loading={createMutation.isPending || updateMutation.isPending}
+                            loading={createMutation.isPending || updateMutation.isPending || updatePaymentMutation.isPending}
                         />
                     }
                 >
@@ -1587,7 +1617,7 @@ export default function BengkelTransaksiScreen() {
                                             </View>
                                             <View className="flex-row justify-between mt-3 pt-3 border-t border-slate-200">
                                                 <Typography className="text-gray-500 text-xs font-bold">Total Split</Typography>
-                                                <Typography weight="bold" className={splitTotal === subtotal ? 'text-emerald-600' : 'text-rose-500'}>
+                                                <Typography weight="bold" className={splitTotal === sisaBayar ? 'text-emerald-600' : 'text-rose-500'}>
                                                     {formatCurrency(splitTotal)}
                                                 </Typography>
                                             </View>
@@ -1680,7 +1710,7 @@ export default function BengkelTransaksiScreen() {
                         </ScrollView>
                         <View className="flex-row gap-3 px-5 pb-5 pt-3 border-t border-gray-100">
                             <Button title="Batal" variant="outline" size="sm" className="flex-1 min-w-0" onPress={() => setConfirmSubmitOpen(false)} />
-                            <Button title={transactionToUpdateId ? 'Update' : 'Simpan'} size="sm" className="flex-1 min-w-0" onPress={submit} loading={createMutation.isPending || updateMutation.isPending} />
+                            <Button title={transactionToUpdateId ? 'Update' : 'Simpan'} size="sm" className="flex-1 min-w-0" onPress={submit} loading={createMutation.isPending || updateMutation.isPending || updatePaymentMutation.isPending} />
                         </View>
                     </View>
                 </ModalThemeView>
