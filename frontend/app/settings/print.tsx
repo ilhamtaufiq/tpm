@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Pressable, TextInput, Image, Platform, Modal, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, ScrollView, Pressable, TextInput, Image, Platform, Modal, PermissionsAndroid, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { ChevronLeft, Printer, Image as ImageIcon, Save, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react-native';
@@ -7,32 +7,16 @@ import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import { testQzTrayConnection, QzConnectionTestResult, getQzPrinters, printHtmlViaQz } from '../../utils/qzTray';
 import { getPaperDimensions } from '../../utils/paperSize';
 import { settingsService } from '../../services/settings';
 import * as ImagePicker from 'expo-image-picker';
 import { Tabs } from '../../components/ui/Tabs';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { executeAndroidThermalPrint } from '../../utils/androidThermalPrint';
-
-const BLE_TEST_PRINT_TIMEOUT_MS = 20000;
-
-function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
-    return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error(message)), ms);
-        promise
-            .then((value) => {
-                clearTimeout(timer);
-                resolve(value);
-            })
-            .catch((error) => {
-                clearTimeout(timer);
-                reject(error);
-            });
-    });
-}
+import { printBleTestReceipt } from '../../utils/printBleReceipt';
+import { ensureBLEPrinterReady } from '../../utils/blePrinter';
+import { getSavedBlePrinterMac } from '../../utils/androidThermalPrint';
 
 export default function PrintSettingsScreen() {
     const insets = useSafeAreaInsets();
@@ -65,11 +49,34 @@ export default function PrintSettingsScreen() {
         loadSettings();
     }, []);
 
-    useEffect(() => {
-        return () => {
+    useFocusEffect(
+        useCallback(() => {
             setTestingBlePrint(false);
-        };
-    }, []);
+        }, []),
+    );
+
+    const requestBlePermissions = async (): Promise<boolean> => {
+        if (Platform.OS !== 'android') {
+            return true;
+        }
+
+        try {
+            const granted = await PermissionsAndroid.requestMultiple([
+                PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+                PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            ]);
+
+            return (
+                granted['android.permission.BLUETOOTH_CONNECT'] === PermissionsAndroid.RESULTS.GRANTED ||
+                granted['android.permission.BLUETOOTH_SCAN'] === PermissionsAndroid.RESULTS.GRANTED ||
+                granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED
+            );
+        } catch (error) {
+            console.warn('[BLE] permission request failed', error);
+            return false;
+        }
+    };
 
     const loadSettings = async () => {
         try {
@@ -271,57 +278,44 @@ export default function PrintSettingsScreen() {
     };
 
     const handleMobileBleTestPrint = async () => {
-        if (!settings || Platform.OS !== 'android') return;
-        if (testingBlePrint) return;
+        if (!settings || Platform.OS !== 'android' || testingBlePrint) {
+            return;
+        }
+
+        setTestingBlePrint(true);
 
         try {
-            setTestingBlePrint(true);
-            await printSettingsService.saveSettings(settings);
-
-            const savedPrinter = await AsyncStorage.getItem('bluetooth_printer');
-            if (!savedPrinter) {
+            const hasPermission = await requestBlePermissions();
+            if (!hasPermission) {
                 setDialogConfig({
                     visible: true,
-                    title: 'Printer Belum Terhubung',
-                    message: 'Hubungkan printer Bluetooth di Pengaturan > Pairing terlebih dahulu.',
+                    title: 'Izin Diperlukan',
+                    message: 'Izinkan akses Bluetooth agar test cetak bisa dijalankan.',
                     variant: 'warning',
                     type: 'alert',
                 });
                 return;
             }
 
-            const latestSettings = await printSettingsService.getSettings();
-            const testData = {
-                type: 'bengkel' as const,
-                transactionNumber: 'TEST-001',
-                date: new Date(),
-                customerName: 'Pelanggan Test',
-                vehiclePlate: 'B 1234 TPM',
-                services: [{
-                    description: 'Service Test',
-                    quantity: 1,
-                    unitPrice: 50000,
-                    subtotal: 50000,
-                }],
-                subtotal: 50000,
-                total: 50000,
-                paid: 50000,
-                paymentMethod: 'TUNAI',
-            };
+            await ensureBLEPrinterReady();
+            await printSettingsService.saveSettings(settings);
 
-            await withTimeout(
-                executeAndroidThermalPrint(testData, {
+            const macAddress = await getSavedBlePrinterMac();
+            const latestSettings = await printSettingsService.getSettings();
+            const paper = getPaperDimensions(latestSettings.paperSize);
+
+            await printBleTestReceipt(
+                {
                     ...latestSettings,
-                    footer: `Test ${latestSettings.paperSize} • ${new Date().toLocaleString('id-ID')}`,
-                }),
-                BLE_TEST_PRINT_TIMEOUT_MS,
-                'Cetak test terlalu lama. Pastikan printer menyala dan sudah dipair, lalu coba lagi.',
+                    footer: `Test ${paper.paperSize} • ${new Date().toLocaleString('id-ID')}`,
+                },
+                macAddress,
             );
 
             setDialogConfig({
                 visible: true,
                 title: 'Test Print Berhasil',
-                message: `Struk test ${latestSettings.paperSize} dikirim ke printer Bluetooth.`,
+                message: `Struk test ${paper.paperSize} dikirim ke printer Bluetooth.`,
                 variant: 'success',
                 type: 'alert',
             });
@@ -453,39 +447,29 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                 className="flex-1 p-6"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 48) }}
-                keyboardShouldPersistTaps="handled"
+                keyboardShouldPersistTaps="always"
+                nestedScrollEnabled
+                removeClippedSubviews={false}
             >
                 {Platform.OS === 'android' ? (
-                    <Card className="p-5 mb-6 rounded-[24px] border border-blue-100 bg-blue-50/40">
+                    <Card
+                        className="p-5 mb-6 rounded-[24px] border border-blue-100 bg-blue-50/40"
+                        style={{ zIndex: 2, elevation: 2 }}
+                    >
                         <Typography variant="h4" weight="bold" className="mb-2">
                             Test Printer Bluetooth
                         </Typography>
                         <Typography variant="caption" className="text-textGray mb-4">
                             Pastikan printer sudah dipair di Pengaturan Pairing Bluetooth sebelum test cetak.
                         </Typography>
-                        <Pressable
+                        <Button
+                            title={testingBlePrint ? 'Mencetak...' : 'Test Print Bluetooth'}
                             onPress={handleMobileBleTestPrint}
-                            hitSlop={12}
-                            style={({ pressed }) => ({
-                                opacity: pressed ? 0.85 : 1,
-                                minHeight: 56,
-                                borderRadius: 16,
-                                borderWidth: 1,
-                                borderColor: '#D1D5DB',
-                                backgroundColor: '#FFFFFF',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                paddingHorizontal: 16,
-                            })}
-                        >
-                            {testingBlePrint ? (
-                                <ActivityIndicator color="#6B7280" />
-                            ) : (
-                                <Typography weight="semibold" className="text-gray-700">
-                                    Test Print Bluetooth
-                                </Typography>
-                            )}
-                        </Pressable>
+                            loading={testingBlePrint}
+                            disabled={testingBlePrint}
+                            variant="outline-neutral"
+                            className="h-14 rounded-2xl"
+                        />
                     </Card>
                 ) : null}
 

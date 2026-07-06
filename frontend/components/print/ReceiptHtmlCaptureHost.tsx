@@ -128,6 +128,7 @@ export function ReceiptHtmlCaptureHost() {
             <WebView
                 source={{ html: rasterHtml, baseUrl: webViewBaseUrl }}
                 style={{ width: paper.widthPx, height: webViewHeight, backgroundColor: '#ffffff' }}
+                pointerEvents="none"
                 onMessage={handleMessage}
                 onError={(event) => handleWebViewError(event.nativeEvent.description || 'WebView gagal render struk.')}
                 onHttpError={(event) => handleWebViewError(`WebView HTTP ${event.nativeEvent.statusCode}`)}
@@ -148,10 +149,10 @@ export function ReceiptHtmlCaptureHost() {
 const styles = StyleSheet.create({
     host: {
         position: 'absolute',
-        left: 0,
+        left: -10000,
         top: 0,
-        opacity: 0.02,
-        zIndex: 9999,
+        opacity: 0,
+        zIndex: -1,
         overflow: 'hidden',
     },
 });

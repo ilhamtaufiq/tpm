@@ -4,7 +4,7 @@ import { getBLEPrinter } from './blePrinter';
 import { getPaperDimensions } from './paperSize';
 import { prepareReceiptAssets } from './prepareReceiptAssets';
 import { generateBleReceiptText } from './generateBleReceiptText';
-import { printBillText } from './blePrintTransport';
+import { printBillTextFireAndForget } from './blePrintTransport';
 
 function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -42,21 +42,13 @@ export async function printBleReceipt(
     await printer.init();
     await printer.connectPrinter(macAddress);
 
-    try {
-        await printBillText(receiptText, {
-            cut: true,
-            beep: false,
-            tailingLine: true,
-            encoding: 'UTF8',
-        });
-        await delay(600);
-    } finally {
-        try {
-            await printer.closeConn();
-        } catch {
-            // ignore
-        }
-    }
+    printBillTextFireAndForget(receiptText, {
+        cut: true,
+        beep: false,
+        tailingLine: true,
+        encoding: 'UTF8',
+    });
+    await delay(2500);
 }
 
 export async function printBleTestReceipt(

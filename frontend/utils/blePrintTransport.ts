@@ -63,3 +63,20 @@ export async function printBillText(text: string, opts?: BleBillOptions): Promis
     const base64 = billTextToBase64(text, opts);
     await printRawBase64(base64);
 }
+
+/**
+ * Same path as the working Bluetooth pairing test: fire printRawData without
+ * waiting for the native callback (some APK builds never invoke it).
+ */
+export function printBillTextFireAndForget(text: string, opts?: BleBillOptions): void {
+    if (!RNBLEPrinter?.printRawData) {
+        throw new Error('Native printRawData tidak tersedia. Rebuild APK setelah update printer.');
+    }
+
+    const base64 = billTextToBase64(text, opts);
+    if (!base64 || base64.length < 8) {
+        throw new Error('Data cetak kosong.');
+    }
+
+    RNBLEPrinter.printRawData(base64, () => {});
+}
