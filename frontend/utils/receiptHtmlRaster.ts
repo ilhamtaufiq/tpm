@@ -73,7 +73,7 @@ export function buildReceiptRasterHtml(
     var binary = '';
     var chunk = 8192;
     for (var i = 0; i < bytes.length; i += chunk) {
-      var slice = bytes.subarray(i, i + chunk);
+      var slice = bytes.slice(i, i + chunk);
       binary += String.fromCharCode.apply(null, slice);
     }
     return btoa(binary);
