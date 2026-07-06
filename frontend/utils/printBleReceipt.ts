@@ -74,7 +74,7 @@ export async function printBleReceipt(
     };
 
     const imageUri = await captureReceiptHtmlToImage(receiptHtml, normalizedSettings);
-    const imagePayload = await buildBleImagePayload(imageUri, paper.bleImageWidthPx);
+    const imagePayload = await buildBleImagePayload(imageUri, paper.paperSize);
 
     try {
         await printer.init();

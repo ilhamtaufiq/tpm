@@ -18,6 +18,18 @@ export interface PaperDimensions {
     logoMaxPx: number;
     /** Printable raster width in dots for BLE thermal image/logo output (203dpi) */
     bleImageWidthPx: number;
+    /** Max raster height in dots — keeps BLE image size bounded per paper width */
+    bleMaxImageHeightPx: number;
+}
+
+export interface BleRasterSpec {
+    paperSize: PaperSize;
+    layoutWidthPx: number;
+    targetWidthPx: number;
+    maxHeightPx: number;
+    captureScale: number;
+    layoutMaxHeightPx: number;
+    jpegQuality: number;
 }
 
 const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
@@ -35,6 +47,7 @@ const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
         qrSizePx: 56,
         logoMaxPx: 64,
         bleImageWidthPx: 384,
+        bleMaxImageHeightPx: 2048,
     },
     '80mm': {
         widthMm: 80,
@@ -49,8 +62,26 @@ const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
         qrSizePx: 80,
         logoMaxPx: 80,
         bleImageWidthPx: 576,
+        bleMaxImageHeightPx: 3072,
     },
 };
+
+/** Thermal raster sizing derived from paper settings (203 dpi dot width). */
+export function getBleRasterSpec(paperSize?: string | null): BleRasterSpec {
+    const paper = getPaperDimensions(paperSize);
+    const captureScale = paper.bleImageWidthPx / paper.widthPx;
+    const layoutMaxHeightPx = Math.ceil(paper.bleMaxImageHeightPx / captureScale) + 48;
+
+    return {
+        paperSize: paper.paperSize,
+        layoutWidthPx: paper.widthPx,
+        targetWidthPx: paper.bleImageWidthPx,
+        maxHeightPx: paper.bleMaxImageHeightPx,
+        captureScale,
+        layoutMaxHeightPx,
+        jpegQuality: 0.85,
+    };
+}
 
 /** Dashed line for plain-text / BLE thermal receipts */
 export function receiptDivider(charWidth: number): string {

@@ -1,4 +1,8 @@
 import * as FileSystem from 'expo-file-system';
+import { getBleRasterSpec } from './paperSize';
+
+/** Soft cap for JPEG file written before BLE print (bytes). */
+const MAX_BLE_IMAGE_FILE_BYTES = 1_500_000;
 
 export function normalizeBleImageUri(uri: string): string {
     if (!uri) return uri;
@@ -11,7 +15,11 @@ export function normalizeBleImageUri(uri: string): string {
     return uri;
 }
 
-export async function buildBleImagePayload(imageUri: string, maxWidth: number): Promise<string> {
+export async function buildBleImagePayload(
+    imageUri: string,
+    paperSize?: string | null,
+): Promise<string> {
+    const raster = getBleRasterSpec(paperSize);
     const normalized = normalizeBleImageUri(imageUri);
     const info = await FileSystem.getInfoAsync(normalized);
 
@@ -24,8 +32,16 @@ export async function buildBleImagePayload(imageUri: string, maxWidth: number): 
         throw new Error('Gambar struk kosong atau rusak setelah render.');
     }
 
+    if (size > MAX_BLE_IMAGE_FILE_BYTES) {
+        throw new Error(
+            `Gambar struk terlalu besar (${Math.round(size / 1024)} KB) untuk kertas ${raster.paperSize}. Kurangi item atau gunakan kertas yang sesuai.`,
+        );
+    }
+
     return JSON.stringify({
         url: normalized,
-        maxWidth,
+        maxWidth: raster.targetWidthPx,
+        maxHeight: raster.maxHeightPx,
+        paperSize: raster.paperSize,
     });
 }

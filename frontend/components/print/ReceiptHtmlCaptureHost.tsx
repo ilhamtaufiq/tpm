@@ -6,11 +6,10 @@ import {
     registerReceiptHtmlCaptureHost,
     ReceiptHtmlCaptureJob,
 } from '../../utils/receiptHtmlCapture';
-import { getPaperDimensions } from '../../utils/paperSize';
+import { getBleRasterSpec, getPaperDimensions } from '../../utils/paperSize';
 import { buildReceiptRasterHtml } from '../../utils/receiptHtmlRaster';
 
 const CAPTURE_TIMEOUT_MS = 45000;
-const CAPTURE_WEBVIEW_HEIGHT = 6000;
 
 export function ReceiptHtmlCaptureHost() {
     const [job, setJob] = useState<ReceiptHtmlCaptureJob | null>(null);
@@ -89,13 +88,15 @@ export function ReceiptHtmlCaptureHost() {
     }
 
     const paper = getPaperDimensions(job.settings.paperSize);
-    const rasterHtml = buildReceiptRasterHtml(job.receiptHtml, paper);
+    const raster = getBleRasterSpec(job.settings.paperSize);
+    const rasterHtml = buildReceiptRasterHtml(job.receiptHtml, job.settings.paperSize);
+    const webViewHeight = raster.layoutMaxHeightPx;
 
     return (
-        <View style={[styles.host, { width: paper.widthPx, height: CAPTURE_WEBVIEW_HEIGHT }]} pointerEvents="none">
+        <View style={[styles.host, { width: paper.widthPx, height: webViewHeight }]} pointerEvents="none">
             <WebView
                 source={{ html: rasterHtml }}
-                style={{ width: paper.widthPx, height: CAPTURE_WEBVIEW_HEIGHT, backgroundColor: '#ffffff' }}
+                style={{ width: paper.widthPx, height: webViewHeight, backgroundColor: '#ffffff' }}
                 onMessage={handleMessage}
                 originWhitelist={['*']}
                 mixedContentMode="always"
