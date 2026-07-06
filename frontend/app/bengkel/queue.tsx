@@ -55,7 +55,8 @@ import {
     isBengkelTransactionVoided,
 } from '../../utils/bengkelTransaction';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
-import { printReceipt, PrintReceiptData } from '../../utils/printReceipt';
+import { printReceipt } from '../../utils/printReceipt';
+import { buildBengkelPrintData } from '../../utils/buildPrintReceiptData';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import {
     buildPublicReceiptShareUrl,
@@ -252,46 +253,12 @@ export default function QueueScreen() {
         return format(date, 'dd MMMM yyyy', { locale: localeID });
     };
 
-    const buildReceiptData = (item: any): PrintReceiptData => ({
-        type: 'bengkel',
-        transactionNumber: item.nomor_transaksi || item.id?.toString() || '-',
-        publicReceiptToken: item.public_receipt_token,
-        antrian: item.nomor_antrian || '-',
-        date: new Date(item.created_at || new Date()),
-        customerName: item.customer_nama || item.nama_customer || '-',
-        cashierName: item.kasir_nama || '-',
-        mechanicName: item.mekanik_nama || '-',
-        status: item.status_bayar || 'Belum Bayar',
-        vehiclePlate: item.nomor_plat,
-        vehicleType: item.jenis_kendaraan,
-        services: (item.detail_services || []).map((s: any) => ({
-            description: s.nama_jasa || s.nama || 'Jasa',
-            quantity: 1,
-            unitPrice: Number(s.harga) || 0,
-            subtotal: Number(s.harga) || 0,
-        })),
-        parts: (item.detail_parts || []).map((p: any) => ({
-            description: p.spare_part_nama || 'Sparepart',
-            quantity: p.qty,
-            unitPrice: Number(p.subtotal) / (p.qty || 1),
-            subtotal: Number(p.subtotal),
-        })),
-        subtotal: item.subtotal || item.total_biaya || item.grand_total || 0,
-        discount: item.diskon || 0,
-        total: item.grand_total || 0,
-        paid: item.jumlah_bayar,
-        change: item.kembalian,
-        paymentMethod: item.metode_bayar || '-',
-        notes: item.catatan,
-        showDiscount: true,
-    });
-
     const handlePrintReceipt = async (item: any) => {
         try {
             setPrinting(true);
             const latestSettings = await printSettingsService.getSettings();
             setPrintSettings(latestSettings);
-            await printReceipt(buildReceiptData(item), latestSettings);
+            await printReceipt(buildBengkelPrintData(item), latestSettings);
             setDialogConfig({
                 visible: true,
                 title: 'Sukses',

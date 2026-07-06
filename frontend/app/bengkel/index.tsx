@@ -52,6 +52,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { formatDistanceToNow, format, isValid, parse } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
+import { buildBengkelPrintData } from '../../utils/buildPrintReceiptData';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
 import {
@@ -458,43 +459,9 @@ export default function BengkelScreen() {
         try {
             setPrinting(true);
 
-            const receiptData: PrintReceiptData = {
-                type: 'bengkel',
-                transactionNumber: item.nomor_transaksi || item.id.toString(),
-                publicReceiptToken: item.public_receipt_token,
-                antrian: item.nomor_antrian || '-',
-                date: new Date(item.created_at || new Date()),
-                customerName: item.customer_nama,
-                cashierName: item.kasir_nama || '-',
-                mechanicName: item.mekanik_nama || '-',
-                status: item.status_bayar || 'Belum Bayar',
-                vehiclePlate: item.nomor_plat,
-                vehicleType: item.jenis_kendaraan,
-                services: (item.detail_services || []).map((s: any) => ({
-                    description: s.nama_jasa || s.nama || 'Jasa',
-                    quantity: 1,
-                    unitPrice: Number(s.harga) || 0,
-                    subtotal: Number(s.harga) || 0
-                })),
-                parts: (item.detail_parts || []).map((p: any) => ({
-                    description: p.spare_part_nama || 'Sparepart',
-                    quantity: p.qty,
-                    unitPrice: Number(p.subtotal) / p.qty,
-                    subtotal: Number(p.subtotal)
-                })),
-                subtotal: item.subtotal || item.total_biaya || item.grand_total,
-                discount: item.diskon || 0,
-                total: item.grand_total,
-                paid: item.jumlah_bayar,
-                change: item.kembalian,
-                paymentMethod: item.metode_bayar || '-',
-                notes: item.catatan,
-                showDiscount: true
-            };
-
             const latestSettings = await printSettingsService.getSettings();
             setPrintSettings(latestSettings);
-            await printReceipt(receiptData, latestSettings);
+            await printReceipt(buildBengkelPrintData(item), latestSettings);
 
             setDialogConfig({
                 visible: true,
@@ -533,37 +500,7 @@ export default function BengkelScreen() {
         try {
             setPrinting(true);
 
-            const receiptData: PrintReceiptData = {
-                type: 'bengkel',
-                transactionNumber: item.nomor_transaksi || item.id.toString(),
-                publicReceiptToken: item.public_receipt_token,
-                antrian: item.nomor_antrian || '-',
-                date: new Date(item.created_at || new Date()),
-                customerName: item.customer_nama,
-                cashierName: item.kasir_nama || '-',
-                mechanicName: item.mekanik_nama || '-',
-                status: item.status_bayar || 'Belum Bayar',
-                vehiclePlate: item.nomor_plat,
-                vehicleType: item.jenis_kendaraan,
-                services: (item.detail_services || []).map((s: any) => ({
-                    description: s.nama_jasa || s.nama || 'Jasa',
-                    quantity: 1,
-                    unitPrice: Number(s.harga) || 0,
-                    subtotal: Number(s.harga) || 0
-                })),
-                parts: (item.detail_parts || []).map((p: any) => ({
-                    description: p.spare_part_nama || 'Sparepart',
-                    quantity: p.qty,
-                    unitPrice: Number(p.subtotal) / p.qty,
-                    subtotal: Number(p.subtotal)
-                })),
-                subtotal: item.total_biaya || item.grand_total,
-                total: item.grand_total,
-                paymentMethod: item.metode_bayar || '-',
-                notes: item.catatan
-            };
-
-            await saveReceiptPDF(receiptData, printSettings);
+            await saveReceiptPDF(buildBengkelPrintData(item), printSettings);
 
             setDialogConfig({
                 visible: true,
@@ -666,36 +603,9 @@ export default function BengkelScreen() {
             setPrinting(true);
 
             const orderSlipData: PrintReceiptData = {
-                type: 'bengkel',
-                transactionNumber: item.nomor_transaksi || item.id.toString(),
-                publicReceiptToken: item.public_receipt_token,
-                antrian: item.nomor_antrian || '-',
-                date: new Date(item.created_at || new Date()),
-                customerName: item.customer_nama,
-                cashierName: item.kasir_nama || '-',
-                mechanicName: item.mekanik_nama || '-',
-                status: item.status_pengerjaan || item.status_bayar || 'ANTRE',
-                vehiclePlate: item.nomor_plat,
-                vehicleType: item.jenis_kendaraan,
-                services: (item.detail_services || []).map((s: any) => ({
-                    description: s.nama_jasa || s.nama || 'Jasa',
-                    quantity: 1,
-                    unitPrice: Number(s.harga) || 0,
-                    subtotal: Number(s.harga) || 0
-                })),
-                parts: (item.detail_parts || []).map((p: any) => ({
-                    description: p.spare_part_nama || 'Sparepart',
-                    quantity: p.qty,
-                    unitPrice: Number(p.subtotal) / p.qty,
-                    subtotal: Number(p.subtotal)
-                })),
-                subtotal: item.subtotal || item.total_biaya || item.grand_total,
-                discount: item.diskon || 0,
-                total: item.grand_total,
+                ...buildBengkelPrintData(item),
                 paid: 0,
                 paymentMethod: 'ORDER SLIP',
-                notes: item.catatan,
-                showDiscount: true
             };
 
             const latestOrderSettings = await printSettingsService.getSettings();

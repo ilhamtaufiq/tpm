@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Tabs } from '../../components/ui/Tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { printBleTestReceipt } from '../../utils/printBleReceipt';
+import { generateReceiptHTML, ensureLogoBase64 } from '../../utils/printReceipt';
 
 export default function PrintSettingsScreen() {
     const [settings, setSettings] = useState<PrintSettings | null>(null);
@@ -265,7 +266,33 @@ export default function PrintSettingsScreen() {
 
             const device = JSON.parse(savedPrinter);
             const latestSettings = await printSettingsService.getSettings();
-            await printBleTestReceipt(latestSettings, device.inner_mac_address);
+            const paper = getPaperDimensions(latestSettings.paperSize);
+            const base64Logo = latestSettings.logoUri
+                ? await ensureLogoBase64(latestSettings.logoUri)
+                : null;
+            const processedSettings = {
+                ...latestSettings,
+                paperSize: paper.paperSize,
+                logoUri: base64Logo,
+            };
+            const testHtml = generateReceiptHTML({
+                type: 'bengkel',
+                transactionNumber: 'TEST-001',
+                date: new Date(),
+                customerName: 'Pelanggan Test',
+                vehiclePlate: 'B 1234 TPM',
+                services: [{
+                    description: 'Service Test',
+                    quantity: 1,
+                    unitPrice: 50000,
+                    subtotal: 50000,
+                }],
+                subtotal: 50000,
+                total: 50000,
+                paid: 50000,
+                paymentMethod: 'TUNAI',
+            }, processedSettings);
+            await printBleTestReceipt(processedSettings, device.inner_mac_address, testHtml);
 
             setDialogConfig({
                 visible: true,

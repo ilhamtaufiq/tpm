@@ -30,6 +30,7 @@ import { AlertProvider } from '../context/AlertContext';
 import { CustomTabBar } from '../components/ui/CustomTabBar';
 import { useRealtimeSync } from '../services/realtime';
 import { usePushNotifications } from '../services/pushNotifications';
+import { ReceiptHtmlCaptureHost } from '../components/print/ReceiptHtmlCaptureHost';
 
 // Configure online manager to listen to NetInfo
 onlineManager.setEventListener((setOnline) => {
@@ -342,6 +343,7 @@ function RootLayoutContent() {
 
     const appContent = (
         <>
+            {Platform.OS === 'android' ? <ReceiptHtmlCaptureHost /> : null}
             <ConnectivityBanner />
             <ErrorBoundary>
                 <BottomSheetModalProvider>

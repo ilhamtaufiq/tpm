@@ -9,11 +9,8 @@ import { printHtmlOnWeb } from './printHtmlWeb';
 import { buildPublicReceiptUrl } from './publicReceiptUrl';
 import { ensureLogoBase64, buildReceiptLogoHtml } from './receiptLogo';
 import { printBleReceipt } from './printBleReceipt';
-import {
-    formatReceiptCurrency,
-    formatReceiptDate,
-    getReceiptSections,
-} from './receiptFormatters';
+import { buildReceiptDocument } from './receiptDocument';
+import { formatReceiptCurrency } from './receiptFormatters';
 
 export { ensureLogoBase64 } from './receiptLogo';
 
@@ -75,6 +72,7 @@ function buildReceiptQrHtml(
 
 export function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): string {
     const paper = getPaperDimensions(settings.paperSize);
+    const doc = buildReceiptDocument(data, settings);
     const paperWidth = `${paper.widthMm}mm`;
     const fsB = paper.fontBase;
     const fsS = paper.fontSmall;
@@ -83,32 +81,27 @@ export function generateReceiptHTML(data: PrintReceiptData, settings: PrintSetti
     const pad = paper.padding;
     const is80mm = paper.paperSize === '80mm';
 
-    const fmt = formatReceiptCurrency;
-    const formatDate = formatReceiptDate;
+    const infoRowsHtml = doc.infoRows.map((row) => `
+        <tr><td style="font-size:${fsB}px;padding:1px 0">${row.label}</td><td style="font-size:${fsB}px;padding:1px 0;text-align:right">${row.value}</td></tr>
+    `).join('');
 
-    const infoRow = (label: string, value: string | number | undefined) => value ? `
-        <tr><td style="font-size:${fsB}px;padding:1px 0">${label}</td><td style="font-size:${fsB}px;padding:1px 0;text-align:right">${value}</td></tr>
-    ` : '';
-
-    const renderItems = (items: PrintReceiptItem[] | undefined, title: string) => {
-        if (!items || items.length === 0) return '';
-        const rows = items.map(i => `
-            <tr><td colspan="2" style="font-size:${fsB}px;padding:1px 0;font-weight:bold">${String(i.description || '-').toUpperCase()}</td></tr>
+    const sectionsHtml = doc.sections.map((section, index) => {
+        const rows = section.items.map((item) => `
+            <tr><td colspan="2" style="font-size:${fsB}px;padding:1px 0;font-weight:bold">${String(item.description || '-').toUpperCase()}</td></tr>
             <tr>
-                <td style="font-size:${fsB}px;padding:1px 0">${i.quantity} x ${fmt(i.unitPrice)}</td>
-                <td style="font-size:${fsB}px;padding:1px 0;text-align:right">${fmt(i.subtotal)}</td>
+                <td style="font-size:${fsB}px;padding:1px 0">${item.quantity} x ${formatReceiptCurrency(item.unitPrice)}</td>
+                <td style="font-size:${fsB}px;padding:1px 0;text-align:right">${formatReceiptCurrency(item.subtotal)}</td>
             </tr>
         `).join('');
-        return `<div style="text-align:center;font-size:${fsB}px;font-weight:bold;padding:2px 0;text-transform:uppercase">--- ${title} ---</div><table style="width:100%;border-collapse:collapse">${rows}</table>`;
-    };
-
-    const { services, parts, servicesTitle } = getReceiptSections(data);
-    const servicesHtml = services.length > 0 ? renderItems(services, servicesTitle) : '';
-    const partsHtml = parts.length > 0 ? renderItems(parts, 'SPAREPART') : '';
+        const divider = index > 0 ? '<div class="divider"></div>' : '';
+        return `${divider}<div style="text-align:center;font-size:${fsB}px;font-weight:bold;padding:2px 0;text-transform:uppercase">--- ${section.title} ---</div><table style="width:100%;border-collapse:collapse">${rows}</table>`;
+    }).join('');
 
     const logoHtml = buildReceiptLogoHtml(settings.logoUri, paper.logoMaxPx);
 
-    const sisa = data.total - (data.paid || 0);
+    const qrHtml = doc.showQr && doc.qrUrl
+        ? buildReceiptQrHtml(data, settings, paper)
+        : '';
 
     return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
@@ -121,29 +114,27 @@ body { font-family:'Courier New',monospace; font-size:${fsB}px; padding:${pad}; 
 table { width:100%; border-collapse:collapse; }
 </style></head><body>
 <div class="center">${logoHtml}</div>
-<div class="center bold" style="font-size:${fsTitle}px">${settings.companyName || 'TIGA PUTRA MOTOR'}</div>
-${settings.header ? `<div class="center" style="font-size:${fsS}px">${settings.header}</div>` : ''}
-<div class="center" style="font-size:${fsS}px">${settings.companyAddress || ''}</div>
-<div class="center" style="font-size:${fsS}px">Telp: ${settings.companyPhone || ''}</div>
+<div class="center bold" style="font-size:${fsTitle}px">${doc.companyName}</div>
+${doc.headerText ? `<div class="center" style="font-size:${fsS}px">${doc.headerText}</div>` : ''}
+${doc.address ? `<div class="center" style="font-size:${fsS}px">${doc.address}</div>` : ''}
+${doc.phone ? `<div class="center" style="font-size:${fsS}px">Telp: ${doc.phone}</div>` : ''}
 <div class="divider"></div>
-<table>${infoRow('No. Nota:', data.transactionNumber)}${infoRow('Tanggal:', formatDate(data.date))}${infoRow('Pelanggan:', data.customerName)}${data.vehiclePlate ? infoRow('No. Polisi:', data.vehiclePlate) : ''}${data.type === 'jasa_angkut' ? infoRow('Asal:', data.origin) + infoRow('Tujuan:', data.destination) + infoRow('Sopir:', data.driverName) : ''}</table>
+<table>${infoRowsHtml}</table>
 <div class="divider"></div>
-${servicesHtml}
-${servicesHtml && partsHtml ? '<div class="divider"></div>' : ''}
-${partsHtml}
+${sectionsHtml}
 <div class="divider"></div>
-<table><tr><td style="font-size:${fsB}px;font-weight:bold">SUBTOTAL</td><td style="font-size:${fsB}px;text-align:right;font-weight:bold">${fmt(data.subtotal)}</td></tr></table>
+<table><tr><td style="font-size:${fsB}px;font-weight:bold">SUBTOTAL</td><td style="font-size:${fsB}px;text-align:right;font-weight:bold">${doc.subtotal}</td></tr></table>
 <div class="divider"></div>
 <table>
-<tr><td style="font-size:${is80mm ? 14 : 12}px;font-weight:bold">TOTAL</td><td style="font-size:${is80mm ? 14 : 12}px;text-align:right;font-weight:bold">${fmt(data.total)}</td></tr>
-${data.discount && data.showDiscount !== false ? `<tr><td style="font-size:${fsB}px">Diskon</td><td style="font-size:${fsB}px;text-align:right">-${fmt(data.discount)}</td></tr>` : ''}
-${data.paid !== undefined ? `<tr><td style="font-size:${fsB}px">Dibayar</td><td style="font-size:${fsB}px;text-align:right">${fmt(data.paid)}</td></tr>` : ''}
-${sisa > 0 ? `<tr><td style="font-size:${fsB}px;color:#EF4444;font-weight:bold">SISA</td><td style="font-size:${fsB}px;text-align:right;color:#EF4444;font-weight:bold">${fmt(sisa)}</td></tr>` : '<tr><td colspan="2" style="text-align:center;font-weight:bold;padding-top:4px">LUNAS</td></tr>'}
-${data.paymentMethod ? `<tr><td style="font-size:${fsS}px">Metode Bayar:</td><td style="font-size:${fsS}px;text-align:right">${String(data.paymentMethod).toUpperCase()}</td></tr>` : ''}
+<tr><td style="font-size:${is80mm ? 14 : 12}px;font-weight:bold">TOTAL</td><td style="font-size:${is80mm ? 14 : 12}px;text-align:right;font-weight:bold">${doc.total}</td></tr>
+${doc.discount ? `<tr><td style="font-size:${fsB}px">Diskon</td><td style="font-size:${fsB}px;text-align:right">-${doc.discount}</td></tr>` : ''}
+${doc.paid ? `<tr><td style="font-size:${fsB}px">Dibayar</td><td style="font-size:${fsB}px;text-align:right">${doc.paid}</td></tr>` : ''}
+${doc.sisa ? `<tr><td style="font-size:${fsB}px;color:#EF4444;font-weight:bold">SISA</td><td style="font-size:${fsB}px;text-align:right;color:#EF4444;font-weight:bold">${doc.sisa}</td></tr>` : '<tr><td colspan="2" style="text-align:center;font-weight:bold;padding-top:4px">LUNAS</td></tr>'}
+${doc.paymentMethod ? `<tr><td style="font-size:${fsS}px">Metode Bayar:</td><td style="font-size:${fsS}px;text-align:right">${doc.paymentMethod}</td></tr>` : ''}
 </table>
 <div class="divider"></div>
-${buildReceiptQrHtml(data, settings, paper)}
-<div class="center" style="font-size:${fsFooter}px">${settings.footer || 'Terima kasih'}</div>
+${qrHtml}
+<div class="center" style="font-size:${fsFooter}px">${doc.footer}</div>
 </body></html>`;
 }
 
@@ -169,7 +160,7 @@ export async function printReceipt(data: PrintReceiptData, settings?: PrintSetti
                     const savedPrinter = await AsyncStorage.getItem('bluetooth_printer');
                     if (savedPrinter) {
                         const device = JSON.parse(savedPrinter);
-                        await printBleReceipt(data, normalizedSettings, device.inner_mac_address);
+                        await printBleReceipt(data, normalizedSettings, device.inner_mac_address, html);
                         return;
                     }
                 } catch (e) {

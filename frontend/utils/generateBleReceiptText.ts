@@ -1,12 +1,10 @@
 import { PrintSettings } from './printSettings';
 import { getPaperDimensions, receiptDivider } from './paperSize';
 import { PrintReceiptData } from './printReceipt';
+import { buildReceiptDocument } from './receiptDocument';
 import {
     formatReceiptCurrency,
-    formatReceiptDate,
-    getReceiptSections,
     padReceiptColumns,
-    ReceiptLineItem,
     wrapCenteredLines,
 } from './receiptFormatters';
 
@@ -22,105 +20,77 @@ function appendRow(lines: string[], left: string, right: string, width: number, 
     lines.push(bold ? `<B>${row}</B>` : row);
 }
 
-function appendItemsSection(
-    lines: string[],
-    items: ReceiptLineItem[] | undefined,
-    title: string,
-    width: number,
-): void {
-    if (!items || items.length === 0) return;
-
-    appendCenter(lines, `--- ${title} ---`, width, true);
-
-    for (const item of items) {
-        lines.push(String(item.description || '-').toUpperCase());
-        appendRow(
-            lines,
-            `${item.quantity} x ${formatReceiptCurrency(item.unitPrice)}`,
-            formatReceiptCurrency(item.subtotal),
-            width,
-        );
-    }
-}
-
 /**
- * Plain-text thermal receipt matching generateReceiptHTML section order and fields.
+ * Plain-text thermal receipt generated from the same document model as generateReceiptHTML.
  */
 export function generateBleReceiptText(data: PrintReceiptData, settings: PrintSettings): string {
     const paper = getPaperDimensions(settings.paperSize);
     const width = paper.charWidth;
     const divider = receiptDivider(width);
+    const doc = buildReceiptDocument(data, settings);
     const lines: string[] = [];
-    const fmt = formatReceiptCurrency;
-    const { services, parts, servicesTitle } = getReceiptSections(data);
-    const sisa = data.total - (data.paid || 0);
 
-    appendCenter(lines, settings.companyName || 'TIGA PUTRA MOTOR', width, true);
+    appendCenter(lines, doc.companyName, width, true);
 
-    if (settings.header?.trim()) {
-        appendCenter(lines, settings.header.trim(), width);
+    if (doc.headerText) {
+        appendCenter(lines, doc.headerText, width);
     }
-    if (settings.companyAddress?.trim()) {
-        appendCenter(lines, settings.companyAddress.trim(), width);
+    if (doc.address) {
+        appendCenter(lines, doc.address, width);
     }
-    if (settings.companyPhone?.trim()) {
-        appendCenter(lines, `Telp: ${settings.companyPhone.trim()}`, width);
+    if (doc.phone) {
+        appendCenter(lines, `Telp: ${doc.phone}`, width);
     }
 
     lines.push(divider);
 
-    const infoRows: Array<[string, string | number | undefined]> = [
-        ['No. Nota:', data.transactionNumber],
-        ['Tanggal:', formatReceiptDate(data.date)],
-        ['Pelanggan:', data.customerName],
-        ['No. Polisi:', data.vehiclePlate],
-    ];
-
-    if (data.type === 'jasa_angkut') {
-        infoRows.push(['Asal:', data.origin], ['Tujuan:', data.destination], ['Sopir:', data.driverName]);
+    for (const row of doc.infoRows) {
+        appendRow(lines, row.label, row.value, width);
     }
 
-    for (const [label, value] of infoRows) {
-        if (value !== undefined && value !== null && String(value).trim() !== '') {
-            appendRow(lines, label, String(value), width);
+    lines.push(divider);
+
+    doc.sections.forEach((section, index) => {
+        if (index > 0) {
+            lines.push(divider);
         }
-    }
+        appendCenter(lines, `--- ${section.title} ---`, width, true);
+        for (const item of section.items) {
+            lines.push(String(item.description || '-').toUpperCase());
+            appendRow(
+                lines,
+                `${item.quantity} x ${formatReceiptCurrency(item.unitPrice)}`,
+                formatReceiptCurrency(item.subtotal),
+                width,
+            );
+        }
+    });
 
     lines.push(divider);
-
-    appendItemsSection(lines, services, servicesTitle, width);
-
-    if (services.length > 0 && parts.length > 0) {
-        lines.push(divider);
-    }
-
-    appendItemsSection(lines, parts, 'SPAREPART', width);
-
+    appendRow(lines, 'SUBTOTAL', doc.subtotal, width, true);
     lines.push(divider);
-    appendRow(lines, 'SUBTOTAL', fmt(data.subtotal), width, true);
-    lines.push(divider);
-    appendRow(lines, 'TOTAL', fmt(data.total), width, true);
+    appendRow(lines, 'TOTAL', doc.total, width, true);
 
-    if (data.discount && data.showDiscount !== false) {
-        appendRow(lines, 'Diskon', `-${fmt(data.discount)}`, width);
+    if (doc.discount) {
+        appendRow(lines, 'Diskon', `-${doc.discount}`, width);
     }
 
-    if (data.paid !== undefined) {
-        appendRow(lines, 'Dibayar', fmt(data.paid), width);
+    if (doc.paid) {
+        appendRow(lines, 'Dibayar', doc.paid, width);
     }
 
-    if (sisa > 0) {
-        appendRow(lines, 'SISA', fmt(sisa), width, true);
+    if (doc.sisa) {
+        appendRow(lines, 'SISA', doc.sisa, width, true);
     } else {
         appendCenter(lines, 'LUNAS', width, true);
     }
 
-    if (data.paymentMethod) {
-        appendRow(lines, 'Metode Bayar:', String(data.paymentMethod).toUpperCase(), width);
+    if (doc.paymentMethod) {
+        appendRow(lines, 'Metode Bayar:', doc.paymentMethod, width);
     }
 
     lines.push(divider);
-    appendCenter(lines, settings.footer || 'Terima kasih', width);
+    appendCenter(lines, doc.footer, width);
 
     return `${lines.join('\n')}\n`;
 }
