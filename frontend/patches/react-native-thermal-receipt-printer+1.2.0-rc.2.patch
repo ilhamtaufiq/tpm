@@ -46,7 +46,7 @@ index 209c18a..18fb257 100644
  
  
 diff --git a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
-index 431c179..2450cff 100644
+index 431c179..24fc854 100644
 --- a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
 +++ b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
 @@ -14,6 +14,7 @@ import com.facebook.react.bridge.ActivityEventListener;
@@ -92,7 +92,7 @@ index 431c179..2450cff 100644
              return printerDevices;
          }
          Set<BluetoothDevice> pairedDevices = getBTAdapter().getBondedDevices();
-@@ -243,7 +251,106 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+@@ -243,7 +251,133 @@ public class BLEPrinterAdapter implements PrinterAdapter{
      
  
      public static Bitmap getBitmapFromURL(String src) {
@@ -111,6 +111,20 @@ index 431c179..2450cff 100644
 +        return Math.max(1, inSampleSize);
 +    }
 +
++    private String resolveCacheFilePath(String cacheFile) {
++        if (cacheFile == null || cacheFile.isEmpty() || mContext == null) {
++            return null;
++        }
++
++        File cache = new File(mContext.getCacheDir(), cacheFile);
++        if (cache.exists() && cache.length() > 0) {
++            return cache.getAbsolutePath();
++        }
++
++        Log.w(LOG_TAG, "resolveCacheFilePath missing: " + cache.getAbsolutePath());
++        return null;
++    }
++
 +    private static String resolveLocalFilePath(String src) {
 +        if (src == null || src.isEmpty()) {
 +            return null;
@@ -118,12 +132,25 @@ index 431c179..2450cff 100644
 +
 +        try {
 +            if (src.startsWith("file://")) {
-+                File file = new File(Uri.parse(src).getPath());
-+                return file.getAbsolutePath();
++                File parsed = new File(Uri.parse(src).getPath());
++                if (parsed.exists() && parsed.length() > 0) {
++                    return parsed.getAbsolutePath();
++                }
++
++                String stripped = src.replaceFirst("^file:/+", "/");
++                if (!stripped.equals(src)) {
++                    File fallback = new File(stripped);
++                    if (fallback.exists() && fallback.length() > 0) {
++                        return fallback.getAbsolutePath();
++                    }
++                }
 +            }
 +
 +            if (src.startsWith("/")) {
-+                return src;
++                File absolute = new File(src);
++                if (absolute.exists() && absolute.length() > 0) {
++                    return src;
++                }
 +            }
 +        } catch (Exception e) {
 +            Log.w(LOG_TAG, "resolveLocalFilePath failed for " + src, e);
@@ -199,7 +226,7 @@ index 431c179..2450cff 100644
              URL url = new URL(src);
              HttpURLConnection connection = (HttpURLConnection) url.openConnection();
              connection.setDoInput(true);
-@@ -256,15 +363,45 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+@@ -256,21 +390,77 @@ public class BLEPrinterAdapter implements PrinterAdapter{
  
              return myBitmap;
          } catch (IOException e) {
@@ -209,6 +236,8 @@ index 431c179..2450cff 100644
          }
      }
  
+-    @Override
+-    public void printImageData(String imageUrl, Callback errorCallback) {
 +    private static Bitmap scaleBitmapToWidth(Bitmap source, int maxWidth) {
 +        if (source == null || maxWidth <= 0) {
 +            return source;
@@ -223,27 +252,99 @@ index 431c179..2450cff 100644
 +        int newHeight = Math.max(1, Math.round((float) height * maxWidth / width));
 +        return Bitmap.createScaledBitmap(source, maxWidth, newHeight, true);
 +    }
-+
-     @Override
-     public void printImageData(String imageUrl, Callback errorCallback) {
+ 
+-        final Bitmap bitmapImage = getBitmapFromURL(imageUrl);
++    private Bitmap decodePrintPayload(String imageUrl) {
++        if (imageUrl == null || imageUrl.trim().isEmpty()) {
++            return null;
++        }
+ 
 +        String source = imageUrl;
 +        int maxWidth = 0;
 +
-+        if (imageUrl != null && imageUrl.trim().startsWith("{")) {
++        if (imageUrl.trim().startsWith("{")) {
 +            try {
 +                JSONObject payload = new JSONObject(imageUrl);
-+                source = payload.optString("url", imageUrl);
 +                maxWidth = payload.optInt("maxWidth", 0);
++
++                String imageBase64 = payload.optString("imageBase64", "");
++                if (!imageBase64.isEmpty()) {
++                    byte[] bytes = Base64.decode(imageBase64, Base64.DEFAULT);
++                    Bitmap decoded = decodeBitmapBytes(bytes);
++                    if (decoded != null) {
++                        return maxWidth > 0 ? scaleBitmapToWidth(decoded, maxWidth) : decoded;
++                    }
++                    Log.w(LOG_TAG, "decodePrintPayload imageBase64 decode failed, bytes=" + bytes.length);
++                }
++
++                String cacheFile = payload.optString("cacheFile", "");
++                String cachePath = resolveCacheFilePath(cacheFile);
++                if (cachePath != null) {
++                    Bitmap decoded = decodeBitmapFile(cachePath);
++                    if (decoded != null) {
++                        return maxWidth > 0 ? scaleBitmapToWidth(decoded, maxWidth) : decoded;
++                    }
++                }
++
++                source = payload.optString("url", imageUrl);
 +            } catch (Exception e) {
-+                Log.w(LOG_TAG, "printImageData payload parse failed", e);
++                Log.w(LOG_TAG, "decodePrintPayload parse failed", e);
 +            }
 +        }
- 
--        final Bitmap bitmapImage = getBitmapFromURL(imageUrl);
++
 +        Bitmap bitmapImage = decodeBitmapSource(source);
 +        if (maxWidth > 0) {
 +            bitmapImage = scaleBitmapToWidth(bitmapImage, maxWidth);
 +        }
- 
++        return bitmapImage;
++    }
++
++    private void sendBitmapToPrinter(Bitmap bitmapImage, Callback errorCallback) {
          if (bitmapImage == null) {
              errorCallback.invoke("image not found");
+             return;
+         }
+-        if(this.mBluetoothSocket == null){
++        if (this.mBluetoothSocket == null) {
+             errorCallback.invoke("bluetooth connection is not built, may be you forgot to connectPrinter");
+             return;
+         }
+@@ -286,18 +476,12 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+             printerOutputStream.write(CENTER_ALIGN);
+ 
+             for (int y = 0; y < pixels.length; y += 24) {
+-                // Like I said before, when done sending data,
+-                // the printer will resume to normal text printing
+                 printerOutputStream.write(SELECT_BIT_IMAGE_MODE);
+-                // Set nL and nH based on the width of the image
+                 printerOutputStream.write(
+                         new byte[] { (byte) (0x00ff & pixels[y].length), (byte) ((0xff00 & pixels[y].length) >> 8) });
+                 for (int x = 0; x < pixels[y].length; x++) {
+-                    // for each stripe, recollect 3 bytes (3 bytes = 24 bits)
+                     printerOutputStream.write(recollectSlice(y, x, pixels));
+                 }
+-
+-                // Do a line feed, if not the printing will resume on the same line
+                 printerOutputStream.write(LINE_FEED);
+             }
+             printerOutputStream.write(SET_LINE_SPACE_32);
+@@ -307,8 +491,19 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+         } catch (IOException e) {
+             Log.e(LOG_TAG, "failed to print data");
+             e.printStackTrace();
++            errorCallback.invoke("failed to print image");
+         }
++    }
+ 
++    @Override
++    public void printImageData(String imageUrl, Callback errorCallback) {
++        Bitmap bitmapImage = decodePrintPayload(imageUrl);
++        if (bitmapImage == null) {
++            Log.w(LOG_TAG, "printImageData could not decode image payload");
++            errorCallback.invoke("image not found");
++            return;
++        }
++        sendBitmapToPrinter(bitmapImage, errorCallback);
+     }
+ 
+ 

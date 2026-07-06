@@ -8,6 +8,8 @@ import { buildBleImagePayload } from './bleReceiptImage';
 
 const RNBLEPrinter = Platform.OS === 'android' ? NativeModules.RNBLEPrinter : null;
 
+const NATIVE_PRINT_SUCCESS_MS = 8000;
+
 function invokeNative(method: 'printQrCode' | 'printImageData', value: string): Promise<void> {
     return new Promise((resolve, reject) => {
         const native = RNBLEPrinter?.[method];
@@ -16,16 +18,25 @@ function invokeNative(method: 'printQrCode' | 'printImageData', value: string): 
             return;
         }
 
-        native(value, (error: string) => {
+        let settled = false;
+        const finish = (error?: string) => {
+            if (settled) return;
+            settled = true;
             if (error) {
                 const message = error === 'image not found'
-                    ? 'Printer tidak dapat membaca gambar struk. Rebuild APK terbaru lalu coba cetak lagi.'
+                    ? 'Printer tidak dapat membaca gambar struk. Pastikan APK sudah rebuild terbaru.'
                     : error;
                 reject(new Error(message));
                 return;
             }
             resolve();
+        };
+
+        native(value, (error: string) => {
+            finish(error || undefined);
         });
+
+        setTimeout(() => finish(), NATIVE_PRINT_SUCCESS_MS);
     });
 }
 

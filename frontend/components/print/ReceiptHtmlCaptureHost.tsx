@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
-import * as FileSystem from 'expo-file-system';
 import {
     registerReceiptHtmlCaptureHost,
     ReceiptHtmlCaptureJob,
@@ -68,14 +67,11 @@ export function ReceiptHtmlCaptureHost() {
             }
 
             const dataUrl = String(payload.data);
-            const isJpeg = dataUrl.includes('image/jpeg');
-            const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '');
-            const fileUri = `${FileSystem.cacheDirectory}tpm_receipt_${Date.now()}.${isJpeg ? 'jpg' : 'png'}`;
-            await FileSystem.writeAsStringAsync(fileUri, base64, {
-                encoding: FileSystem.EncodingType.Base64,
-            });
+            if (!dataUrl.startsWith('data:image/')) {
+                throw new Error('Render struk menghasilkan format gambar tidak valid.');
+            }
 
-            finishJob((resolved) => resolved.resolve(fileUri));
+            finishJob((resolved) => resolved.resolve(dataUrl));
         } catch (error) {
             finishJob((rejected) => {
                 rejected.reject(error instanceof Error ? error : new Error(String(error)));

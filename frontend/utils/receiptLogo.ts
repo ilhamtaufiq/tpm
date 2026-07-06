@@ -240,7 +240,9 @@ export async function prepareBleLogoPayload(
     });
 
     return JSON.stringify({
-        url: fileUri,
+        imageBase64: base64,
+        cacheFile: 'tpm_receipt_logo.png',
+        mime: 'image/png',
         maxWidth: Math.max(64, Math.round(maxWidthPx * 0.55)),
     });
 }

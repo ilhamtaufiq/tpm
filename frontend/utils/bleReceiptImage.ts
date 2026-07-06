@@ -1,47 +1,80 @@
 import * as FileSystem from 'expo-file-system';
 import { getBleRasterSpec } from './paperSize';
 
-/** Soft cap for JPEG file written before BLE print (bytes). */
-const MAX_BLE_IMAGE_FILE_BYTES = 1_500_000;
+/** Max base64 chars sent over RN bridge (~750 KB binary JPEG). */
+const MAX_BLE_IMAGE_BASE64_CHARS = 1_000_000;
 
-export function normalizeBleImageUri(uri: string): string {
-    if (!uri) return uri;
-    if (uri.startsWith('file://') || uri.startsWith('data:')) {
-        return uri;
+function parseDataUrl(dataUrl: string): { mime: string; base64: string } | null {
+    const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) return null;
+    return { mime: match[1], base64: match[2] };
+}
+
+async function readImageSourceAsBase64(imageSource: string): Promise<{ mime: string; base64: string }> {
+    if (imageSource.startsWith('data:')) {
+        const parsed = parseDataUrl(imageSource);
+        if (!parsed) {
+            throw new Error('Format gambar struk tidak valid.');
+        }
+        return parsed;
     }
-    if (uri.startsWith('/')) {
-        return `file://${uri}`;
+
+    let fileUri = imageSource;
+    if (fileUri.startsWith('/') && !fileUri.startsWith('file://')) {
+        fileUri = `file://${fileUri}`;
     }
-    return uri;
+
+    const info = await FileSystem.getInfoAsync(fileUri);
+    if (!info.exists) {
+        throw new Error('Gambar struk tidak ditemukan setelah render.');
+    }
+
+    const base64 = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.Base64,
+    });
+
+    const lower = fileUri.toLowerCase();
+    const mime = lower.endsWith('.png') ? 'image/png' : 'image/jpeg';
+    return { mime, base64 };
 }
 
 export async function buildBleImagePayload(
-    imageUri: string,
+    imageSource: string,
     paperSize?: string | null,
 ): Promise<string> {
     const raster = getBleRasterSpec(paperSize);
-    const normalized = normalizeBleImageUri(imageUri);
-    const info = await FileSystem.getInfoAsync(normalized);
+    const { mime, base64 } = await readImageSourceAsBase64(imageSource);
 
-    if (!info.exists) {
-        throw new Error('Gambar struk tidak ditemukan setelah render. Tutup aplikasi lalu coba cetak lagi.');
-    }
-
-    const size = 'size' in info ? Number(info.size) : 0;
-    if (!size || size < 64) {
+    if (!base64 || base64.length < 64) {
         throw new Error('Gambar struk kosong atau rusak setelah render.');
     }
 
-    if (size > MAX_BLE_IMAGE_FILE_BYTES) {
+    if (base64.length > MAX_BLE_IMAGE_BASE64_CHARS) {
         throw new Error(
-            `Gambar struk terlalu besar (${Math.round(size / 1024)} KB) untuk kertas ${raster.paperSize}. Kurangi item atau gunakan kertas yang sesuai.`,
+            `Gambar struk terlalu besar untuk kertas ${raster.paperSize}. Kurangi item pada struk atau pilih kertas 58mm.`,
         );
     }
 
-    return JSON.stringify({
-        url: normalized,
+    const cacheDir = FileSystem.cacheDirectory;
+    const cacheFile = `tpm_receipt_${Date.now()}.${mime.includes('png') ? 'png' : 'jpg'}`;
+    if (cacheDir) {
+        await FileSystem.writeAsStringAsync(`${cacheDir}${cacheFile}`, base64, {
+            encoding: FileSystem.EncodingType.Base64,
+        });
+    }
+
+    const payload: Record<string, string | number> = {
+        cacheFile,
+        mime,
         maxWidth: raster.targetWidthPx,
         maxHeight: raster.maxHeightPx,
         paperSize: raster.paperSize,
-    });
+    };
+
+    // Prefer inline base64 for reliability; native falls back to cacheFile.
+    if (base64.length <= 900_000) {
+        payload.imageBase64 = base64;
+    }
+
+    return JSON.stringify(payload);
 }
