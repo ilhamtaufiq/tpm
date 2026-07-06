@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import {
     registerReceiptHtmlCaptureHost,
@@ -7,15 +7,16 @@ import {
 } from '../../utils/receiptHtmlCapture';
 import { getBleRasterSpec, getPaperDimensions } from '../../utils/paperSize';
 import { buildReceiptRasterHtml } from '../../utils/receiptHtmlRaster';
-import { getHtml2CanvasScript } from '../../utils/html2canvasBundle';
+import { ensureHtml2CanvasCacheBaseUrl } from '../../utils/html2canvasBundle';
 
 const CAPTURE_TIMEOUT_MS = 45000;
 
 export function ReceiptHtmlCaptureHost() {
     const [job, setJob] = useState<ReceiptHtmlCaptureJob | null>(null);
-    const [html2canvasScript, setHtml2canvasScript] = useState<string | null>(null);
+    const [webViewBaseUrl, setWebViewBaseUrl] = useState<string | null>(null);
     const jobRef = useRef<ReceiptHtmlCaptureJob | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
     const clearCaptureTimeout = () => {
         if (timeoutRef.current) {
@@ -37,14 +38,14 @@ export function ReceiptHtmlCaptureHost() {
     useEffect(() => {
         let cancelled = false;
 
-        getHtml2CanvasScript()
-            .then((script) => {
+        ensureHtml2CanvasCacheBaseUrl()
+            .then((baseUrl) => {
                 if (!cancelled) {
-                    setHtml2canvasScript(script);
+                    setWebViewBaseUrl(baseUrl);
                 }
             })
             .catch((error) => {
-                console.warn('[Print] html2canvas bundle load failed:', error);
+                console.warn('[Print] html2canvas cache setup failed:', error);
             });
 
         return () => {
@@ -53,7 +54,7 @@ export function ReceiptHtmlCaptureHost() {
     }, []);
 
     useEffect(() => {
-        if (!html2canvasScript) {
+        if (!webViewBaseUrl) {
             return undefined;
         }
 
@@ -73,7 +74,7 @@ export function ReceiptHtmlCaptureHost() {
             registerReceiptHtmlCaptureHost(null);
             clearCaptureTimeout();
         };
-    }, [html2canvasScript]);
+    }, [webViewBaseUrl]);
 
     const handleMessage = async (event: WebViewMessageEvent) => {
         const current = jobRef.current;
@@ -86,16 +87,24 @@ export function ReceiptHtmlCaptureHost() {
                 return;
             }
 
-            if (!payload?.ok || !payload?.escPosBase64) {
+            if (!payload?.ok || !payload?.imageBase64) {
                 throw new Error(payload?.error || 'Gagal render struk');
             }
 
-            const escPosBase64 = String(payload.escPosBase64);
-            if (escPosBase64.length < 32) {
-                throw new Error('Data printer struk kosong.');
+            const imageBase64 = String(payload.imageBase64);
+            if (imageBase64.length < 64) {
+                throw new Error('Data gambar struk kosong.');
             }
 
-            finishJob((resolved) => resolved.resolve(escPosBase64));
+            const raster = getBleRasterSpec(current.settings.paperSize);
+            const printPayload = JSON.stringify({
+                imageBase64,
+                maxWidth: raster.targetWidthPx,
+                maxHeight: raster.maxHeightPx,
+                paperSize: raster.paperSize,
+            });
+
+            finishJob((resolved) => resolved.resolve(printPayload));
         } catch (error) {
             finishJob((rejected) => {
                 rejected.reject(error instanceof Error ? error : new Error(String(error)));
@@ -103,27 +112,42 @@ export function ReceiptHtmlCaptureHost() {
         }
     };
 
-    if (!job || !html2canvasScript) {
+    const handleWebViewError = (description: string) => {
+        finishJob((rejected) => {
+            rejected.reject(new Error(description));
+        });
+    };
+
+    if (!job || !webViewBaseUrl) {
         return null;
     }
 
     const paper = getPaperDimensions(job.settings.paperSize);
     const raster = getBleRasterSpec(job.settings.paperSize);
-    const rasterHtml = buildReceiptRasterHtml(job.receiptHtml, job.settings.paperSize, html2canvasScript);
+    const rasterHtml = buildReceiptRasterHtml(job.receiptHtml, job.settings.paperSize);
     const webViewHeight = raster.layoutMaxHeightPx;
 
     return (
-        <View style={[styles.host, { width: paper.widthPx, height: webViewHeight }]} pointerEvents="none">
+        <View
+            style={[styles.host, { width: paper.widthPx, height: webViewHeight }]}
+            pointerEvents="none"
+            collapsable={false}
+        >
             <WebView
-                source={{ html: rasterHtml }}
+                source={{ html: rasterHtml, baseUrl: webViewBaseUrl }}
                 style={{ width: paper.widthPx, height: webViewHeight, backgroundColor: '#ffffff' }}
                 onMessage={handleMessage}
+                onError={(event) => handleWebViewError(event.nativeEvent.description || 'WebView gagal render struk.')}
+                onHttpError={(event) => handleWebViewError(`WebView HTTP ${event.nativeEvent.statusCode}`)}
                 originWhitelist={['*']}
                 mixedContentMode="always"
                 javaScriptEnabled
                 domStorageEnabled
+                allowFileAccess
+                allowUniversalAccessFromFileURLs
                 scrollEnabled={false}
                 setBuiltInZoomEnabled={false}
+                androidLayerType={Platform.OS === 'android' ? 'hardware' : undefined}
             />
         </View>
     );
@@ -132,10 +156,10 @@ export function ReceiptHtmlCaptureHost() {
 const styles = StyleSheet.create({
     host: {
         position: 'absolute',
-        left: -5000,
+        left: 0,
         top: 0,
         opacity: 0.02,
-        zIndex: -1,
+        zIndex: 9999,
         overflow: 'hidden',
     },
 });

@@ -61,7 +61,7 @@ async function cutBlePaper(): Promise<void> {
 }
 
 /**
- * Print receipt on BLE thermal: HTML → ESC/POS raster via WebView → printRawData.
+ * Print receipt on BLE thermal: HTML → JPEG raster via WebView → printImageData.
  */
 export async function printBleReceipt(
     _data: PrintReceiptData,
@@ -80,15 +80,15 @@ export async function printBleReceipt(
         paperSize: paper.paperSize,
     };
 
-    const escPosBase64 = await captureReceiptHtmlToImage(receiptHtml, normalizedSettings);
-    if (!escPosBase64 || escPosBase64.length < 32) {
+    const imagePayload = await captureReceiptHtmlToImage(receiptHtml, normalizedSettings);
+    if (!imagePayload || imagePayload.length < 64) {
         throw new Error('Gagal render struk visual untuk printer thermal.');
     }
 
     try {
         await printer.init();
         await printer.connectPrinter(macAddress);
-        await invokeNative('printRawData', escPosBase64);
+        await invokeNative('printImageData', imagePayload);
         await delay(300);
         await cutBlePaper();
     } finally {
