@@ -50,7 +50,22 @@ export function buildReceiptRasterHtml(fullReceiptHtml: string, paper: PaperDime
       scrollX: 0,
       scrollY: 0,
     }).then(function (canvas) {
-      send({ ok: true, data: canvas.toDataURL('image/png', 1.0), error: null });
+      var maxHeight = 4096;
+      var output = canvas;
+      if (canvas.height > maxHeight) {
+        var ratio = maxHeight / canvas.height;
+        var resized = document.createElement('canvas');
+        resized.width = Math.max(1, Math.round(canvas.width * ratio));
+        resized.height = maxHeight;
+        var ctx = resized.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, resized.width, resized.height);
+          ctx.drawImage(canvas, 0, 0, resized.width, resized.height);
+          output = resized;
+        }
+      }
+      send({ ok: true, data: output.toDataURL('image/jpeg', 0.9), error: null });
     }).catch(function (err) {
       send({ ok: false, data: null, error: String(err) });
     });

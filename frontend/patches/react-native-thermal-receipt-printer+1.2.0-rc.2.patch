@@ -46,10 +46,18 @@ index 209c18a..18fb257 100644
  
  
 diff --git a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
-index 431c179..95e8df8 100644
+index 431c179..2450cff 100644
 --- a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
 +++ b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
-@@ -26,6 +26,7 @@ import java.util.UUID;
+@@ -14,6 +14,7 @@ import com.facebook.react.bridge.ActivityEventListener;
+ import com.facebook.react.bridge.Callback;
+ import com.facebook.react.bridge.ReactApplicationContext;
+ 
++import java.io.File;
+ import java.io.IOException;
+ import java.io.OutputStream;
+ import java.util.ArrayList;
+@@ -26,6 +27,7 @@ import java.util.UUID;
  import android.content.Context;
  import android.graphics.Bitmap;
  import android.graphics.Color;
@@ -57,7 +65,7 @@ index 431c179..95e8df8 100644
  import android.net.wifi.WifiManager;
  import android.os.Build;
  import android.util.Base64;
-@@ -43,6 +44,8 @@ import com.facebook.react.bridge.Callback;
+@@ -43,6 +45,8 @@ import com.facebook.react.bridge.Callback;
  import com.facebook.react.bridge.ReactApplicationContext;
  import com.facebook.react.bridge.WritableArray;
  import com.facebook.react.bridge.WritableMap;
@@ -66,7 +74,7 @@ index 431c179..95e8df8 100644
  import com.facebook.react.modules.core.DeviceEventManagerModule;
  import com.google.zxing.qrcode.QRCodeWriter;
  import com.google.zxing.qrcode.encoder.ByteMatrix;
-@@ -132,11 +135,15 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+@@ -132,11 +136,15 @@ public class BLEPrinterAdapter implements PrinterAdapter{
          BluetoothAdapter bluetoothAdapter = getBTAdapter();
          List<PrinterDevice> printerDevices = new ArrayList<>();
          if(bluetoothAdapter == null) {
@@ -84,11 +92,88 @@ index 431c179..95e8df8 100644
              return printerDevices;
          }
          Set<BluetoothDevice> pairedDevices = getBTAdapter().getBondedDevices();
-@@ -243,7 +250,36 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+@@ -243,7 +251,106 @@ public class BLEPrinterAdapter implements PrinterAdapter{
      
  
      public static Bitmap getBitmapFromURL(String src) {
 +        return decodeBitmapSource(src);
++    }
++
++    private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
++        int width = options.outWidth;
++        int height = options.outHeight;
++        int inSampleSize = 1;
++
++        while (width / inSampleSize > reqWidth || height / inSampleSize > reqHeight) {
++            inSampleSize *= 2;
++        }
++
++        return Math.max(1, inSampleSize);
++    }
++
++    private static String resolveLocalFilePath(String src) {
++        if (src == null || src.isEmpty()) {
++            return null;
++        }
++
++        try {
++            if (src.startsWith("file://")) {
++                File file = new File(Uri.parse(src).getPath());
++                return file.getAbsolutePath();
++            }
++
++            if (src.startsWith("/")) {
++                return src;
++            }
++        } catch (Exception e) {
++            Log.w(LOG_TAG, "resolveLocalFilePath failed for " + src, e);
++        }
++
++        return null;
++    }
++
++    private static Bitmap decodeBitmapBytes(byte[] bytes) {
++        if (bytes == null || bytes.length == 0) {
++            return null;
++        }
++
++        BitmapFactory.Options bounds = new BitmapFactory.Options();
++        bounds.inJustDecodeBounds = true;
++        BitmapFactory.decodeByteArray(bytes, 0, bytes.length, bounds);
++        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
++            Log.w(LOG_TAG, "decodeBitmapBytes invalid bounds");
++            return null;
++        }
++
++        BitmapFactory.Options options = new BitmapFactory.Options();
++        options.inPreferredConfig = Bitmap.Config.RGB_565;
++        options.inSampleSize = calculateInSampleSize(bounds, 640, 4096);
++        return BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
++    }
++
++    private static Bitmap decodeBitmapFile(String path) {
++        File file = new File(path);
++        if (!file.exists() || file.length() == 0) {
++            Log.w(LOG_TAG, "decodeBitmapFile missing or empty: " + path);
++            return null;
++        }
++
++        BitmapFactory.Options bounds = new BitmapFactory.Options();
++        bounds.inJustDecodeBounds = true;
++        BitmapFactory.decodeFile(path, bounds);
++        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
++            Log.w(LOG_TAG, "decodeBitmapFile invalid bounds: " + path + " size=" + file.length());
++            return null;
++        }
++
++        BitmapFactory.Options options = new BitmapFactory.Options();
++        options.inPreferredConfig = Bitmap.Config.RGB_565;
++        options.inSampleSize = calculateInSampleSize(bounds, 640, 4096);
++        Bitmap bitmap = BitmapFactory.decodeFile(path, options);
++        if (bitmap == null) {
++            Log.w(LOG_TAG, "decodeBitmapFile decode returned null: " + path + " size=" + file.length());
++        }
++        return bitmap;
 +    }
 +
 +    public static Bitmap decodeBitmapSource(String src) {
@@ -103,30 +188,23 @@ index 431c179..95e8df8 100644
 +                    return null;
 +                }
 +                byte[] bytes = Base64.decode(src.substring(comma + 1), Base64.DEFAULT);
-+                return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
++                return decodeBitmapBytes(bytes);
 +            }
 +
-+            if (src.startsWith("file://")) {
-+                String path = Uri.parse(src).getPath();
-+                if (path == null) {
-+                    return null;
-+                }
-+                return BitmapFactory.decodeFile(path);
-+            }
-+
-+            if (src.startsWith("/")) {
-+                return BitmapFactory.decodeFile(src);
++            String localPath = resolveLocalFilePath(src);
++            if (localPath != null) {
++                return decodeBitmapFile(localPath);
 +            }
 +
              URL url = new URL(src);
              HttpURLConnection connection = (HttpURLConnection) url.openConnection();
              connection.setDoInput(true);
-@@ -256,15 +292,45 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+@@ -256,15 +363,45 @@ public class BLEPrinterAdapter implements PrinterAdapter{
  
              return myBitmap;
          } catch (IOException e) {
 -            // Log exception
-+            Log.w(LOG_TAG, "decodeBitmapSource failed", e);
++            Log.w(LOG_TAG, "decodeBitmapSource failed for " + src, e);
              return null;
          }
      }

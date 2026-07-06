@@ -4,6 +4,7 @@ import { PrintSettings } from './printSettings';
 import { getBLEPrinter } from './blePrinter';
 import { getPaperDimensions } from './paperSize';
 import { captureReceiptHtmlToImage } from './receiptHtmlCapture';
+import { buildBleImagePayload } from './bleReceiptImage';
 
 const RNBLEPrinter = Platform.OS === 'android' ? NativeModules.RNBLEPrinter : null;
 
@@ -17,7 +18,10 @@ function invokeNative(method: 'printQrCode' | 'printImageData', value: string): 
 
         native(value, (error: string) => {
             if (error) {
-                reject(new Error(error));
+                const message = error === 'image not found'
+                    ? 'Printer tidak dapat membaca gambar struk. Rebuild APK terbaru lalu coba cetak lagi.'
+                    : error;
+                reject(new Error(message));
                 return;
             }
             resolve();
@@ -70,10 +74,7 @@ export async function printBleReceipt(
     };
 
     const imageUri = await captureReceiptHtmlToImage(receiptHtml, normalizedSettings);
-    const imagePayload = JSON.stringify({
-        url: imageUri,
-        maxWidth: paper.bleImageWidthPx,
-    });
+    const imagePayload = await buildBleImagePayload(imageUri, paper.bleImageWidthPx);
 
     try {
         await printer.init();

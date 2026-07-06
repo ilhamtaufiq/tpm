@@ -68,8 +68,10 @@ export function ReceiptHtmlCaptureHost() {
                 throw new Error(payload?.error || 'Gagal render struk');
             }
 
-            const base64 = String(payload.data).replace(/^data:image\/\w+;base64,/, '');
-            const fileUri = `${FileSystem.cacheDirectory}tpm_receipt_${Date.now()}.png`;
+            const dataUrl = String(payload.data);
+            const isJpeg = dataUrl.includes('image/jpeg');
+            const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+            const fileUri = `${FileSystem.cacheDirectory}tpm_receipt_${Date.now()}.${isJpeg ? 'jpg' : 'png'}`;
             await FileSystem.writeAsStringAsync(fileUri, base64, {
                 encoding: FileSystem.EncodingType.Base64,
             });
