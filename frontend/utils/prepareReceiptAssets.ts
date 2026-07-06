@@ -10,9 +10,15 @@ export interface PreparedReceiptAssets {
     qrImageDataUrl: string | null;
 }
 
+export interface PrepareReceiptAssetsOptions {
+    /** Skip network QR download — use for fast BLE text receipts. */
+    skipQrImage?: boolean;
+}
+
 export async function prepareReceiptAssets(
     data: PrintReceiptData,
     settings?: PrintSettings,
+    options?: PrepareReceiptAssetsOptions,
 ): Promise<PreparedReceiptAssets> {
     const activeSettings = settings ?? await printSettingsService.getSettings();
     const paper = getPaperDimensions(activeSettings.paperSize);
@@ -28,7 +34,7 @@ export async function prepareReceiptAssets(
     };
 
     let qrImageDataUrl: string | null = null;
-    if (Platform.OS === 'android' && processedSettings.showQRCode) {
+    if (!options?.skipQrImage && Platform.OS === 'android' && processedSettings.showQRCode) {
         const doc = buildReceiptDocument(data, processedSettings);
         if (doc.showQr && doc.qrUrl) {
             const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${paper.qrSizePx}x${paper.qrSizePx}&data=${encodeURIComponent(doc.qrUrl)}`;

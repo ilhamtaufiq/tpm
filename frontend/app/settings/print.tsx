@@ -17,7 +17,7 @@ import { Tabs } from '../../components/ui/Tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeAndroidThermalPrint } from '../../utils/androidThermalPrint';
 
-const BLE_TEST_PRINT_TIMEOUT_MS = 45000;
+const BLE_TEST_PRINT_TIMEOUT_MS = 20000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -453,7 +453,42 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                 className="flex-1 p-6"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 48) }}
+                keyboardShouldPersistTaps="handled"
             >
+                {Platform.OS === 'android' ? (
+                    <Card className="p-5 mb-6 rounded-[24px] border border-blue-100 bg-blue-50/40">
+                        <Typography variant="h4" weight="bold" className="mb-2">
+                            Test Printer Bluetooth
+                        </Typography>
+                        <Typography variant="caption" className="text-textGray mb-4">
+                            Pastikan printer sudah dipair di Pengaturan Pairing Bluetooth sebelum test cetak.
+                        </Typography>
+                        <Pressable
+                            onPress={handleMobileBleTestPrint}
+                            hitSlop={12}
+                            style={({ pressed }) => ({
+                                opacity: pressed ? 0.85 : 1,
+                                minHeight: 56,
+                                borderRadius: 16,
+                                borderWidth: 1,
+                                borderColor: '#D1D5DB',
+                                backgroundColor: '#FFFFFF',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                paddingHorizontal: 16,
+                            })}
+                        >
+                            {testingBlePrint ? (
+                                <ActivityIndicator color="#6B7280" />
+                            ) : (
+                                <Typography weight="semibold" className="text-gray-700">
+                                    Test Print Bluetooth
+                                </Typography>
+                            )}
+                        </Pressable>
+                    </Card>
+                ) : null}
+
                 {/* Company Info */}
                 <Card className="p-6 mb-6 rounded-[24px]">
                     <Typography variant="h4" weight="bold" className="mb-4">
@@ -702,16 +737,6 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                         </Typography>
                     </View>
 
-                    {Platform.OS === 'android' ? (
-                        <View className="mt-4">
-                            <Button
-                                title={testingBlePrint ? 'Mencetak...' : 'Test Print Bluetooth'}
-                                onPress={handleMobileBleTestPrint}
-                                variant="outline-neutral"
-                                className="h-14 rounded-2xl"
-                            />
-                        </View>
-                    ) : null}
                 </Card>
 
                 {/* Action Buttons */}

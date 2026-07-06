@@ -1,257 +1,18 @@
-import * as FileSystem from 'expo-file-system';
-import { NativeModules, Platform } from 'react-native';
 import { PrintReceiptData } from './printReceipt';
 import { PrintSettings } from './printSettings';
 import { getBLEPrinter } from './blePrinter';
 import { getPaperDimensions } from './paperSize';
-import { captureReceiptForBle } from './receiptCapture';
-import { captureReceiptHtmlToEscPos } from './receiptHtmlCapture';
-import { prepareReceiptHtml } from './prepareReceiptHtml';
-import { buildBleCacheOnlyPayload } from './bleReceiptImage';
-
-const RNBLEPrinter = Platform.OS === 'android' ? NativeModules.RNBLEPrinter : null;
-
-const NATIVE_IMAGE_PRINT_TIMEOUT_MS = 30000;
-const NATIVE_RAW_PRINT_TIMEOUT_MS = 20000;
-
-function invokeNative(
-    method: 'printRawData' | 'printQrCode' | 'printImageData',
-    value: string,
-): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const native = RNBLEPrinter?.[method];
-        if (!native) {
-            reject(new Error(`Native printer method "${method}" tidak tersedia. Rebuild aplikasi setelah update printer.`));
-            return;
-        }
-
-        let settled = false;
-        const finish = (error?: string) => {
-            if (settled) return;
-            settled = true;
-            if (error) {
-                reject(new Error(error));
-                return;
-            }
-            resolve();
-        };
-
-        native(value, (error: string) => {
-            finish(error || undefined);
-        });
-
-        const timeoutMs = method === 'printRawData'
-            ? NATIVE_RAW_PRINT_TIMEOUT_MS
-            : NATIVE_IMAGE_PRINT_TIMEOUT_MS;
-
-        setTimeout(() => {
-            if (!settled) {
-                finish('Printer tidak merespons. Periksa koneksi Bluetooth dan coba lagi.');
-            }
-        }, timeoutMs);
-    });
-}
+import { prepareReceiptAssets } from './prepareReceiptAssets';
+import { generateBleReceiptText } from './generateBleReceiptText';
+import { printBillText } from './blePrintTransport';
 
 function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function cutBlePaper(): Promise<void> {
-    const rawPrinter = Platform.OS === 'android'
-        ? require('react-native-thermal-receipt-printer').BLEPrinter
-        : null;
-
-    if (!rawPrinter?.printBill) {
-        return;
-    }
-
-    await new Promise<void>((resolve) => {
-        rawPrinter.printBill('\n\n', {
-            beep: false,
-            cut: true,
-            tailingLine: false,
-            encoding: 'UTF8',
-        });
-        setTimeout(resolve, 500);
-    });
-}
-
-function isImageNotFoundError(error: unknown): boolean {
-    const message = error instanceof Error ? error.message : String(error);
-    return message.toLowerCase().includes('image not found');
-}
-
-async function buildBase64OnlyPayload(imagePayload: string): Promise<string | null> {
-    try {
-        const parsed = JSON.parse(imagePayload) as {
-            imageBase64?: string;
-            cacheFile?: string;
-            mime?: string;
-            maxWidth?: number;
-            maxHeight?: number;
-            paperSize?: string;
-            url?: string;
-            path?: string;
-            absoluteCachePath?: string;
-        };
-
-        let base64 = parsed.imageBase64;
-        if (!base64 && parsed.cacheFile && FileSystem.cacheDirectory) {
-            const cachePath = `${FileSystem.cacheDirectory}${parsed.cacheFile}`;
-            const info = await FileSystem.getInfoAsync(cachePath);
-            if (info.exists) {
-                base64 = await FileSystem.readAsStringAsync(cachePath, {
-                    encoding: FileSystem.EncodingType.Base64,
-                });
-            }
-        }
-
-        if (!base64 || base64.length < 64) {
-            return null;
-        }
-
-        return JSON.stringify({
-            imageBase64: base64,
-            mime: parsed.mime ?? 'image/jpeg',
-            maxWidth: parsed.maxWidth,
-            maxHeight: parsed.maxHeight,
-            paperSize: parsed.paperSize,
-            url: parsed.url,
-            path: parsed.path ?? parsed.absoluteCachePath,
-            absoluteCachePath: parsed.absoluteCachePath,
-        });
-    } catch {
-        return null;
-    }
-}
-
-function buildPlainFilePathAttempts(imagePayload: string): string[] {
-    try {
-        const parsed = JSON.parse(imagePayload) as {
-            absoluteCachePath?: string;
-            path?: string;
-            url?: string;
-            cacheFile?: string;
-        };
-
-        const attempts: string[] = [];
-        if (parsed.absoluteCachePath) attempts.push(parsed.absoluteCachePath);
-        if (parsed.path) attempts.push(parsed.path);
-        if (parsed.url) {
-            attempts.push(parsed.url.replace(/^file:\/\//, ''));
-            attempts.push(parsed.url);
-        }
-        if (parsed.cacheFile && FileSystem.cacheDirectory) {
-            attempts.push(`${FileSystem.cacheDirectory}${parsed.cacheFile}`);
-        }
-        return [...new Set(attempts.filter(Boolean))];
-    } catch {
-        return [];
-    }
-}
-
-async function printImagePayload(imagePayload: string): Promise<void> {
-    const attempts: string[] = [];
-
-    for (const filePath of buildPlainFilePathAttempts(imagePayload)) {
-        attempts.push(filePath);
-        if (filePath.startsWith('/')) {
-            attempts.push(`file://${filePath}`);
-        }
-    }
-
-    const cacheOnlyPayload = buildBleCacheOnlyPayload(imagePayload);
-    if (cacheOnlyPayload) {
-        attempts.push(cacheOnlyPayload);
-    }
-
-    attempts.push(imagePayload);
-
-    const base64OnlyPayload = await buildBase64OnlyPayload(imagePayload);
-    if (base64OnlyPayload) {
-        attempts.push(base64OnlyPayload);
-    }
-
-    let lastError: Error | null = null;
-    for (const payload of attempts) {
-        try {
-            await invokeNative('printImageData', payload);
-            return;
-        } catch (error) {
-            lastError = error instanceof Error ? error : new Error(String(error));
-            if (!isImageNotFoundError(lastError)) {
-                throw lastError;
-            }
-        }
-    }
-
-    throw lastError ?? new Error('Printer tidak dapat membaca gambar struk (image not found).');
-}
-
-async function captureEscPosFromWebView(
-    data: PrintReceiptData,
-    settings: PrintSettings,
-): Promise<string> {
-    const prepared = await prepareReceiptHtml(data, settings);
-    const escPosBase64 = await captureReceiptHtmlToEscPos(prepared.html, prepared.settings);
-
-    if (!escPosBase64 || escPosBase64.length < 32) {
-        throw new Error('Data ESC/POS struk kosong setelah render WebView.');
-    }
-
-    return escPosBase64;
-}
-
-async function captureEscPosFromNativeView(
-    data: PrintReceiptData,
-    settings: PrintSettings,
-    qrImageDataUrl: string | null,
-): Promise<string> {
-    const imagePayload = await captureReceiptForBle(data, settings, qrImageDataUrl);
-    if (!imagePayload || imagePayload.length < 32) {
-        throw new Error('Gagal render struk visual untuk printer thermal.');
-    }
-    return imagePayload;
-}
-
-async function printEscPosBase64(escPosBase64: string): Promise<void> {
-    await invokeNative('printRawData', escPosBase64);
-}
-
-async function printReceiptRaster(
-    data: PrintReceiptData,
-    settings: PrintSettings,
-): Promise<void> {
-    let webViewError: Error | null = null;
-
-    try {
-        const escPosBase64 = await captureEscPosFromWebView(data, settings);
-        await printEscPosBase64(escPosBase64);
-        return;
-    } catch (error) {
-        webViewError = error instanceof Error ? error : new Error(String(error));
-        console.warn('[Print] WebView ESC/POS gagal, fallback native view-shot:', webViewError.message);
-    }
-
-    const prepared = await prepareReceiptHtml(data, settings);
-    const imagePayload = await captureEscPosFromNativeView(
-        data,
-        prepared.settings,
-        prepared.qrImageDataUrl,
-    );
-
-    try {
-        await printImagePayload(imagePayload);
-    } catch (nativeError) {
-        const nativeMessage = nativeError instanceof Error ? nativeError.message : String(nativeError);
-        throw new Error(
-            `Gagal cetak struk.\nWebView: ${webViewError?.message ?? 'unknown'}\nNative: ${nativeMessage}`,
-        );
-    }
-}
-
 /**
- * Android BLE: QZ-matching HTML → WebView/html2canvas → ESC/POS printRawData (primary).
+ * Android BLE thermal print using the same printBill/printRawData path as the
+ * working Bluetooth pairing test (EPToolkit tagged text → ESC/POS bytes).
  */
 export async function printBleReceipt(
     data: PrintReceiptData,
@@ -269,12 +30,26 @@ export async function printBleReceipt(
         paperSize: paper.paperSize,
     };
 
+    const { settings: preparedSettings } = await prepareReceiptAssets(data, normalizedSettings, {
+        skipQrImage: true,
+    });
+
+    const receiptText = generateBleReceiptText(data, preparedSettings);
+    if (!receiptText || receiptText.trim().length < 8) {
+        throw new Error('Struk kosong. Periksa pengaturan cetak.');
+    }
+
+    await printer.init();
+    await printer.connectPrinter(macAddress);
+
     try {
-        await printer.init();
-        await printer.connectPrinter(macAddress);
-        await printReceiptRaster(data, normalizedSettings);
-        await delay(500);
-        await cutBlePaper();
+        await printBillText(receiptText, {
+            cut: true,
+            beep: false,
+            tailingLine: true,
+            encoding: 'UTF8',
+        });
+        await delay(600);
     } finally {
         try {
             await printer.closeConn();

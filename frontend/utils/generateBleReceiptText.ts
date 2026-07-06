@@ -90,6 +90,13 @@ export function generateBleReceiptText(data: PrintReceiptData, settings: PrintSe
     }
 
     lines.push(divider);
+
+    if (doc.showQr && doc.qrUrl) {
+        appendCenter(lines, doc.qrCaption, width);
+        appendCenter(lines, doc.qrUrl, width);
+        lines.push(divider);
+    }
+
     appendCenter(lines, doc.footer, width);
 
     return `${lines.join('\n')}\n`;

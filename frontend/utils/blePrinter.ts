@@ -11,7 +11,8 @@ type BLEPrinterModule = {
     getDeviceList: () => Promise<BLEPrinterDevice[]>;
     connectPrinter: (mac: string) => Promise<void>;
     closeConn: () => Promise<void>;
-    printText: (text: string) => Promise<void>;
+    printText: (text: string) => void;
+    printBill: (text: string, opts?: Record<string, unknown>) => void;
 };
 
 let rawBlePrinter: BLEPrinterModule | null | undefined;
@@ -135,9 +136,15 @@ export function getBLEPrinter(): BLEPrinterModule | null {
             await readyPrinter.closeConn();
             initPromise = null;
         },
-        printText: async (text: string) => {
-            const readyPrinter = await ensureBLEPrinterReady();
-            await readyPrinter.printText(text);
+        printText: (text: string) => {
+            void ensureBLEPrinterReady().then((readyPrinter) => {
+                readyPrinter.printText(text);
+            });
+        },
+        printBill: (text: string, opts?: Record<string, unknown>) => {
+            void ensureBLEPrinterReady().then((readyPrinter) => {
+                readyPrinter.printBill(text, opts);
+            });
         },
     };
 }
