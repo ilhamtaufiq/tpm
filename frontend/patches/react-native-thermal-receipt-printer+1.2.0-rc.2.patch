@@ -1,0 +1,69 @@
+diff --git a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/RNBLEPrinterModule.java b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/RNBLEPrinterModule.java
+index 209c18a..18fb257 100644
+--- a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/RNBLEPrinterModule.java
++++ b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/RNBLEPrinterModule.java
+@@ -1,5 +1,6 @@
+ package com.pinmi.react.printer;
+ 
++import android.bluetooth.BluetoothAdapter;
+ import android.util.Log;
+ 
+ import com.facebook.react.bridge.Arguments;
+@@ -49,16 +50,27 @@ public class RNBLEPrinterModule extends ReactContextBaseJavaModule implements RN
+     @ReactMethod
+     @Override
+     public void getDeviceList(Callback successCallback, Callback errorCallback)  {
+-        List<PrinterDevice> printerDevices = adapter.getDeviceList(errorCallback);
++        if (adapter == null) {
++            errorCallback.invoke("Printer not initialized. Call init() first.");
++            return;
++        }
++
++        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
++        if (bluetoothAdapter == null) {
++            errorCallback.invoke("No bluetooth adapter available");
++            return;
++        }
++        if (!bluetoothAdapter.isEnabled()) {
++            errorCallback.invoke("bluetooth is not enabled");
++            return;
++        }
++
++        List<PrinterDevice> printerDevices = adapter.getDeviceList(null);
+         WritableArray pairedDeviceList = Arguments.createArray();
+-        if(printerDevices.size() > 0) {
+-            for (PrinterDevice printerDevice : printerDevices) {
+-                pairedDeviceList.pushMap(printerDevice.toRNWritableMap());
+-            }
+-            successCallback.invoke(pairedDeviceList);
+-        } else {
+-            errorCallback.invoke("No Device Found");
++        for (PrinterDevice printerDevice : printerDevices) {
++            pairedDeviceList.pushMap(printerDevice.toRNWritableMap());
+         }
++        successCallback.invoke(pairedDeviceList);
+     }
+ 
+ 
+diff --git a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
+index 431c179..c5e1676 100644
+--- a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
++++ b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
+@@ -132,11 +132,15 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+         BluetoothAdapter bluetoothAdapter = getBTAdapter();
+         List<PrinterDevice> printerDevices = new ArrayList<>();
+         if(bluetoothAdapter == null) {
+-            errorCallback.invoke("No bluetooth adapter available");
++            if (errorCallback != null) {
++                errorCallback.invoke("No bluetooth adapter available");
++            }
+             return printerDevices;
+         }
+         if (!bluetoothAdapter.isEnabled()) {
+-            errorCallback.invoke("bluetooth is not enabled");
++            if (errorCallback != null) {
++                errorCallback.invoke("bluetooth is not enabled");
++            }
+             return printerDevices;
+         }
+         Set<BluetoothDevice> pairedDevices = getBTAdapter().getBondedDevices();

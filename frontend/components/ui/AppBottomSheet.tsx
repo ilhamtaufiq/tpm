@@ -3,6 +3,8 @@ import { View, Modal, Pressable, ScrollView, Platform, BackHandler } from 'react
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from 'expo-router';
+import { ModalFlexBackdrop } from './BottomSheetContainer';
+import { ModalThemeView } from './ModalThemeView';
 
 export interface AppBottomSheetRef {
     open: (index?: number) => void;
@@ -112,11 +114,8 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
                 animationType="slide"
                 onRequestClose={onClose}
             >
-                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-                    <Pressable
-                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-                        onPress={onClose}
-                    />
+                <ModalThemeView style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}>
+                    <ModalFlexBackdrop onPress={onClose} />
                     <View
                         className="bg-white shadow-2xl overflow-hidden"
                         style={{
@@ -126,6 +125,9 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
                             alignSelf: 'center',
                             borderTopLeftRadius: borderRadius + 16,
                             borderTopRightRadius: borderRadius + 16,
+                            flexShrink: 0,
+                            zIndex: 2,
+                            elevation: 16,
                         }}
                     >
                         {/* Handle indicator */}
@@ -145,7 +147,7 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
                             </View>
                         )}
                     </View>
-                </View>
+                </ModalThemeView>
             </Modal>
         );
     }

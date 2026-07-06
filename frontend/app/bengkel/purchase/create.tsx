@@ -23,6 +23,7 @@ import {
 } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
+import { BottomSheetContainer, CenterModalContainer } from '../../../components/ui/BottomSheetContainer';
 import { onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { useCreatePembelianParts, useSparePartsList, useUpdatePembelianParts } from '../../../hooks/useBengkel';
@@ -743,9 +744,9 @@ export default function PurchaseScreen() {
             </View>
 
             {/* Tanggal Modal */}
-            <Modal visible={tanggalPickerOpen} transparent animationType="fade" onRequestClose={() => setTanggalPickerOpen(false)}>
-                <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
-                    <View className="bg-white rounded-[28px] p-5 w-full max-w-sm">
+            <Modal visible={tanggalPickerOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setTanggalPickerOpen(false)}>
+                <CenterModalContainer onClose={() => setTanggalPickerOpen(false)} insets={insets}>
+                    <View className="p-5">
                         <View className="flex-row items-center justify-between mb-4">
                             <View className="flex-row items-center flex-1">
                                 <View className="w-11 h-11 rounded-2xl bg-teal-50 items-center justify-center border border-teal-100 mr-3">
@@ -778,19 +779,28 @@ export default function PurchaseScreen() {
                             <Typography className="text-rose-500 text-xs mt-2">{tanggalError}</Typography>
                         ) : null}
 
-                        <View className="flex-row space-x-3 mt-5">
+                        <View className="flex-row gap-3 mt-5">
                             <Button title="Hari Ini" variant="outline" className="flex-1" onPress={selectTodayTanggal} />
                             <Button title="Terapkan" className="flex-1" onPress={applyTanggalPicker} />
                         </View>
                     </View>
-                </View>
+                </CenterModalContainer>
             </Modal>
 
             {/* Payment Sheet */}
-            <Modal visible={paymentSheetOpen} transparent animationType="slide" onRequestClose={() => setPaymentSheetOpen(false)}>
-                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(15, 23, 42, 0.38)' }}>
-                    <Pressable className="absolute inset-0" onPress={() => setPaymentSheetOpen(false)} />
-                    <View className="bg-white rounded-t-[32px] px-5 pt-4" style={{ maxHeight: '82%', paddingBottom: insets.bottom + 20 }}>
+            <Modal visible={paymentSheetOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setPaymentSheetOpen(false)}>
+                <BottomSheetContainer
+                    onClose={() => setPaymentSheetOpen(false)}
+                    insets={insets}
+                    maxHeight="82%"
+                    footer={
+                        <Button
+                            title="Simpan & Proses Pembayaran"
+                            onPress={() => confirmSubmit(true)}
+                            loading={createPembelianMutation.isPending || updatePembelianMutation.isPending}
+                        />
+                    }
+                >
                         <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center mb-5" />
                         <View className="flex-row items-center justify-between mb-4">
                             <View>
@@ -802,7 +812,13 @@ export default function PurchaseScreen() {
                             </Pressable>
                         </View>
 
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+                        <ScrollView
+                            style={{ flexShrink: 1 }}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 16 }}
+                            keyboardShouldPersistTaps="handled"
+                            nestedScrollEnabled
+                        >
                             {/* Metode Pembayaran */}
                             <View className="mb-6">
                                 <Typography variant="caption" weight="bold" className="text-gray-500 mb-2 uppercase">Metode Pembayaran</Typography>
@@ -972,21 +988,13 @@ export default function PurchaseScreen() {
                                 </View>
                             </View>
                         </ScrollView>
-
-                        <Button
-                            title="Simpan & Proses Pembayaran"
-                            onPress={() => confirmSubmit(true)}
-                            loading={createPembelianMutation.isPending || updatePembelianMutation.isPending}
-                            className="mt-4"
-                        />
-                    </View>
-                </View>
+                </BottomSheetContainer>
             </Modal>
 
             {/* Confirm Submit Modal */}
-            <Modal visible={confirmSubmitOpen} transparent animationType="fade" onRequestClose={() => setConfirmSubmitOpen(false)}>
-                <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
-                    <View className="bg-white rounded-[28px] p-5 w-full max-w-sm">
+            <Modal visible={confirmSubmitOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setConfirmSubmitOpen(false)}>
+                <CenterModalContainer onClose={() => setConfirmSubmitOpen(false)} insets={insets}>
+                    <View className="p-5">
                         <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-4">
                             <Wallet size={22} color="#023C69" />
                         </View>
@@ -1003,18 +1011,18 @@ export default function PurchaseScreen() {
                             <View className="h-[1px] bg-slate-200 my-2" />
                             <SummaryRow label="Total" value={formatCurrency(total)} />
                         </View>
-                        <View className="flex-row space-x-3 mt-5">
+                        <View className="flex-row gap-3 mt-5">
                             <Button title="Batal" variant="outline" className="flex-1" onPress={() => setConfirmSubmitOpen(false)} />
                             <Button title={isEditMode ? 'Update' : 'Simpan'} className="flex-1" onPress={handleSubmit} loading={createPembelianMutation.isPending || updatePembelianMutation.isPending} />
                         </View>
                     </View>
-                </View>
+                </CenterModalContainer>
             </Modal>
 
             {/* Success Modal */}
-            <Modal visible={successModalOpen} transparent animationType="fade" onRequestClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }}>
-                <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
-                    <View className="bg-white rounded-[28px] p-6 w-full max-w-sm items-center">
+            <Modal visible={successModalOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }}>
+                <CenterModalContainer onClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }} insets={insets}>
+                    <View className="p-6 items-center">
                         <View className="w-16 h-16 rounded-full bg-emerald-50 items-center justify-center border border-emerald-100 mb-4">
                             <CheckCircle2 size={34} color="#10B981" />
                         </View>
@@ -1033,7 +1041,7 @@ export default function PurchaseScreen() {
                             onPress={closeAfterSubmit}
                         />
                     </View>
-                </View>
+                </CenterModalContainer>
             </Modal>
 
             <BarcodeScannerModal

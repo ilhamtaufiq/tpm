@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { Typography } from '../../components/ui/Typography';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
-import { getBLEPrinter } from '../../utils/blePrinter';
+import { ensureBLEPrinterReady, getBLEPrinter, scanBLEPrinters } from '../../utils/blePrinter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface BluetoothDevice {
@@ -34,7 +34,7 @@ export default function BluetoothSettingsScreen() {
 
     useEffect(() => {
         loadSavedPrinter();
-        getBLEPrinter()?.init().catch(err => console.warn(err));
+        ensureBLEPrinterReady().catch(err => console.warn('[BLE] init failed', err));
     }, []);
 
     const loadSavedPrinter = async () => {
@@ -88,15 +88,17 @@ export default function BluetoothSettingsScreen() {
         setDevices([]);
 
         try {
-            const printer = getBLEPrinter();
-            if (!printer) {
-                throw new Error('Modul printer Bluetooth tidak tersedia di perangkat ini');
+            const list = await scanBLEPrinters();
+            setDevices(list);
+
+            if (list.length === 0) {
+                setDialogConfig({
+                    visible: true,
+                    title: 'Tidak Ada Perangkat',
+                    message: 'Tidak ada printer Bluetooth yang sudah dipasangkan. Pasangkan printer di Pengaturan Bluetooth perangkat, lalu scan lagi.',
+                    variant: 'warning'
+                });
             }
-
-            const list = await printer.getDeviceList();
-            // The list format depends on the library version, assuming array of objects
-            setDevices(list as BluetoothDevice[]);
-
         } catch (error) {
             setDialogConfig({
                 visible: true,

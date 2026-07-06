@@ -14,6 +14,7 @@ import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
+import { BottomSheetContainer } from '../../../components/ui/BottomSheetContainer';
 import {
     ChevronLeft,
     Search,
@@ -194,11 +195,22 @@ export default function PurchaseIndexScreen() {
                 visible={!!selectedPurchase}
                 transparent
                 animationType="slide"
+                statusBarTranslucent
                 onRequestClose={() => setSelectedPurchase(null)}
             >
-                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(15, 23, 42, 0.38)' }}>
-                    <Pressable className="absolute inset-0" onPress={() => setSelectedPurchase(null)} />
-                    <View className="bg-white rounded-t-[32px] px-6 pt-4 pb-10" style={{ maxHeight: '85%' }}>
+                <BottomSheetContainer
+                    onClose={() => setSelectedPurchase(null)}
+                    insets={insets}
+                    maxHeight="85%"
+                    footer={
+                        <Button
+                            title="Tutup"
+                            variant="outline"
+                            className="border-gray-200"
+                            onPress={() => setSelectedPurchase(null)}
+                        />
+                    }
+                >
                         <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center mb-6" />
 
                         <View className="flex-row items-center justify-between mb-6">
@@ -214,7 +226,12 @@ export default function PurchaseIndexScreen() {
                             </Pressable>
                         </View>
 
-                        <ScrollView showsVerticalScrollIndicator={false}>
+                        <ScrollView
+                            style={{ flexShrink: 1 }}
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            nestedScrollEnabled
+                        >
                             {/* Summary Card */}
                             <Card variant="outlined" className="p-5 border-gray-100 bg-gray-50/30 mb-6">
                                 <View className="space-y-4">
@@ -290,15 +307,7 @@ export default function PurchaseIndexScreen() {
                                 </View>
                             </View>
                         </ScrollView>
-
-                        <Button
-                            title="Tutup"
-                            variant="outline"
-                            className="mt-6 border-gray-200"
-                            onPress={() => setSelectedPurchase(null)}
-                        />
-                    </View>
-                </View>
+                </BottomSheetContainer>
             </Modal>
         </SafeAreaView>
     );

@@ -10,6 +10,7 @@ import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Plus, Trash2, Wrench, Package, Truck, Car, Info, Search, X, ChevronRight, QrCode, Banknote, Wallet, Building2, Printer, CheckCircle2, Circle } from 'lucide-react-native';
 import { BarcodeScannerModal } from './ui/BarcodeScannerModal';
+import { BottomSheetContainer } from './ui/BottomSheetContainer';
 import { useCreateTransaksiBengkel, useUpdateTransaksiBengkel, useSparePartsList } from '../hooks/useBengkel';
 import { useMuatanList } from '../hooks/useJasaAngkut';
 import { useKasBankBalances } from '../hooks/useKeuangan';
@@ -1524,9 +1525,13 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                 onRequestClose={() => setIsSelectionSheetOpen(false)}
                 statusBarTranslucent
             >
-                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
-                    <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setIsSelectionSheetOpen(false)} />
-                    <View className="bg-white rounded-t-[32px] overflow-hidden" style={{ maxHeight: 720 }}>
+                <BottomSheetContainer
+                    onClose={() => setIsSelectionSheetOpen(false)}
+                    insets={insets}
+                    maxHeight={720}
+                    backdropColor="rgba(0,0,0,0.45)"
+                    panelStyle={{ paddingHorizontal: 0, paddingTop: 0 }}
+                >
                         <View className="px-6 pt-6 pb-4">
                             <View className="items-center mb-2">
                                 <View className="w-10 h-1 bg-gray-300 rounded-full" />
@@ -1721,8 +1726,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                 );
                             })()}
                         </View>
-                    </View>
-                </View>
+                </BottomSheetContainer>
             </Modal>
         );
     };

@@ -1,5 +1,15 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, useWindowDimensions, StyleSheet, Pressable, Animated, Platform } from 'react-native';
+import {
+    View,
+    Text,
+    useWindowDimensions,
+    StyleSheet,
+    Pressable,
+    Animated,
+    Modal,
+    ScrollView,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react-native';
 
 interface AlertDialogProps {
@@ -15,10 +25,6 @@ interface AlertDialogProps {
     loading?: boolean;
 }
 
-/**
- * ALERT DIALOG (STITCH UI - PREVIEW READY)
- * Full screen Absolute View implementation (Bypasses Modal touch bugs).
- */
 export const AlertDialog = ({
     visible,
     title,
@@ -29,11 +35,11 @@ export const AlertDialog = ({
     cancelText = 'Batal',
     variant = 'info',
     type = 'alert',
-    loading = false
+    loading = false,
 }: AlertDialogProps) => {
-    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
-    
-    // Smooth Entry Animation
+    const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
+
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
@@ -47,14 +53,13 @@ export const AlertDialog = ({
             opacityAnim.setValue(0);
             scaleAnim.setValue(0.95);
         }
-    }, [visible]);
+    }, [visible, opacityAnim, scaleAnim]);
 
     if (!visible) return null;
 
-    const modalWidth = SCREEN_WIDTH > 480 ? 400 : SCREEN_WIDTH - 56;
-    const isError = variant === 'error';
-    const isWarning = variant === 'warning';
-    
+    const modalWidth = Math.min(screenWidth > 480 ? 400 : screenWidth - 48, screenWidth - 32);
+    const maxCardHeight = screenHeight - insets.top - insets.bottom - 32;
+
     const ui = {
         success: { color: '#10B981', bg: '#F0FDF4', icon: <CheckCircle size={32} color="#10B981" strokeWidth={2.5} /> },
         error: { color: '#E11D48', bg: '#FFF1F2', icon: <XCircle size={32} color="#E11D48" strokeWidth={2.5} /> },
@@ -65,53 +70,69 @@ export const AlertDialog = ({
     const isConfirm = type === 'confirm';
 
     return (
-        <View style={styles.root}>
-            {/* BACKDROP: Using the proven dark overlay */}
-            <Animated.View style={[StyleSheet.absoluteFill, { opacity: opacityAnim }]}>
-                <Pressable onPress={onClose} style={styles.backdrop}>
-                    <View style={styles.backdropTint} />
-                </Pressable>
-            </Animated.View>
-
-            {/* CONTENT: Centered Layered View */}
-            <Animated.View 
+        <Modal
+            visible={visible}
+            transparent
+            animationType="none"
+            statusBarTranslucent
+            onRequestClose={onClose}
+        >
+            <View
                 style={[
-                    styles.card, 
-                    { 
-                        width: modalWidth,
-                        opacity: opacityAnim,
-                        transform: [{ scale: scaleAnim }]
-                    }
+                    styles.overlay,
+                    {
+                        paddingTop: insets.top + 16,
+                        paddingBottom: insets.bottom + 16,
+                        paddingHorizontal: 16,
+                    },
                 ]}
             >
-                {/* Branded Icon Container */}
-                <View style={[styles.iconContainer, { backgroundColor: ui.bg, borderColor: ui.color + '20' }]}>
-                    {ui.icon}
-                </View>
+                <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
+                    <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: opacityAnim }]} />
+                </Pressable>
 
-                {/* Text Payload */}
-                <Text style={styles.titleText}>{title}</Text>
-                <Text style={styles.messageText}>{message}</Text>
+                <Animated.View
+                    style={[
+                        styles.card,
+                        {
+                            width: modalWidth,
+                            maxHeight: maxCardHeight,
+                            opacity: opacityAnim,
+                            transform: [{ scale: scaleAnim }],
+                        },
+                    ]}
+                >
+                    <ScrollView
+                        bounces={false}
+                        showsVerticalScrollIndicator={false}
+                        style={styles.scrollArea}
+                        contentContainerStyle={styles.scrollContent}
+                    >
+                        <View style={[styles.iconContainer, { backgroundColor: ui.bg, borderColor: `${ui.color}20` }]}>
+                            {ui.icon}
+                        </View>
+                        <Text style={styles.titleText}>{title}</Text>
+                        <Text style={styles.messageText}>{message}</Text>
+                    </ScrollView>
 
-                {/* Button Integration */}
-                <View style={styles.actionsBox}>
-                    {isConfirm && (
-                        <View style={styles.btnWrapper}>
+                    <View style={styles.actionsBox}>
+                        {isConfirm ? (
                             <Pressable
                                 onPress={onClose}
+                                disabled={loading}
                                 style={({ pressed }) => [
                                     styles.btnBase,
                                     styles.cancelBtn,
-                                    { opacity: pressed ? 0.7 : 1 }
+                                    styles.btnFlex,
+                                    { opacity: pressed ? 0.7 : 1 },
                                 ]}
-                                disabled={loading}
                             >
-                                <Text style={styles.cancelText}>{cancelText}</Text>
+                                <Text style={styles.cancelText} numberOfLines={1}>
+                                    {cancelText}
+                                </Text>
                             </Pressable>
-                        </View>
-                    )}
-                    
-                    <View style={styles.btnWrapper}>
+                        ) : null}
+
                         <Pressable
                             onPress={() => {
                                 if (onConfirm) onConfirm();
@@ -120,48 +141,48 @@ export const AlertDialog = ({
                             disabled={loading}
                             style={({ pressed }) => [
                                 styles.btnBase,
-                                { backgroundColor: ui.color, opacity: pressed ? 0.8 : 1 }
+                                styles.btnFlex,
+                                { backgroundColor: ui.color, opacity: pressed ? 0.8 : 1 },
                             ]}
                         >
-                            <Text style={styles.confirmText}>
+                            <Text style={styles.confirmText} numberOfLines={1}>
                                 {loading ? '...' : confirmText}
                             </Text>
                         </Pressable>
                     </View>
-                </View>
-            </Animated.View>
-        </View>
+                </Animated.View>
+            </View>
+        </Modal>
     );
 };
 
 const styles = StyleSheet.create({
-    root: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+    overlay: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 9999, // Maintains absolute priority
-        elevation: 10,
     },
     backdrop: {
-        flex: 1,
-    },
-    backdropTint: {
-        flex: 1,
-        backgroundColor: 'rgba(15, 23, 42, 0.65)', // Premium navy-tinted backdrop
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
     },
     card: {
         backgroundColor: '#FFFFFF',
         borderRadius: 32,
-        padding: 24,
-        alignItems: 'center',
         borderWidth: 1.5,
         borderColor: '#F1F5F9',
-        // High elevation for Android shadowing without using object shadow props
-        elevation: 20, 
+        elevation: 24,
+        zIndex: 2,
+        overflow: 'hidden',
+    },
+    scrollArea: {
+        flexGrow: 0,
+        flexShrink: 1,
+    },
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingTop: 24,
+        paddingBottom: 8,
+        alignItems: 'center',
     },
     iconContainer: {
         width: 80,
@@ -173,7 +194,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
     },
     titleText: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: 'bold',
         color: '#0F172A',
         textAlign: 'center',
@@ -181,31 +202,39 @@ const styles = StyleSheet.create({
         letterSpacing: -0.5,
     },
     messageText: {
-        fontSize: 16,
+        fontSize: 15,
         color: '#64748B',
         textAlign: 'center',
-        lineHeight: 24,
-        marginBottom: 32,
-        paddingHorizontal: 10,
+        lineHeight: 22,
+        paddingHorizontal: 4,
     },
     actionsBox: {
         flexDirection: 'row',
         width: '100%',
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 20,
+        gap: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+        backgroundColor: '#FFFFFF',
+        flexShrink: 0,
     },
-    btnWrapper: {
+    btnFlex: {
         flex: 1,
+        minWidth: 0,
     },
     btnBase: {
-        height: 56,
+        minHeight: 52,
         borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
-        marginHorizontal: 5,
+        paddingHorizontal: 12,
     },
     confirmText: {
         color: '#FFFFFF',
         fontWeight: 'bold',
-        fontSize: 16,
+        fontSize: 15,
     },
     cancelBtn: {
         backgroundColor: '#F8FAFC',
@@ -215,6 +244,6 @@ const styles = StyleSheet.create({
     cancelText: {
         color: '#475569',
         fontWeight: 'bold',
-        fontSize: 16,
+        fontSize: 15,
     },
 });

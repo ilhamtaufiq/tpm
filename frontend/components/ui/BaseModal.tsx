@@ -3,6 +3,7 @@ import { View, Modal, Pressable, Animated, ScrollView, Platform, DimensionValue 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Typography } from './Typography';
 import { X } from 'lucide-react-native';
+import { ModalThemeView } from './ModalThemeView';
 
 interface BaseModalProps {
     visible: boolean;
@@ -72,25 +73,28 @@ export const BaseModal = ({
             onRequestClose={onClose}
         >
             <GestureHandlerRootView style={{ flex: 1 }}>
-                <View className="flex-1 justify-center items-center px-6">
-                    {/* Backdrop */}
-                    <Animated.View
-                        style={{ opacity: opacityAnim, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
-                        className="absolute inset-0"
+                <ModalThemeView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
+                    <Pressable
+                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}
+                        onPress={onClose}
                     >
-                        <Pressable className="flex-1" onPress={onClose} />
-                    </Animated.View>
+                        <Animated.View
+                            style={{ flex: 1, opacity: opacityAnim, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
+                        />
+                    </Pressable>
 
-                    {/* Modal Content */}
                     <Animated.View
                         style={{
                             transform: [{ translateY: slideAnim }],
                             opacity: opacityAnim,
                             maxHeight: fullScreen ? '100%' : maxHeight,
-                            backgroundColor: 'white', // Ensure it is not transparent
-                            ...(fullScreen ? { height: '100%', borderRadius: 0 } : {})
+                            backgroundColor: 'white',
+                            width: '100%',
+                            zIndex: 2,
+                            elevation: 24,
+                            ...(fullScreen ? { height: '100%', borderRadius: 0 } : { borderRadius: 48, borderWidth: 1, borderColor: '#F3F4F6' }),
                         }}
-                        className={`w-full ${fullScreen ? '' : 'sm:max-w-md md:max-w-lg rounded-[48px] border border-gray-100'} shadow-2xl overflow-hidden ${containerClassName}`}
+                        className={`${fullScreen ? '' : 'sm:max-w-md md:max-w-lg'} shadow-2xl overflow-hidden ${containerClassName}`}
                     >
                         {/* Header */}
                         {(title || showCloseButton) && (
@@ -113,13 +117,15 @@ export const BaseModal = ({
                         )}
 
                         <ScrollView
+                            style={{ flexGrow: 0, flexShrink: 1 }}
                             showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
                             contentContainerStyle={{ paddingHorizontal: 32, paddingBottom: 32, paddingTop: (title || showCloseButton) ? 0 : 32 }}
                         >
                             {children}
                         </ScrollView>
                     </Animated.View>
-                </View>
+                </ModalThemeView>
             </GestureHandlerRootView>
         </Modal>
     );

@@ -2324,24 +2324,16 @@ export default function BengkelScreen() {
                     </View>
                 </View>
             </Modal>
-            <Modal
+            <AlertDialogComponent
                 visible={dialogConfig.visible}
-                transparent
-                animationType="fade"
-                statusBarTranslucent
-                onRequestClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
-            >
-                <AlertDialogComponent
-                    visible={dialogConfig.visible}
-                    title={dialogConfig.title}
-                    message={dialogConfig.message}
-                    variant={dialogConfig.variant}
-                    type={dialogConfig.type}
-                    loading={dialogConfig.loading}
-                    onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
-                    onConfirm={dialogConfig.onConfirm}
-                />
-            </Modal>
+                title={dialogConfig.title}
+                message={dialogConfig.message}
+                variant={dialogConfig.variant}
+                type={dialogConfig.type}
+                loading={dialogConfig.loading}
+                onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={dialogConfig.onConfirm}
+            />
         </View>
     );
 }

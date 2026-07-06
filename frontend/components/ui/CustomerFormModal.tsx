@@ -9,6 +9,7 @@ import { masterDataService, Customer } from '../../services/masterData';
 import { useCreateCustomer } from '../../hooks/useMasterData';
 import { getErrorMessage } from '../../utils/error';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BottomSheetContainer } from './BottomSheetContainer';
 
 interface CustomerFormModalProps {
     visible: boolean;
@@ -90,22 +91,25 @@ export const CustomerFormModal = ({
             visible={visible}
             animationType="slide"
             transparent={true}
+            statusBarTranslucent
             onRequestClose={onClose}
         >
-            <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                <Pressable
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-                    onPress={onClose}
-                />
-                <View
-                    className="bg-white rounded-t-[32px] h-[90%]"
-                    style={{
-                        width: '100%',
-                        maxWidth: 640,
-                        alignSelf: 'center',
-                        paddingBottom: insets.bottom + 20
-                    }}
-                >
+            <BottomSheetContainer
+                onClose={onClose}
+                insets={insets}
+                maxHeight="90%"
+                panelStyle={{ maxWidth: 640, alignSelf: 'center' }}
+                footer={
+                    <Button
+                        title={createMutation.isPending ? 'Menambahkan...' : 'Simpan Customer Baru'}
+                        onPress={handleSubmit}
+                        disabled={createMutation.isPending || !formData.nama}
+                        loading={createMutation.isPending}
+                        className="shadow-lg"
+                        size="lg"
+                    />
+                }
+            >
                     <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
                     
                     <View className="flex-row justify-between items-center px-6 mb-6">
@@ -115,7 +119,12 @@ export const CustomerFormModal = ({
                         </Pressable>
                     </View>
 
-                    <ScrollView className="flex-1 px-6">
+                    <ScrollView
+                        style={{ flexShrink: 1 }}
+                        className="px-6"
+                        keyboardShouldPersistTaps="handled"
+                        nestedScrollEnabled
+                    >
                         <View className="space-y-4">
                             <View>
                                 <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Customer *</Typography>
@@ -231,19 +240,7 @@ export const CustomerFormModal = ({
                             </View>
                         </View>
                     </ScrollView>
-
-                    <View className="px-6 pt-4">
-                        <Button
-                            title={createMutation.isPending ? 'Menambahkan...' : 'Simpan Customer Baru'}
-                            onPress={handleSubmit}
-                            disabled={createMutation.isPending || !formData.nama}
-                            loading={createMutation.isPending}
-                            className="shadow-lg"
-                            size="lg"
-                        />
-                    </View>
-                </View>
-            </View>
+            </BottomSheetContainer>
         </Modal>
     );
 };

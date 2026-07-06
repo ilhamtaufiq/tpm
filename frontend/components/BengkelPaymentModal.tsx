@@ -5,6 +5,9 @@ import { Typography } from './ui/Typography';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ModalFlexBackdrop, BottomSheetFooter } from './ui/BottomSheetContainer';
+import { ModalThemeView } from './ui/ModalThemeView';
 
 export interface PaymentItem {
     metode: 'TUNAI' | 'TRANSFER' | 'INTERNAL' | 'KREDIT';
@@ -41,6 +44,7 @@ export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
     isInternalja = false,
     isInternalMobil = false,
 }) => {
+    const insets = useSafeAreaInsets();
     const [paymentMode, setPaymentMode] = useState<'TUNAI' | 'TRANSFER' | 'SPLIT'>('TUNAI');
     const [paymentAmount, setPaymentAmount] = useState('');
     const [splitTunai, setSplitTunai] = useState('');
@@ -128,12 +132,23 @@ export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-            <View className="flex-1 justify-end bg-black/50">
-                <Pressable
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-                    onPress={onClose}
-                />
-                <View className="bg-white rounded-t-[48px] p-6 max-h-[90%] overflow-hidden">
+            <ModalThemeView style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+                <ModalFlexBackdrop onPress={onClose} />
+                <View
+                    style={{
+                        width: '100%',
+                        maxHeight: '90%',
+                        backgroundColor: '#FFFFFF',
+                        borderTopLeftRadius: 48,
+                        borderTopRightRadius: 48,
+                        padding: 24,
+                        paddingBottom: insets.bottom + 16,
+                        flexShrink: 0,
+                        zIndex: 2,
+                        elevation: 16,
+                        overflow: 'hidden',
+                    }}
+                >
                     {/* Header */}
                     <View className="flex-row justify-between items-center mb-5">
                         <View>
@@ -154,7 +169,13 @@ export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
                         </Pressable>
                     </View>
 
-                    <ScrollView showsVerticalScrollIndicator={false} className="mb-4">
+                    <ScrollView
+                        style={{ flexShrink: 1 }}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        nestedScrollEnabled
+                        className="mb-4"
+                    >
                         {/* Summary Card */}
                         <Card
                             variant="outlined"
@@ -461,27 +482,29 @@ export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
                         )}
                     </ScrollView>
 
-                    <Button
-                        title={
-                            loading
-                                ? 'Memproses...'
-                                : `Bayar ${formatCurrency(sisaTagihan)}`
-                        }
-                        disabled={loading}
-                        loading={loading}
-                        onPress={handleConfirm}
-                        className="mb-2 h-14 rounded-2xl"
-                    />
-                    <Pressable onPress={onClose} className="py-3 items-center">
-                        <Typography
-                            weight="bold"
-                            className="text-gray-400 text-xs uppercase tracking-widest"
-                        >
-                            Batal
-                        </Typography>
-                    </Pressable>
+                    <BottomSheetFooter>
+                        <Button
+                            title={
+                                loading
+                                    ? 'Memproses...'
+                                    : `Bayar ${formatCurrency(sisaTagihan)}`
+                            }
+                            disabled={loading}
+                            loading={loading}
+                            onPress={handleConfirm}
+                            className="mb-2 h-14 rounded-2xl"
+                        />
+                        <Pressable onPress={onClose} className="py-3 items-center">
+                            <Typography
+                                weight="bold"
+                                className="text-gray-400 text-xs uppercase tracking-widest"
+                            >
+                                Batal
+                            </Typography>
+                        </Pressable>
+                    </BottomSheetFooter>
                 </View>
-            </View>
+            </ModalThemeView>
         </Modal>
     );
 };

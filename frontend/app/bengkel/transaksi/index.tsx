@@ -22,6 +22,8 @@ import { printSettingsService, PrintSettings } from '../../../utils/printSetting
 import { buildPublicReceiptUrl } from '../../../utils/publicReceiptUrl';
 import api from '../../../utils/api';
 import { useScanSound } from '../../../utils/sounds';
+import { BottomSheetContainer } from '../../../components/ui/BottomSheetContainer';
+import { ModalThemeView } from '../../../components/ui/ModalThemeView';
 
 type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
 type PaymentMode = 'TUNAI' | 'TRANSFER' | 'SPLIT';
@@ -1420,46 +1422,75 @@ export default function BengkelTransaksiScreen() {
                         </Typography>
                     </View>
                 </View>
-                <View className="flex-row space-x-3">
-                    {step > 1 && <Button title="Kembali" variant="outline" className="flex-1" onPress={() => setStep(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} />}
-                    {step === 3 ? (
-                        isEditLocked ? (
+                {step === 3 && !isEditLocked ? (
+                    <View className="gap-2">
+                        {step > 1 && (
+                            <Button
+                                title="Kembali"
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onPress={() => setStep(prev => Math.max(1, prev - 1) as 1 | 2 | 3)}
+                            />
+                        )}
+                        <Button
+                            title={transactionToUpdateId ? 'Update Transaksi' : 'Simpan Transaksi'}
+                            variant="secondary"
+                            size="sm"
+                            className="w-full"
+                            onPress={() => confirmSubmit(false)}
+                            loading={createMutation.isPending || updateMutation.isPending}
+                        />
+                        <Button
+                            title="Lanjut Pembayaran"
+                            size="sm"
+                            className="w-full"
+                            onPress={openPaymentSheet}
+                            icon={<Wallet size={16} color="white" />}
+                        />
+                    </View>
+                ) : (
+                    <View className="flex-row gap-2">
+                        {step > 1 && (
+                            <Button
+                                title="Kembali"
+                                variant="outline"
+                                size="sm"
+                                className="flex-1 min-w-0"
+                                onPress={() => setStep(prev => Math.max(1, prev - 1) as 1 | 2 | 3)}
+                            />
+                        )}
+                        {step === 3 && isEditLocked ? (
                             <Typography className="flex-1 text-center text-gray-500 text-xs py-3">
                                 Transaksi sudah lunas dan selesai. Tidak dapat diedit.
                             </Typography>
                         ) : (
-                        <>
                             <Button
-                                title={transactionToUpdateId ? 'Update Transaksi' : 'Simpan Transaksi'}
-                                variant="secondary"
-                                className="flex-1"
-                                onPress={() => confirmSubmit(false)}
+                                title="Lanjut"
+                                size="sm"
+                                className="flex-1 min-w-0"
+                                onPress={next}
                                 loading={createMutation.isPending || updateMutation.isPending}
                             />
-                            <Button
-                                title="Lanjut Pembayaran"
-                                className="flex-1"
-                                onPress={openPaymentSheet}
-                                icon={<Wallet size={16} color="white" />}
-                            />
-                        </>
-                        )
-                    ) : (
-                        <Button
-                            title="Lanjut"
-                            className="flex-1"
-                            onPress={next}
-                            loading={createMutation.isPending || updateMutation.isPending}
-                        />
-                    )}
-                </View>
+                        )}
+                    </View>
+                )}
             </View>
 
             <BarcodeScannerModal visible={scannerOpen} onClose={() => setScannerOpen(false)} onScan={handleScan} scanLog={scanLog} continuous />
-            <Modal visible={paymentSheetOpen} transparent animationType="slide" onRequestClose={() => setPaymentSheetOpen(false)}>
-                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(15, 23, 42, 0.38)' }}>
-                    <Pressable className="absolute inset-0" onPress={() => setPaymentSheetOpen(false)} />
-                    <View className="bg-white rounded-t-[32px] px-5 pt-4" style={{ maxHeight: '82%', paddingBottom: insets.bottom + 20 }}>
+            <Modal visible={paymentSheetOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setPaymentSheetOpen(false)}>
+                <BottomSheetContainer
+                    onClose={() => setPaymentSheetOpen(false)}
+                    insets={insets}
+                    maxHeight="82%"
+                    footer={
+                        <Button
+                            title="Simpan & Proses Pembayaran"
+                            onPress={() => confirmSubmit(true)}
+                            loading={createMutation.isPending || updateMutation.isPending}
+                        />
+                    }
+                >
                         <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center mb-5" />
                         <View className="flex-row items-center justify-between mb-4">
                             <View>
@@ -1471,7 +1502,13 @@ export default function BengkelTransaksiScreen() {
                             </Pressable>
                         </View>
 
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+                        <ScrollView
+                            style={{ flexShrink: 1 }}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 16 }}
+                            keyboardShouldPersistTaps="handled"
+                            nestedScrollEnabled
+                        >
                             <View className="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-4">
                                 <SummaryRow label="Subtotal" value={formatCurrency(grossSubtotal)} />
                                 <View className="mt-2">
@@ -1616,55 +1653,60 @@ export default function BengkelTransaksiScreen() {
                                 </View>
                             )}
                         </ScrollView>
-
-                        <Button
-                            title="Simpan & Proses Pembayaran"
-                            onPress={() => confirmSubmit(true)}
-                            loading={createMutation.isPending || updateMutation.isPending}
-                        />
-                    </View>
-                </View>
+                </BottomSheetContainer>
             </Modal>
-            <Modal visible={confirmSubmitOpen} transparent animationType="fade" onRequestClose={() => setConfirmSubmitOpen(false)}>
-                <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
-                    <View className="bg-white rounded-[28px] p-5 w-full max-w-sm">
-                        <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-4">
-                            <Wallet size={22} color="#023C69" />
-                        </View>
-                        <Typography variant="h3" weight="bold" className="text-textMain">{transactionToUpdateId ? 'Update Transaksi?' : 'Simpan Transaksi?'}</Typography>
-                        <Typography className="text-gray-500 text-sm mt-2">
-                            {submitWithPayment
-                                ? 'Pastikan detail sparepart, servis, customer, dan pembayaran sudah benar.'
-                                : 'Transaksi akan disimpan tanpa memproses pembayaran.'}
-                        </Typography>
-                        <View className="bg-slate-50 rounded-2xl p-4 mt-4 border border-slate-100">
-                            <SummaryRow label="Sparepart" value={`${billPartList.length} item`} />
-                            <SummaryRow label="Servis" value={`${billServiceList.length} item`} />
-                            <SummaryRow label="Metode" value={submitWithPayment ? (kategori === 'jasa_angkut' ? 'INTERNAL' : kategori === 'jual_beli_mobil' ? 'KREDIT' : paymentMode) : 'Belum diproses'} />
-                            <View className="h-[1px] bg-slate-200 my-2" />
-                            <SummaryRow label="Total" value={formatCurrency(subtotal)} />
-                            {submitWithPayment && kategori === 'umum' && (paymentMode === 'TUNAI' || paymentMode === 'TRANSFER') && (
-                                <>
-                                    <SummaryRow label="Diterima" value={formatCurrency(receivedAmount)} />
-                                    {paymentOutstandingAmount > 0 ? (
-                                        <SummaryRow label="Sisa Piutang" value={formatCurrency(paymentOutstandingAmount)} />
-                                    ) : (
-                                        <SummaryRow label="Kembalian" value={formatCurrency(changeAmount)} />
-                                    )}
-                                </>
-                            )}
-                        </View>
-                        <View className="flex-row space-x-3 mt-5">
-                            <Button title="Batal" variant="outline" className="flex-1" onPress={() => setConfirmSubmitOpen(false)} />
-                            <Button title={transactionToUpdateId ? 'Update' : 'Simpan'} className="flex-1" onPress={submit} loading={createMutation.isPending || updateMutation.isPending} />
+            <Modal visible={confirmSubmitOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setConfirmSubmitOpen(false)}>
+                <ModalThemeView className="flex-1 justify-center px-5" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)', paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }}>
+                    <View className="bg-white rounded-[28px] w-full max-w-sm overflow-hidden" style={{ maxHeight: '88%' }}>
+                        <ScrollView
+                            bounces={false}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ padding: 20, paddingBottom: 12 }}
+                        >
+                            <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-4">
+                                <Wallet size={22} color="#023C69" />
+                            </View>
+                            <Typography variant="h3" weight="bold" className="text-textMain">{transactionToUpdateId ? 'Update Transaksi?' : 'Simpan Transaksi?'}</Typography>
+                            <Typography className="text-gray-500 text-sm mt-2">
+                                {submitWithPayment
+                                    ? 'Pastikan detail sparepart, servis, customer, dan pembayaran sudah benar.'
+                                    : 'Transaksi akan disimpan tanpa memproses pembayaran.'}
+                            </Typography>
+                            <View className="bg-slate-50 rounded-2xl p-4 mt-4 border border-slate-100">
+                                <SummaryRow label="Sparepart" value={`${billPartList.length} item`} />
+                                <SummaryRow label="Servis" value={`${billServiceList.length} item`} />
+                                <SummaryRow label="Metode" value={submitWithPayment ? (kategori === 'jasa_angkut' ? 'INTERNAL' : kategori === 'jual_beli_mobil' ? 'KREDIT' : paymentMode) : 'Belum diproses'} />
+                                <View className="h-[1px] bg-slate-200 my-2" />
+                                <SummaryRow label="Total" value={formatCurrency(subtotal)} />
+                                {submitWithPayment && kategori === 'umum' && (paymentMode === 'TUNAI' || paymentMode === 'TRANSFER') && (
+                                    <>
+                                        <SummaryRow label="Diterima" value={formatCurrency(receivedAmount)} />
+                                        {paymentOutstandingAmount > 0 ? (
+                                            <SummaryRow label="Sisa Piutang" value={formatCurrency(paymentOutstandingAmount)} />
+                                        ) : (
+                                            <SummaryRow label="Kembalian" value={formatCurrency(changeAmount)} />
+                                        )}
+                                    </>
+                                )}
+                            </View>
+                        </ScrollView>
+                        <View className="flex-row gap-3 px-5 pb-5 pt-3 border-t border-gray-100">
+                            <Button title="Batal" variant="outline" size="sm" className="flex-1 min-w-0" onPress={() => setConfirmSubmitOpen(false)} />
+                            <Button title={transactionToUpdateId ? 'Update' : 'Simpan'} size="sm" className="flex-1 min-w-0" onPress={submit} loading={createMutation.isPending || updateMutation.isPending} />
                         </View>
                     </View>
-                </View>
+                </ModalThemeView>
             </Modal>
 
-            <Modal visible={successModalOpen} transparent animationType="fade" onRequestClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }}>
-                <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
-                    <View className="bg-white rounded-[28px] p-6 w-full max-w-sm items-center">
+            <Modal visible={successModalOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }}>
+                <ModalThemeView className="flex-1 justify-center px-5" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)', paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }}>
+                    <View className="bg-white rounded-[28px] w-full max-w-sm overflow-hidden items-center" style={{ maxHeight: '88%' }}>
+                        <ScrollView
+                            bounces={false}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ padding: 24, paddingBottom: 12, alignItems: 'center' }}
+                            className="w-full"
+                        >
                         <View className="w-16 h-16 rounded-full bg-emerald-50 items-center justify-center border border-emerald-100 mb-4">
                             <CheckCircle2 size={34} color="#10B981" />
                         </View>
@@ -1702,23 +1744,24 @@ export default function BengkelTransaksiScreen() {
                             />
                         </View>
                         ) : null}
-                        <Button
-                            title="OK"
-                            variant="outline"
-                            className={`w-full ${successWithPayment ? 'mt-3' : 'mt-6'}`}
-                            onPress={() => {
-                                setSuccessModalOpen(false);
-                                closeAfterSubmit();
-                            }}
-                        />
+                        </ScrollView>
+                        <View className="w-full px-6 pb-6 pt-2 border-t border-gray-100">
+                            <Button
+                                title="OK"
+                                variant="outline"
+                                className="w-full"
+                                onPress={() => {
+                                    setSuccessModalOpen(false);
+                                    closeAfterSubmit();
+                                }}
+                            />
+                        </View>
                     </View>
-                </View>
+                </ModalThemeView>
             </Modal>
 
-            <Modal visible={existingSheetOpen} transparent animationType="slide" onRequestClose={() => setExistingSheetOpen(false)}>
-                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(15, 23, 42, 0.38)' }}>
-                    <Pressable className="absolute inset-0" onPress={() => setExistingSheetOpen(false)} />
-                    <View className="bg-white rounded-t-[32px] px-5 pt-4" style={{ maxHeight: '78%', paddingBottom: insets.bottom + 20 }}>
+            <Modal visible={existingSheetOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setExistingSheetOpen(false)}>
+                <BottomSheetContainer onClose={() => setExistingSheetOpen(false)} insets={insets}>
                         <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center mb-5" />
                         <View className="flex-row items-center justify-between mb-4">
                             <View className="flex-1 mr-3">
@@ -1745,7 +1788,13 @@ export default function BengkelTransaksiScreen() {
                             </View>
                             <ChevronLeft size={18} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />
                         </Pressable>
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+                        <ScrollView
+                            style={{ flexShrink: 1 }}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 16 }}
+                            keyboardShouldPersistTaps="handled"
+                            nestedScrollEnabled
+                        >
                             {isExistingTransactionsLoading ? (
                                 <View className="py-8">
                                     <ActivityIndicator color="#023C69" />
@@ -1796,12 +1845,11 @@ export default function BengkelTransaksiScreen() {
                                 );
                             })}
                         </ScrollView>
-                    </View>
-                </View>
+                </BottomSheetContainer>
             </Modal>
 
-            <Modal visible={existingDatePickerOpen} transparent animationType="fade" onRequestClose={() => setExistingDatePickerOpen(false)}>
-                <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
+            <Modal visible={existingDatePickerOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setExistingDatePickerOpen(false)}>
+                <ModalThemeView className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
                     <View className="bg-white rounded-[28px] p-5 w-full max-w-sm">
                         <View className="flex-row items-center justify-between mb-4">
                             <View className="flex-row items-center flex-1">
@@ -1835,18 +1883,18 @@ export default function BengkelTransaksiScreen() {
                             <Typography className="text-rose-500 text-xs mt-2">{existingDateError}</Typography>
                         ) : null}
 
-                        <View className="flex-row space-x-3 mt-5">
+                        <View className="flex-row gap-3 mt-5">
                             <Button title="Hari Ini" variant="outline" className="flex-1" onPress={selectTodayExistingDate} />
                             <Button title="Terapkan" className="flex-1" onPress={applyExistingDate} />
                         </View>
                     </View>
-                </View>
+                </ModalThemeView>
             </Modal>
 
-            <Modal visible={partSheetOpen} transparent animationType="slide" onRequestClose={() => setPartSheetOpen(false)}>
-                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(15, 23, 42, 0.38)' }}>
-                    <Pressable className="absolute inset-0" onPress={() => setPartSheetOpen(false)} />
-                    <View className="bg-white rounded-t-[32px] px-5 pt-4" style={{ maxHeight: '78%', paddingBottom: insets.bottom + 20 }}>
+            <Modal visible={partSheetOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setPartSheetOpen(false)}>
+                <BottomSheetContainer onClose={() => setPartSheetOpen(false)} insets={insets} footer={
+                    <Button title="Selesai" onPress={() => setPartSheetOpen(false)} />
+                }>
                         <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center mb-5" />
                         <View className="flex-row items-center justify-between mb-4">
                             <View>
@@ -1859,8 +1907,11 @@ export default function BengkelTransaksiScreen() {
                         </View>
                         <SearchBox value={partSearch} onChange={setPartSearch} placeholder="Cari sparepart..." />
                         <ScrollView
+                            style={{ flexShrink: 1 }}
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={{ paddingBottom: 16 }}
+                            keyboardShouldPersistTaps="handled"
+                            nestedScrollEnabled
                             onScroll={handlePartsScroll}
                             scrollEventThrottle={16}
                         >
@@ -1901,14 +1952,12 @@ export default function BengkelTransaksiScreen() {
                                 </View>
                             )}
                         </ScrollView>
-                        <Button title="Selesai" onPress={() => setPartSheetOpen(false)} className="mt-1" />
-                    </View>
-                </View>
+                </BottomSheetContainer>
             </Modal>
-            <Modal visible={serviceSheetOpen} transparent animationType="slide" onRequestClose={() => setServiceSheetOpen(false)}>
-                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(15, 23, 42, 0.38)' }}>
-                    <Pressable className="absolute inset-0" onPress={() => setServiceSheetOpen(false)} />
-                    <View className="bg-white rounded-t-[32px] px-5 pt-4" style={{ maxHeight: '78%', paddingBottom: insets.bottom + 20 }}>
+            <Modal visible={serviceSheetOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setServiceSheetOpen(false)}>
+                <BottomSheetContainer onClose={() => setServiceSheetOpen(false)} insets={insets} footer={
+                    <Button title="Selesai" onPress={() => setServiceSheetOpen(false)} />
+                }>
                         <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center mb-5" />
                         <View className="flex-row items-center justify-between mb-4">
                             <View>
@@ -1920,7 +1969,13 @@ export default function BengkelTransaksiScreen() {
                             </Pressable>
                         </View>
                         <SearchBox value={serviceSearch} onChange={setServiceSearch} placeholder="Cari service..." />
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+                        <ScrollView
+                            style={{ flexShrink: 1 }}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 16 }}
+                            keyboardShouldPersistTaps="handled"
+                            nestedScrollEnabled
+                        >
                             {isJasaLoading ? <ActivityIndicator color="#023C69" /> : visibleServices.map((service: any) => {
                                 const selected = selectedServices[String(service.id)];
                                 return (
@@ -1963,9 +2018,7 @@ export default function BengkelTransaksiScreen() {
                                 );
                             })}
                         </ScrollView>
-                        <Button title="Selesai" onPress={() => setServiceSheetOpen(false)} className="mt-1" />
-                    </View>
-                </View>
+                </BottomSheetContainer>
             </Modal>
         </SafeAreaView>
     );

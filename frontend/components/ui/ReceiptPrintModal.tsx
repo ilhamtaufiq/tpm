@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, View, Pressable, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Printer, Share2, CheckCircle2, XCircle } from 'lucide-react-native';
 import { Typography } from './Typography';
+import { CenterModalContainer } from './BottomSheetContainer';
 import { Button } from './Button';
 import { usePrintReceipt } from '../../hooks/usePrintReceipt';
 import { PrintReceiptData } from '../../utils/printReceipt';
@@ -14,6 +16,7 @@ interface ReceiptPrintModalProps {
 }
 
 export default function ReceiptPrintModal({ visible, onClose, data, onSuccess }: ReceiptPrintModalProps) {
+    const insets = useSafeAreaInsets();
     const { loading, error, success, handlePrint, handleShare, clearMessages } = usePrintReceipt();
 
     useEffect(() => {
@@ -36,9 +39,9 @@ export default function ReceiptPrintModal({ visible, onClose, data, onSuccess }:
     };
 
     return (
-        <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-            <Pressable className="flex-1 justify-center items-center" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }} onPress={handleClose}>
-                <Pressable className="bg-white rounded-3xl w-[85%] max-w-sm p-6 items-center" onPress={() => {}}>
+        <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
+            <CenterModalContainer onClose={handleClose} insets={insets} backdropColor="rgba(15, 23, 42, 0.5)" maxWidth={360}>
+                <View className="p-6 items-center">
                     <View className="w-16 h-16 bg-primary/10 rounded-full items-center justify-center mb-4">
                         <Printer size={28} color="#023C69" />
                     </View>
@@ -79,8 +82,8 @@ export default function ReceiptPrintModal({ visible, onClose, data, onSuccess }:
                             <Typography className="text-gray-400 text-sm font-bold">{success ? 'Selesai' : 'Tutup'}</Typography>
                         </Pressable>
                     )}
-                </Pressable>
-            </Pressable>
+                </View>
+            </CenterModalContainer>
         </Modal>
     );
 }

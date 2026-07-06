@@ -11,6 +11,8 @@ import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
 import { useProcessPaymentSplit, useProcessHutangPaymentSplit } from '../hooks/useKeuangan';
 import { getErrorMessage } from '../utils/error';
 import { keuanganService } from '../services/keuangan';
+import { ModalFlexBackdrop } from './ui/BottomSheetContainer';
+import { ModalThemeView } from './ui/ModalThemeView';
 
 interface PaymentModalProps {
     visible: boolean;
@@ -438,16 +440,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
     if (Platform.OS === 'web') {
         return (
-            <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-                <View className="flex-1 justify-end bg-black/40">
-                    <Pressable className="absolute inset-0" onPress={onClose} />
-                    <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
+            <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
+                <ModalThemeView style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
+                    <ModalFlexBackdrop onPress={onClose} />
+                    <View
+                        className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative"
+                        style={{ flexShrink: 0, zIndex: 2, elevation: 16 }}
+                    >
                         <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                         <ScrollView className="flex-1">
                             {renderContent()}
                         </ScrollView>
                     </View>
-                </View>
+                </ModalThemeView>
             </Modal>
         );
     }
