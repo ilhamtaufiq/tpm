@@ -62,16 +62,16 @@ export function ReceiptHtmlCaptureHost() {
                 return;
             }
 
-            if (!payload?.ok || !payload?.data) {
+            if (!payload?.ok || !payload?.escPosBase64) {
                 throw new Error(payload?.error || 'Gagal render struk');
             }
 
-            const dataUrl = String(payload.data);
-            if (!dataUrl.startsWith('data:image/')) {
-                throw new Error('Render struk menghasilkan format gambar tidak valid.');
+            const escPosBase64 = String(payload.escPosBase64);
+            if (escPosBase64.length < 32) {
+                throw new Error('Data printer struk kosong.');
             }
 
-            finishJob((resolved) => resolved.resolve(dataUrl));
+            finishJob((resolved) => resolved.resolve(escPosBase64));
         } catch (error) {
             finishJob((rejected) => {
                 rejected.reject(error instanceof Error ? error : new Error(String(error)));

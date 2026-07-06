@@ -1,8 +1,8 @@
 import { getBleRasterSpec } from './paperSize';
 
 /**
- * Injects html2canvas capture script into receipt HTML.
- * Output is normalized to exact thermal dot width for the selected paper (58/80mm).
+ * Renders receipt HTML in WebView, rasterizes to thermal width, encodes ESC/POS in JS,
+ * and returns base64 raw bytes for BLE printRawData (no native bitmap decode).
  */
 export function buildReceiptRasterHtml(fullReceiptHtml: string, paperSize?: string | null): string {
     const raster = getBleRasterSpec(paperSize);
@@ -16,7 +16,6 @@ export function buildReceiptRasterHtml(fullReceiptHtml: string, paperSize?: stri
   var MAX_HEIGHT = ${raster.maxHeightPx};
   var LAYOUT_WIDTH = ${raster.layoutWidthPx};
   var CAPTURE_SCALE = ${scale};
-  var JPEG_QUALITY = ${raster.jpegQuality};
 
   function send(payload) {
     if (window.ReactNativeWebView) {
@@ -59,9 +58,77 @@ export function buildReceiptRasterHtml(fullReceiptHtml: string, paperSize?: stri
     return out;
   }
 
+  function shouldPrint(r, g, b, a) {
+    if (a < 128) return false;
+    var luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+    return luminance < 127;
+  }
+
+  function bytesToBase64(bytes) {
+    var binary = '';
+    var chunk = 8192;
+    for (var i = 0; i < bytes.length; i += chunk) {
+      var slice = bytes.slice(i, i + chunk);
+      binary += String.fromCharCode.apply(null, slice);
+    }
+    return btoa(binary);
+  }
+
+  function canvasToEscPosBase64(canvas) {
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width;
+    var h = canvas.height;
+    var imageData = ctx.getImageData(0, 0, w, h);
+    var data = imageData.data;
+    var bytes = [];
+
+    function pushByte(value) {
+      bytes.push(value & 0xff);
+    }
+
+    function pushBytes(arr) {
+      for (var i = 0; i < arr.length; i++) {
+        pushByte(arr[i]);
+      }
+    }
+
+    pushBytes([0x1B, 0x40]);
+    pushBytes([0x1B, 0x33, 24]);
+    pushBytes([0x1B, 0x61, 0x31]);
+
+    for (var y = 0; y < h; y += 24) {
+      pushBytes([0x1B, 0x2A, 33]);
+      pushByte(w & 0xff);
+      pushByte((w >> 8) & 0xff);
+
+      for (var x = 0; x < w; x++) {
+        for (var band = 0; band < 3; band++) {
+          var slice = 0;
+          for (var bit = 0; bit < 8; bit++) {
+            var row = y + band * 8 + bit;
+            if (row < h) {
+              var idx = (row * w + x) * 4;
+              if (shouldPrint(data[idx], data[idx + 1], data[idx + 2], data[idx + 3])) {
+                slice |= (1 << (7 - bit));
+              }
+            }
+          }
+          pushByte(slice);
+        }
+      }
+
+      pushByte(0x0A);
+    }
+
+    pushBytes([0x1B, 0x33, 32]);
+    pushByte(0x0A);
+
+    return bytesToBase64(bytes);
+  }
+
   function capture() {
     if (!window.html2canvas) {
-      send({ ok: false, data: null, error: 'html2canvas tidak termuat' });
+      send({ ok: false, error: 'html2canvas tidak termuat. Periksa koneksi internet.' });
       return;
     }
 
@@ -82,15 +149,19 @@ export function buildReceiptRasterHtml(fullReceiptHtml: string, paperSize?: stri
       scrollY: 0,
     }).then(function (canvas) {
       var output = finalizeForThermal(canvas);
+      var escPosBase64 = canvasToEscPosBase64(output);
+      if (!escPosBase64 || escPosBase64.length < 32) {
+        send({ ok: false, error: 'Gagal mengenkode gambar struk ke printer.' });
+        return;
+      }
       send({
         ok: true,
-        data: output.toDataURL('image/jpeg', JPEG_QUALITY),
+        escPosBase64: escPosBase64,
         width: output.width,
         height: output.height,
-        error: null,
       });
     }).catch(function (err) {
-      send({ ok: false, data: null, error: String(err) });
+      send({ ok: false, error: String(err) });
     });
   }
 
