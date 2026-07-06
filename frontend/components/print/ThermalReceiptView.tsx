@@ -71,7 +71,15 @@ export const ThermalReceiptView = React.forwardRef<View, ThermalReceiptViewProps
                 ref={ref}
                 collapsable={false}
                 onLayout={(event) => onLayoutHeight?.(event.nativeEvent.layout.height)}
-                style={[styles.root, { width: paper.widthPx, paddingHorizontal: padH, paddingVertical: 8 }]}
+                style={[
+                    styles.root,
+                    {
+                        width: paper.widthPx,
+                        minHeight: 320,
+                        paddingHorizontal: padH,
+                        paddingVertical: 8,
+                    },
+                ]}
             >
                 <View style={styles.center}>
                     {logoUri ? (

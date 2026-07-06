@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import { registerReceiptCaptureHost, ReceiptCaptureJob } from '../../utils/receiptCapture';
 import { getBleRasterSpec, getPaperDimensions } from '../../utils/paperSize';
 import { buildBleImagePayload } from '../../utils/bleReceiptImage';
 import { ThermalReceiptView } from './ThermalReceiptView';
 
-const CAPTURE_TIMEOUT_MS = 30000;
-const LAYOUT_SETTLE_MS = 600;
-const MIN_RECEIPT_HEIGHT = 120;
+const CAPTURE_TIMEOUT_MS = 25000;
+const LAYOUT_SETTLE_MS = 500;
+const LAYOUT_FALLBACK_MS = 1500;
 
 export function ReceiptNativeCaptureHost() {
     const [job, setJob] = useState<ReceiptCaptureJob | null>(null);
@@ -16,6 +16,7 @@ export function ReceiptNativeCaptureHost() {
     const captureRefView = useRef<View>(null);
     const jobRef = useRef<ReceiptCaptureJob | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const captureStartedRef = useRef(false);
 
     const clearCaptureTimeout = () => {
@@ -25,8 +26,16 @@ export function ReceiptNativeCaptureHost() {
         }
     };
 
+    const clearFallbackTimer = () => {
+        if (fallbackTimerRef.current) {
+            clearTimeout(fallbackTimerRef.current);
+            fallbackTimerRef.current = null;
+        }
+    };
+
     const finishJob = (handler?: (current: ReceiptCaptureJob) => void) => {
         clearCaptureTimeout();
+        clearFallbackTimer();
         captureStartedRef.current = false;
         const current = jobRef.current;
         jobRef.current = null;
@@ -45,6 +54,7 @@ export function ReceiptNativeCaptureHost() {
             setJob(captureJob);
 
             clearCaptureTimeout();
+            clearFallbackTimer();
             timeoutRef.current = setTimeout(() => {
                 finishJob((current) => {
                     current.reject(new Error('Timeout render struk untuk printer thermal.'));
@@ -55,20 +65,24 @@ export function ReceiptNativeCaptureHost() {
         return () => {
             registerReceiptCaptureHost(null);
             clearCaptureTimeout();
+            clearFallbackTimer();
         };
     }, []);
 
     useEffect(() => {
-        if (!job || captureStartedRef.current || layoutHeight < MIN_RECEIPT_HEIGHT) {
+        if (!job || captureStartedRef.current) {
             return undefined;
         }
 
-        captureStartedRef.current = true;
-        let cancelled = false;
-
         const runCapture = async () => {
+            if (captureStartedRef.current || !jobRef.current) {
+                return;
+            }
+            captureStartedRef.current = true;
+            clearFallbackTimer();
+
             await new Promise((resolve) => setTimeout(resolve, LAYOUT_SETTLE_MS));
-            if (cancelled || !jobRef.current) {
+            if (!jobRef.current) {
                 return;
             }
 
@@ -100,10 +114,21 @@ export function ReceiptNativeCaptureHost() {
             }
         };
 
-        runCapture();
+        const scheduleCapture = () => {
+            if (!captureStartedRef.current) {
+                runCapture();
+            }
+        };
+
+        if (layoutHeight > 0) {
+            scheduleCapture();
+            return undefined;
+        }
+
+        fallbackTimerRef.current = setTimeout(scheduleCapture, LAYOUT_FALLBACK_MS);
 
         return () => {
-            cancelled = true;
+            clearFallbackTimer();
         };
     }, [job, layoutHeight]);
 
@@ -125,7 +150,7 @@ export function ReceiptNativeCaptureHost() {
                 settings={job.settings}
                 qrImageDataUrl={job.qrImageDataUrl}
                 onLayoutHeight={(height) => {
-                    if (height >= MIN_RECEIPT_HEIGHT) {
+                    if (height > 0) {
                         setLayoutHeight(height);
                     }
                 }}
@@ -139,8 +164,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 0,
         left: 0,
-        transform: [{ translateX: -4096 }],
-        opacity: 1,
+        opacity: 0,
         zIndex: -1,
+        ...(Platform.OS === 'android' ? { elevation: -1 } : null),
     },
 });

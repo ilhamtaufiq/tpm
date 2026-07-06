@@ -80,6 +80,37 @@ export async function buildBleImagePayload(
     return JSON.stringify(payload);
 }
 
+/** Smaller bridge payload — native reads cacheFile/path first. */
+export function buildBleCacheOnlyPayload(imagePayload: string): string | null {
+    try {
+        const parsed = JSON.parse(imagePayload) as {
+            cacheFile?: string;
+            mime?: string;
+            maxWidth?: number;
+            maxHeight?: number;
+            paperSize?: string;
+            url?: string;
+            path?: string;
+        };
+
+        if (!parsed.cacheFile && !parsed.path && !parsed.url) {
+            return null;
+        }
+
+        return JSON.stringify({
+            cacheFile: parsed.cacheFile,
+            mime: parsed.mime ?? 'image/jpeg',
+            maxWidth: parsed.maxWidth,
+            maxHeight: parsed.maxHeight,
+            paperSize: parsed.paperSize,
+            url: parsed.url,
+            path: parsed.path,
+        });
+    } catch {
+        return null;
+    }
+}
+
 function normalizeFileUri(uri: string): string {
     if (uri.startsWith('file://')) {
         return uri;

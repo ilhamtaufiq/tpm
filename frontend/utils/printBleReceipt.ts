@@ -6,10 +6,11 @@ import { getBLEPrinter } from './blePrinter';
 import { getPaperDimensions } from './paperSize';
 import { captureReceiptForBle } from './receiptCapture';
 import { prepareReceiptAssets } from './prepareReceiptAssets';
+import { buildBleCacheOnlyPayload } from './bleReceiptImage';
 
 const RNBLEPrinter = Platform.OS === 'android' ? NativeModules.RNBLEPrinter : null;
 
-const NATIVE_PRINT_SUCCESS_MS = 20000;
+const NATIVE_PRINT_TIMEOUT_MS = 30000;
 
 function invokeNative(method: 'printRawData' | 'printQrCode' | 'printImageData', value: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -34,7 +35,11 @@ function invokeNative(method: 'printRawData' | 'printQrCode' | 'printImageData',
             finish(error || undefined);
         });
 
-        setTimeout(() => finish(), NATIVE_PRINT_SUCCESS_MS);
+        setTimeout(() => {
+            if (!settled) {
+                finish('Printer tidak merespons. Periksa koneksi Bluetooth dan coba lagi.');
+            }
+        }, NATIVE_PRINT_TIMEOUT_MS);
     });
 }
 
@@ -110,21 +115,32 @@ async function buildBase64OnlyPayload(imagePayload: string): Promise<string | nu
 }
 
 async function printImagePayload(imagePayload: string): Promise<void> {
-    try {
-        await invokeNative('printImageData', imagePayload);
-        return;
-    } catch (error) {
-        if (!isImageNotFoundError(error)) {
-            throw error;
+    const attempts: string[] = [];
+    const cacheOnlyPayload = buildBleCacheOnlyPayload(imagePayload);
+    if (cacheOnlyPayload) {
+        attempts.push(cacheOnlyPayload);
+    }
+    attempts.push(imagePayload);
+
+    const base64OnlyPayload = await buildBase64OnlyPayload(imagePayload);
+    if (base64OnlyPayload) {
+        attempts.push(base64OnlyPayload);
+    }
+
+    let lastError: Error | null = null;
+    for (const payload of attempts) {
+        try {
+            await invokeNative('printImageData', payload);
+            return;
+        } catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+            if (!isImageNotFoundError(lastError)) {
+                throw lastError;
+            }
         }
     }
 
-    const fallbackPayload = await buildBase64OnlyPayload(imagePayload);
-    if (!fallbackPayload) {
-        throw new Error('Printer tidak dapat membaca gambar struk (image not found).');
-    }
-
-    await invokeNative('printImageData', fallbackPayload);
+    throw lastError ?? new Error('Printer tidak dapat membaca gambar struk (image not found).');
 }
 
 /**

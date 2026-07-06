@@ -15,7 +15,23 @@ import * as ImagePicker from 'expo-image-picker';
 import { Tabs } from '../../components/ui/Tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { executeAndroidThermalPrint } from '../../utils/androidThermalPrint';
-import { prepareReceiptHtml } from '../../utils/prepareReceiptHtml';
+
+const BLE_TEST_PRINT_TIMEOUT_MS = 45000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(message)), ms);
+        promise
+            .then((value) => {
+                clearTimeout(timer);
+                resolve(value);
+            })
+            .catch((error) => {
+                clearTimeout(timer);
+                reject(error);
+            });
+    });
+}
 
 export default function PrintSettingsScreen() {
     const [settings, setSettings] = useState<PrintSettings | null>(null);
@@ -27,6 +43,7 @@ export default function PrintSettingsScreen() {
     const [qzPrinters, setQzPrinters] = useState<string[]>([]);
     const [qzResult, setQzResult] = useState<QzConnectionTestResult | null>(null);
     const [testingPrint, setTestingPrint] = useState(false);
+    const [testingBlePrint, setTestingBlePrint] = useState(false);
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
         title: string;
@@ -44,6 +61,12 @@ export default function PrintSettingsScreen() {
 
     useEffect(() => {
         loadSettings();
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            setTestingBlePrint(false);
+        };
     }, []);
 
     const loadSettings = async () => {
@@ -246,10 +269,10 @@ export default function PrintSettingsScreen() {
     };
 
     const handleMobileBleTestPrint = async () => {
-        if (!settings || Platform.OS !== 'android') return;
+        if (!settings || Platform.OS !== 'android' || testingBlePrint) return;
 
         try {
-            setTestingPrint(true);
+            setTestingBlePrint(true);
             await printSettingsService.saveSettings(settings);
 
             const savedPrinter = await AsyncStorage.getItem('bluetooth_printer');
@@ -282,8 +305,15 @@ export default function PrintSettingsScreen() {
                 paid: 50000,
                 paymentMethod: 'TUNAI',
             };
-            const { settings: processedSettings } = await prepareReceiptHtml(testData, latestSettings);
-            await executeAndroidThermalPrint(testData, processedSettings);
+
+            await withTimeout(
+                executeAndroidThermalPrint(testData, {
+                    ...latestSettings,
+                    footer: `Test ${latestSettings.paperSize} • ${new Date().toLocaleString('id-ID')}`,
+                }),
+                BLE_TEST_PRINT_TIMEOUT_MS,
+                'Cetak test terlalu lama. Pastikan printer menyala dan sudah dipair, lalu coba lagi.',
+            );
 
             setDialogConfig({
                 visible: true,
@@ -301,7 +331,7 @@ export default function PrintSettingsScreen() {
                 type: 'alert',
             });
         } finally {
-            setTestingPrint(false);
+            setTestingBlePrint(false);
         }
     };
 
@@ -668,9 +698,10 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                     {Platform.OS === 'android' ? (
                         <View className="mt-4">
                             <Button
-                                title={testingPrint ? 'Mencetak...' : 'Test Print Bluetooth'}
+                                title={testingBlePrint ? 'Mencetak...' : 'Test Print Bluetooth'}
                                 onPress={handleMobileBleTestPrint}
-                                loading={testingPrint}
+                                loading={testingBlePrint}
+                                disabled={testingBlePrint}
                                 variant="outline-neutral"
                                 className="h-14 rounded-2xl"
                             />
