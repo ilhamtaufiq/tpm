@@ -3,12 +3,17 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PrintSettings, printSettingsService } from './printSettings';
-import { getPaperDimensions, PaperDimensions, receiptDivider } from './paperSize';
+import { getPaperDimensions, PaperDimensions } from './paperSize';
 import { printHtmlInBrowser } from './printHtmlBrowser';
 import { printHtmlOnWeb } from './printHtmlWeb';
 import { buildPublicReceiptUrl } from './publicReceiptUrl';
 import { ensureLogoBase64, buildReceiptLogoHtml } from './receiptLogo';
-import { getBLEPrinter } from './blePrinter';
+import { printBleReceipt } from './printBleReceipt';
+import {
+    formatReceiptCurrency,
+    formatReceiptDate,
+    getReceiptSections,
+} from './receiptFormatters';
 
 export { ensureLogoBase64 } from './receiptLogo';
 
@@ -78,16 +83,8 @@ export function generateReceiptHTML(data: PrintReceiptData, settings: PrintSetti
     const pad = paper.padding;
     const is80mm = paper.paperSize === '80mm';
 
-    const fmt = (n: number) => 'Rp' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-    const formatDate = (date: Date) => {
-        const d = date.getDate().toString().padStart(2, '0');
-        const m = (date.getMonth() + 1).toString().padStart(2, '0');
-        const y = date.getFullYear();
-        const h = date.getHours().toString().padStart(2, '0');
-        const min = date.getMinutes().toString().padStart(2, '0');
-        return `${d}/${m}/${y} - ${h}:${min}`;
-    };
+    const fmt = formatReceiptCurrency;
+    const formatDate = formatReceiptDate;
 
     const infoRow = (label: string, value: string | number | undefined) => value ? `
         <tr><td style="font-size:${fsB}px;padding:1px 0">${label}</td><td style="font-size:${fsB}px;padding:1px 0;text-align:right">${value}</td></tr>
@@ -105,19 +102,8 @@ export function generateReceiptHTML(data: PrintReceiptData, settings: PrintSetti
         return `<div style="text-align:center;font-size:${fsB}px;font-weight:bold;padding:2px 0;text-transform:uppercase">--- ${title} ---</div><table style="width:100%;border-collapse:collapse">${rows}</table>`;
     };
 
-    const services = data.services || (data.type === 'bengkel' ? [] : data.items || []);
-    const parts = data.parts || [];
-    const items = data.items || [];
-    const itemSectionTitle = data.type === 'mobil'
-        ? 'UNIT MOBIL'
-        : data.type === 'jasa_angkut'
-            ? 'JASA ANGKUT'
-            : 'ITEMS';
-    const servicesHtml = (services.length > 0)
-        ? renderItems(services, 'JASA')
-        : (data.type !== 'bengkel' && items.length > 0)
-            ? renderItems(items, itemSectionTitle)
-            : '';
+    const { services, parts, servicesTitle } = getReceiptSections(data);
+    const servicesHtml = services.length > 0 ? renderItems(services, servicesTitle) : '';
     const partsHtml = parts.length > 0 ? renderItems(parts, 'SPAREPART') : '';
 
     const logoHtml = buildReceiptLogoHtml(settings.logoUri, paper.logoMaxPx);
@@ -178,29 +164,12 @@ export async function printReceipt(data: PrintReceiptData, settings?: PrintSetti
         if (Platform.OS === 'web') {
             await printHtmlOnWeb(html, normalizedSettings);
         } else {
-            const blePrinter = getBLEPrinter();
-            if (Platform.OS === 'android' && blePrinter) {
+            if (Platform.OS === 'android') {
                 try {
                     const savedPrinter = await AsyncStorage.getItem('bluetooth_printer');
                     if (savedPrinter) {
                         const device = JSON.parse(savedPrinter);
-                        await blePrinter.init();
-                        await blePrinter.connectPrinter(device.inner_mac_address);
-                        const blePaper = getPaperDimensions(normalizedSettings.paperSize);
-                        const div = receiptDivider(blePaper.charWidth);
-                        let text = `<center><b>${processedSettings.companyName || 'TIGA PUTRA MOTOR'}</b></center>\n`;
-                        text += `${div}\n`;
-                        text += `No: ${data.transactionNumber}\nTgl: ${new Date(data.date).toLocaleString('id-ID')}\nPlg: ${data.customerName}\n`;
-                        text += `${div}\n`;
-                        const all = [...(data.services || []), ...(data.parts || []), ...(data.items || [])];
-                        all.forEach(i => { text += `${i.description.toUpperCase()}\n  ${i.quantity} x ${i.unitPrice}\t${i.subtotal}\n`; });
-                        text += `${div}\n`;
-                        text += `<B>Total: ${data.total}</B>\n`;
-                        if (data.paid !== undefined) text += `Dibayar: ${data.paid}\n`;
-                        if (data.paid !== undefined && data.total > data.paid) text += `Sisa: ${data.total - data.paid}\n`;
-                        text += `${div}\n`;
-                        text += `<center>${processedSettings.footer || 'Terimakasih'}</center>\n\n\n\n`;
-                        await blePrinter.printText(text);
+                        await printBleReceipt(data, processedSettings, device.inner_mac_address);
                         return;
                     }
                 } catch (e) {

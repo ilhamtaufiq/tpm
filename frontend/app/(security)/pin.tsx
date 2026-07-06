@@ -181,6 +181,17 @@ export default function PinScreen() {
                     router.back();
                     return;
                 }
+                else if (action === 'reset_transactions') {
+                    const isValid = await verifyPinMutation.mutateAsync(completedPin);
+                    if (isValid) {
+                        unlock();
+                        router.replace({
+                            pathname: '/(tabs)/profile',
+                            params: { resetConfirm: '1' },
+                        });
+                    }
+                    return;
+                }
 
                 // Normal verify
                 const isValid = await verifyPinMutation.mutateAsync(completedPin);

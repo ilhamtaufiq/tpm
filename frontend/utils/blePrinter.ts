@@ -1,4 +1,5 @@
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
+import { getErrorMessage } from './error';
 
 export type BLEPrinterDevice = {
     device_name: string;
@@ -36,6 +37,42 @@ function loadRawBlePrinter(): BLEPrinterModule | null {
     return rawBlePrinter;
 }
 
+export function isBluetoothDisabledError(error: unknown): boolean {
+    const message = getErrorMessage(error, '').toLowerCase();
+    return message.includes('bluetooth') && message.includes('not enabled');
+}
+
+export function formatBluetoothError(error: unknown, fallback = 'Gagal memindai perangkat'): string {
+    if (isBluetoothDisabledError(error)) {
+        return 'Bluetooth belum aktif. Aktifkan Bluetooth di pengaturan perangkat, lalu coba scan lagi.';
+    }
+
+    const message = getErrorMessage(error, fallback);
+    if (message.toLowerCase().includes('no bluetooth adapter')) {
+        return 'Perangkat ini tidak mendukung Bluetooth.';
+    }
+
+    return message;
+}
+
+export async function openBluetoothSettings(): Promise<void> {
+    if (Platform.OS === 'android') {
+        try {
+            await Linking.sendIntent('android.settings.BLUETOOTH_SETTINGS');
+            return;
+        } catch (error) {
+            console.warn('[BLE] Failed to open Bluetooth settings intent', error);
+        }
+    }
+
+    await Linking.openSettings();
+}
+
+export function resetBLEPrinterState(): void {
+    initPromise = null;
+    scanPromise = null;
+}
+
 export async function ensureBLEPrinterReady(): Promise<BLEPrinterModule> {
     const printer = loadRawBlePrinter();
     if (!printer) {
@@ -49,7 +86,15 @@ export async function ensureBLEPrinterReady(): Promise<BLEPrinterModule> {
         });
     }
 
-    await initPromise;
+    try {
+        await initPromise;
+    } catch (error) {
+        if (isBluetoothDisabledError(error)) {
+            resetBLEPrinterState();
+        }
+        throw error;
+    }
+
     return printer;
 }
 

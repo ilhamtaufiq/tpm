@@ -12,7 +12,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { useResetTransactions } from '../../hooks/useMaintenance';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSecurityStore } from '../../store/useSecurityStore';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { Switch } from 'react-native';
@@ -26,6 +26,7 @@ import { useNotificationStore } from '../../store/useNotificationStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 export default function ProfileScreen() {
+    const { resetConfirm } = useLocalSearchParams<{ resetConfirm?: string }>();
     const insets = useSafeAreaInsets();
     const { user, logout } = useAuthStore();
     const unreadCount = useNotificationStore(state => state.unreadCount);
@@ -39,6 +40,7 @@ export default function ProfileScreen() {
         message: string;
         variant: 'success' | 'error' | 'warning' | 'info';
         type: 'alert' | 'confirm';
+        confirmText?: string;
         onConfirm?: () => void;
     }>({
         visible: false,
@@ -87,21 +89,14 @@ export default function ProfileScreen() {
         }
     };
 
-    const handleReset = () => {
-        // Require PIN re-authentication before allowing destructive reset
-        if (isPinEnabled) {
-            router.push({
-                pathname: '/(security)/pin',
-                params: { mode: 'verify', action: 'reset_transactions' }
-            });
-            return;
-        }
+    const showResetConfirmDialog = React.useCallback(() => {
         setDialogConfig({
             visible: true,
             title: "Hapus Transaksi & Stok?",
             message: "Tindakan ini akan menghapus SELURUH riwayat transaksi dan Stok Mobil (Inventory). Data master (Karyawan, Pelanggan, Sparepart) tetap tersimpan tetapi stok sparepart akan di-nol-kan. Tindakan ini tidak dapat dibatalkan!",
             variant: 'error',
             type: 'confirm',
+            confirmText: 'Hapus',
             onConfirm: () => {
                 resetTransactions(undefined, {
                     onSuccess: () => {
@@ -125,6 +120,25 @@ export default function ProfileScreen() {
                 });
             }
         });
+    }, [resetTransactions]);
+
+    React.useEffect(() => {
+        if (resetConfirm === '1') {
+            showResetConfirmDialog();
+            router.setParams({ resetConfirm: undefined });
+        }
+    }, [resetConfirm, showResetConfirmDialog]);
+
+    const handleReset = () => {
+        // Require PIN re-authentication before allowing destructive reset
+        if (isPinEnabled) {
+            router.push({
+                pathname: '/(security)/pin',
+                params: { mode: 'verify', action: 'reset_transactions' }
+            });
+            return;
+        }
+        showResetConfirmDialog();
     };
 
     const handleToggleWebAccess = async (enabled: boolean) => {
@@ -530,6 +544,7 @@ export default function ProfileScreen() {
                 message={dialogConfig.message}
                 variant={dialogConfig.variant}
                 type={dialogConfig.type}
+                confirmText={dialogConfig.confirmText}
                 onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
                 onConfirm={dialogConfig.onConfirm}
                 loading={isResetting}

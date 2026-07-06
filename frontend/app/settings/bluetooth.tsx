@@ -6,7 +6,15 @@ import { router } from 'expo-router';
 import { Typography } from '../../components/ui/Typography';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
-import { ensureBLEPrinterReady, getBLEPrinter, scanBLEPrinters } from '../../utils/blePrinter';
+import {
+    ensureBLEPrinterReady,
+    formatBluetoothError,
+    getBLEPrinter,
+    isBluetoothDisabledError,
+    openBluetoothSettings,
+    resetBLEPrinterState,
+    scanBLEPrinters,
+} from '../../utils/blePrinter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface BluetoothDevice {
@@ -25,11 +33,15 @@ export default function BluetoothSettingsScreen() {
         title: string;
         message: string;
         variant: 'success' | 'error' | 'warning' | 'info';
+        type?: 'alert' | 'confirm';
+        confirmText?: string;
+        onConfirm?: () => void;
     }>({
         visible: false,
         title: '',
         message: '',
-        variant: 'info'
+        variant: 'info',
+        type: 'alert',
     });
 
     useEffect(() => {
@@ -100,11 +112,30 @@ export default function BluetoothSettingsScreen() {
                 });
             }
         } catch (error) {
+            resetBLEPrinterState();
+
+            if (isBluetoothDisabledError(error)) {
+                setDialogConfig({
+                    visible: true,
+                    title: 'Bluetooth Nonaktif',
+                    message: formatBluetoothError(error),
+                    variant: 'warning',
+                    type: 'confirm',
+                    confirmText: 'Buka Pengaturan',
+                    onConfirm: () => {
+                        setDialogConfig(prev => ({ ...prev, visible: false }));
+                        openBluetoothSettings().catch(console.warn);
+                    },
+                });
+                return;
+            }
+
             setDialogConfig({
                 visible: true,
-                title: 'Scan Error',
-                message: getErrorMessage(error, 'Gagal memindai perangkat'),
-                variant: 'error'
+                title: 'Gagal Memindai',
+                message: formatBluetoothError(error),
+                variant: 'error',
+                type: 'alert',
             });
         } finally {
             setScanning(false);
@@ -275,7 +306,9 @@ export default function BluetoothSettingsScreen() {
                 title={dialogConfig.title}
                 message={dialogConfig.message}
                 variant={dialogConfig.variant}
-                type="alert"
+                type={dialogConfig.type || 'alert'}
+                confirmText={dialogConfig.confirmText}
+                onConfirm={dialogConfig.onConfirm}
                 onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
             />
         </SafeAreaView>

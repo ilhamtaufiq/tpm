@@ -57,8 +57,12 @@ export const AlertDialog = ({
 
     if (!visible) return null;
 
+    const isConfirm = type === 'confirm';
     const modalWidth = Math.min(screenWidth > 480 ? 400 : screenWidth - 48, screenWidth - 32);
     const maxCardHeight = screenHeight - insets.top - insets.bottom - 32;
+    // Reserve space for action buttons so they never get clipped by overflow:hidden
+    const actionsHeight = isConfirm ? 156 : 92;
+    const maxScrollHeight = Math.max(100, maxCardHeight - actionsHeight);
 
     const ui = {
         success: { color: '#10B981', bg: '#F0FDF4', icon: <CheckCircle size={32} color="#10B981" strokeWidth={2.5} /> },
@@ -66,8 +70,6 @@ export const AlertDialog = ({
         warning: { color: '#F59E0B', bg: '#FFFBEB', icon: <AlertCircle size={32} color="#F59E0B" strokeWidth={2.5} /> },
         info: { color: '#023C69', bg: '#F8FAFC', icon: <Info size={32} color="#023C69" strokeWidth={2.5} /> },
     }[variant || 'info'];
-
-    const isConfirm = type === 'confirm';
 
     return (
         <Modal
@@ -102,53 +104,56 @@ export const AlertDialog = ({
                         },
                     ]}
                 >
-                    <ScrollView
-                        bounces={false}
-                        showsVerticalScrollIndicator={false}
-                        style={styles.scrollArea}
-                        contentContainerStyle={styles.scrollContent}
-                    >
-                        <View style={[styles.iconContainer, { backgroundColor: ui.bg, borderColor: `${ui.color}20` }]}>
-                            {ui.icon}
-                        </View>
-                        <Text style={styles.titleText}>{title}</Text>
-                        <Text style={styles.messageText}>{message}</Text>
-                    </ScrollView>
+                    <View style={[styles.body, { maxHeight: maxCardHeight }]}>
+                        <ScrollView
+                            bounces={false}
+                            nestedScrollEnabled
+                            showsVerticalScrollIndicator={false}
+                            style={[styles.scrollArea, { maxHeight: maxScrollHeight }]}
+                            contentContainerStyle={styles.scrollContent}
+                        >
+                            <View style={[styles.iconContainer, { backgroundColor: ui.bg, borderColor: `${ui.color}20` }]}>
+                                {ui.icon}
+                            </View>
+                            <Text style={styles.titleText}>{title}</Text>
+                            <Text style={styles.messageText}>{message}</Text>
+                        </ScrollView>
 
-                    <View style={styles.actionsBox}>
-                        {isConfirm ? (
+                        <View style={styles.actionsBox}>
+                            {isConfirm ? (
+                                <Pressable
+                                    onPress={onClose}
+                                    disabled={loading}
+                                    style={({ pressed }) => [
+                                        styles.btnBase,
+                                        styles.cancelBtn,
+                                        styles.btnFullWidth,
+                                        { opacity: pressed ? 0.7 : 1 },
+                                    ]}
+                                >
+                                    <Text style={styles.cancelText} numberOfLines={1}>
+                                        {cancelText}
+                                    </Text>
+                                </Pressable>
+                            ) : null}
+
                             <Pressable
-                                onPress={onClose}
+                                onPress={() => {
+                                    if (onConfirm) onConfirm();
+                                    else onClose();
+                                }}
                                 disabled={loading}
                                 style={({ pressed }) => [
                                     styles.btnBase,
-                                    styles.cancelBtn,
-                                    styles.btnFlex,
-                                    { opacity: pressed ? 0.7 : 1 },
+                                    styles.btnFullWidth,
+                                    { backgroundColor: ui.color, opacity: pressed ? 0.8 : 1 },
                                 ]}
                             >
-                                <Text style={styles.cancelText} numberOfLines={1}>
-                                    {cancelText}
+                                <Text style={styles.confirmText} numberOfLines={1}>
+                                    {loading ? '...' : confirmText}
                                 </Text>
                             </Pressable>
-                        ) : null}
-
-                        <Pressable
-                            onPress={() => {
-                                if (onConfirm) onConfirm();
-                                else onClose();
-                            }}
-                            disabled={loading}
-                            style={({ pressed }) => [
-                                styles.btnBase,
-                                styles.btnFlex,
-                                { backgroundColor: ui.color, opacity: pressed ? 0.8 : 1 },
-                            ]}
-                        >
-                            <Text style={styles.confirmText} numberOfLines={1}>
-                                {loading ? '...' : confirmText}
-                            </Text>
-                        </Pressable>
+                        </View>
                     </View>
                 </Animated.View>
             </View>
@@ -174,9 +179,14 @@ const styles = StyleSheet.create({
         zIndex: 2,
         overflow: 'hidden',
     },
+    body: {
+        flexDirection: 'column',
+        width: '100%',
+    },
     scrollArea: {
         flexGrow: 0,
         flexShrink: 1,
+        minHeight: 0,
     },
     scrollContent: {
         paddingHorizontal: 24,
@@ -209,7 +219,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 4,
     },
     actionsBox: {
-        flexDirection: 'row',
+        flexDirection: 'column',
         width: '100%',
         paddingHorizontal: 20,
         paddingTop: 16,
@@ -220,9 +230,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         flexShrink: 0,
     },
-    btnFlex: {
-        flex: 1,
-        minWidth: 0,
+    btnFullWidth: {
+        width: '100%',
+        alignSelf: 'stretch',
     },
     btnBase: {
         minHeight: 52,
