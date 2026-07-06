@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, Pressable, TextInput, Image, Platform, Modal, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { ChevronLeft, Printer, Image as ImageIcon, Save, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
@@ -34,6 +35,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
 }
 
 export default function PrintSettingsScreen() {
+    const insets = useSafeAreaInsets();
     const [settings, setSettings] = useState<PrintSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -269,7 +271,8 @@ export default function PrintSettingsScreen() {
     };
 
     const handleMobileBleTestPrint = async () => {
-        if (!settings || Platform.OS !== 'android' || testingBlePrint) return;
+        if (!settings || Platform.OS !== 'android') return;
+        if (testingBlePrint) return;
 
         try {
             setTestingBlePrint(true);
@@ -446,7 +449,11 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                 </View>
             </View>
 
-            <ScrollView className="flex-1 p-6" showsVerticalScrollIndicator={false}>
+            <ScrollView
+                className="flex-1 p-6"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 48) }}
+            >
                 {/* Company Info */}
                 <Card className="p-6 mb-6 rounded-[24px]">
                     <Typography variant="h4" weight="bold" className="mb-4">
@@ -700,8 +707,6 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                             <Button
                                 title={testingBlePrint ? 'Mencetak...' : 'Test Print Bluetooth'}
                                 onPress={handleMobileBleTestPrint}
-                                loading={testingBlePrint}
-                                disabled={testingBlePrint}
                                 variant="outline-neutral"
                                 className="h-14 rounded-2xl"
                             />

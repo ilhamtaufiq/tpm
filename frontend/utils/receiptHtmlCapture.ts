@@ -13,6 +13,17 @@ let captureRunner: ReceiptHtmlCaptureRunner = null;
 let pendingJobs: ReceiptHtmlCaptureJob[] = [];
 let activeJob: ReceiptHtmlCaptureJob | null = null;
 
+function rejectJob(job: ReceiptHtmlCaptureJob, message: string): void {
+    job.reject(new Error(message));
+}
+
+function clearActiveJob(message?: string): void {
+    if (activeJob && message) {
+        rejectJob(activeJob, message);
+    }
+    activeJob = null;
+}
+
 function pumpCaptureQueue(): void {
     if (activeJob || pendingJobs.length === 0 || !captureRunner) {
         return;
@@ -38,11 +49,25 @@ function pumpCaptureQueue(): void {
 }
 
 export function registerReceiptHtmlCaptureHost(runner: ReceiptHtmlCaptureRunner): void {
+    if (!runner) {
+        clearActiveJob('Layanan render struk WebView dihentikan. Coba cetak lagi.');
+        pendingJobs.splice(0).forEach((job) => {
+            rejectJob(job, 'Layanan render struk WebView dihentikan. Coba cetak lagi.');
+        });
+        captureRunner = null;
+        return;
+    }
+
+    if (activeJob) {
+        clearActiveJob('Render struk WebView sebelumnya dibatalkan. Coba cetak lagi.');
+    }
+
     captureRunner = runner;
     pumpCaptureQueue();
 }
 
-export function captureReceiptHtmlToImage(
+/** Returns ESC/POS raster bytes as base64 (produced inside WebView via html2canvas). */
+export function captureReceiptHtmlToEscPos(
     receiptHtml: string,
     settings: PrintSettings,
 ): Promise<string> {
@@ -61,3 +86,6 @@ export function captureReceiptHtmlToImage(
         pumpCaptureQueue();
     });
 }
+
+/** @deprecated Use captureReceiptHtmlToEscPos */
+export const captureReceiptHtmlToImage = captureReceiptHtmlToEscPos;

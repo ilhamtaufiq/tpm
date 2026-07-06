@@ -162,10 +162,10 @@ export function ReceiptNativeCaptureHost() {
 const styles = StyleSheet.create({
     host: {
         position: 'absolute',
-        top: 0,
         left: 0,
-        opacity: 0,
-        zIndex: -1,
-        ...(Platform.OS === 'android' ? { elevation: -1 } : null),
+        top: 0,
+        opacity: 0.02,
+        zIndex: 9998,
+        overflow: 'hidden',
     },
 });

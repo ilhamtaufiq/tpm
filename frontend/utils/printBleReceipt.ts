@@ -5,14 +5,14 @@ import { PrintSettings } from './printSettings';
 import { getBLEPrinter } from './blePrinter';
 import { getPaperDimensions } from './paperSize';
 import { captureReceiptForBle } from './receiptCapture';
-import { prepareReceiptAssets } from './prepareReceiptAssets';
+import { captureReceiptHtmlToEscPos } from './receiptHtmlCapture';
+import { prepareReceiptHtml } from './prepareReceiptHtml';
 import { buildBleCacheOnlyPayload } from './bleReceiptImage';
-import { jpegPayloadToEscPosBase64 } from './receiptEscPos';
 
 const RNBLEPrinter = Platform.OS === 'android' ? NativeModules.RNBLEPrinter : null;
 
-const NATIVE_PRINT_TIMEOUT_MS = 30000;
-const NATIVE_RAW_PRINT_ASSUME_OK_MS = 3000;
+const NATIVE_IMAGE_PRINT_TIMEOUT_MS = 30000;
+const NATIVE_RAW_PRINT_TIMEOUT_MS = 20000;
 
 function invokeNative(
     method: 'printRawData' | 'printQrCode' | 'printImageData',
@@ -41,15 +41,11 @@ function invokeNative(
         });
 
         const timeoutMs = method === 'printRawData'
-            ? NATIVE_RAW_PRINT_ASSUME_OK_MS
-            : NATIVE_PRINT_TIMEOUT_MS;
+            ? NATIVE_RAW_PRINT_TIMEOUT_MS
+            : NATIVE_IMAGE_PRINT_TIMEOUT_MS;
 
         setTimeout(() => {
             if (!settled) {
-                if (method === 'printRawData') {
-                    finish();
-                    return;
-                }
                 finish('Printer tidak merespons. Periksa koneksi Bluetooth dan coba lagi.');
             }
         }, timeoutMs);
@@ -76,7 +72,7 @@ async function cutBlePaper(): Promise<void> {
             tailingLine: false,
             encoding: 'UTF8',
         });
-        setTimeout(resolve, 400);
+        setTimeout(resolve, 500);
     });
 }
 
@@ -139,12 +135,8 @@ function buildPlainFilePathAttempts(imagePayload: string): string[] {
         };
 
         const attempts: string[] = [];
-        if (parsed.absoluteCachePath) {
-            attempts.push(parsed.absoluteCachePath);
-        }
-        if (parsed.path) {
-            attempts.push(parsed.path);
-        }
+        if (parsed.absoluteCachePath) attempts.push(parsed.absoluteCachePath);
+        if (parsed.path) attempts.push(parsed.path);
         if (parsed.url) {
             attempts.push(parsed.url.replace(/^file:\/\//, ''));
             attempts.push(parsed.url);
@@ -196,20 +188,70 @@ async function printImagePayload(imagePayload: string): Promise<void> {
     throw lastError ?? new Error('Printer tidak dapat membaca gambar struk (image not found).');
 }
 
-async function printReceiptPayload(imagePayload: string): Promise<void> {
-    try {
-        const escPosBase64 = await jpegPayloadToEscPosBase64(imagePayload);
-        await invokeNative('printRawData', escPosBase64);
-        return;
-    } catch (escPosError) {
-        console.warn('[Print] ESC/POS encode failed, fallback ke printImageData:', escPosError);
+async function captureEscPosFromWebView(
+    data: PrintReceiptData,
+    settings: PrintSettings,
+): Promise<string> {
+    const prepared = await prepareReceiptHtml(data, settings);
+    const escPosBase64 = await captureReceiptHtmlToEscPos(prepared.html, prepared.settings);
+
+    if (!escPosBase64 || escPosBase64.length < 32) {
+        throw new Error('Data ESC/POS struk kosong setelah render WebView.');
     }
 
-    await printImagePayload(imagePayload);
+    return escPosBase64;
+}
+
+async function captureEscPosFromNativeView(
+    data: PrintReceiptData,
+    settings: PrintSettings,
+    qrImageDataUrl: string | null,
+): Promise<string> {
+    const imagePayload = await captureReceiptForBle(data, settings, qrImageDataUrl);
+    if (!imagePayload || imagePayload.length < 32) {
+        throw new Error('Gagal render struk visual untuk printer thermal.');
+    }
+    return imagePayload;
+}
+
+async function printEscPosBase64(escPosBase64: string): Promise<void> {
+    await invokeNative('printRawData', escPosBase64);
+}
+
+async function printReceiptRaster(
+    data: PrintReceiptData,
+    settings: PrintSettings,
+): Promise<void> {
+    let webViewError: Error | null = null;
+
+    try {
+        const escPosBase64 = await captureEscPosFromWebView(data, settings);
+        await printEscPosBase64(escPosBase64);
+        return;
+    } catch (error) {
+        webViewError = error instanceof Error ? error : new Error(String(error));
+        console.warn('[Print] WebView ESC/POS gagal, fallback native view-shot:', webViewError.message);
+    }
+
+    const prepared = await prepareReceiptHtml(data, settings);
+    const imagePayload = await captureEscPosFromNativeView(
+        data,
+        prepared.settings,
+        prepared.qrImageDataUrl,
+    );
+
+    try {
+        await printImagePayload(imagePayload);
+    } catch (nativeError) {
+        const nativeMessage = nativeError instanceof Error ? nativeError.message : String(nativeError);
+        throw new Error(
+            `Gagal cetak struk.\nWebView: ${webViewError?.message ?? 'unknown'}\nNative: ${nativeMessage}`,
+        );
+    }
 }
 
 /**
- * Android BLE: native thermal view → view-shot → ESC/POS printRawData (primary).
+ * Android BLE: QZ-matching HTML → WebView/html2canvas → ESC/POS printRawData (primary).
  */
 export async function printBleReceipt(
     data: PrintReceiptData,
@@ -227,18 +269,11 @@ export async function printBleReceipt(
         paperSize: paper.paperSize,
     };
 
-    const { settings: preparedSettings, qrImageDataUrl } = await prepareReceiptAssets(data, normalizedSettings);
-    const imagePayload = await captureReceiptForBle(data, preparedSettings, qrImageDataUrl);
-
-    if (!imagePayload || imagePayload.length < 32) {
-        throw new Error('Gagal render struk visual untuk printer thermal.');
-    }
-
     try {
         await printer.init();
         await printer.connectPrinter(macAddress);
-        await printReceiptPayload(imagePayload);
-        await delay(400);
+        await printReceiptRaster(data, normalizedSettings);
+        await delay(500);
         await cutBlePaper();
     } finally {
         try {
