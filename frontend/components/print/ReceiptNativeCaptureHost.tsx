@@ -2,15 +2,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import { registerReceiptCaptureHost, ReceiptCaptureJob } from '../../utils/receiptCapture';
-import { getBleRasterSpec } from '../../utils/paperSize';
-import { buildBleImagePayloadFromFile } from '../../utils/bleReceiptImage';
+import { getBleRasterSpec, getPaperDimensions } from '../../utils/paperSize';
+import { buildBleImagePayload } from '../../utils/bleReceiptImage';
 import { ThermalReceiptView } from './ThermalReceiptView';
 
 const CAPTURE_TIMEOUT_MS = 30000;
-const LAYOUT_SETTLE_MS = 500;
+const LAYOUT_SETTLE_MS = 600;
+const MIN_RECEIPT_HEIGHT = 120;
 
 export function ReceiptNativeCaptureHost() {
     const [job, setJob] = useState<ReceiptCaptureJob | null>(null);
+    const [layoutHeight, setLayoutHeight] = useState(0);
     const captureRefView = useRef<View>(null);
     const jobRef = useRef<ReceiptCaptureJob | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -29,6 +31,7 @@ export function ReceiptNativeCaptureHost() {
         const current = jobRef.current;
         jobRef.current = null;
         setJob(null);
+        setLayoutHeight(0);
         if (current && handler) {
             handler(current);
         }
@@ -38,6 +41,7 @@ export function ReceiptNativeCaptureHost() {
         registerReceiptCaptureHost((captureJob) => {
             jobRef.current = captureJob;
             captureStartedRef.current = false;
+            setLayoutHeight(0);
             setJob(captureJob);
 
             clearCaptureTimeout();
@@ -55,7 +59,7 @@ export function ReceiptNativeCaptureHost() {
     }, []);
 
     useEffect(() => {
-        if (!job || captureStartedRef.current) {
+        if (!job || captureStartedRef.current || layoutHeight < MIN_RECEIPT_HEIGHT) {
             return undefined;
         }
 
@@ -78,7 +82,7 @@ export function ReceiptNativeCaptureHost() {
 
                 const tmpUri = await captureRef(captureRefView, {
                     format: 'jpg',
-                    quality: 0.92,
+                    quality: 0.9,
                     width: raster.targetWidthPx,
                     result: 'tmpfile',
                 });
@@ -87,11 +91,7 @@ export function ReceiptNativeCaptureHost() {
                     throw new Error('Gagal capture gambar struk.');
                 }
 
-                const imagePayload = await buildBleImagePayloadFromFile(
-                    tmpUri,
-                    current.settings.paperSize,
-                );
-
+                const imagePayload = await buildBleImagePayload(tmpUri, current.settings.paperSize);
                 finishJob((resolved) => resolved.resolve(imagePayload));
             } catch (error) {
                 finishJob((rejected) => {
@@ -105,19 +105,30 @@ export function ReceiptNativeCaptureHost() {
         return () => {
             cancelled = true;
         };
-    }, [job]);
+    }, [job, layoutHeight]);
 
     if (!job) {
         return null;
     }
 
+    const paper = getPaperDimensions(job.settings.paperSize);
+
     return (
-        <View style={styles.host} pointerEvents="none" collapsable={false}>
+        <View
+            style={[styles.host, { width: paper.widthPx }]}
+            pointerEvents="none"
+            collapsable={false}
+        >
             <ThermalReceiptView
                 ref={captureRefView}
                 data={job.data}
                 settings={job.settings}
                 qrImageDataUrl={job.qrImageDataUrl}
+                onLayoutHeight={(height) => {
+                    if (height >= MIN_RECEIPT_HEIGHT) {
+                        setLayoutHeight(height);
+                    }
+                }}
             />
         </View>
     );
@@ -126,9 +137,10 @@ export function ReceiptNativeCaptureHost() {
 const styles = StyleSheet.create({
     host: {
         position: 'absolute',
-        left: 0,
         top: 0,
-        opacity: 0.01,
+        left: 0,
+        transform: [{ translateX: -4096 }],
+        opacity: 1,
         zIndex: -1,
     },
 });

@@ -46,7 +46,7 @@ index 209c18a..18fb257 100644
  
  
 diff --git a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
-index 431c179..24fc854 100644
+index 431c179..d755b36 100644
 --- a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
 +++ b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
 @@ -14,6 +14,7 @@ import com.facebook.react.bridge.ActivityEventListener;
@@ -226,7 +226,7 @@ index 431c179..24fc854 100644
              URL url = new URL(src);
              HttpURLConnection connection = (HttpURLConnection) url.openConnection();
              connection.setDoInput(true);
-@@ -256,21 +390,77 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+@@ -256,21 +390,94 @@ public class BLEPrinterAdapter implements PrinterAdapter{
  
              return myBitmap;
          } catch (IOException e) {
@@ -258,7 +258,7 @@ index 431c179..24fc854 100644
 +        if (imageUrl == null || imageUrl.trim().isEmpty()) {
 +            return null;
 +        }
- 
++
 +        String source = imageUrl;
 +        int maxWidth = 0;
 +
@@ -285,8 +285,25 @@ index 431c179..24fc854 100644
 +                        return maxWidth > 0 ? scaleBitmapToWidth(decoded, maxWidth) : decoded;
 +                    }
 +                }
+ 
++                String path = payload.optString("path", "");
++                if (!path.isEmpty()) {
++                    Bitmap decoded = decodeBitmapFile(path);
++                    if (decoded != null) {
++                        return maxWidth > 0 ? scaleBitmapToWidth(decoded, maxWidth) : decoded;
++                    }
++                    Log.w(LOG_TAG, "decodePrintPayload path decode failed: " + path);
++                }
 +
-+                source = payload.optString("url", imageUrl);
++                String fileUrl = payload.optString("url", "");
++                if (!fileUrl.isEmpty()) {
++                    Bitmap decoded = decodeBitmapSource(fileUrl);
++                    if (decoded != null) {
++                        return maxWidth > 0 ? scaleBitmapToWidth(decoded, maxWidth) : decoded;
++                    }
++                }
++
++                source = fileUrl.isEmpty() ? imageUrl : fileUrl;
 +            } catch (Exception e) {
 +                Log.w(LOG_TAG, "decodePrintPayload parse failed", e);
 +            }
@@ -309,7 +326,7 @@ index 431c179..24fc854 100644
              errorCallback.invoke("bluetooth connection is not built, may be you forgot to connectPrinter");
              return;
          }
-@@ -286,18 +476,12 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+@@ -286,18 +493,12 @@ public class BLEPrinterAdapter implements PrinterAdapter{
              printerOutputStream.write(CENTER_ALIGN);
  
              for (int y = 0; y < pixels.length; y += 24) {
@@ -328,7 +345,7 @@ index 431c179..24fc854 100644
                  printerOutputStream.write(LINE_FEED);
              }
              printerOutputStream.write(SET_LINE_SPACE_32);
-@@ -307,8 +491,19 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+@@ -307,8 +508,19 @@ public class BLEPrinterAdapter implements PrinterAdapter{
          } catch (IOException e) {
              Log.e(LOG_TAG, "failed to print data");
              e.printStackTrace();

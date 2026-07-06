@@ -16,6 +16,7 @@ export interface ThermalReceiptViewProps {
     data: PrintReceiptData;
     settings: PrintSettings;
     qrImageDataUrl?: string | null;
+    onLayoutHeight?: (height: number) => void;
 }
 
 function Divider() {
@@ -53,7 +54,7 @@ function ReceiptRow({
 }
 
 export const ThermalReceiptView = React.forwardRef<View, ThermalReceiptViewProps>(
-    ({ data, settings, qrImageDataUrl }, ref) => {
+    ({ data, settings, qrImageDataUrl, onLayoutHeight }, ref) => {
         const paper = getPaperDimensions(settings.paperSize);
         const doc = useMemo(() => buildReceiptDocument(data, settings), [data, settings]);
         const is80mm = paper.paperSize === '80mm';
@@ -69,6 +70,7 @@ export const ThermalReceiptView = React.forwardRef<View, ThermalReceiptViewProps
             <View
                 ref={ref}
                 collapsable={false}
+                onLayout={(event) => onLayoutHeight?.(event.nativeEvent.layout.height)}
                 style={[styles.root, { width: paper.widthPx, paddingHorizontal: padH, paddingVertical: 8 }]}
             >
                 <View style={styles.center}>

@@ -63,18 +63,19 @@ export async function buildBleImagePayload(
         });
     }
 
+    const normalized = normalizeFileUri(imageSource);
+    const absolutePath = stripFileScheme(normalized);
+
     const payload: Record<string, string | number> = {
         cacheFile,
         mime,
         maxWidth: raster.targetWidthPx,
         maxHeight: raster.maxHeightPx,
         paperSize: raster.paperSize,
+        url: normalized,
+        path: absolutePath,
+        imageBase64: base64,
     };
-
-    // Prefer inline base64 for reliability; native falls back to cacheFile.
-    if (base64.length <= 900_000) {
-        payload.imageBase64 = base64;
-    }
 
     return JSON.stringify(payload);
 }
@@ -89,32 +90,14 @@ function normalizeFileUri(uri: string): string {
     return uri;
 }
 
-/** Cache-only payload for native BLE decode — avoids large base64 over RN bridge. */
+function stripFileScheme(uri: string): string {
+    return uri.replace(/^file:\/\//, '');
+}
+
+/** Build native print payload with inline base64 (primary) + cache file + absolute url fallbacks. */
 export async function buildBleImagePayloadFromFile(
     fileUri: string,
     paperSize?: string | null,
 ): Promise<string> {
-    const raster = getBleRasterSpec(paperSize);
-    const cacheDir = FileSystem.cacheDirectory;
-    if (!cacheDir) {
-        throw new Error('Cache aplikasi tidak tersedia untuk cetak struk.');
-    }
-
-    const normalized = normalizeFileUri(fileUri);
-    const info = await FileSystem.getInfoAsync(normalized);
-    if (!info.exists) {
-        throw new Error('Gambar struk tidak ditemukan setelah capture.');
-    }
-
-    const cacheFile = `tpm_receipt_${Date.now()}.jpg`;
-    const targetUri = `${cacheDir}${cacheFile}`;
-    await FileSystem.copyAsync({ from: normalized, to: targetUri });
-
-    return JSON.stringify({
-        cacheFile,
-        mime: 'image/jpeg',
-        maxWidth: raster.targetWidthPx,
-        maxHeight: raster.maxHeightPx,
-        paperSize: raster.paperSize,
-    });
+    return buildBleImagePayload(fileUri, paperSize);
 }
