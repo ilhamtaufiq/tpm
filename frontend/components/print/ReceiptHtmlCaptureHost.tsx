@@ -7,11 +7,13 @@ import {
 } from '../../utils/receiptHtmlCapture';
 import { getBleRasterSpec, getPaperDimensions } from '../../utils/paperSize';
 import { buildReceiptRasterHtml } from '../../utils/receiptHtmlRaster';
+import { getHtml2CanvasScript } from '../../utils/html2canvasBundle';
 
 const CAPTURE_TIMEOUT_MS = 45000;
 
 export function ReceiptHtmlCaptureHost() {
     const [job, setJob] = useState<ReceiptHtmlCaptureJob | null>(null);
+    const [html2canvasScript, setHtml2canvasScript] = useState<string | null>(null);
     const jobRef = useRef<ReceiptHtmlCaptureJob | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -33,6 +35,28 @@ export function ReceiptHtmlCaptureHost() {
     };
 
     useEffect(() => {
+        let cancelled = false;
+
+        getHtml2CanvasScript()
+            .then((script) => {
+                if (!cancelled) {
+                    setHtml2canvasScript(script);
+                }
+            })
+            .catch((error) => {
+                console.warn('[Print] html2canvas bundle load failed:', error);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!html2canvasScript) {
+            return undefined;
+        }
+
         registerReceiptHtmlCaptureHost((captureJob) => {
             jobRef.current = captureJob;
             setJob(captureJob);
@@ -49,7 +73,7 @@ export function ReceiptHtmlCaptureHost() {
             registerReceiptHtmlCaptureHost(null);
             clearCaptureTimeout();
         };
-    }, []);
+    }, [html2canvasScript]);
 
     const handleMessage = async (event: WebViewMessageEvent) => {
         const current = jobRef.current;
@@ -79,13 +103,13 @@ export function ReceiptHtmlCaptureHost() {
         }
     };
 
-    if (!job) {
+    if (!job || !html2canvasScript) {
         return null;
     }
 
     const paper = getPaperDimensions(job.settings.paperSize);
     const raster = getBleRasterSpec(job.settings.paperSize);
-    const rasterHtml = buildReceiptRasterHtml(job.receiptHtml, job.settings.paperSize);
+    const rasterHtml = buildReceiptRasterHtml(job.receiptHtml, job.settings.paperSize, html2canvasScript);
     const webViewHeight = raster.layoutMaxHeightPx;
 
     return (

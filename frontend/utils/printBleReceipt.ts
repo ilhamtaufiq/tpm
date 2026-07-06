@@ -4,7 +4,6 @@ import { PrintSettings } from './printSettings';
 import { getBLEPrinter } from './blePrinter';
 import { getPaperDimensions } from './paperSize';
 import { captureReceiptHtmlToImage } from './receiptHtmlCapture';
-import { generateBleReceiptText } from './generateBleReceiptText';
 
 const RNBLEPrinter = Platform.OS === 'android' ? NativeModules.RNBLEPrinter : null;
 
@@ -61,49 +60,11 @@ async function cutBlePaper(): Promise<void> {
     });
 }
 
-async function printBleTextReceipt(
-    data: PrintReceiptData,
-    settings: PrintSettings,
-    macAddress: string,
-): Promise<void> {
-    const printer = getBLEPrinter();
-    if (!printer) {
-        throw new Error('Modul printer Bluetooth tidak tersedia');
-    }
-
-    const receiptText = generateBleReceiptText(data, settings);
-    await printer.init();
-    await printer.connectPrinter(macAddress);
-
-    const rawPrinter = require('react-native-thermal-receipt-printer').BLEPrinter;
-    await new Promise<void>((resolve, reject) => {
-        try {
-            rawPrinter.printBill(`${receiptText}\n\n`, {
-                beep: false,
-                cut: false,
-                tailingLine: false,
-                encoding: 'UTF8',
-            });
-            setTimeout(resolve, 600);
-        } catch (error) {
-            reject(error);
-        }
-    });
-
-    await cutBlePaper();
-    try {
-        await printer.closeConn();
-    } catch {
-        // ignore
-    }
-}
-
 /**
  * Print receipt on BLE thermal: HTML → ESC/POS raster via WebView → printRawData.
- * Falls back to plain-text receipt if raster capture fails.
  */
 export async function printBleReceipt(
-    data: PrintReceiptData,
+    _data: PrintReceiptData,
     settings: PrintSettings,
     macAddress: string,
     receiptHtml: string,
@@ -119,39 +80,23 @@ export async function printBleReceipt(
         paperSize: paper.paperSize,
     };
 
-    let escPosBase64: string | null = null;
-
-    try {
-        escPosBase64 = await captureReceiptHtmlToImage(receiptHtml, normalizedSettings);
-    } catch (captureError) {
-        console.warn('[BLE] Raster capture failed, using text fallback:', captureError);
+    const escPosBase64 = await captureReceiptHtmlToImage(receiptHtml, normalizedSettings);
+    if (!escPosBase64 || escPosBase64.length < 32) {
+        throw new Error('Gagal render struk visual untuk printer thermal.');
     }
-
-    let rasterPrinted = false;
 
     try {
         await printer.init();
         await printer.connectPrinter(macAddress);
-
-        if (escPosBase64) {
-            await invokeNative('printRawData', escPosBase64);
-            await delay(300);
-            await cutBlePaper();
-            rasterPrinted = true;
-            return;
-        }
-    } catch (printError) {
-        console.warn('[BLE] ESC/POS print failed, using text fallback:', printError);
+        await invokeNative('printRawData', escPosBase64);
+        await delay(300);
+        await cutBlePaper();
     } finally {
         try {
             await printer.closeConn();
         } catch {
             // ignore
         }
-    }
-
-    if (!rasterPrinted) {
-        await printBleTextReceipt(data, normalizedSettings, macAddress);
     }
 }
 

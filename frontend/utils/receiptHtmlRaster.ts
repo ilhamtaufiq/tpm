@@ -4,12 +4,15 @@ import { getBleRasterSpec } from './paperSize';
  * Renders receipt HTML in WebView, rasterizes to thermal width, encodes ESC/POS in JS,
  * and returns base64 raw bytes for BLE printRawData (no native bitmap decode).
  */
-export function buildReceiptRasterHtml(fullReceiptHtml: string, paperSize?: string | null): string {
+export function buildReceiptRasterHtml(
+    fullReceiptHtml: string,
+    paperSize: string | null | undefined,
+    html2canvasScript: string,
+): string {
     const raster = getBleRasterSpec(paperSize);
     const scale = raster.captureScale.toFixed(4);
 
-    const script = `
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
+    const captureScript = `
 <script>
 (function () {
   var TARGET_WIDTH = ${raster.targetWidthPx};
@@ -128,7 +131,7 @@ export function buildReceiptRasterHtml(fullReceiptHtml: string, paperSize?: stri
 
   function capture() {
     if (!window.html2canvas) {
-      send({ ok: false, error: 'html2canvas tidak termuat. Periksa koneksi internet.' });
+      send({ ok: false, error: 'html2canvas tidak termuat dari bundle aplikasi.' });
       return;
     }
 
@@ -198,9 +201,12 @@ export function buildReceiptRasterHtml(fullReceiptHtml: string, paperSize?: stri
 })();
 <\/script>`;
 
+    const libraryScript = `<script>${html2canvasScript}<\/script>`;
+    const injected = `${libraryScript}${captureScript}`;
+
     if (fullReceiptHtml.includes('</body>')) {
-        return fullReceiptHtml.replace('</body>', `${script}</body>`);
+        return fullReceiptHtml.replace('</body>', `${injected}</body>`);
     }
 
-    return `${fullReceiptHtml}${script}`;
+    return `${fullReceiptHtml}${injected}`;
 }

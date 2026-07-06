@@ -48,7 +48,7 @@ export function captureReceiptHtmlToImage(
 ): Promise<string> {
     return new Promise((resolve, reject) => {
         if (!captureRunner) {
-            reject(new Error('Layanan render struk belum siap. Tutup dan buka ulang aplikasi.'));
+            reject(new Error('Layanan render struk belum siap. Tunggu beberapa detik lalu coba cetak lagi.'));
             return;
         }
 
