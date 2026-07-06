@@ -87,24 +87,16 @@ export function ReceiptHtmlCaptureHost() {
                 return;
             }
 
-            if (!payload?.ok || !payload?.imageBase64) {
+            if (!payload?.ok || !payload?.escPosBase64) {
                 throw new Error(payload?.error || 'Gagal render struk');
             }
 
-            const imageBase64 = String(payload.imageBase64);
-            if (imageBase64.length < 64) {
-                throw new Error('Data gambar struk kosong.');
+            const escPosBase64 = String(payload.escPosBase64);
+            if (escPosBase64.length < 32) {
+                throw new Error('Data printer struk kosong.');
             }
 
-            const raster = getBleRasterSpec(current.settings.paperSize);
-            const printPayload = JSON.stringify({
-                imageBase64,
-                maxWidth: raster.targetWidthPx,
-                maxHeight: raster.maxHeightPx,
-                paperSize: raster.paperSize,
-            });
-
-            finishJob((resolved) => resolved.resolve(printPayload));
+            finishJob((resolved) => resolved.resolve(escPosBase64));
         } catch (error) {
             finishJob((rejected) => {
                 rejected.reject(error instanceof Error ? error : new Error(String(error)));

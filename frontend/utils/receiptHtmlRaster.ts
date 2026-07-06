@@ -2,8 +2,8 @@ import { getBleRasterSpec } from './paperSize';
 import { HTML2CANVAS_CACHE_FILENAME } from './html2canvasBundle';
 
 /**
- * Renders receipt HTML in WebView, rasterizes to thermal width, and returns
- * a JPEG base64 payload for native printImageData.
+ * Same receipt HTML as QZ Tray — rasterized in WebView, ESC/POS encoded in JS,
+ * sent via printRawData (no native bitmap decode; avoids "image not found").
  */
 export function buildReceiptRasterHtml(
     fullReceiptHtml: string,
@@ -11,7 +11,6 @@ export function buildReceiptRasterHtml(
 ): string {
     const raster = getBleRasterSpec(paperSize);
     const scale = raster.captureScale.toFixed(4);
-    const jpegQuality = raster.jpegQuality.toFixed(2);
 
     const captureScript = `
 <script>
@@ -20,7 +19,6 @@ export function buildReceiptRasterHtml(
   var MAX_HEIGHT = ${raster.maxHeightPx};
   var LAYOUT_WIDTH = ${raster.layoutWidthPx};
   var CAPTURE_SCALE = ${scale};
-  var JPEG_QUALITY = ${jpegQuality};
   var started = false;
 
   function send(payload) {
@@ -65,6 +63,74 @@ export function buildReceiptRasterHtml(
     return out;
   }
 
+  function shouldPrint(r, g, b, a) {
+    if (a < 128) return false;
+    var luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+    return luminance < 127;
+  }
+
+  function bytesToBase64(bytes) {
+    var binary = '';
+    var chunk = 8192;
+    for (var i = 0; i < bytes.length; i += chunk) {
+      var slice = bytes.subarray(i, i + chunk);
+      binary += String.fromCharCode.apply(null, slice);
+    }
+    return btoa(binary);
+  }
+
+  function canvasToEscPosBase64(canvas) {
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width;
+    var h = canvas.height;
+    var imageData = ctx.getImageData(0, 0, w, h);
+    var data = imageData.data;
+    var bytes = [];
+
+    function pushByte(value) {
+      bytes.push(value & 0xff);
+    }
+
+    function pushBytes(arr) {
+      for (var i = 0; i < arr.length; i++) {
+        pushByte(arr[i]);
+      }
+    }
+
+    pushBytes([0x1B, 0x40]);
+    pushBytes([0x1B, 0x33, 24]);
+    pushBytes([0x1B, 0x61, 0x31]);
+
+    for (var y = 0; y < h; y += 24) {
+      pushBytes([0x1B, 0x2A, 33]);
+      pushByte(w & 0xff);
+      pushByte((w >> 8) & 0xff);
+
+      for (var x = 0; x < w; x++) {
+        for (var band = 0; band < 3; band++) {
+          var slice = 0;
+          for (var bit = 0; bit < 8; bit++) {
+            var row = y + band * 8 + bit;
+            if (row < h) {
+              var idx = (row * w + x) * 4;
+              if (shouldPrint(data[idx], data[idx + 1], data[idx + 2], data[idx + 3])) {
+                slice |= (1 << (7 - bit));
+              }
+            }
+          }
+          pushByte(slice);
+        }
+      }
+
+      pushByte(0x0A);
+    }
+
+    pushBytes([0x1B, 0x33, 32]);
+    pushByte(0x0A);
+
+    return bytesToBase64(bytes);
+  }
+
   function capture() {
     if (started) return;
     started = true;
@@ -92,16 +158,14 @@ export function buildReceiptRasterHtml(
       imageTimeout: 15000,
     }).then(function (canvas) {
       var output = finalizeForThermal(canvas);
-      var dataUrl = output.toDataURL('image/jpeg', JPEG_QUALITY);
-      var comma = dataUrl.indexOf(',');
-      var imageBase64 = comma >= 0 ? dataUrl.slice(comma + 1) : '';
-      if (!imageBase64 || imageBase64.length < 64) {
+      var escPosBase64 = canvasToEscPosBase64(output);
+      if (!escPosBase64 || escPosBase64.length < 32) {
         send({ ok: false, error: 'Gagal mengenkode gambar struk ke printer.' });
         return;
       }
       send({
         ok: true,
-        imageBase64: imageBase64,
+        escPosBase64: escPosBase64,
         width: output.width,
         height: output.height,
       });

@@ -3,7 +3,7 @@ import { PrintSettings } from './printSettings';
 export interface ReceiptHtmlCaptureJob {
     receiptHtml: string;
     settings: PrintSettings;
-    resolve: (imagePayload: string) => void;
+    resolve: (escPosBase64: string) => void;
     reject: (error: Error) => void;
 }
 
@@ -24,8 +24,8 @@ function pumpCaptureQueue(): void {
     captureRunner({
         receiptHtml: job.receiptHtml,
         settings: job.settings,
-        resolve: (imagePayload: string) => {
-            job.resolve(imagePayload);
+        resolve: (escPosBase64: string) => {
+            job.resolve(escPosBase64);
             activeJob = null;
             pumpCaptureQueue();
         },

@@ -61,7 +61,8 @@ async function cutBlePaper(): Promise<void> {
 }
 
 /**
- * Print receipt on BLE thermal: HTML → JPEG raster via WebView → printImageData.
+ * Print receipt on BLE thermal: same HTML as QZ Tray → WebView raster → printRawData.
+ * Avoids native bitmap decode (printImageData) which caused "image not found".
  */
 export async function printBleReceipt(
     _data: PrintReceiptData,
@@ -80,15 +81,17 @@ export async function printBleReceipt(
         paperSize: paper.paperSize,
     };
 
-    const imagePayload = await captureReceiptHtmlToImage(receiptHtml, normalizedSettings);
-    if (!imagePayload || imagePayload.length < 64) {
+    const escPosBase64 = await captureReceiptHtmlToImage(receiptHtml, normalizedSettings);
+    if (!escPosBase64 || escPosBase64.length < 32) {
         throw new Error('Gagal render struk visual untuk printer thermal.');
     }
 
     try {
         await printer.init();
         await printer.connectPrinter(macAddress);
-        await invokeNative('printImageData', imagePayload);
+
+        await invokeNative('printRawData', escPosBase64);
+
         await delay(300);
         await cutBlePaper();
     } finally {
