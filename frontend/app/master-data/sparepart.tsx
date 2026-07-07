@@ -168,7 +168,19 @@ export default function SparePartMasterScreen() {
     const [importResult, setImportResult] = useState<any>(null);
     const [importError, setImportError] = useState<string>('');
     const [isDownloadingTemplate, setIsDownloadingTemplate] = useState<'stok_format' | 'standard' | null>(null);
-    const importProgressInterval = useRef<any>(null);
+    const importProgressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+    const importProcessingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const clearImportTimers = () => {
+        if (importProgressInterval.current) {
+            clearInterval(importProgressInterval.current);
+            importProgressInterval.current = null;
+        }
+        if (importProcessingTimeout.current) {
+            clearTimeout(importProcessingTimeout.current);
+            importProcessingTimeout.current = null;
+        }
+    };
 
     const handleDownloadImportTemplate = async (format: 'stok_format' | 'standard') => {
         try {
@@ -221,7 +233,6 @@ export default function SparePartMasterScreen() {
             setImportResult(null);
             setImportError('');
 
-            // Simulate upload progress
             let progress = 0;
             importProgressInterval.current = setInterval(() => {
                 progress += Math.random() * 15;
@@ -229,18 +240,18 @@ export default function SparePartMasterScreen() {
                 setImportProgress(Math.round(progress));
             }, 200);
 
-            // Switch to processing after a small delay
-            setTimeout(() => setImportStep('processing'), 800);
+            importProcessingTimeout.current = setTimeout(() => {
+                setImportStep((prev) => (prev === 'uploading' ? 'processing' : prev));
+            }, 800);
 
             const response = await importMutation.mutateAsync(formData);
 
-            // Clear interval and set 100%
-            if (importProgressInterval.current) clearInterval(importProgressInterval.current);
+            clearImportTimers();
             setImportProgress(100);
             setImportResult(response);
             setImportStep('done');
         } catch (error: any) {
-            if (importProgressInterval.current) clearInterval(importProgressInterval.current);
+            clearImportTimers();
             const errorMsg = error?.response?.data?.detail || error?.message || 'Terjadi kesalahan saat mengimpor data.';
             setImportError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
             setImportStep('error');
@@ -267,7 +278,7 @@ export default function SparePartMasterScreen() {
         setImportProgress(0);
         setImportResult(null);
         setImportError('');
-        if (importProgressInterval.current) clearInterval(importProgressInterval.current);
+        clearImportTimers();
         if (wasSuccessful) {
             handleRefresh();
         }
