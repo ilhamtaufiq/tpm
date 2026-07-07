@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, FC } from 'react';
-import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput, Animated } from 'react-native';
+import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput, Animated, Keyboard } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -104,28 +104,33 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                 requestPermission();
             }
 
-            // Load preferred mode
             const saved = await AsyncStorage.getItem('@scanner_mode');
             if (mounted && saved) setScannerMode(saved as any);
         };
 
         initializeScanner();
 
-        // Auto-focus hardware input if visible
-        if (visible) {
-            const timeoutId = setTimeout(() => hwInputRef.current?.focus(), 500);
-            return () => clearTimeout(timeoutId);
-        }
-
-        // Browser compatibility check for 1D barcodes
         if (visible && Platform.OS === 'web' && (window as any).BarcodeDetector) {
             (window as any).BarcodeDetector.getSupportedFormats().then((formats: string[]) => {
                 console.log(`[Scanner] Browser natively supports: ${formats.join(', ')}`);
             }).catch(console.error);
         }
 
+        let focusTimeout: ReturnType<typeof setTimeout> | undefined;
+
+        if (!visible) {
+            hwInputRef.current?.blur();
+            Keyboard.dismiss();
+        } else if (scannerMode === 'hardware') {
+            focusTimeout = setTimeout(() => hwInputRef.current?.focus(), 300);
+        } else {
+            hwInputRef.current?.blur();
+            Keyboard.dismiss();
+        }
+
         return () => {
             mounted = false;
+            if (focusTimeout) clearTimeout(focusTimeout);
         };
     }, [visible, permission, scannerMode]);
 
@@ -234,6 +239,9 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         await AsyncStorage.setItem('@scanner_mode', newMode);
         if (newMode === 'hardware') {
             setTimeout(() => hwInputRef.current?.focus(), 200);
+        } else {
+            hwInputRef.current?.blur();
+            Keyboard.dismiss();
         }
     };
 
@@ -504,7 +512,8 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                             </View>
                         )}
 
-                        {/* Hidden Input for Hardware Scanner */}
+                        {/* Hidden Input for Hardware Scanner — no virtual keyboard on mobile */}
+                        {scannerMode === 'hardware' && (
                         <TextInput
                             ref={hwInputRef}
                             style={{ position: 'absolute', opacity: 0, height: 0, width: 0 }}
@@ -515,13 +524,17 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                 if (code) {
                                     handleBarCodeScanned({ type: 'hardware', data: code });
                                     setHwInput('');
-                                    // Keep focused for next scan
                                     setTimeout(() => hwInputRef.current?.focus(), 100);
                                 }
                             }}
-                            autoFocus={visible}
+                            showSoftInputOnFocus={false}
+                            autoFocus={visible && scannerMode === 'hardware'}
                             blurOnSubmit={false}
+                            caretHidden
+                            contextMenuHidden
+                            importantForAutofill="no"
                         />
+                        )}
 
                         {/* Controls */}
                         <View style={styles.header}>
