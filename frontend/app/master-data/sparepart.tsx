@@ -226,7 +226,7 @@ export default function SparePartMasterScreen() {
                 });
             }
 
-            // Show progress modal
+            setIsImportModalVisible(false);
             setIsImportProgressVisible(true);
             setImportStep('uploading');
             setImportProgress(0);
@@ -264,7 +264,6 @@ export default function SparePartMasterScreen() {
             'Import Sparepart',
             'Import akan mengganti seluruh data sparepart dengan isi file Excel. Disarankan unduh backup/export terlebih dahulu. Lanjutkan?',
             () => {
-                setIsImportModalVisible(false);
                 handleImport();
             },
             { confirmText: 'Import', variant: 'warning' },
@@ -669,8 +668,9 @@ export default function SparePartMasterScreen() {
                 </View>
                 <View className="flex-row justify-end mt-2">
                     <Pressable
-                        onPress={() => setIsImportModalVisible(true)}
-                        className="w-10 h-10 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 mr-2"
+                        onPress={() => !isImportProgressVisible && setIsImportModalVisible(true)}
+                        disabled={isImportProgressVisible}
+                        className={`w-10 h-10 rounded-2xl items-center justify-center border border-gray-100 mr-2 ${isImportProgressVisible ? 'bg-gray-100 opacity-50' : 'bg-gray-50'}`}
                     >
                         <FileUp size={16} color="#023C69" />
                     </Pressable>
@@ -780,9 +780,10 @@ export default function SparePartMasterScreen() {
             </BaseModal>
             {/* Import & Bulk Update Modal */}
             <BaseModal
-                visible={isImportModalVisible}
+                visible={isImportModalVisible && !isImportProgressVisible}
                 onClose={() => setIsImportModalVisible(false)}
                 title="Kelola Data Massal (XLS)"
+                priority={1000}
             >
                 <View className="p-4">
                     <Typography className="text-textGray mb-6 text-center">
@@ -932,6 +933,7 @@ export default function SparePartMasterScreen() {
                 visible={isImportProgressVisible}
                 onClose={importStep === 'done' || importStep === 'error' ? handleCloseImportProgress : () => {}}
                 title="Import Sparepart"
+                priority={3000}
             >
                 <View className="p-6">
                     {/* Step Indicators */}

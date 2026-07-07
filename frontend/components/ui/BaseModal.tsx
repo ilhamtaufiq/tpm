@@ -14,6 +14,8 @@ interface BaseModalProps {
     showCloseButton?: boolean;
     containerClassName?: string;
     fullScreen?: boolean;
+    /** Higher value stacks above other modals (web + native layering). */
+    priority?: number;
 }
 
 export const BaseModal = ({
@@ -24,7 +26,8 @@ export const BaseModal = ({
     maxHeight = '80%',
     showCloseButton = true,
     containerClassName = "",
-    fullScreen = false
+    fullScreen = false,
+    priority = 1000,
 }: BaseModalProps) => {
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(300)).current;
@@ -71,8 +74,9 @@ export const BaseModal = ({
             visible={visible}
             animationType="none"
             onRequestClose={onClose}
+            style={Platform.OS === 'web' ? { zIndex: priority } : undefined}
         >
-            <GestureHandlerRootView style={{ flex: 1 }}>
+            <GestureHandlerRootView style={{ flex: 1, zIndex: priority, elevation: priority }}>
                 <ModalThemeView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
                     <Pressable
                         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}
