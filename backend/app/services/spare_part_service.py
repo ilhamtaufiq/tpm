@@ -929,13 +929,64 @@ class SparePartService:
         output.seek(0)
         return output
 
+    def _write_import_template_instructions(self, ws, lines: List[str]) -> None:
+        ws.column_dimensions["A"].width = 96
+        title_font = openpyxl.styles.Font(bold=True, size=13, color="1D4ED8")
+        heading_font = openpyxl.styles.Font(bold=True, size=11, color="111827")
+        body_font = openpyxl.styles.Font(size=11, color="374151")
+        wrap = openpyxl.styles.Alignment(wrap_text=True, vertical="top")
+
+        for row_idx, line in enumerate(lines, start=1):
+            cell = ws.cell(row=row_idx, column=1, value=line)
+            cell.alignment = wrap
+            if row_idx == 1:
+                cell.font = title_font
+            elif line.endswith(":") or line.isupper():
+                cell.font = heading_font
+            else:
+                cell.font = body_font
+
     def export_import_template(self, format_type: str = "stok_format") -> io.BytesIO:
-        """Generate empty Excel template for spare part import."""
+        """Generate Excel import template with sample data sheet + instruction sheet."""
         wb = openpyxl.Workbook()
-        ws = wb.active
+        ws_data = wb.active
+
+        header_fill = openpyxl.styles.PatternFill("solid", fgColor="E0E7FF")
+        header_font = openpyxl.styles.Font(bold=True, color="1E3A8A")
+        instruction_lines: List[str] = []
 
         if format_type == "standard":
-            ws.title = "Import Standar"
+            ws_data.title = "Import Standar"
+            instruction_lines = [
+                "PETUNJUK IMPORT SPAREPART - FORMAT STANDAR",
+                "",
+                "LANGKAH PENGGUNAAN:",
+                "1. Isi data pada sheet 'Import Standar' mulai baris 2.",
+                "2. Baris 1 adalah header — jangan diubah atau dihapus.",
+                "3. Baris 2 berisi contoh — hapus atau ganti dengan data Anda.",
+                "4. Simpan file, lalu upload melalui menu Import di aplikasi TPM.",
+                "5. Import akan MENGGANTI seluruh data sparepart yang ada.",
+                "",
+                "PENJELASAN KOLOM:",
+                "A - Kode: kode internal TPM. Kosongkan untuk auto-generate (SPRyyMM0001).",
+                "B - Nama Barang: wajib diisi.",
+                "C - Kode Part: kode pabrik / GS1 (90), contoh MD273133003700079.",
+                "D - Kategori: default Umum jika kosong.",
+                "E - Merek: merek barang (opsional).",
+                "F - Satuan: pcs, liter, set, dll. Default pcs.",
+                "G - Stok: jumlah stok saat ini.",
+                "H - Stok Minimal: batas peringatan stok rendah. Default 5.",
+                "I - Harga Beli: harga modal per satuan (angka).",
+                "J - Harga Jual: harga jual per satuan (angka).",
+                "K - Lokasi Rak: posisi rak gudang (opsional).",
+                "L - Catatan: catatan tambahan (opsional).",
+                "M - Kode EAN: barcode EAN-13 untuk scan, contoh 8996001326398.",
+                "",
+                "TIPS UPDATE DATA:",
+                "• Export data existing dulu, edit di Excel, lalu import ulang.",
+                "• Isi Kode Part dan Kode EAN agar scan barcode/QR berfungsi.",
+                "• Baris kosong otomatis dilewati saat import.",
+            ]
             headers = [
                 "Kode", "Nama Barang", "Kode Part", "Kategori", "Merek",
                 "Satuan", "Stok", "Stok Minimal", "Harga Beli", "Harga Jual",
@@ -946,7 +997,37 @@ class SparePartService:
                 "pcs", 10, 5, 50000, 75000, "Rak A1", "Contoh catatan", "8996001326398",
             ]
         else:
-            ws.title = "Import Stok"
+            ws_data.title = "Import Stok"
+            instruction_lines = [
+                "PETUNJUK IMPORT SPAREPART - FORMAT STOK",
+                "",
+                "LANGKAH PENGGUNAAN:",
+                "1. Isi data pada sheet 'Import Stok' mulai baris 2.",
+                "2. Baris 1 adalah header — jangan diubah atau dihapus.",
+                "3. Baris 2 berisi contoh — hapus atau ganti dengan data Anda.",
+                "4. Simpan file, lalu upload melalui menu Import di aplikasi TPM.",
+                "5. Import akan MENGGANTI seluruh data sparepart yang ada.",
+                "",
+                "PENJELASAN KOLOM:",
+                "A - Urutan Sparepart: nomor urut (informasi saja).",
+                "B - Nama Spare Part: wajib diisi.",
+                "C - Kode Part: kode pabrik / GS1 (opsional).",
+                "D - Harga Beli: harga modal per satuan (angka).",
+                "E - Harga Jual: harga jual per satuan (angka).",
+                "F - Stok: jumlah stok. Bisa diisi angka atau teks 'Tanpa Stok'.",
+                "G - Satuan: pcs, liter, set, dll. Default pcs.",
+                "H - Total Modal: harga beli × stok. Dipakai untuk hitung stok akurat.",
+                "I - Always Ready: isi ya / true / 1 untuk barang tanpa stok fisik (stok 999).",
+                "K - Total Fix: total modal keseluruhan untuk validasi (opsional).",
+                "",
+                "CATATAN ALWAYS READY:",
+                "• Jika Always Ready aktif dan Total Modal > 0, sistem hitung stok dari modal.",
+                "• Jika Always Ready aktif tanpa modal, stok diset 999 (katalog saja).",
+                "",
+                "TIPS:",
+                "• Pastikan Total Modal = Harga Beli × Stok untuk barang biasa.",
+                "• Baris kosong otomatis dilewati saat import.",
+            ]
             headers = [
                 "Urutan Sparepart", "Nama Spare Part", "Kode Part",
                 "Harga Beli", "Harga Jual", "Stok", "Satuan",
@@ -956,14 +1037,19 @@ class SparePartService:
                 1, "Contoh Oli Mesin", "MD273133003700079",
                 50000, 75000, 10, "pcs", 500000, "", "", 500000,
             ]
+
         for col_idx, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col_idx, value=header)
-            cell.font = openpyxl.styles.Font(bold=True)
+            cell = ws_data.cell(row=1, column=col_idx, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
 
         for col_idx, value in enumerate(sample, 1):
-            ws.cell(row=2, column=col_idx, value=value)
+            ws_data.cell(row=2, column=col_idx, value=value)
 
-        ws.freeze_panes = "A2"
+        ws_data.freeze_panes = "A2"
+
+        ws_info = wb.create_sheet("Instruksi")
+        self._write_import_template_instructions(ws_info, instruction_lines)
 
         output = io.BytesIO()
         wb.save(output)

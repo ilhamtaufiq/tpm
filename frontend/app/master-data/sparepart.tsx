@@ -807,7 +807,7 @@ export default function SparePartMasterScreen() {
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-indigo-700">Download Format Import Stok</Typography>
-                                <Typography variant="caption" className="text-textGray">Urutan, Nama, Kode Part, Harga, Stok, Satuan, Total Modal, Always Ready.</Typography>
+                                <Typography variant="caption" className="text-textGray">Sheet Import Stok + tab Instruksi. Urutan, Nama, Kode Part, Harga, Stok, Always Ready.</Typography>
                             </View>
                         </Pressable>
 
@@ -823,7 +823,7 @@ export default function SparePartMasterScreen() {
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-sky-700">Download Format Standar</Typography>
-                                <Typography variant="caption" className="text-textGray">Kode, Nama, Kode Part, Kategori, Stok, Harga, Rak, Catatan, Kode EAN.</Typography>
+                                <Typography variant="caption" className="text-textGray">Sheet Import Standar + tab Instruksi. Kode, Nama, Kode Part, Stok, Harga, Kode EAN.</Typography>
                             </View>
                         </Pressable>
 
