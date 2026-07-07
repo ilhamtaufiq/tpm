@@ -67,6 +67,27 @@ function parseGs1Fnc1(raw: string, candidates: Set<string>) {
     }
 }
 
+function extractEmbeddedEanCandidates(raw: string, candidates: Set<string>) {
+    const gtinFromUrl = raw.match(/(?:[?&]gtin=|gtin[=/:])(\d{13})/i);
+    if (gtinFromUrl?.[1]) addCandidate(candidates, gtinFromUrl[1]);
+
+    const eanMatches = raw.match(/\b\d{13}\b/g);
+    if (eanMatches) {
+        eanMatches.forEach((value) => addCandidate(candidates, value));
+    }
+
+    const ean8Matches = raw.match(/\b\d{8}\b/g);
+    if (ean8Matches) {
+        ean8Matches.forEach((value) => addCandidate(candidates, value));
+    }
+}
+
+function pickEanCandidate(candidates: Iterable<string>): string | undefined {
+    const list = [...candidates];
+    return list.find((value) => /^\d{13}$/.test(value))
+        || list.find((value) => /^\d{8}$/.test(value));
+}
+
 function parseNumericBarcode(raw: string, candidates: Set<string>): BarcodeScanFormat | null {
     if (/^\d{13}$/.test(raw)) {
         addCandidate(candidates, raw);
@@ -110,16 +131,20 @@ export function parseBarcodeScan(rawInput: string): ParsedBarcodeScan {
     }
 
     const numericFormat = parseNumericBarcode(raw.replace(/\D/g, '').length === raw.length ? raw : '', candidates);
+    extractEmbeddedEanCandidates(raw, candidates);
 
     const gs1Ai90 = raw.match(/\(90\)([^()]+)/i);
-    const preferred = gs1Ai90?.[1]?.trim()
-        || (numericFormat === 'ean13' ? raw : '')
+    const eanCandidate = pickEanCandidate(candidates);
+    const preferred = eanCandidate
+        || gs1Ai90?.[1]?.trim()
         || [...candidates].find((value) => value !== raw && /[A-Z]/i.test(value))
         || raw;
 
-    const format: BarcodeScanFormat = isGs1
-        ? 'gs1'
-        : numericFormat || 'plain';
+    const format: BarcodeScanFormat = eanCandidate
+        ? (eanCandidate.length === 13 ? 'ean13' : 'ean8')
+        : isGs1
+            ? 'gs1'
+            : numericFormat || 'plain';
 
     return {
         raw,
@@ -186,6 +211,12 @@ export function mapBarcodeToSparePartFields(scannedData: string): {
     }
 
     return result;
+}
+
+/** Normalize scan result for search fields — prefer EAN-13 like transaksi screen. */
+export function getBarcodeSearchQuery(scannedData: string): string {
+    const parsed = parseBarcodeScan(scannedData);
+    return pickEanCandidate(parsed.candidates) || parsed.preferred || parsed.raw;
 }
 
 export function formatSparePartCodes(part: SparePartBarcodeFields): string {

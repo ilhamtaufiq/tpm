@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Pressable, Animated } from 'react-native';
-import { useResponsive } from '../../hooks/useResponsive';
 import { Typography } from './Typography';
 import { cn } from './Card';
 import { Plus, X, ShieldCheck, Wrench, Wallet, CarFront, Truck, History, Package, Receipt, BarChart3, User, Home, Database, ArrowRightLeft } from 'lucide-react-native';
@@ -18,21 +17,12 @@ export const getCustomTabBarHeight = (bottomInset: number) => {
     return CUSTOM_TAB_BAR_BASE_HEIGHT + bottomInset;
 };
 
-export const getCustomTabBarBottomPadding = (bottomInset: number, extraSpacing = 24, isLandscapeSidebar = false) => {
-    if (isLandscapeSidebar) {
-        return extraSpacing;
-    }
+export const getCustomTabBarBottomPadding = (bottomInset: number, extraSpacing = 24) => {
     return getCustomTabBarHeight(bottomInset) + extraSpacing;
-};
-
-export const getCustomTabBarRightPadding = (isLandscapeSidebar = false, extraSpacing = 24) => {
-    if (!isLandscapeSidebar) return 0;
-    return 88 + extraSpacing;
 };
 
 export const CustomTabBar = () => {
     const insets = useSafeAreaInsets();
-    const { isLandscape, isDesktop } = useResponsive();
     const { activeSlots: storeActiveSlots, fabSlots, pageFabSlots } = useNavigationStore();
     const { themeColors } = useUIStore();
     const pathname = usePathname();
@@ -231,42 +221,18 @@ export const CustomTabBar = () => {
         outputRange: [0, -60],
     }), [animationProgress]);
 
-    const tabBarHeight = isLandscape ? getCustomTabBarHeight(Math.max(insets.bottom, 8)) : getCustomTabBarHeight(insets.bottom);
-    const tabBarStyle = isLandscape && !isDesktop
-        ? {
-            top: insets.top,
-            bottom: insets.bottom,
-            right: 0,
-            width: 88,
-            height: undefined as number | undefined,
-            paddingBottom: 0,
-            paddingVertical: 12,
-            borderTopWidth: 0,
-            borderLeftWidth: 1,
-            borderLeftColor: '#E5E7EB',
-            borderRadius: 0,
-            flexDirection: 'column' as const,
-            justifyContent: 'space-around' as const,
-        }
-        : {
-            bottom: 0,
-            height: tabBarHeight,
-            paddingBottom: insets.bottom,
-            flexDirection: 'row' as const,
-            justifyContent: 'space-around' as const,
-            borderTopWidth: 1,
-            borderLeftWidth: 0,
-            borderRadius: 24,
-        };
+    const tabBarHeight = getCustomTabBarHeight(insets.bottom);
 
     return (
         <>
         <View
-            className={`absolute left-0 flex items-center px-2 border-gray-200 bg-white ${isLandscape && !isDesktop ? '' : 'right-0 rounded-t-[24px] border-t'}`}
+            className="absolute left-0 right-0 flex-row items-center justify-around px-2 rounded-t-[24px] border-t border-gray-200 bg-white"
             style={{
-                ...tabBarStyle,
+                bottom: 0,
+                height: tabBarHeight,
+                paddingBottom: insets.bottom,
                 shadowColor: '#000',
-                shadowOffset: { width: isLandscape && !isDesktop ? -4 : 0, height: isLandscape && !isDesktop ? 0 : -4 },
+                shadowOffset: { width: 0, height: -4 },
                 shadowOpacity: 0.05,
                 shadowRadius: 16,
                 elevation: 10,
@@ -303,7 +269,7 @@ export const CustomTabBar = () => {
 
                 if (isFab) {
                     return (
-                        <View key={slotId} className={`flex flex-col items-center justify-center group relative ${isLandscape && !isDesktop ? 'my-2' : 'flex-1 h-full -mt-12'}`} style={{ overflow: 'visible', zIndex: 60 }}>
+                        <View key={slotId} className="flex flex-col items-center justify-center flex-1 h-full -mt-12 group relative" style={{ overflow: 'visible', zIndex: 60 }}>
                             <Pressable
                                 onPress={handlePress}
                                 className="w-16 h-16 rounded-full flex items-center justify-center border-4 border-white active:scale-95 transition-all duration-300"
@@ -326,7 +292,7 @@ export const CustomTabBar = () => {
                     <Pressable
                         key={slotId}
                         onPress={handlePress}
-                        className={`flex flex-col items-center justify-center active:opacity-70 ${isLandscape && !isDesktop ? 'py-2' : 'flex-1 h-full'}`}
+                        className="flex-1 flex flex-col items-center justify-center h-full active:opacity-70"
                     >
                         {isFocused ? (
                             <View className="w-12 h-12 flex flex-col items-center justify-center rounded-xl bg-[#EEF2FF] mb-1">

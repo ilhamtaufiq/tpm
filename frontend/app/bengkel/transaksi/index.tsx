@@ -24,7 +24,7 @@ import {
     sharePublicReceiptLink,
 } from '../../../utils/sharePublicReceipt';
 import api from '../../../utils/api';
-import { findSparePartByBarcode, parseBarcodeScan } from '../../../utils/barcodeScan';
+import { findSparePartByBarcode, getBarcodeSearchQuery, parseBarcodeScan } from '../../../utils/barcodeScan';
 import { useScanSound } from '../../../utils/sounds';
 import { BottomSheetContainer } from '../../../components/ui/BottomSheetContainer';
 import { ModalThemeView } from '../../../components/ui/ModalThemeView';
@@ -562,12 +562,12 @@ export default function BengkelTransaksiScreen() {
         showNotice(
             'error',
             'Tidak Ditemukan',
-            `Kode "${parsed.preferred}" tidak terdaftar. Scan membaca format ${parsed.format === 'gs1' ? 'GS1 (90)' : parsed.format === 'ean13' ? 'EAN-13' : 'barcode'}. Pastikan kode part/EAN sudah di master data.`,
+            `Kode "${getBarcodeSearchQuery(scannedData)}" tidak terdaftar. Scan membaca format ${parsed.format === 'gs1' ? 'GS1 (90)' : parsed.format === 'ean13' ? 'EAN-13' : 'barcode'}. Pastikan kode part/EAN sudah di master data.`,
         );
         setScanLog(prev => [{
             id: Math.random().toString(),
             title: 'Tidak ditemukan',
-            subtitle: `Scan: ${parsed.raw}`,
+            subtitle: `Scan: ${getBarcodeSearchQuery(scannedData)}`,
             timestamp: Date.now(),
         }, ...prev]);
         return false;
@@ -1503,7 +1503,7 @@ export default function BengkelTransaksiScreen() {
                 )}
             </View>
 
-            <BarcodeScannerModal visible={scannerOpen} onClose={() => setScannerOpen(false)} onScan={handleScan} scanLog={scanLog} continuous />
+            <BarcodeScannerModal visible={scannerOpen} onClose={() => setScannerOpen(false)} onScan={handleScan} scanLog={scanLog} continuous preferLinearBarcode />
             <Modal visible={paymentSheetOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setPaymentSheetOpen(false)}>
                 <BottomSheetContainer
                     onClose={() => setPaymentSheetOpen(false)}

@@ -9,7 +9,7 @@ import { bengkelService } from '../../services/bengkel';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency } from '../../utils/format';
-import { parseBarcodeScan } from '../../utils/barcodeScan';
+import { getBarcodeSearchQuery } from '../../utils/barcodeScan';
 
 interface SparePartSelectorProps {
     value?: any; // Selected object or null
@@ -54,8 +54,7 @@ export const SparePartSelector = ({
     };
 
     const handleScan = (data: string): boolean => {
-        const parsed = parseBarcodeScan(data);
-        setSearchQuery(parsed.preferred || data);
+        setSearchQuery(getBarcodeSearchQuery(data));
         setIsScannerOpen(false);
         return true;
     };

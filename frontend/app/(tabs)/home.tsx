@@ -6,8 +6,7 @@ import { ServiceGrid } from '../../components/ServiceGrid';
 import { StatsSlider } from '../../components/StatsSlider';
 import { TransactionList } from '../../components/TransactionList';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getCustomTabBarBottomPadding, getCustomTabBarRightPadding } from '../../components/ui/CustomTabBar';
-import { useResponsive } from '../../hooks/useResponsive';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
@@ -17,8 +16,6 @@ import { getFileUrl } from '../../utils/image';
 
 export default function HomeScreen() {
     const insets = useSafeAreaInsets();
-    const { isLandscape, isDesktop } = useResponsive();
-    const useLandscapeSidebar = isLandscape && !isDesktop;
     const queryClient = useQueryClient();
     const [refreshing, setRefreshing] = React.useState(false);
     const { themeColors } = useUIStore();
@@ -71,10 +68,7 @@ export default function HomeScreen() {
                 <Header variant="home" showSearch={false} showProfile={false} />
                 <ScrollView
                     className="flex-1"
-                    contentContainerStyle={{
-                        paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 32, useLandscapeSidebar),
-                        paddingRight: getCustomTabBarRightPadding(useLandscapeSidebar, 16),
-                    }}
+                    contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 32) }}
                     showsVerticalScrollIndicator={false}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={themeColors.primary} />}
                 >

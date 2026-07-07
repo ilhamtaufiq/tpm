@@ -44,11 +44,14 @@ import {
 import { onlineManager } from '@tanstack/react-query';
 import { appAlert, appConfirm } from '../../utils/appAlert';
 import { FILE_URL } from '../../utils/api';
+import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
+import { getBarcodeSearchQuery } from '../../utils/barcodeScan';
 
 export default function SparePartMasterScreen() {
     const router = useRouter();
     // Search & Filter
     const [searchQuery, setSearchQuery] = useState('');
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
     const debouncedSearch = useDebounce(searchQuery, 500);
     const [isShowingAll, setIsShowingAll] = useState(false);
 
@@ -95,6 +98,13 @@ export default function SparePartMasterScreen() {
     const [isImportModalVisible, setIsImportModalVisible] = useState(false);
     const [isExportModalVisible, setIsExportModalVisible] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+    const handleScanSearch = (scannedData: string): boolean => {
+        const query = getBarcodeSearchQuery(scannedData);
+        setSearchQuery(query);
+        setIsScannerOpen(false);
+        return true;
+    };
 
     const handleGoBack = () => {
         if (router.canGoBack()) {
@@ -583,7 +593,14 @@ export default function SparePartMasterScreen() {
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         placeholderTextColor="#9CA3AF"
+                        showSoftInputOnFocus={true}
                     />
+                    <Pressable
+                        onPress={() => setIsScannerOpen(true)}
+                        className="w-10 h-10 mr-1 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 active:bg-indigo-100"
+                    >
+                        <QrCode size={18} color="#4F46E5" />
+                    </Pressable>
                 </View>
                 <View className="flex-row justify-end mt-2">
                     <Pressable
@@ -1051,6 +1068,13 @@ export default function SparePartMasterScreen() {
                     )}
                 </View>
             </BaseModal>
+
+            <BarcodeScannerModal
+                visible={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onScan={handleScanSearch}
+                preferLinearBarcode
+            />
         </View>
     );
 }

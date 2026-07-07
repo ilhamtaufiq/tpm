@@ -20,14 +20,33 @@ interface BarcodeScannerModalProps {
     onScan: (data: string) => boolean | Promise<boolean>;
     scanLog?: { id: string; title: string; subtitle?: string; timestamp: number }[];
     continuous?: boolean;
+    /** Prioritize 1D retail barcodes (EAN/UPC/Code128) over QR/DataMatrix. */
+    preferLinearBarcode?: boolean;
 }
+
+const LINEAR_BARCODE_TYPES = [
+    'ean13',
+    'ean8',
+    'code128',
+    'code39',
+    'upc_a',
+    'upc_e',
+] as const;
+
+const ALL_BARCODE_TYPES = [
+    ...LINEAR_BARCODE_TYPES,
+    'qr',
+    'datamatrix',
+    'pdf417',
+] as const;
 
 export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     visible,
     onClose,
     onScan,
     scanLog = [],
-    continuous = false
+    continuous = false,
+    preferLinearBarcode = false,
 }) => {
     const insets = useSafeAreaInsets();
     const [permission, requestPermission] = useCameraPermissions();
@@ -165,17 +184,26 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     {
                         fps: 10,
                         qrbox: { width: 250, height: 250 },
-                        formatsToSupport: [
-                            Html5QrcodeSupportedFormats.QR_CODE,
-                            Html5QrcodeSupportedFormats.CODE_128,
-                            Html5QrcodeSupportedFormats.CODE_39,
-                            Html5QrcodeSupportedFormats.EAN_13,
-                            Html5QrcodeSupportedFormats.EAN_8,
-                            Html5QrcodeSupportedFormats.UPC_A,
-                            Html5QrcodeSupportedFormats.UPC_E,
-                            Html5QrcodeSupportedFormats.DATA_MATRIX,
-                            Html5QrcodeSupportedFormats.PDF_417,
-                        ],
+                        formatsToSupport: preferLinearBarcode
+                            ? [
+                                Html5QrcodeSupportedFormats.CODE_128,
+                                Html5QrcodeSupportedFormats.CODE_39,
+                                Html5QrcodeSupportedFormats.EAN_13,
+                                Html5QrcodeSupportedFormats.EAN_8,
+                                Html5QrcodeSupportedFormats.UPC_A,
+                                Html5QrcodeSupportedFormats.UPC_E,
+                            ]
+                            : [
+                                Html5QrcodeSupportedFormats.QR_CODE,
+                                Html5QrcodeSupportedFormats.CODE_128,
+                                Html5QrcodeSupportedFormats.CODE_39,
+                                Html5QrcodeSupportedFormats.EAN_13,
+                                Html5QrcodeSupportedFormats.EAN_8,
+                                Html5QrcodeSupportedFormats.UPC_A,
+                                Html5QrcodeSupportedFormats.UPC_E,
+                                Html5QrcodeSupportedFormats.DATA_MATRIX,
+                                Html5QrcodeSupportedFormats.PDF_417,
+                            ],
                     } as any,
                     async (decodedText: string) => {
                         if (webScanInProgress.current) return;
@@ -224,7 +252,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     });
             }
         };
-    }, [visible, scannerMode, onScan, playSuccess, playError, showScanMatch]);
+    }, [visible, scannerMode, onScan, playSuccess, playError, showScanMatch, preferLinearBarcode]);
 
     const toggleScannerMode = async () => {
         let newMode: 'camera' | 'hardware' | 'web-camera';
@@ -275,18 +303,8 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
     // Stable settings object to prevent unnecessary re-renders/scanner resets
     const scannerSettings = useMemo(() => ({
-        barcodeTypes: [
-            "qr",
-            "ean13",
-            "ean8",
-            "code128",
-            "code39",
-            "upc_a",
-            "upc_e",
-            "datamatrix",
-            "pdf417"
-        ] as any[],
-    }), []);
+        barcodeTypes: (preferLinearBarcode ? LINEAR_BARCODE_TYPES : ALL_BARCODE_TYPES) as any[],
+    }), [preferLinearBarcode]);
 
     if (!visible) return null;
 

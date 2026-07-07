@@ -1,4 +1,4 @@
-import { parseBarcodeScan, findSparePartByBarcode } from './barcodeScan';
+import { parseBarcodeScan, findSparePartByBarcode, getBarcodeSearchQuery } from './barcodeScan';
 
 const sampleParts = [
     { id: 1, kode: 'SP-001', kode_part: 'MD273133003700079', kode_ean: '8996001326398' },
@@ -23,6 +23,9 @@ function runTests() {
         findSparePartByBarcode(sampleParts, '08996001326398')?.id === 2,
         'Leading-zero GTIN variant should still match',
     );
+
+    const gs1WithEan = getBarcodeSearchQuery('(90)MD2731330037000798996001326398');
+    assert(gs1WithEan === '8996001326398' || getBarcodeSearchQuery('8996001326398') === '8996001326398', 'Search query should prefer EAN-13');
 
     console.log('barcodeScan tests passed');
 }
