@@ -206,6 +206,14 @@ export const bengkelService = {
         return response.data;
     },
 
+    downloadSparePartImportTemplate: async (format: 'stok_format' | 'standard') => {
+        const response = await api.get('/spare-parts/import-template', {
+            params: { format },
+            responseType: 'blob',
+        });
+        return response.data;
+    },
+
     // Pembelian Methods
     getPembelianParts: async (params?: any) => {
         const response = await api.get('/pembelian-parts', { params });

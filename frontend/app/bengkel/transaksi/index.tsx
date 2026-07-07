@@ -24,7 +24,7 @@ import {
     sharePublicReceiptLink,
 } from '../../../utils/sharePublicReceipt';
 import api from '../../../utils/api';
-import { findSparePartByBarcode, formatSparePartCodes, getBarcodeSearchQuery, parseBarcodeScan, pickBestSparePartMatch } from '../../../utils/barcodeScan';
+import { findSparePartByBarcode, formatSparePartCodes, getBarcodeSearchQuery, getSparePartSearchDisplayQuery, parseBarcodeScan, pickBestSparePartMatch } from '../../../utils/barcodeScan';
 import { useScanSound } from '../../../utils/sounds';
 import { BottomSheetContainer } from '../../../components/ui/BottomSheetContainer';
 import { ModalThemeView } from '../../../components/ui/ModalThemeView';
@@ -537,9 +537,8 @@ export default function BengkelTransaksiScreen() {
 
     const handleScan = async (scannedData: string) => {
         const parsed = parseBarcodeScan(scannedData);
-        const searchQuery = getBarcodeSearchQuery(scannedData);
+        let searchQuery = getBarcodeSearchQuery(scannedData);
 
-        setPartSearch(searchQuery);
         setShowPartSearch(true);
 
         let part = findSparePartByBarcode(parts, scannedData);
@@ -563,7 +562,13 @@ export default function BengkelTransaksiScreen() {
             }
         }
 
-        if (part) return addScannedPart(part);
+        if (part) {
+            searchQuery = getSparePartSearchDisplayQuery(scannedData, part);
+            setPartSearch(searchQuery);
+            return addScannedPart(part);
+        }
+
+        setPartSearch(searchQuery);
 
         showNotice(
             'error',
@@ -1509,7 +1514,7 @@ export default function BengkelTransaksiScreen() {
                 )}
             </View>
 
-            <BarcodeScannerModal visible={scannerOpen} onClose={() => setScannerOpen(false)} onScan={handleScan} scanLog={scanLog} continuous preferLinearBarcode />
+            <BarcodeScannerModal visible={scannerOpen} onClose={() => setScannerOpen(false)} onScan={handleScan} scanLog={scanLog} continuous />
             <Modal visible={paymentSheetOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setPaymentSheetOpen(false)}>
                 <BottomSheetContainer
                     onClose={() => setPaymentSheetOpen(false)}

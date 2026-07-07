@@ -43,9 +43,17 @@ import {
 } from '../../hooks';
 import { onlineManager } from '@tanstack/react-query';
 import { appAlert, appConfirm } from '../../utils/appAlert';
-import { FILE_URL } from '../../utils/api';
+import api, { FILE_URL } from '../../utils/api';
+import { bengkelService } from '../../services/bengkel';
+import { downloadXlsxBlob } from '../../utils/downloadXlsx';
 import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
-import { getBarcodeSearchQuery } from '../../utils/barcodeScan';
+import {
+    findSparePartByBarcode,
+    getSparePartSearchDisplayQuery,
+    getBarcodeSearchQuery,
+    parseBarcodeScan,
+    pickBestSparePartMatch,
+} from '../../utils/barcodeScan';
 
 export default function SparePartMasterScreen() {
     const router = useRouter();
@@ -99,11 +107,32 @@ export default function SparePartMasterScreen() {
     const [isExportModalVisible, setIsExportModalVisible] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-    const handleScanSearch = (scannedData: string): boolean => {
-        const query = getBarcodeSearchQuery(scannedData);
-        setSearchQuery(query);
+    const handleScanSearch = async (scannedData: string): Promise<boolean> => {
+        const parsed = parseBarcodeScan(scannedData);
+        let part = findSparePartByBarcode(sparePartsList, scannedData);
+        const queries = [...new Set([getBarcodeSearchQuery(scannedData), ...parsed.candidates])];
+
+        if (!part) {
+            for (const candidate of queries) {
+                if (!candidate) continue;
+                try {
+                    const res = await api.get('/spare-parts', { params: { limit: 20, search: candidate } });
+                    const rows = res.data?.data;
+                    if (!Array.isArray(rows) || rows.length === 0) continue;
+                    const found = pickBestSparePartMatch(rows, scannedData);
+                    if (found) {
+                        part = found;
+                        break;
+                    }
+                } catch {
+                    // try next candidate
+                }
+            }
+        }
+
+        setSearchQuery(getSparePartSearchDisplayQuery(scannedData, part));
         setIsScannerOpen(false);
-        return true;
+        return Boolean(part);
     };
 
     const handleGoBack = () => {
@@ -138,7 +167,21 @@ export default function SparePartMasterScreen() {
     const [importProgress, setImportProgress] = useState(0);
     const [importResult, setImportResult] = useState<any>(null);
     const [importError, setImportError] = useState<string>('');
+    const [isDownloadingTemplate, setIsDownloadingTemplate] = useState<'stok_format' | 'standard' | null>(null);
     const importProgressInterval = useRef<any>(null);
+
+    const handleDownloadImportTemplate = async (format: 'stok_format' | 'standard') => {
+        try {
+            setIsDownloadingTemplate(format);
+            const data = await bengkelService.downloadSparePartImportTemplate(format);
+            const suffix = format === 'stok_format' ? 'stok' : 'standar';
+            await downloadXlsxBlob(data, `template_import_sparepart_${suffix}.xlsx`);
+        } catch {
+            appAlert('Error', 'Gagal mengunduh format import.');
+        } finally {
+            setIsDownloadingTemplate(null);
+        }
+    };
 
     const handleImport = async () => {
         try {
@@ -151,16 +194,23 @@ export default function SparePartMasterScreen() {
 
             const file = result.assets[0];
             const formData = new FormData();
+            const mimeType = file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            const fileName = file.name || 'import_sparepart.xlsx';
 
             if (Platform.OS === 'web') {
-                // @ts-ignore
-                formData.append('file', file.file);
+                const webFile = (file as { file?: File }).file;
+                if (webFile) {
+                    formData.append('file', webFile);
+                } else {
+                    const blob = await fetch(file.uri).then((response) => response.blob());
+                    formData.append('file', blob, fileName);
+                }
             } else {
-                // @ts-ignore
+                // @ts-ignore — React Native FormData file upload
                 formData.append('file', {
                     uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
-                    name: file.name,
-                    type: file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    name: fileName,
+                    type: mimeType,
                 });
             }
 
@@ -198,13 +248,29 @@ export default function SparePartMasterScreen() {
         }
     };
 
+    const handleImportPress = () => {
+        appConfirm(
+            'Import Sparepart',
+            'Import akan mengganti seluruh data sparepart dengan isi file Excel. Disarankan unduh backup/export terlebih dahulu. Lanjutkan?',
+            () => {
+                setIsImportModalVisible(false);
+                handleImport();
+            },
+            { confirmText: 'Import', variant: 'warning' },
+        );
+    };
+
     const handleCloseImportProgress = () => {
+        const wasSuccessful = importStep === 'done';
         setIsImportProgressVisible(false);
         setImportStep('picking');
         setImportProgress(0);
         setImportResult(null);
         setImportError('');
         if (importProgressInterval.current) clearInterval(importProgressInterval.current);
+        if (wasSuccessful) {
+            handleRefresh();
+        }
     };
 
     const handleBulkPrint = async (type: 'QR' | 'BARCODE') => {
@@ -328,19 +394,7 @@ export default function SparePartMasterScreen() {
     const handleBulkExport = async (ids?: number[]) => {
         try {
             const data = await exportMutation.mutateAsync(ids);
-            const filename = `spare_parts_export_${new Date().getTime()}.xlsx`;
-
-            if (Platform.OS === 'web') {
-                const url = window.URL.createObjectURL(new Blob([data]));
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', filename);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-            } else {
-                appAlert('Export', 'Fitur download di mobile akan segera hadir. Gunakan format Web untuk export.');
-            }
+            await downloadXlsxBlob(data, `spare_parts_export_${Date.now()}.xlsx`);
         } catch (error) {
             appAlert('Error', 'Gagal mengekspor data.');
         }
@@ -725,51 +779,59 @@ export default function SparePartMasterScreen() {
                     </Typography>
 
                     <View className="space-y-4">
+                        <Typography className="text-textGray text-[11px] text-center">
+                            Unduh template, isi data, lalu import. Format terdeteksi otomatis dari header baris pertama.
+                        </Typography>
+
                         <Pressable
-                            onPress={() => {
-                                setIsImportModalVisible(false);
-                                handleImport();
-                            }}
+                            onPress={() => handleDownloadImportTemplate('stok_format')}
+                            disabled={isDownloadingTemplate !== null}
+                            className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 flex-row items-center"
+                        >
+                            <View className="bg-indigo-100 p-3 rounded-xl mr-4">
+                                {isDownloadingTemplate === 'stok_format'
+                                    ? <ActivityIndicator size="small" color="#4F46E5" />
+                                    : <Download size={24} color="#4F46E5" />}
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-indigo-700">Download Format Import Stok</Typography>
+                                <Typography variant="caption" className="text-textGray">Urutan, Nama, Kode Part, Harga, Stok, Satuan, Total Modal, Always Ready.</Typography>
+                            </View>
+                        </Pressable>
+
+                        <Pressable
+                            onPress={() => handleDownloadImportTemplate('standard')}
+                            disabled={isDownloadingTemplate !== null}
+                            className="bg-sky-50 p-4 rounded-2xl border border-sky-100 flex-row items-center"
+                        >
+                            <View className="bg-sky-100 p-3 rounded-xl mr-4">
+                                {isDownloadingTemplate === 'standard'
+                                    ? <ActivityIndicator size="small" color="#0284C7" />
+                                    : <Download size={24} color="#0284C7" />}
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-sky-700">Download Format Standar</Typography>
+                                <Typography variant="caption" className="text-textGray">Kode, Nama, Kode Part, Kategori, Stok, Harga, Rak, Catatan, Kode EAN.</Typography>
+                            </View>
+                        </Pressable>
+
+                        <Pressable
+                            onPress={handleImportPress}
                             className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex-row items-center"
                         >
                             <View className="bg-emerald-100 p-3 rounded-xl mr-4">
-                                <Plus size={24} color="#059669" />
+                                <FileUp size={24} color="#059669" />
                             </View>
                             <View className="flex-1">
-                                <Typography variant="body1" weight="bold" className="text-emerald-700">Tambah Barang Massal</Typography>
-                                <Typography variant="caption" className="text-textGray">Impor ribuan data barang baru sekaligus.</Typography>
+                                <Typography variant="body1" weight="bold" className="text-emerald-700">Import File Excel</Typography>
+                                <Typography variant="caption" className="text-textGray">Upload file .xlsx hasil template atau export. Mengganti seluruh data sparepart.</Typography>
                             </View>
                         </Pressable>
 
-                        <Pressable
-                            onPress={() => {
-                                setIsImportModalVisible(false);
-                                handleImport();
-                            }}
-                            className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex-row items-center"
-                        >
-                            <View className="bg-amber-100 p-3 rounded-xl mr-4">
-                                <RefreshCw size={24} color="#D97706" />
-                            </View>
-                            <View className="flex-1">
-                                <Typography variant="body1" weight="bold" className="text-amber-700">Bulk Update (Harga/Stok)</Typography>
-                                <Typography variant="caption" className="text-textGray">Upload file XLS hasil ekspor untuk memperbarui data.</Typography>
-                            </View>
-                        </Pressable>
-
-                        <View className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 mt-2">
-                            <Typography className="text-blue-700 text-[10px] font-bold uppercase mb-2 tracking-widest">Format File yang Didukung:</Typography>
-                            <Typography className="text-blue-600 text-[11px] leading-relaxed mb-2">
-                                <Typography weight="bold">1. Format Import Stok</Typography>{"\n"}
-                                {"   "}Kolom: Urutan | Nama | Kode Part | Harga Beli | Harga Jual | Stok | Satuan | Total Modal | Always Ready{"\n"}
-                                {"   "}Isi kolom Always Ready: ya/true/1 untuk aktifkan
-                            </Typography>
-                            <Typography className="text-blue-600 text-[11px] leading-relaxed">
-                                <Typography weight="bold">2. Format Standar (Hasil Ekspor)</Typography>{"\n"}
-                                {"   "}Kolom: Kode | Nama | Kode Part | Kategori | Merek | Satuan | Stok | Stok Min | H.Beli | H.Jual | Rak | Catatan
-                            </Typography>
-                            <Typography className="text-blue-500 text-[10px] mt-2 italic">
-                                * Format akan dideteksi otomatis dari header baris pertama.
+                        <View className="bg-amber-50/80 p-3 rounded-2xl border border-amber-100 flex-row items-start">
+                            <AlertTriangle size={14} color="#D97706" className="mr-2 mt-0.5" />
+                            <Typography className="text-amber-800 text-[11px] leading-relaxed flex-1">
+                                Untuk update harga/stok: export data → edit di Excel → import ulang. Baris contoh di template bisa dihapus sebelum upload.
                             </Typography>
                         </View>
 
@@ -1073,7 +1135,6 @@ export default function SparePartMasterScreen() {
                 visible={isScannerOpen}
                 onClose={() => setIsScannerOpen(false)}
                 onScan={handleScanSearch}
-                preferLinearBarcode
             />
         </View>
     );

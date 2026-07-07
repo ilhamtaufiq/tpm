@@ -928,3 +928,44 @@ class SparePartService:
         wb.save(output)
         output.seek(0)
         return output
+
+    def export_import_template(self, format_type: str = "stok_format") -> io.BytesIO:
+        """Generate empty Excel template for spare part import."""
+        wb = openpyxl.Workbook()
+        ws = wb.active
+
+        if format_type == "standard":
+            ws.title = "Import Standar"
+            headers = [
+                "Kode", "Nama Barang", "Kode Part", "Kategori", "Merek",
+                "Satuan", "Stok", "Stok Minimal", "Harga Beli", "Harga Jual",
+                "Lokasi Rak", "Catatan", "Kode EAN",
+            ]
+            sample = [
+                "SPR25010001", "Contoh Oli Mesin", "MD273133003700079", "Umum", "Castrol",
+                "pcs", 10, 5, 50000, 75000, "Rak A1", "Contoh catatan", "8996001326398",
+            ]
+        else:
+            ws.title = "Import Stok"
+            headers = [
+                "Urutan Sparepart", "Nama Spare Part", "Kode Part",
+                "Harga Beli", "Harga Jual", "Stok", "Satuan",
+                "Total Modal", "Always Ready", "", "Total Fix",
+            ]
+            sample = [
+                1, "Contoh Oli Mesin", "MD273133003700079",
+                50000, 75000, 10, "pcs", 500000, "", "", 500000,
+            ]
+        for col_idx, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_idx, value=header)
+            cell.font = openpyxl.styles.Font(bold=True)
+
+        for col_idx, value in enumerate(sample, 1):
+            ws.cell(row=2, column=col_idx, value=value)
+
+        ws.freeze_panes = "A2"
+
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return output

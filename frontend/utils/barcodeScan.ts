@@ -252,6 +252,28 @@ export function getBarcodeSearchQuery(scannedData: string): string {
     return pickEanCandidate(parsed.candidates) || parsed.preferred || parsed.raw;
 }
 
+/** Search box label after scan — prefer stored EAN, then kode part (matches transaksi UX). */
+export function getSparePartSearchDisplayQuery(
+    scannedData: string,
+    part?: SparePartBarcodeFields | null,
+): string {
+    const ean = (part?.kode_ean || '').trim();
+    if (ean) return ean;
+    const partCode = (part?.kode_part || '').trim();
+    if (partCode) return partCode;
+    const kode = (part?.kode || '').trim();
+    if (kode) return kode;
+    return getBarcodeSearchQuery(scannedData);
+}
+
+const QR_LIKE_SCAN_TYPES = new Set(['qr', 'datamatrix', 'pdf417', 'aztec']);
+
+/** When preferring 1D barcodes, ignore matrix/QR reads so EAN strip is picked instead. */
+export function shouldRejectLinearPreferredScan(scanType: string): boolean {
+    if ((scanType || '').toLowerCase() === 'hardware') return false;
+    return QR_LIKE_SCAN_TYPES.has((scanType || '').toLowerCase());
+}
+
 export function formatSparePartCodes(part: SparePartBarcodeFields): string {
     const codes = [part.kode_part, part.kode_ean, part.kode].filter(Boolean);
     return codes.length ? [...new Set(codes)].join(' • ') : '-';

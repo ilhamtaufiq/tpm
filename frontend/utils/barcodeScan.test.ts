@@ -1,4 +1,10 @@
-import { parseBarcodeScan, findSparePartByBarcode, getBarcodeSearchQuery } from './barcodeScan';
+import {
+    parseBarcodeScan,
+    findSparePartByBarcode,
+    getBarcodeSearchQuery,
+    getSparePartSearchDisplayQuery,
+    shouldRejectLinearPreferredScan,
+} from './barcodeScan';
 
 const sampleParts = [
     { id: 1, kode: 'SP-001', kode_part: 'MD273133003700079', kode_ean: '8996001326398' },
@@ -26,6 +32,13 @@ function runTests() {
 
     const gs1WithEan = getBarcodeSearchQuery('(90)MD2731330037000798996001326398');
     assert(gs1WithEan === '8996001326398' || getBarcodeSearchQuery('8996001326398') === '8996001326398', 'Search query should prefer EAN-13');
+
+    const gs1Display = getSparePartSearchDisplayQuery('(90)MD273133003700079', sampleParts[0]);
+    assert(gs1Display === '8996001326398', 'Matched part should display stored EAN in search field');
+
+    assert(shouldRejectLinearPreferredScan('qr'), 'Linear-prefer mode should ignore QR reads');
+    assert(!shouldRejectLinearPreferredScan('ean13'), 'EAN-13 reads should be accepted');
+    assert(!shouldRejectLinearPreferredScan('hardware'), 'Hardware wedge scans should always be accepted');
 
     console.log('barcodeScan tests passed');
 }

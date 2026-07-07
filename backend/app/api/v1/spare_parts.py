@@ -163,6 +163,24 @@ def export_spare_parts(
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+
+@router.get("/import-template")
+def download_import_template(
+    db: DBSession,
+    current_user: CurrentUser,
+    format: str = Query("stok_format", regex="^(stok_format|standard)$"),
+):
+    """Download Excel template for spare part import."""
+    service = SparePartService(db)
+    output = service.export_import_template(format)
+    suffix = "stok" if format == "stok_format" else "standar"
+    filename = f"template_import_sparepart_{suffix}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
 @router.get("/{spare_part_id}", response_model=SparePartResponse)
 def get_spare_part(
     spare_part_id: int,

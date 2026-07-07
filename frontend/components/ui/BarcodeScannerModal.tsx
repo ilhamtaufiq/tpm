@@ -7,7 +7,7 @@ import { Typography } from './Typography';
 import { X, Zap, ZapOff, Scan, Camera, AlertTriangle, CheckCircle2 } from 'lucide-react-native';
 import { Button } from './Button';
 import { useScanSound, ensureAudioUnlocked } from '../../utils/sounds';
-import { parseBarcodeScan } from '../../utils/barcodeScan';
+import { parseBarcodeScan, shouldRejectLinearPreferredScan } from '../../utils/barcodeScan';
 
 // Dynamic import type for html5-qrcode (web only)
 type Html5QrcodeType = any;
@@ -20,7 +20,7 @@ interface BarcodeScannerModalProps {
     onScan: (data: string) => boolean | Promise<boolean>;
     scanLog?: { id: string; title: string; subtitle?: string; timestamp: number }[];
     continuous?: boolean;
-    /** Prioritize 1D retail barcodes (EAN/UPC/Code128) over QR/DataMatrix. */
+    /** Optional: 1D-only mode (excludes QR). Default scans QR + barcode together. */
     preferLinearBarcode?: boolean;
 }
 
@@ -54,6 +54,12 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     const [torch, setTorch] = useState(false);
     const [laserPos, setLaserPos] = useState(0);
     const [movingDown, setMovingDown] = useState(true);
+    const scanBox = useMemo(
+        () => preferLinearBarcode
+            ? { width: 320, height: 100, laserMax: 88, laserMin: 8 }
+            : { width: 250, height: 250, laserMax: 240, laserMin: 10 },
+        [preferLinearBarcode],
+    );
     const [scannerMode, setScannerMode] = useState<'camera' | 'hardware' | 'web-camera'>('camera');
     const [hwInput, setHwInput] = useState('');
     const hwInputRef = useRef<TextInput>(null);
@@ -102,16 +108,16 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         const interval = setInterval(() => {
             setLaserPos((prev: number) => {
                 if (movingDown) {
-                    if (prev >= 240) { setMovingDown(false); return 240; }
+                    if (prev >= scanBox.laserMax) { setMovingDown(false); return scanBox.laserMax; }
                     return prev + 5;
                 } else {
-                    if (prev <= 10) { setMovingDown(true); return 10; }
+                    if (prev <= scanBox.laserMin) { setMovingDown(true); return scanBox.laserMin; }
                     return prev - 5;
                 }
             });
         }, 30);
         return () => clearInterval(interval);
-    }, [visible, movingDown]);
+    }, [visible, movingDown, scanBox.laserMax, scanBox.laserMin]);
 
     useEffect(() => {
         let mounted = true;
@@ -178,12 +184,15 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                 }
 
                 const html5Qrcode = new Html5Qrcode(scannerId);
+                html5QrcodeRef.current = html5Qrcode;
 
                 await html5Qrcode.start(
                     { facingMode: 'environment' },
                     {
                         fps: 10,
-                        qrbox: { width: 250, height: 250 },
+                        qrbox: preferLinearBarcode
+                            ? { width: 320, height: 100 }
+                            : { width: 250, height: 250 },
                         formatsToSupport: preferLinearBarcode
                             ? [
                                 Html5QrcodeSupportedFormats.CODE_128,
@@ -275,6 +284,9 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
     const handleBarCodeScanned = async (result: { type: string, data: string }) => {
         if (scanned) return;
+        if (preferLinearBarcode && shouldRejectLinearPreferredScan(result.type)) {
+            return;
+        }
         setScanned(true);
         const parsed = parseBarcodeScan(result.data);
         if (__DEV__) {
@@ -399,9 +411,9 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             </View>
                                         )}
                                     </View>
-                                    <View style={styles.middleContainer}>
+                                    <View style={[styles.middleContainer, { height: scanBox.height }]}>
                                         <View style={styles.unfocusedContainer}></View>
-                                        <View style={styles.focusedContainer}>
+                                        <View style={[styles.focusedContainer, { width: scanBox.width }]}>
                                             <View style={[styles.corner, styles.topLeft]} />
                                             <View style={[styles.corner, styles.topRight]} />
                                             <View style={[styles.corner, styles.bottomLeft]} />
@@ -435,7 +447,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             <Typography className="text-white text-center mb-6" style={{ opacity: 0.7 }}>
                                                 {continuous
                                                     ? 'Scan terus-menerus — arahkan ke barcode berikutnya'
-                                                    : 'Posisikan barcode/QR code di dalam kotak'
+                                                    : 'Posisikan barcode atau QR code di dalam kotak'
                                                 }
                                             </Typography>
 
