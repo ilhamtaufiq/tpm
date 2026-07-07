@@ -187,6 +187,39 @@ export function findSparePartByBarcode<T extends SparePartBarcodeFields>(
     return undefined;
 }
 
+/** Pick best row from API search results (exact barcode match first, then fuzzy). */
+export function pickBestSparePartMatch<T extends SparePartBarcodeFields>(
+    rows: T[],
+    scannedData: string,
+): T | undefined {
+    const exact = findSparePartByBarcode(rows, scannedData);
+    if (exact) return exact;
+
+    const parsed = parseBarcodeScan(scannedData);
+    const queries = [...new Set([getBarcodeSearchQuery(scannedData), ...parsed.candidates])];
+
+    for (const candidate of queries) {
+        if (!candidate) continue;
+        const stripped = candidate.replace(/^0+/, '');
+        const hit = rows.find((part) => {
+            const fields = [part.kode, part.kode_part, part.kode_ean].map((value) => (value || '').trim());
+            return fields.some((field) =>
+                field === candidate
+                || field.replace(/^0+/, '') === stripped
+                || (candidate.length >= 8 && field.includes(candidate)),
+            );
+        });
+        if (hit) return hit;
+    }
+
+    const query = getBarcodeSearchQuery(scannedData);
+    if (/^\d{8,14}$/.test(query) && rows.length === 1) {
+        return rows[0];
+    }
+
+    return undefined;
+}
+
 /** Map scanned barcode to the best sparepart form field. */
 export function mapBarcodeToSparePartFields(scannedData: string): {
     kode_part?: string;

@@ -24,7 +24,7 @@ import {
     sharePublicReceiptLink,
 } from '../../../utils/sharePublicReceipt';
 import api from '../../../utils/api';
-import { findSparePartByBarcode, getBarcodeSearchQuery, parseBarcodeScan } from '../../../utils/barcodeScan';
+import { findSparePartByBarcode, formatSparePartCodes, getBarcodeSearchQuery, parseBarcodeScan, pickBestSparePartMatch } from '../../../utils/barcodeScan';
 import { useScanSound } from '../../../utils/sounds';
 import { BottomSheetContainer } from '../../../components/ui/BottomSheetContainer';
 import { ModalThemeView } from '../../../components/ui/ModalThemeView';
@@ -529,7 +529,7 @@ export default function BengkelTransaksiScreen() {
         setScanLog(prev => [{
             id: Math.random().toString(),
             title: part.nama,
-            subtitle: `Kode: ${part.kode || part.kode_part || '-'} - ${part.stok === 999 ? 'Always Ready' : `Stok: ${part.stok}`}`,
+            subtitle: `Kode: ${formatSparePartCodes(part)} - ${part.stok === 999 ? 'Always Ready' : `Stok: ${part.stok}`}`,
             timestamp: Date.now(),
         }, ...prev]);
         return true;
@@ -537,16 +537,22 @@ export default function BengkelTransaksiScreen() {
 
     const handleScan = async (scannedData: string) => {
         const parsed = parseBarcodeScan(scannedData);
+        const searchQuery = getBarcodeSearchQuery(scannedData);
+
+        setPartSearch(searchQuery);
+        setShowPartSearch(true);
+
         let part = findSparePartByBarcode(parts, scannedData);
 
         if (!part) {
-            // Fallback: query API with all parsed candidates (GS1 AI90, EAN-13, etc.)
-            for (const candidate of parsed.candidates) {
+            const queries = [...new Set([searchQuery, ...parsed.candidates])];
+            for (const candidate of queries) {
+                if (!candidate) continue;
                 try {
-                    const res = await api.get('/spare-parts', { params: { limit: 10, search: candidate } });
+                    const res = await api.get('/spare-parts', { params: { limit: 20, search: candidate } });
                     const rows = res.data?.data;
                     if (!Array.isArray(rows) || rows.length === 0) continue;
-                    const found = findSparePartByBarcode(rows, scannedData);
+                    const found = pickBestSparePartMatch(rows, scannedData);
                     if (found) {
                         part = found;
                         break;
@@ -562,12 +568,12 @@ export default function BengkelTransaksiScreen() {
         showNotice(
             'error',
             'Tidak Ditemukan',
-            `Kode "${getBarcodeSearchQuery(scannedData)}" tidak terdaftar. Scan membaca format ${parsed.format === 'gs1' ? 'GS1 (90)' : parsed.format === 'ean13' ? 'EAN-13' : 'barcode'}. Pastikan kode part/EAN sudah di master data.`,
+            `Kode "${searchQuery}" tidak terdaftar. Scan membaca format ${parsed.format === 'gs1' ? 'GS1 (90)' : parsed.format === 'ean13' ? 'EAN-13' : 'barcode'}. Isi kode EAN/kode part di master sparepart.`,
         );
         setScanLog(prev => [{
             id: Math.random().toString(),
             title: 'Tidak ditemukan',
-            subtitle: `Scan: ${getBarcodeSearchQuery(scannedData)}`,
+            subtitle: `Scan: ${searchQuery}`,
             timestamp: Date.now(),
         }, ...prev]);
         return false;
