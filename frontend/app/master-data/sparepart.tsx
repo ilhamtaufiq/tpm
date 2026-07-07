@@ -216,7 +216,7 @@ export default function SparePartMasterScreen() {
                 return `
                     <div class="sticker">
                         <img src="${escapeHtml(imageSource)}" />
-                        <div class="code-text">${escapeHtml(item.kode_part || item.kode)}</div>
+                        <div class="code-text">${escapeHtml([item.kode_part, item.kode_ean].filter(Boolean).join(' / ') || item.kode)}</div>
                         <div class="name-text">${escapeHtml(item.nama)}</div>
                     </div>
                 `;
@@ -389,7 +389,9 @@ export default function SparePartMasterScreen() {
                         <View className="flex-1">
                             <View className="flex-row items-center justify-between mb-1">
                                 <View className="flex-1 mr-2">
-                                    <Typography variant="caption" weight="bold" className="text-primary/60 text-[10px] uppercase mb-0.5">{item.kode_part || item.kode}</Typography>
+                                    <Typography variant="caption" weight="bold" className="text-primary/60 text-[10px] uppercase mb-0.5">
+                                        {[item.kode_part, item.kode_ean].filter(Boolean).join(' • ') || item.kode}
+                                    </Typography>
                                     <Typography variant="body1" weight="bold" className="text-textMain text-base" numberOfLines={1}>{item.nama}</Typography>
                                 </View>
                                 {isLowStock && (

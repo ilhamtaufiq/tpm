@@ -21,6 +21,8 @@ import { useSecurityStore, SEGMENT_TO_FEATURE } from '../store/useSecurityStore'
 import { useSecurityStatus } from '../hooks/useSecurityAPI';
 import { vars } from 'nativewind';
 import { useUIStore } from '../store/useUIStore';
+import { useOrientationLock } from '../hooks/useOrientationLock';
+import { useDimensionsListener } from '../hooks/useResponsive';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import '../global.css';
@@ -104,16 +106,15 @@ function RootLayoutContent() {
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
     const hasHydrated = useAuthStore(state => state.hasHydrated);
     
-    // States for Premium Web Mobile Preview Frame
-    const [isMobileMode, setIsMobileMode] = useState(true);
-    const [windowWidth, setWindowWidth] = useState(Platform.OS === 'web' ? window.innerWidth : 360);
-
-    useEffect(() => {
-        if (Platform.OS !== 'web') return;
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const {
+        webMobilePreview,
+        setWebMobilePreview,
+        webPreviewOrientation,
+        setWebPreviewOrientation,
+    } = useUIStore();
+    const dimensions = useDimensionsListener();
+    const windowWidth = Platform.OS === 'web' ? dimensions.width : dimensions.width;
+    useOrientationLock();
 
     // API state fetching
     const { data: securityStatus, isLoading: isLoadingSecurity } = useSecurityStatus();
@@ -374,21 +375,40 @@ function RootLayoutContent() {
         </>
     );
 
-    const showMobilePreview = Platform.OS === 'web' && isMobileMode && windowWidth > 640;
+    const showMobilePreview = Platform.OS === 'web' && webMobilePreview && windowWidth > 640;
+    const previewIsLandscape = webPreviewOrientation === 'landscape';
+    const previewWidth = previewIsLandscape ? 844 : 430;
+    const previewHeight = previewIsLandscape ? 390 : 844;
+
+    const webControlButtonStyle = {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.92)',
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    };
 
     return (
         <SafeAreaProvider>
             <GestureHandlerRootView style={[{ flex: 1 }, theme]}>
                 {showMobilePreview ? (
-                    <View style={{ flex: 1, backgroundColor: '#f3f4f6', alignItems: 'center' }}>
+                    <View style={{ flex: 1, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
                         <View
                             style={{
-                                width: 430,
-                                maxWidth: '100%',
-                                height: '100vh' as any,
+                                width: previewWidth,
+                                height: previewHeight,
+                                maxWidth: '96vw' as any,
+                                maxHeight: '92vh' as any,
                                 backgroundColor: '#ffffff',
                                 overflow: 'hidden',
                                 position: 'relative',
+                                borderRadius: previewIsLandscape ? 20 : 32,
                                 shadowColor: '#000',
                                 shadowOffset: { width: 0, height: 12 },
                                 shadowOpacity: 0.08,
@@ -399,58 +419,58 @@ function RootLayoutContent() {
                             {appContent}
                         </View>
 
-                        {/* Toggle icon: Mobile -> Desktop */}
-                        <Pressable
-                            onPress={() => setIsMobileMode(false)}
+                        <View
                             style={{
                                 position: 'absolute',
                                 top: 24,
                                 right: 24,
                                 zIndex: 99999,
-                                width: 44,
-                                height: 44,
-                                borderRadius: 22,
-                                backgroundColor: 'rgba(255,255,255,0.85)',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
-                                shadowRadius: 8,
-                                elevation: 4,
+                                flexDirection: 'row',
+                                gap: 10,
                             }}
                         >
-                            <Text style={{ fontSize: 20, lineHeight: 24 }}>🖥️</Text>
-                        </Pressable>
+                            <Pressable
+                                onPress={() => setWebPreviewOrientation(previewIsLandscape ? 'portrait' : 'landscape')}
+                                style={webControlButtonStyle}
+                            >
+                                <Text style={{ fontSize: 20, lineHeight: 24 }}>🔄</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setWebMobilePreview(false)}
+                                style={webControlButtonStyle}
+                            >
+                                <Text style={{ fontSize: 20, lineHeight: 24 }}>🖥️</Text>
+                            </Pressable>
+                        </View>
                     </View>
                 ) : (
                     <>
                         {appContent}
 
-                        {/* Toggle icon: Desktop -> Mobile */}
                         {Platform.OS === 'web' && windowWidth > 640 && (
-                            <Pressable
-                                onPress={() => setIsMobileMode(true)}
+                            <View
                                 style={{
                                     position: 'absolute',
                                     top: 24,
                                     right: 24,
                                     zIndex: 99999,
-                                    width: 44,
-                                    height: 44,
-                                    borderRadius: 22,
-                                    backgroundColor: 'rgba(255,255,255,0.85)',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    shadowColor: '#000',
-                                    shadowOffset: { width: 0, height: 4 },
-                                    shadowOpacity: 0.1,
-                                    shadowRadius: 8,
-                                    elevation: 4,
+                                    flexDirection: 'row',
+                                    gap: 10,
                                 }}
                             >
-                                <Text style={{ fontSize: 20, lineHeight: 24 }}>📱</Text>
-                            </Pressable>
+                                <Pressable
+                                    onPress={() => setWebPreviewOrientation(webPreviewOrientation === 'landscape' ? 'portrait' : 'landscape')}
+                                    style={webControlButtonStyle}
+                                >
+                                    <Text style={{ fontSize: 20, lineHeight: 24 }}>🔄</Text>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => setWebMobilePreview(true)}
+                                    style={webControlButtonStyle}
+                                >
+                                    <Text style={{ fontSize: 20, lineHeight: 24 }}>📱</Text>
+                                </Pressable>
+                            </View>
                         )}
                     </>
                 )}

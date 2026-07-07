@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, Dimensions, Pressable, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { Typography } from './ui/Typography';
 import { useLowStockParts, useTransaksiBengkelSummary } from '../hooks/useBengkel';
 import { useMuatanSummary } from '../hooks/useJasaAngkut';
@@ -9,10 +9,9 @@ import { formatCurrency } from '../utils/format';
 import { useUIStore } from '../store/useUIStore';
 import { AlertCircle, Wrench, Truck, CarFront, Wallet } from 'lucide-react-native';
 
-const { width } = Dimensions.get('window');
-const SLIDE_WIDTH = width - 48;
-
 export const StatsSlider = () => {
+    const { width } = useWindowDimensions();
+    const slideWidth = Math.min(width - 48, width >= 1024 ? 420 : width >= 640 ? 360 : width - 48);
     const { data: lowStock } = useLowStockParts();
     const { data: bengkelStats } = useTransaksiBengkelSummary();
     const { data: logistikStats } = useMuatanSummary();
@@ -82,7 +81,7 @@ export const StatsSlider = () => {
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                snapToInterval={SLIDE_WIDTH + 16}
+                snapToInterval={slideWidth + 16}
                 decelerationRate="fast"
                 contentContainerStyle={{ paddingHorizontal: 24 }}
             >
@@ -92,7 +91,7 @@ export const StatsSlider = () => {
                         <Pressable
                             key={slide.id}
                             style={({ pressed }) => ({
-                                width: SLIDE_WIDTH,
+                                width: slideWidth,
                                 height: 160,
                                 backgroundColor: slide.color,
                                 opacity: pressed ? 0.9 : 1

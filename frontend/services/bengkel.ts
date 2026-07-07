@@ -6,6 +6,8 @@ export interface SparePart {
     id: number;
     kode: string;
     nama: string;
+    kode_part?: string;
+    kode_ean?: string;
     kategori?: string;
     satuan?: string;
     harga_beli: number;

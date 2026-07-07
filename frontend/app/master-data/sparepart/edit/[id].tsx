@@ -22,6 +22,7 @@ export default function EditSparepartScreen() {
                 id: sparepart.id,
                 kode: sparepart.kode,
                 kode_part: sparepart.kode_part || '',
+                kode_ean: sparepart.kode_ean || '',
                 nama: sparepart.nama,
                 harga_beli: formatNumber(sparepart.harga_beli?.toString() || '0'),
                 harga_jual: formatNumber(sparepart.harga_jual?.toString() || '0'),

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Pressable } from 'react-native';
+import { useResponsive } from '../hooks/useResponsive';
 import { Wrench, CarFront, Truck, Users, BarChart3, Database, History, Wallet, Shield, Settings } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
 import { useUIStore } from '../store/useUIStore';
@@ -14,7 +15,7 @@ import Animated, {
     Extrapolate
 } from 'react-native-reanimated';
 
-const ServiceCard = ({ menu, index }: { menu: any, index: number }) => {
+const ServiceCard = ({ menu, index, columns }: { menu: any, index: number, columns: number }) => {
     const scale = useSharedValue(1);
     const rotateX = useSharedValue(0);
     const rotateY = useSharedValue(0);
@@ -58,7 +59,7 @@ const ServiceCard = ({ menu, index }: { menu: any, index: number }) => {
     };
 
     return (
-        <Animated.View style={[animatedStyle, { width: '25%' }]} className="items-center mb-5 px-1">
+        <Animated.View style={[animatedStyle, { width: `${100 / columns}%` as `${number}%` }]} className="items-center mb-5 px-1">
             <Pressable
                 onPressIn={onPressIn}
                 onPressOut={onPressOut}
@@ -91,6 +92,7 @@ const ServiceCard = ({ menu, index }: { menu: any, index: number }) => {
 
 export const ServiceGrid = () => {
     const { user } = useAuthStore();
+    const { columns } = useResponsive();
 
     const MENUS = [
         { id: 'bengkel', label: 'Bengkel', icon: Wrench, color: '#3b82f6', path: '/bengkel' }, // Blue
@@ -132,7 +134,7 @@ export const ServiceGrid = () => {
         <View className="px-5 mt-6">
             <View className="flex-row flex-wrap">
                 {filteredMenus.map((menu, index) => (
-                    <ServiceCard key={menu.id} menu={menu} index={index} />
+                    <ServiceCard key={menu.id} menu={menu} index={index} columns={columns} />
                 ))}
             </View>
         </View>

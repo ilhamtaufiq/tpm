@@ -1,0 +1,30 @@
+import { parseBarcodeScan, findSparePartByBarcode } from './barcodeScan';
+
+const sampleParts = [
+    { id: 1, kode: 'SP-001', kode_part: 'MD273133003700079', kode_ean: '8996001326398' },
+    { id: 2, kode: 'SP-002', kode_part: 'FILTER-OIL', kode_ean: '8996001326398' },
+];
+
+function assert(condition: boolean, message: string) {
+    if (!condition) throw new Error(message);
+}
+
+function runTests() {
+    const gs1 = parseBarcodeScan('(90)MD273133003700079');
+    assert(gs1.candidates.includes('MD273133003700079'), 'GS1 AI90 should expose part number');
+    assert(findSparePartByBarcode(sampleParts, '(90)MD273133003700079')?.id === 1, 'GS1 AI90 should match kode_part');
+
+    const ean = parseBarcodeScan('8996001326398');
+    assert(ean.candidates.includes('8996001326398'), 'EAN-13 should stay intact');
+    assert(findSparePartByBarcode(sampleParts, '8996001326398')?.id === 1, 'EAN-13 should match kode_ean');
+
+    const prefixedEan = parseBarcodeScan('08996001326398');
+    assert(
+        findSparePartByBarcode(sampleParts, '08996001326398')?.id === 2,
+        'Leading-zero GTIN variant should still match',
+    );
+
+    console.log('barcodeScan tests passed');
+}
+
+runTests();

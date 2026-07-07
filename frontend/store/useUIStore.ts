@@ -11,6 +11,9 @@ interface ThemeColors {
     textGray: string;
 }
 
+export type OrientationLockMode = 'auto' | 'portrait' | 'landscape';
+export type WebPreviewOrientation = 'portrait' | 'landscape';
+
 interface UIState {
     isDarkMode: boolean;
     toggleDarkMode: () => void;
@@ -22,6 +25,12 @@ interface UIState {
     appLogo: string | null;
     appName: string;
     setBranding: (branding: { logo?: string | null; name?: string }) => void;
+    orientationLock: OrientationLockMode;
+    setOrientationLock: (mode: OrientationLockMode) => void;
+    webPreviewOrientation: WebPreviewOrientation;
+    setWebPreviewOrientation: (orientation: WebPreviewOrientation) => void;
+    webMobilePreview: boolean;
+    setWebMobilePreview: (enabled: boolean) => void;
 }
 
 export const defaultColors: ThemeColors = {
@@ -52,6 +61,12 @@ export const useUIStore = create<UIState>()(
                 appLogo: branding.logo !== undefined ? branding.logo : state.appLogo,
                 appName: branding.name !== undefined ? branding.name : state.appName,
             })),
+            orientationLock: 'auto',
+            setOrientationLock: (mode) => set({ orientationLock: mode }),
+            webPreviewOrientation: 'portrait',
+            setWebPreviewOrientation: (orientation) => set({ webPreviewOrientation: orientation }),
+            webMobilePreview: true,
+            setWebMobilePreview: (enabled) => set({ webMobilePreview: enabled }),
         }),
         {
             name: 'ui-storage',

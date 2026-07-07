@@ -34,6 +34,7 @@ import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { formatCurrency, formatNumber } from '../../utils/format';
+import { findSparePartByBarcode } from '../../utils/barcodeScan';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -209,11 +210,7 @@ export default function InventoryScreen() {
     };
 
     const handleScanForStockUpdate = (scannedData: string): boolean => {
-        const cleanData = scannedData.trim();
-        const part = parts.find((p: any) =>
-            p.kode === cleanData ||
-            (p.kode_part && p.kode_part === cleanData)
-        );
+        const part = findSparePartByBarcode(parts, scannedData);
 
         if (part) {
             setIsScannerOpen(false);
@@ -548,7 +545,7 @@ export default function InventoryScreen() {
                                             {renderStockBadge(part)}
                                         </View>
                                         <Typography className="text-textGray text-[11px] mt-1" numberOfLines={1}>
-                                            {part.kode || part.kode_part || '-'} • {part.kategori || 'Suku Cadang'}
+                                            {[part.kode_part, part.kode_ean, part.kode].filter(Boolean).join(' • ') || '-'} • {part.kategori || 'Suku Cadang'}
                                         </Typography>
                                         <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-50">
                                             <Typography className="text-textGray text-[10px] font-semibold">

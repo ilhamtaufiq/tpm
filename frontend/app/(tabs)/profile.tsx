@@ -25,6 +25,7 @@ import { getFileUrl } from '../../utils/image';
 import api from '../../utils/api';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { OrientationControl } from '../../components/ui/OrientationControl';
 
 export default function ProfileScreen() {
     const { resetConfirm } = useLocalSearchParams<{ resetConfirm?: string }>();
@@ -231,6 +232,11 @@ export default function ProfileScreen() {
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 88) }}
                 showsVerticalScrollIndicator={false}
             >
+                <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Tampilan & Layar</Typography>
+                <View className="mb-8">
+                    <OrientationControl />
+                </View>
+
                 {/* ACCOUNT & SECURITY - BENTO GRID ROW */}
                 <View className="flex-row gap-4 mb-4">
                     <Pressable

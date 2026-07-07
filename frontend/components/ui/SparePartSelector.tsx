@@ -9,6 +9,7 @@ import { bengkelService } from '../../services/bengkel';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency } from '../../utils/format';
+import { parseBarcodeScan } from '../../utils/barcodeScan';
 
 interface SparePartSelectorProps {
     value?: any; // Selected object or null
@@ -53,7 +54,8 @@ export const SparePartSelector = ({
     };
 
     const handleScan = (data: string): boolean => {
-        setSearchQuery(data);
+        const parsed = parseBarcodeScan(data);
+        setSearchQuery(parsed.preferred || data);
         setIsScannerOpen(false);
         return true;
     };
@@ -71,7 +73,7 @@ export const SparePartSelector = ({
                             <>
                                 <Typography weight="semibold" className="text-text text-base">{value.nama || value.nama_sparepart}</Typography>
                                 <Typography variant="caption" className="text-gray-500">
-                                    {value.kode} • {value.stok === 999 ? 'Always Ready' : `Stok: ${value.stok}`}
+                                    {[value.kode_part, value.kode_ean, value.kode].filter(Boolean).join(' • ')} • {value.stok === 999 ? 'Always Ready' : `Stok: ${value.stok}`}
                                 </Typography>
                             </>
                         ) : (

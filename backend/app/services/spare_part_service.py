@@ -105,6 +105,7 @@ class SparePartService:
             kode=kode,
             nama=data.nama,
             kode_part=data.kode_part,
+            kode_ean=data.kode_ean,
             kategori=data.kategori,
             merek=data.merek,
             satuan=data.satuan,
@@ -247,6 +248,7 @@ class SparePartService:
                     SparePart.nama.ilike(search_filter),
                     SparePart.kode.ilike(search_filter),
                     SparePart.kode_part.ilike(search_filter),
+                    SparePart.kode_ean.ilike(search_filter),
                     SparePart.merek.ilike(search_filter),
                 )
             )
@@ -436,6 +438,7 @@ class SparePartService:
                     SparePart.nama.ilike(search_filter),
                     SparePart.kode.ilike(search_filter),
                     SparePart.kode_part.ilike(search_filter),
+                    SparePart.kode_ean.ilike(search_filter),
                 ),
             )
             .order_by(SparePart.nama.asc())
@@ -680,6 +683,7 @@ class SparePartService:
                 "kode": kode,
                 "nama": nama,
                 "kode_part": str(row[2]).strip() if row[2] else None,
+                "kode_ean": str(row[12]).strip() if len(row) > 12 and row[12] else None,
                 "kategori": str(row[3]) if row[3] else "Umum",
                 "merek": str(row[4]) if row[4] else None,
                 "satuan": str(row[5]) if row[5] else "pcs",
@@ -819,6 +823,7 @@ class SparePartService:
                         kode=new_kode,
                         nama=nama,
                         kode_part=parsed["kode_part"],
+                        kode_ean=parsed.get("kode_ean"),
                         kategori=parsed["kategori"] or "Umum",
                         merek=parsed["merek"],
                         satuan=parsed["satuan"] or "pcs",
@@ -896,9 +901,9 @@ class SparePartService:
         
         # Headers
         headers = [
-            "Kode", "Nama Barang", "Kode Part", "Kategori", "Merek", 
-            "Satuan", "Stok", "Stok Minimal", "Harga Beli", "Harga Jual", 
-            "Lokasi Rak", "Catatan"
+            "Kode", "Nama Barang", "Kode Part", "Kategori", "Merek",
+            "Satuan", "Stok", "Stok Minimal", "Harga Beli", "Harga Jual",
+            "Lokasi Rak", "Catatan", "Kode EAN"
         ]
         for col_idx, header in enumerate(headers, 1):
             ws.cell(row=1, column=col_idx, value=header)
@@ -917,6 +922,7 @@ class SparePartService:
             ws.cell(row=row_idx, column=10, value=float(sp.harga_jual) if sp.harga_jual else 0)
             ws.cell(row=row_idx, column=11, value=sp.lokasi_rak)
             ws.cell(row=row_idx, column=12, value=sp.catatan)
+            ws.cell(row=row_idx, column=13, value=sp.kode_ean)
             
         output = io.BytesIO()
         wb.save(output)

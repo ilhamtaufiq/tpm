@@ -7,6 +7,7 @@ import { Typography } from './Typography';
 import { X, Zap, ZapOff, Scan, Camera, AlertTriangle, CheckCircle2 } from 'lucide-react-native';
 import { Button } from './Button';
 import { useScanSound, ensureAudioUnlocked } from '../../utils/sounds';
+import { parseBarcodeScan } from '../../utils/barcodeScan';
 
 // Dynamic import type for html5-qrcode (web only)
 type Html5QrcodeType = any;
@@ -239,6 +240,10 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     const handleBarCodeScanned = async (result: { type: string, data: string }) => {
         if (scanned) return;
         setScanned(true);
+        const parsed = parseBarcodeScan(result.data);
+        if (__DEV__) {
+            console.log(`[Scanner] type=${result.type} format=${parsed.format} raw=${parsed.raw} preferred=${parsed.preferred}`);
+        }
         try {
             const matched = await onScan(result.data);
             if (matched) {

@@ -22,6 +22,7 @@ import { ArmadaSelector } from './ui/ArmadaSelector';
 import { Customer, Vehicle } from '../services/masterData';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
+import { findSparePartByBarcode, parseBarcodeScan } from '../utils/barcodeScan';
 import { printReceipt, PrintReceiptData } from '../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../utils/printSettings';
 import { useJasaList } from '../hooks/useJasaServis';
@@ -160,6 +161,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
             String(part.nama || '').toLowerCase().includes(q) ||
             String(part.kode || '').toLowerCase().includes(q) ||
             String(part.kode_part || '').toLowerCase().includes(q) ||
+            String(part.kode_ean || '').toLowerCase().includes(q) ||
             String(part.kategori || '').toLowerCase().includes(q) ||
             String(part.merek || '').toLowerCase().includes(q)
         );
@@ -444,19 +446,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
     };
 
     const handleScanSparePart = (scannedData: string): boolean => {
-        const cleanData = scannedData.trim();
-
-        // Try exact match on internal kode or manufacturer kode_part
-        let part = availableParts.find((p: any) => p.kode === cleanData || p.kode_part === cleanData);
-
-        // If not found, try matching without leading zeros (common in some barcode systems)
-        if (!part) {
-            const strippedData = cleanData.replace(/^0+/, '');
-            part = availableParts.find((p: any) =>
-                (p.kode || '').replace(/^0+/, '') === strippedData ||
-                (p.kode_part || '').replace(/^0+/, '') === strippedData
-            );
-        }
+        const part = findSparePartByBarcode(availableParts, scannedData);
 
         if (part) {
             // Success vibration if available or just proceed
@@ -516,10 +506,11 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
             return true;
         }
 
+        const parsed = parseBarcodeScan(scannedData);
         setDialogConfig({
             visible: true,
             title: 'Tidak Ditemukan',
-            message: `Kode "${scannedData}" tidak terdaftar sebagai Kode Part Pabrik maupun Kode Stok Internal.`,
+            message: `Kode "${parsed.preferred}" tidak terdaftar. Scanner membaca format ${parsed.format === 'gs1' ? 'GS1 (kode pabrik)' : parsed.format === 'ean13' ? 'EAN-13' : 'barcode'}. Pastikan kode part atau EAN sudah di master sparepart.`,
             variant: 'warning'
         });
         setTimeout(() => setDialogConfig(prev => ({ ...prev, visible: false })), 2000);

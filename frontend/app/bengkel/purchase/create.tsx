@@ -29,6 +29,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { useCreatePembelianParts, useSparePartsList, useUpdatePembelianParts } from '../../../hooks/useBengkel';
 import { formatNumber, parseNumber, formatCurrency } from '../../../utils/format';
+import { findSparePartByBarcode } from '../../../utils/barcodeScan';
 import { bengkelService } from '../../../services/bengkel';
 import { useDebounce } from '../../../hooks';
 
@@ -256,14 +257,8 @@ export default function PurchaseScreen() {
 
     // Scan handler
     const handleScanPart = (data: string): boolean => {
-        const cleanData = data.trim();
         const availableParts = spareParts || [];
-
-        let part = availableParts.find((p: any) => p.kode === cleanData);
-        if (!part) {
-            const strippedData = cleanData.replace(/^0+/, '');
-            part = availableParts.find((p: any) => (p.kode || '').replace(/^0+/, '') === strippedData);
-        }
+        const part = findSparePartByBarcode(availableParts, data);
 
         if (part) {
             const existingIndex = items.findIndex(i => i.spare_part_id === part.id);

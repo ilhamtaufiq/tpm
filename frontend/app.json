@@ -3,7 +3,7 @@
     "name": "TPM Super App",
     "slug": "tpm-super-app",
     "version": "1.0.22",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/logo_tpm.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,

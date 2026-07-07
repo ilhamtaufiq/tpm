@@ -24,6 +24,7 @@ import {
     sharePublicReceiptLink,
 } from '../../../utils/sharePublicReceipt';
 import api from '../../../utils/api';
+import { findSparePartByBarcode, parseBarcodeScan } from '../../../utils/barcodeScan';
 import { useScanSound } from '../../../utils/sounds';
 import { BottomSheetContainer } from '../../../components/ui/BottomSheetContainer';
 import { ModalThemeView } from '../../../components/ui/ModalThemeView';
@@ -535,34 +536,41 @@ export default function BengkelTransaksiScreen() {
     };
 
     const handleScan = async (scannedData: string) => {
-        const clean = scannedData.trim();
-        let part = parts.find((p: any) => p.kode === clean || p.kode_part === clean);
+        const parsed = parseBarcodeScan(scannedData);
+        let part = findSparePartByBarcode(parts, scannedData);
+
         if (!part) {
-            const stripped = clean.replace(/^0+/, '');
-            part = parts.find((p: any) =>
-                (p.kode || '').replace(/^0+/, '') === stripped ||
-                (p.kode_part || '').replace(/^0+/, '') === stripped
-            );
-        }
-        if (part) return addScannedPart(part);
-        else {
-            // Fallback: query API directly (bypass pagination) — match by kode/kode_part
-            try {
-                const res = await api.get('/spare-parts', { params: { limit: 5, search: clean } });
-                const rows = res.data?.data;
-                if (Array.isArray(rows) && rows.length) {
-                    const found = rows.find((p: any) =>
-                        p.kode === clean || p.kode_part === clean ||
-                        (p.kode || '').replace(/^0+/, '') === clean.replace(/^0+/, '') ||
-                        (p.kode_part || '').replace(/^0+/, '') === clean.replace(/^0+/, '')
-                    ) || rows[0];
-                    return addScannedPart(found);
+            // Fallback: query API with all parsed candidates (GS1 AI90, EAN-13, etc.)
+            for (const candidate of parsed.candidates) {
+                try {
+                    const res = await api.get('/spare-parts', { params: { limit: 10, search: candidate } });
+                    const rows = res.data?.data;
+                    if (!Array.isArray(rows) || rows.length === 0) continue;
+                    const found = findSparePartByBarcode(rows, scannedData);
+                    if (found) {
+                        part = found;
+                        break;
+                    }
+                } catch {
+                    // try next candidate
                 }
-            } catch {}
-            showNotice('error', 'Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di data sparepart.`);
-            setScanLog(prev => [{ id: Math.random().toString(), title: 'Tidak ditemukan', subtitle: `Kode: ${scannedData}`, timestamp: Date.now() }, ...prev]);
-            return false;
+            }
         }
+
+        if (part) return addScannedPart(part);
+
+        showNotice(
+            'error',
+            'Tidak Ditemukan',
+            `Kode "${parsed.preferred}" tidak terdaftar. Scan membaca format ${parsed.format === 'gs1' ? 'GS1 (90)' : parsed.format === 'ean13' ? 'EAN-13' : 'barcode'}. Pastikan kode part/EAN sudah di master data.`,
+        );
+        setScanLog(prev => [{
+            id: Math.random().toString(),
+            title: 'Tidak ditemukan',
+            subtitle: `Scan: ${parsed.raw}`,
+            timestamp: Date.now(),
+        }, ...prev]);
+        return false;
     };
 
     const handleSelectExistingTransaction = (item: any) => {

@@ -12,6 +12,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { useCreateSparePart, useUpdateSparePart, useDeleteSparePart, useUploadSparePartImage, useNextSparePartKode } from '../../hooks';
 import { FILE_URL } from '../../utils/api';
 import { useScanSound } from '../../utils/sounds';
+import { mapBarcodeToSparePartFields, parseBarcodeScan } from '../../utils/barcodeScan';
 import { Package, Image as ImageIcon, Camera, QrCode, Sparkles, Check } from 'lucide-react-native';
 
 export interface SparePartFormData {
@@ -19,6 +20,7 @@ export interface SparePartFormData {
     kode?: string;
     nama: string;
     kode_part: string;
+    kode_ean?: string;
     harga_beli: string;
     harga_jual: string;
     stok: string;
@@ -33,7 +35,7 @@ export interface SparePartFormData {
 }
 
 const INITIAL_FORM: SparePartFormData = {
-    nama: '', kode_part: '', harga_beli: '', harga_jual: '',
+    nama: '', kode_part: '', kode_ean: '', harga_beli: '', harga_jual: '',
     stok: '', stok_minimum: '5', kategori: 'Umum', merek: '',
     satuan: 'pcs', lokasi_rak: '', catatan: '',
 };
@@ -48,7 +50,7 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
     const [form, setForm] = useState<SparePartFormData>(initialData || INITIAL_FORM);
     const [isAlwaysReady, setIsAlwaysReady] = useState(initialData?.stok === '999' || false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
-    const [scannerTarget, setScannerTarget] = useState<'kode' | 'kode_part'>('kode_part');
+    const [scannerTarget, setScannerTarget] = useState<'kode' | 'kode_part' | 'kode_ean' | 'auto'>('auto');
 
     const insets = useSafeAreaInsets();
     const createMutation = useCreateSparePart();
@@ -138,18 +140,61 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                 {/* Identitas */}
                 <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Identitas Barang</Typography>
+                    <Typography className="mb-3 text-textGray/70 text-[11px] ml-1">
+                        Isi kode part pabrik dan/atau EAN. Keduanya opsional, tapi membantu scan & pencarian.
+                    </Typography>
                     <View className="space-y-3">
                         <View className="flex-row items-center space-x-3">
-                            <View className="flex-1"><TextInput className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="Kode Part (OEM / Pabrik)" placeholderTextColor="#9CA3AF" value={form.kode_part} onChangeText={(t) => setForm({ ...form, kode_part: t })} /></View>
-                            <Pressable onPress={() => { setScannerTarget('kode_part'); setIsScannerOpen(true); }} className="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-xl items-center justify-center"><QrCode size={20} color="#4F46E5" /></Pressable>
+                            <View className="flex-1">
+                                <TextInput
+                                    className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                                    placeholder="Kode Part Pabrik (GS1 / OEM)"
+                                    placeholderTextColor="#9CA3AF"
+                                    value={form.kode_part}
+                                    onChangeText={(t) => setForm({ ...form, kode_part: t })}
+                                />
+                            </View>
+                            <Pressable onPress={() => { setScannerTarget('kode_part'); setIsScannerOpen(true); }} className="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-xl items-center justify-center">
+                                <QrCode size={20} color="#4F46E5" />
+                            </Pressable>
                         </View>
                         <View className="flex-row items-center space-x-3">
-                            <View className="flex-1"><TextInput className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 text-xs italic" placeholder="ID Stok (Internal SKU)" placeholderTextColor="#9CA3AF" value={form.kode} onChangeText={(t) => setForm({ ...form, kode: t })} readOnly={isEditing} /></View>
+                            <View className="flex-1">
+                                <TextInput
+                                    className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                                    placeholder="Barcode EAN / GTIN (opsional)"
+                                    placeholderTextColor="#9CA3AF"
+                                    keyboardType="number-pad"
+                                    value={form.kode_ean || ''}
+                                    onChangeText={(t) => setForm({ ...form, kode_ean: t })}
+                                />
+                            </View>
+                            <Pressable onPress={() => { setScannerTarget('kode_ean'); setIsScannerOpen(true); }} className="w-12 h-12 bg-emerald-50 border border-emerald-100 rounded-xl items-center justify-center">
+                                <QrCode size={20} color="#059669" />
+                            </Pressable>
+                        </View>
+                        <Pressable
+                            onPress={() => { setScannerTarget('auto'); setIsScannerOpen(true); }}
+                            className="flex-row items-center justify-center bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 active:bg-blue-100"
+                        >
+                            <QrCode size={18} color="#2563EB" />
+                            <Typography className="text-blue-700 font-bold text-xs ml-2">Scan Otomatis (isi kode part / EAN)</Typography>
+                        </Pressable>
+                        <View className="flex-row items-center space-x-3">
+                            <View className="flex-1">
+                                <TextInput
+                                    className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 text-xs italic"
+                                    placeholder="ID Stok Internal (SKU)"
+                                    placeholderTextColor="#9CA3AF"
+                                    value={form.kode}
+                                    onChangeText={(t) => setForm({ ...form, kode: t })}
+                                    readOnly={isEditing}
+                                />
+                            </View>
                             {!isEditing && (
-                                <View className="flex-row space-x-2">
-                                    <Pressable onPress={handleGenerateKode} className="w-12 h-12 bg-amber-50 border border-amber-100 rounded-xl items-center justify-center"><Sparkles size={20} color="#D97706" /></Pressable>
-                                    <Pressable onPress={() => { setScannerTarget('kode'); setIsScannerOpen(true); }} className="w-12 h-12 bg-gray-50 border border-gray-200 rounded-xl items-center justify-center"><QrCode size={20} color="#6B7280" /></Pressable>
-                                </View>
+                                <Pressable onPress={handleGenerateKode} className="w-12 h-12 bg-amber-50 border border-amber-100 rounded-xl items-center justify-center">
+                                    <Sparkles size={20} color="#D97706" />
+                                </Pressable>
                             )}
                         </View>
                     </View>
@@ -227,7 +272,22 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                 visible={isScannerOpen}
                 onClose={() => setIsScannerOpen(false)}
                 onScan={(d) => {
-                    setForm(prev => ({ ...prev, [scannerTarget]: d }));
+                    if (scannerTarget === 'auto') {
+                        const mapped = mapBarcodeToSparePartFields(d);
+                        setForm((prev) => ({
+                            ...prev,
+                            ...(mapped.kode_part ? { kode_part: mapped.kode_part } : {}),
+                            ...(mapped.kode_ean ? { kode_ean: mapped.kode_ean } : {}),
+                        }));
+                    } else if (scannerTarget === 'kode_part') {
+                        const mapped = mapBarcodeToSparePartFields(d);
+                        setForm((prev) => ({ ...prev, kode_part: mapped.kode_part || parseBarcodeScan(d).preferred }));
+                    } else if (scannerTarget === 'kode_ean') {
+                        const mapped = mapBarcodeToSparePartFields(d);
+                        setForm((prev) => ({ ...prev, kode_ean: mapped.kode_ean || parseBarcodeScan(d).preferred }));
+                    } else {
+                        setForm((prev) => ({ ...prev, kode: parseBarcodeScan(d).preferred }));
+                    }
                     setIsScannerOpen(false);
                     return true;
                 }}
