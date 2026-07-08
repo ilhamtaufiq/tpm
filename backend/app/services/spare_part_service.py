@@ -540,6 +540,18 @@ class SparePartService:
             "lowest_stock": lowest_stock_formatted
         }
 
+    @staticmethod
+    def _is_tanpa_stok_marker(stok_raw) -> bool:
+        """True when the Stok cell explicitly means no physical stock (Always Ready)."""
+        if stok_raw is None:
+            return False
+        stok_str = str(stok_raw).strip().lower()
+        if not stok_str:
+            return False
+        if stok_str in ('tanpa stok', 'always ready', 'ar', 'n/a', 'na', '-', '—'):
+            return True
+        return 'tanpa' in stok_str and 'stok' in stok_str
+
     def _detect_format(self, sheet) -> str:
         """Detect Excel import format based on header row.
         
@@ -597,11 +609,11 @@ class SparePartService:
             if len(row) > 8 and row[8] is not None:
                 ar_val = str(row[8]).strip().lower()
                 always_ready = ar_val in ('true', 'ya', 'yes', '1', 'v', '✓', 'always ready')
-            
-            # Also detect from stok column text
+
             stok_raw = row[5]
             stok_str = str(stok_raw or '').strip()
-            if not always_ready and stok_str.lower() in ('tanpa stok', 'always ready', 'ar'):
+            stok_is_tanpa_stok = self._is_tanpa_stok_marker(stok_raw)
+            if not always_ready and stok_is_tanpa_stok:
                 always_ready = True
             
             # --- Read Excel's "Total Modal" (col H) as source of truth ---
@@ -613,12 +625,13 @@ class SparePartService:
                     pass
             
             if always_ready:
-                if excel_modal > 0 and harga_beli > 0:
-                    # AR item WITH physical stock: derive actual stok from modal
-                    # DB will store real stok so valuation = stok × harga_beli = excel_modal
+                if stok_is_tanpa_stok:
+                    # "Tanpa Stok" in kolom Stok → selalu katalog (stok 999)
+                    stok = Decimal("999")
+                elif excel_modal > 0 and harga_beli > 0:
+                    # AR via kolom I + Total Modal: derive stok fisik dari modal
                     stok = excel_modal / harga_beli
                 else:
-                    # AR item catalog only: sentinel stok=999, modal=0 in valuation
                     stok = Decimal("999")
             else:
                 # Normal item: use Total Modal to derive exact stok if available
@@ -676,7 +689,11 @@ class SparePartService:
             return {"error": f"Baris {row_idx}: Nama spare part wajib diisi"}
         
         try:
-            stok = int(row[6]) if row[6] is not None else 0
+            stok_raw = row[6]
+            if self._is_tanpa_stok_marker(stok_raw):
+                stok = 999
+            else:
+                stok = int(stok_raw) if stok_raw is not None else 0
             harga_beli = Decimal(str(row[8] or 0))
             
             return {
@@ -1014,15 +1031,16 @@ class SparePartService:
                 "C - Kode Part: kode pabrik / GS1 (opsional).",
                 "D - Harga Beli: harga modal per satuan (angka).",
                 "E - Harga Jual: harga jual per satuan (angka).",
-                "F - Stok: jumlah stok. Bisa diisi angka atau teks 'Tanpa Stok'.",
+                "F - Stok: angka, atau teks 'Tanpa Stok' (otomatis Always Ready, stok 999).",
                 "G - Satuan: pcs, liter, set, dll. Default pcs.",
                 "H - Total Modal: harga beli × stok. Dipakai untuk hitung stok akurat.",
-                "I - Always Ready: isi ya / true / 1 untuk barang tanpa stok fisik (stok 999).",
+                "I - Always Ready: isi ya / true / 1 (opsional jika kolom Stok sudah 'Tanpa Stok').",
                 "K - Total Fix: total modal keseluruhan untuk validasi (opsional).",
                 "",
                 "CATATAN ALWAYS READY:",
-                "• Jika Always Ready aktif dan Total Modal > 0, sistem hitung stok dari modal.",
-                "• Jika Always Ready aktif tanpa modal, stok diset 999 (katalog saja).",
+                "• Kolom Stok berisi 'Tanpa Stok' → sistem otomatis set stok 999.",
+                "• Kolom I + Total Modal > 0 → stok dihitung dari modal (barang AR dengan stok fisik).",
+                "• Always Ready tanpa modal → stok 999 (katalog saja).",
                 "",
                 "TIPS:",
                 "• Pastikan Total Modal = Harga Beli × Stok untuk barang biasa.",

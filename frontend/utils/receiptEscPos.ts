@@ -113,6 +113,16 @@ export async function jpegFileToEscPosBase64(fileUri: string): Promise<string> {
     return bytesToBase64(escPosBytes);
 }
 
+/** Append partial paper cut after raster ESC/POS payload from WebView capture. */
+export function appendEscPosPaperCut(base64: string, fullCut = false): string {
+    const existing = base64ToBytes(base64);
+    const cut = new Uint8Array([0x1d, 0x56, fullCut ? 0x01 : 0x00, 0x0a, 0x0a]);
+    const merged = new Uint8Array(existing.length + cut.length);
+    merged.set(existing);
+    merged.set(cut, existing.length);
+    return bytesToBase64(merged);
+}
+
 export async function jpegPayloadToEscPosBase64(imagePayload: string): Promise<string> {
     const parsed = JSON.parse(imagePayload) as {
         url?: string;

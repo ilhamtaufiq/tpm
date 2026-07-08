@@ -32,6 +32,8 @@ import { AlertProvider } from '../context/AlertContext';
 import { CustomTabBar } from '../components/ui/CustomTabBar';
 import { useRealtimeSync } from '../services/realtime';
 import { usePushNotifications } from '../services/pushNotifications';
+import { ReceiptHtmlCaptureHost } from '../components/print/ReceiptHtmlCaptureHost';
+import { preloadHtml2CanvasScript } from '../utils/html2canvasBundle';
 
 
 // Configure online manager to listen to NetInfo
@@ -130,6 +132,12 @@ function RootLayoutContent() {
 
     useRealtimeSync();
     usePushNotifications();
+
+    useEffect(() => {
+        if (Platform.OS === 'android') {
+            preloadHtml2CanvasScript();
+        }
+    }, []);
 
     const theme = vars({
         '--color-primary': themeColors.primary,
@@ -344,6 +352,7 @@ function RootLayoutContent() {
 
     const appContent = (
         <>
+            {Platform.OS === 'android' ? <ReceiptHtmlCaptureHost /> : null}
             <ConnectivityBanner />
             <ErrorBoundary>
                 <BottomSheetModalProvider>

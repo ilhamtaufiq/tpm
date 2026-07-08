@@ -54,6 +54,7 @@ import {
     parseBarcodeScan,
     pickBestSparePartMatch,
 } from '../../utils/barcodeScan';
+import { isAlwaysReadyStock } from '../../utils/sparepartStock';
 
 export default function SparePartMasterScreen() {
     const router = useRouter();
@@ -428,7 +429,7 @@ export default function SparePartMasterScreen() {
     const exportMutation = useExportSpareParts();
 
     const renderItem = ({ item }: { item: any }) => {
-        const isAlwaysReady = item.stok === 999;
+        const isAlwaysReady = isAlwaysReadyStock(item.stok);
         const isLowStock = !isAlwaysReady && item.stok <= item.stok_minimum;
         const imageUrl = item.gambar ? `${FILE_URL}/uploads/${item.gambar}` : null;
         const isSelected = selectedIds.includes(item.id);
@@ -807,7 +808,7 @@ export default function SparePartMasterScreen() {
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-indigo-700">Download Format Import Stok</Typography>
-                                <Typography variant="caption" className="text-textGray">Sheet Import Stok + tab Instruksi. Urutan, Nama, Kode Part, Harga, Stok, Always Ready.</Typography>
+                                <Typography variant="caption" className="text-textGray">Sheet Import Stok + tab Instruksi. Isi &quot;Tanpa Stok&quot; di kolom Stok untuk Always Ready (otomatis stok 999).</Typography>
                             </View>
                         </Pressable>
 

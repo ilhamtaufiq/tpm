@@ -3,16 +3,35 @@ import { PrintSettings } from './printSettings';
 import { getBLEPrinter } from './blePrinter';
 import { getPaperDimensions } from './paperSize';
 import { prepareReceiptAssets } from './prepareReceiptAssets';
+import { prepareReceiptHtml } from './prepareReceiptHtml';
 import { generateBleReceiptText } from './generateBleReceiptText';
-import { printBillTextFireAndForget } from './blePrintTransport';
+import { printBillTextFireAndForget, printRawBase64 } from './blePrintTransport';
+import { captureReceiptHtmlToEscPos } from './receiptHtmlCapture';
+import { appendEscPosPaperCut } from './receiptEscPos';
 
 function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function printBleReceiptText(
+    data: PrintReceiptData,
+    settings: PrintSettings,
+): Promise<string> {
+    const { settings: preparedSettings } = await prepareReceiptAssets(data, settings, {
+        skipQrImage: true,
+    });
+
+    const receiptText = generateBleReceiptText(data, preparedSettings);
+    if (!receiptText || receiptText.trim().length < 8) {
+        throw new Error('Struk kosong. Periksa pengaturan cetak.');
+    }
+
+    return receiptText;
+}
+
 /**
- * Android BLE thermal print using the same printBill/printRawData path as the
- * working Bluetooth pairing test (EPToolkit tagged text → ESC/POS bytes).
+ * Android BLE thermal print — primary path uses the same HTML as QZ Tray (rasterized
+ * in a hidden WebView), with plain-text ESC/POS as fallback.
  */
 export async function printBleReceipt(
     data: PrintReceiptData,
@@ -30,18 +49,21 @@ export async function printBleReceipt(
         paperSize: paper.paperSize,
     };
 
-    const { settings: preparedSettings } = await prepareReceiptAssets(data, normalizedSettings, {
-        skipQrImage: true,
-    });
-
-    const receiptText = generateBleReceiptText(data, preparedSettings);
-    if (!receiptText || receiptText.trim().length < 8) {
-        throw new Error('Struk kosong. Periksa pengaturan cetak.');
-    }
-
     await printer.init();
     await printer.connectPrinter(macAddress);
 
+    try {
+        const { html, settings: preparedSettings } = await prepareReceiptHtml(data, normalizedSettings);
+        const escPosBase64 = await captureReceiptHtmlToEscPos(html, preparedSettings);
+        const payload = appendEscPosPaperCut(escPosBase64);
+        await printRawBase64(payload, 30000);
+        await delay(1500);
+        return;
+    } catch (htmlError) {
+        console.warn('[Print] HTML raster BLE failed, fallback to text:', htmlError);
+    }
+
+    const receiptText = await printBleReceiptText(data, normalizedSettings);
     printBillTextFireAndForget(receiptText, {
         cut: true,
         beep: false,

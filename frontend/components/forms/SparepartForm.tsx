@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Pressable, ScrollView, Image, Platform, TextInput } from 'react-native';
 import { appAlert, appConfirm } from '../../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +13,7 @@ import { useCreateSparePart, useUpdateSparePart, useDeleteSparePart, useUploadSp
 import { FILE_URL } from '../../utils/api';
 import { useScanSound } from '../../utils/sounds';
 import { mapBarcodeToSparePartFields, parseBarcodeScan } from '../../utils/barcodeScan';
+import { ALWAYS_READY_STOCK, isAlwaysReadyStock } from '../../utils/sparepartStock';
 import { Package, Image as ImageIcon, Camera, QrCode, Sparkles, Check } from 'lucide-react-native';
 
 export interface SparePartFormData {
@@ -48,7 +49,16 @@ interface Props {
 export default function SparepartForm({ initialData, onSuccess }: Props) {
     const isEditing = !!initialData?.id;
     const [form, setForm] = useState<SparePartFormData>(initialData || INITIAL_FORM);
-    const [isAlwaysReady, setIsAlwaysReady] = useState(initialData?.stok === '999' || false);
+    const [isAlwaysReady, setIsAlwaysReady] = useState(isAlwaysReadyStock(initialData?.stok));
+
+    useEffect(() => {
+        if (!initialData) return;
+        const alwaysReady = isAlwaysReadyStock(initialData.stok);
+        setIsAlwaysReady(alwaysReady);
+        if (alwaysReady) {
+            setForm((prev) => ({ ...prev, stok: ALWAYS_READY_STOCK }));
+        }
+    }, [initialData?.id, initialData?.stok]);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [scannerTarget, setScannerTarget] = useState<'kode' | 'kode_part' | 'kode_ean' | 'auto'>('auto');
 
@@ -223,7 +233,15 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                     <View className="flex-1">
                         <View className="flex-row justify-between items-center mb-2">
                             <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Stok Awal</Typography>
-                            <Pressable onPress={() => { const v = !isAlwaysReady; setIsAlwaysReady(v); if (v) setForm(prev => ({ ...prev, stok: '999' })); }} className="flex-row items-center">
+                            <Pressable onPress={() => {
+                                const v = !isAlwaysReady;
+                                setIsAlwaysReady(v);
+                                if (v) {
+                                    setForm((prev) => ({ ...prev, stok: ALWAYS_READY_STOCK }));
+                                } else {
+                                    setForm((prev) => (prev.stok === ALWAYS_READY_STOCK ? { ...prev, stok: '0' } : prev));
+                                }
+                            }} className="flex-row items-center">
                                 <View className={`w-4 h-4 rounded border items-center justify-center mr-1.5 ${isAlwaysReady ? 'bg-primary border-primary' : 'border-gray-300'}`}>{isAlwaysReady && <Check size={10} color="white" />}</View>
                                 <Typography className={`text-[10px] font-bold ${isAlwaysReady ? 'text-primary' : 'text-textGray'}`}>Always Ready</Typography>
                             </Pressable>

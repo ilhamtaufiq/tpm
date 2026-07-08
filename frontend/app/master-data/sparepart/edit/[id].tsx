@@ -6,6 +6,7 @@ import { Typography } from '../../../../components/ui/Typography';
 import SparepartForm, { SparePartFormData } from '../../../../components/forms/SparepartForm';
 import { useSparePartDetail } from '../../../../hooks';
 import { formatNumber } from '../../../../utils/format';
+import { ALWAYS_READY_STOCK, isAlwaysReadyStock } from '../../../../utils/sparepartStock';
 
 export default function EditSparepartScreen() {
     const router = useRouter();
@@ -26,7 +27,7 @@ export default function EditSparepartScreen() {
                 nama: sparepart.nama,
                 harga_beli: formatNumber(sparepart.harga_beli?.toString() || '0'),
                 harga_jual: formatNumber(sparepart.harga_jual?.toString() || '0'),
-                stok: (sparepart.stok || 0).toString(),
+                stok: isAlwaysReadyStock(sparepart.stok) ? ALWAYS_READY_STOCK : String(sparepart.stok ?? 0),
                 stok_minimum: (sparepart.stok_minimum || 5).toString(),
                 kategori: sparepart.kategori || 'Umum',
                 merek: sparepart.merek || '',
