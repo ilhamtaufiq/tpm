@@ -142,21 +142,28 @@ export const ThermalReceiptView = React.forwardRef<View, ThermalReceiptViewProps
                 <Divider />
 
                 <ReceiptRow label="SUBTOTAL" value={doc.subtotal} bold fontSize={fsB} />
-
-                <Divider />
-
-                <ReceiptRow label="TOTAL" value={doc.total} bold fontSize={fsTotal} />
                 {doc.discount ? (
                     <ReceiptRow label="Diskon" value={`-${doc.discount}`} fontSize={fsB} />
                 ) : null}
+                <ReceiptRow label="TOTAL" value={doc.total} bold fontSize={fsTotal} />
                 {doc.paid ? <ReceiptRow label="Dibayar" value={doc.paid} fontSize={fsB} /> : null}
                 {doc.sisa ? (
                     <ReceiptRow label="SISA" value={doc.sisa} bold fontSize={fsB} valueColor="#EF4444" />
                 ) : (
                     <Text style={[styles.centerText, styles.bold, { fontSize: fsB, paddingTop: 4 }]}>LUNAS</Text>
                 )}
+                {doc.change ? <ReceiptRow label="Kembalian" value={doc.change} fontSize={fsB} /> : null}
                 {doc.paymentMethod ? (
                     <ReceiptRow label="Metode Bayar:" value={doc.paymentMethod} fontSize={fsS} />
+                ) : null}
+
+                {doc.notes ? (
+                    <>
+                        <Divider />
+                        <Text style={[{ fontSize: fsS, color: '#000000', fontFamily: MONO }]}>
+                            Catatan: {doc.notes}
+                        </Text>
+                    </>
                 ) : null}
 
                 <Divider />

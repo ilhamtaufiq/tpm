@@ -143,15 +143,16 @@ ${doc.phone ? `<div class="center" style="font-size:${fsS}px">Telp: ${escapeHtml
 <div class="divider"></div>
 ${sectionsHtml}
 <div class="divider"></div>
-<table><tr><td style="font-size:${fsB}px;font-weight:bold">SUBTOTAL</td><td style="font-size:${fsB}px;text-align:right;font-weight:bold">${escapeHtml(doc.subtotal)}</td></tr></table>
-<div class="divider"></div>
 <table>
-<tr><td style="font-size:${is80mm ? 14 : 12}px;font-weight:bold">TOTAL</td><td style="font-size:${is80mm ? 14 : 12}px;text-align:right;font-weight:bold">${escapeHtml(doc.total)}</td></tr>
+<tr><td style="font-size:${fsB}px;font-weight:bold">SUBTOTAL</td><td style="font-size:${fsB}px;text-align:right;font-weight:bold">${escapeHtml(doc.subtotal)}</td></tr>
 ${doc.discount ? `<tr><td style="font-size:${fsB}px">Diskon</td><td style="font-size:${fsB}px;text-align:right">-${escapeHtml(doc.discount)}</td></tr>` : ''}
+<tr><td style="font-size:${is80mm ? 14 : 12}px;font-weight:bold">TOTAL</td><td style="font-size:${is80mm ? 14 : 12}px;text-align:right;font-weight:bold">${escapeHtml(doc.total)}</td></tr>
 ${doc.paid ? `<tr><td style="font-size:${fsB}px">Dibayar</td><td style="font-size:${fsB}px;text-align:right">${escapeHtml(doc.paid)}</td></tr>` : ''}
 ${doc.sisa ? `<tr><td style="font-size:${fsB}px;color:#EF4444;font-weight:bold">SISA</td><td style="font-size:${fsB}px;text-align:right;color:#EF4444;font-weight:bold">${escapeHtml(doc.sisa)}</td></tr>` : '<tr><td colspan="2" style="text-align:center;font-weight:bold;padding-top:4px">LUNAS</td></tr>'}
+${doc.change ? `<tr><td style="font-size:${fsB}px">Kembalian</td><td style="font-size:${fsB}px;text-align:right">${escapeHtml(doc.change)}</td></tr>` : ''}
 ${doc.paymentMethod ? `<tr><td style="font-size:${fsS}px">Metode Bayar:</td><td style="font-size:${fsS}px;text-align:right">${escapeHtml(doc.paymentMethod)}</td></tr>` : ''}
 </table>
+${doc.notes ? `<div class="divider"></div><div style="font-size:${fsS}px">Catatan: ${escapeHtml(doc.notes)}</div>` : ''}
 <div class="divider"></div>
 ${qrHtml}
 <div class="center" style="font-size:${fsFooter}px">${escapeHtml(doc.footer)}</div>

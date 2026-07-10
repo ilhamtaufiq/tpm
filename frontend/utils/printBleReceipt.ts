@@ -2,7 +2,6 @@ import { PrintReceiptData } from './printReceipt';
 import { PrintSettings } from './printSettings';
 import { getBLEPrinter } from './blePrinter';
 import { getPaperDimensions } from './paperSize';
-import { prepareReceiptAssets } from './prepareReceiptAssets';
 import { prepareReceiptHtml } from './prepareReceiptHtml';
 import { generateBleReceiptText } from './generateBleReceiptText';
 import { printBillTextFireAndForget, printRawBase64 } from './blePrintTransport';
@@ -13,15 +12,12 @@ function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function printBleReceiptText(
+function printBleReceiptText(
     data: PrintReceiptData,
     settings: PrintSettings,
-): Promise<string> {
-    const { settings: preparedSettings } = await prepareReceiptAssets(data, settings, {
-        skipQrImage: true,
-    });
-
-    const receiptText = generateBleReceiptText(data, preparedSettings);
+): string {
+    // settings already prepared (same pipeline as QZ HTML) when called from printBleReceipt
+    const receiptText = generateBleReceiptText(data, settings);
     if (!receiptText || receiptText.trim().length < 8) {
         throw new Error('Struk kosong. Periksa pengaturan cetak.');
     }
@@ -30,8 +26,10 @@ async function printBleReceiptText(
 }
 
 /**
- * Android BLE thermal print — primary path uses the same HTML as QZ Tray (rasterized
- * in a hidden WebView), with plain-text ESC/POS as fallback.
+ * Android BLE thermal print.
+ * Primary: same HTML as QZ Tray (prepareReceiptHtml → generateReceiptHTML),
+ * rasterized in WebView to ESC/POS so layout matches desktop thermal.
+ * Fallback: plain-text from the same receiptDocument model.
  */
 export async function printBleReceipt(
     data: PrintReceiptData,
@@ -49,12 +47,14 @@ export async function printBleReceipt(
         paperSize: paper.paperSize,
     };
 
+    // Prepare HTML first (same pipeline as web/QZ) before connecting printer.
+    const prepared = await prepareReceiptHtml(data, normalizedSettings);
+
     await printer.init();
     await printer.connectPrinter(macAddress);
 
     try {
-        const { html, settings: preparedSettings } = await prepareReceiptHtml(data, normalizedSettings);
-        const escPosBase64 = await captureReceiptHtmlToEscPos(html, preparedSettings);
+        const escPosBase64 = await captureReceiptHtmlToEscPos(prepared.html, prepared.settings);
         const payload = appendEscPosPaperCut(escPosBase64);
         await printRawBase64(payload, 30000);
         await delay(1500);
@@ -63,7 +63,8 @@ export async function printBleReceipt(
         console.warn('[Print] HTML raster BLE failed, fallback to text:', htmlError);
     }
 
-    const receiptText = await printBleReceiptText(data, normalizedSettings);
+    // Same document model as HTML/QZ — content parity even without logo/QR image.
+    const receiptText = printBleReceiptText(data, prepared.settings);
     printBillTextFireAndForget(receiptText, {
         cut: true,
         beep: false,

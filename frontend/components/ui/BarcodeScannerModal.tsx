@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, FC } from 're
 import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput, Animated, Keyboard } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions, type BarcodeType } from 'expo-camera';
 import { Typography } from './Typography';
 import { X, Zap, ZapOff, Scan, Camera, AlertTriangle, CheckCircle2 } from 'lucide-react-native';
 import { Button } from './Button';
@@ -24,21 +24,21 @@ interface BarcodeScannerModalProps {
     preferLinearBarcode?: boolean;
 }
 
-const LINEAR_BARCODE_TYPES = [
+const LINEAR_BARCODE_TYPES: BarcodeType[] = [
     'ean13',
     'ean8',
     'code128',
     'code39',
     'upc_a',
     'upc_e',
-] as const;
+];
 
-const ALL_BARCODE_TYPES = [
+const ALL_BARCODE_TYPES: BarcodeType[] = [
     ...LINEAR_BARCODE_TYPES,
     'qr',
     'datamatrix',
     'pdf417',
-] as const;
+];
 
 export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     visible,
@@ -314,9 +314,12 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     };
 
     // Stable settings object to prevent unnecessary re-renders/scanner resets
-    const scannerSettings = useMemo(() => ({
-        barcodeTypes: (preferLinearBarcode ? LINEAR_BARCODE_TYPES : ALL_BARCODE_TYPES) as any[],
-    }), [preferLinearBarcode]);
+    const scannerSettings = useMemo(
+        () => ({
+            barcodeTypes: preferLinearBarcode ? LINEAR_BARCODE_TYPES : ALL_BARCODE_TYPES,
+        }),
+        [preferLinearBarcode],
+    );
 
     if (!visible) return null;
 

@@ -136,7 +136,10 @@ export async function printHtmlViaQz(html: string, options: QzPrintOptions = {})
 
         const config = qz.configs.create(printerName, qzConfig);
 
-        const fullHtml = buildQzPrintHtml(html, paper);
+        // Full receipt HTML (from generateReceiptHTML) is already paper-sized —
+        // print as-is so QZ Tray matches mobile BLE raster of the same document.
+        // Fragments (reports/snippets) still go through the QZ wrapper.
+        const fullHtml = isFullHtmlDocument(html) ? html : buildQzPrintHtml(html, paper);
 
         const printData: any = {
             type: 'pixel',

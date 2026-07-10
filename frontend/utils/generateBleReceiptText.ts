@@ -21,7 +21,8 @@ function appendRow(lines: string[], left: string, right: string, width: number, 
 }
 
 /**
- * Plain-text thermal receipt generated from the same document model as generateReceiptHTML.
+ * Plain-text thermal receipt from the same document model as generateReceiptHTML / QZ Tray.
+ * Used only as BLE fallback when HTML raster capture is unavailable.
  */
 export function generateBleReceiptText(data: PrintReceiptData, settings: PrintSettings): string {
     const paper = getPaperDimensions(settings.paperSize);
@@ -68,12 +69,12 @@ export function generateBleReceiptText(data: PrintReceiptData, settings: PrintSe
 
     lines.push(divider);
     appendRow(lines, 'SUBTOTAL', doc.subtotal, width, true);
-    lines.push(divider);
-    appendRow(lines, 'TOTAL', doc.total, width, true);
 
     if (doc.discount) {
         appendRow(lines, 'Diskon', `-${doc.discount}`, width);
     }
+
+    appendRow(lines, 'TOTAL', doc.total, width, true);
 
     if (doc.paid) {
         appendRow(lines, 'Dibayar', doc.paid, width);
@@ -85,8 +86,19 @@ export function generateBleReceiptText(data: PrintReceiptData, settings: PrintSe
         appendCenter(lines, 'LUNAS', width, true);
     }
 
+    if (doc.change) {
+        appendRow(lines, 'Kembalian', doc.change, width);
+    }
+
     if (doc.paymentMethod) {
         appendRow(lines, 'Metode Bayar:', doc.paymentMethod, width);
+    }
+
+    if (doc.notes) {
+        lines.push(divider);
+        for (const line of wrapCenteredLines(`Catatan: ${doc.notes}`, width)) {
+            lines.push(line);
+        }
     }
 
     lines.push(divider);

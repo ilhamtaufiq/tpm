@@ -116,10 +116,11 @@ export const AlertDialog = ({
                         disabled={loading}
                         loading={loading}
                         size="md"
-                        style={[
-                            styles.actionButton,
-                            variant !== 'error' ? { backgroundColor: ui.color } : null,
-                        ]}
+                        style={
+                            variant !== 'error'
+                                ? [styles.actionButton, { backgroundColor: ui.color }]
+                                : styles.actionButton
+                        }
                     />
                 </View>
             </CenterModalContainer>
