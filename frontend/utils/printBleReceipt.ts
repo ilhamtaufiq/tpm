@@ -2,8 +2,11 @@ import { PrintReceiptData } from './printReceipt';
 import { PrintSettings } from './printSettings';
 import { getBLEPrinter } from './blePrinter';
 import { getPaperDimensions } from './paperSize';
+import { prepareReceiptHtml } from './prepareReceiptHtml';
 import { generateBleReceiptText } from './generateBleReceiptText';
-import { printBillTextFireAndForget } from './blePrintTransport';
+import { printBillTextFireAndForget, printRawBase64 } from './blePrintTransport';
+import { captureReceiptHtmlToEscPos } from './receiptHtmlCapture';
+import { appendEscPosPaperCut } from './receiptEscPos';
 
 function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -20,15 +23,61 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
 }
 
 /**
- * Android BLE thermal print — fast text ESC/POS path only.
- *
- * Why text (not HTML raster):
- * - HTML/WebView/QR download made UI sit on "Printing..." for a long time
- * - Large raster payloads often buffer-stall on cheap BLE thermal printers
- * - Content still matches QZ via shared buildReceiptDocument / generateBleReceiptText
- *
- * Uses fire-and-forget printRawData (same pattern as Bluetooth pair test printText)
- * because many APK builds never invoke the native callback.
+ * Same HTML as QZ Tray → WebView raster → ESC/POS.
+ * Assets are offline (local logo + offline QR) so this stays fast.
+ */
+async function printBleReceiptHtml(
+    data: PrintReceiptData,
+    settings: PrintSettings,
+): Promise<void> {
+    const prepared = await withTimeout(
+        prepareReceiptHtml(data, {
+            ...settings,
+            // prepareReceiptAssets inside uses offline QR + logo timeout
+        }),
+        8000,
+        'Timeout siapkan struk HTML.',
+    );
+
+    const escPosBase64 = await withTimeout(
+        captureReceiptHtmlToEscPos(prepared.html, prepared.settings),
+        15000,
+        'Timeout render struk (WebView).',
+    );
+
+    const payload = appendEscPosPaperCut(escPosBase64);
+    // Fire-and-forget: native callback often never fires on some APK builds.
+    printRawBase64(payload, 5000).catch((err) => {
+        console.warn('[Print] printRawData settle:', err);
+    });
+    await delay(1200);
+}
+
+/**
+ * Text fallback — same fields as QZ document model, no logo/QR image.
+ */
+async function printBleReceiptText(
+    data: PrintReceiptData,
+    settings: PrintSettings,
+): Promise<void> {
+    const receiptText = generateBleReceiptText(data, settings);
+    if (!receiptText || receiptText.trim().length < 8) {
+        throw new Error('Struk kosong. Periksa pengaturan cetak.');
+    }
+
+    printBillTextFireAndForget(receiptText, {
+        cut: true,
+        beep: false,
+        tailingLine: true,
+        encoding: 'UTF8',
+    });
+    await delay(800);
+}
+
+/**
+ * Android BLE thermal print.
+ * Primary: HTML identical to QZ Tray (logo + layout + QR image).
+ * Fallback: fast text ESC/POS if WebView/raster fails.
  */
 export async function printBleReceipt(
     data: PrintReceiptData,
@@ -41,16 +90,10 @@ export async function printBleReceipt(
     }
 
     const paper = getPaperDimensions(settings.paperSize);
-    // No logo/QR prepare — text path does not need network assets.
-    const printSettings: PrintSettings = {
+    const normalizedSettings: PrintSettings = {
         ...settings,
         paperSize: paper.paperSize,
     };
-
-    const receiptText = generateBleReceiptText(data, printSettings);
-    if (!receiptText || receiptText.trim().length < 8) {
-        throw new Error('Struk kosong. Periksa pengaturan cetak.');
-    }
 
     await withTimeout(
         printer.init(),
@@ -63,16 +106,18 @@ export async function printBleReceipt(
         'Timeout koneksi printer. Pastikan printer menyala dan sudah dipair.',
     );
 
-    // Sync encode + native handoff (no await on printer callback).
-    printBillTextFireAndForget(receiptText, {
-        cut: true,
-        beep: false,
-        tailingLine: true,
-        encoding: 'UTF8',
-    });
+    try {
+        await withTimeout(
+            printBleReceiptHtml(data, normalizedSettings),
+            22000,
+            'Timeout cetak HTML struk.',
+        );
+        return;
+    } catch (htmlError) {
+        console.warn('[Print] HTML/QZ-matching path failed, text fallback:', htmlError);
+    }
 
-    // Short settle so BLE buffer can flush; keep UI responsive.
-    await delay(900);
+    await printBleReceiptText(data, normalizedSettings);
 }
 
 export async function printBleTestReceipt(

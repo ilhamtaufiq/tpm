@@ -76,12 +76,23 @@ function buildReceiptQrHtml(
 
     const encoded = encodeURIComponent(receiptUrl);
     const qr = paper.qrSizePx;
+    // Prefer offline/inlined data URL (Android BLE). Fall back to API for web/QZ.
     const imgSrc = qrImageDataUrl
         ? qrImageDataUrl.replace(/"/g, '&quot;')
-        : `https://api.qrserver.com/v1/create-qr-code/?size=${qr}x${qr}&data=${encoded}`;
+        : Platform.OS === 'web'
+            ? `https://api.qrserver.com/v1/create-qr-code/?size=${qr}x${qr}&data=${encoded}`
+            : '';
+
+    if (!imgSrc) {
+        return `
+<div class="center" style="margin-top:8px">
+    <div style="font-size:${paper.fontSmall}px">Scan struk digital online</div>
+</div>`;
+    }
+
     return `
 <div class="center" style="margin-top:8px">
-    <img src="${imgSrc}" width="${qr}" height="${qr}" alt="QR Struk" />
+    <img src="${imgSrc}" width="${qr}" height="${qr}" alt="QR Struk" style="display:block;margin:0 auto" />
     <div style="font-size:${paper.fontSmall}px;margin-top:4px">Scan untuk lihat struk online</div>
 </div>`;
 }
@@ -161,9 +172,8 @@ ${qrHtml}
 
 export async function printReceipt(data: PrintReceiptData, settings?: PrintSettings): Promise<void> {
     try {
-        // Android BLE: text ESC/POS path — do NOT prepare full HTML/QR first.
-        // prepareReceiptHtml (logo+QR network) is what made "Printing..." hang for a long time
-        // while the thermal printer still received nothing.
+        // Android BLE prepares its own offline HTML (same layout as QZ) inside printBleReceipt.
+        // Avoid double prepare + network here so UI stays snappy.
         if (Platform.OS === 'android') {
             const activeSettings = settings ?? await printSettingsService.getSettings();
             const normalized: PrintSettings = {

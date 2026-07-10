@@ -8,25 +8,29 @@ import {
     wrapCenteredLines,
 } from './receiptFormatters';
 
-function appendCenter(lines: string[], text: string, width: number, bold = false): void {
-    const tag = bold ? 'CB' : 'C';
+function appendCenter(lines: string[], text: string, width: number, _bold = false): void {
+    // Avoid <CB>/<B>: many BLE printers treat bold as double-width and wrap columns.
     for (const line of wrapCenteredLines(text, width)) {
-        lines.push(`<${tag}>${line}</${tag}>`);
+        lines.push(`<C>${line}</C>`);
     }
 }
 
-function appendRow(lines: string[], left: string, right: string, width: number, bold = false): void {
-    const row = padReceiptColumns(left, right, width);
-    lines.push(bold ? `<B>${row}</B>` : row);
+/**
+ * Left/right columns without bold tags on the full line.
+ * Bold on full padded rows often doubles glyph width → value jumps to next line.
+ */
+function appendRow(lines: string[], left: string, right: string, width: number): void {
+    lines.push(padReceiptColumns(left, right, width));
 }
 
 /**
  * Plain-text thermal receipt from the same document model as generateReceiptHTML / QZ Tray.
- * Used only as BLE fallback when HTML raster capture is unavailable.
+ * Fallback only — visual parity (logo + QR image) needs HTML raster path.
  */
 export function generateBleReceiptText(data: PrintReceiptData, settings: PrintSettings): string {
     const paper = getPaperDimensions(settings.paperSize);
-    const width = paper.charWidth;
+    // Slightly narrower than nominal so physical printers with margins don't wrap columns.
+    const width = Math.max(24, paper.charWidth - 2);
     const divider = receiptDivider(width);
     const doc = buildReceiptDocument(data, settings);
     const lines: string[] = [];
@@ -68,20 +72,20 @@ export function generateBleReceiptText(data: PrintReceiptData, settings: PrintSe
     });
 
     lines.push(divider);
-    appendRow(lines, 'SUBTOTAL', doc.subtotal, width, true);
+    appendRow(lines, 'SUBTOTAL', doc.subtotal, width);
 
     if (doc.discount) {
         appendRow(lines, 'Diskon', `-${doc.discount}`, width);
     }
 
-    appendRow(lines, 'TOTAL', doc.total, width, true);
+    appendRow(lines, 'TOTAL', doc.total, width);
 
     if (doc.paid) {
         appendRow(lines, 'Dibayar', doc.paid, width);
     }
 
     if (doc.sisa) {
-        appendRow(lines, 'SISA', doc.sisa, width, true);
+        appendRow(lines, 'SISA', doc.sisa, width);
     } else {
         appendCenter(lines, 'LUNAS', width, true);
     }
@@ -105,7 +109,8 @@ export function generateBleReceiptText(data: PrintReceiptData, settings: PrintSe
 
     if (doc.showQr && doc.qrUrl) {
         appendCenter(lines, doc.qrCaption, width);
-        appendCenter(lines, doc.qrUrl, width);
+        // Short hint only — full URL wraps badly on 58mm text printers.
+        appendCenter(lines, 'Scan QR di struk digital', width);
         lines.push(divider);
     }
 
