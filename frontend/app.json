@@ -2,7 +2,7 @@
   "expo": {
     "name": "TPM Super App",
     "slug": "tpm-super-app",
-    "version": "1.0.27",
+    "version": "1.0.28",
     "orientation": "default",
     "icon": "./assets/logo_tpm.png",
     "userInterfaceStyle": "light",
@@ -40,7 +40,7 @@
         "foregroundImage": "./assets/logo_tpm.png",
         "backgroundColor": "#ffffff"
       },
-      "versionCode": 10027
+      "versionCode": 10028
     },
     "web": {
       "favicon": "./assets/favicon2.png",
