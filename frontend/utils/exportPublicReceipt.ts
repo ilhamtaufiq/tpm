@@ -2,8 +2,11 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { captureRef } from 'react-native-view-shot';
+import { BASE_URL } from './api';
+import { useAuthStore } from '../store/useAuthStore';
 import {
     ExportPublicReceiptOptions,
+    buildPublicReceiptPdfPath,
     sanitizeFileName,
 } from './exportPublicReceipt.shared';
 
@@ -54,6 +57,44 @@ async function saveNativePdfFromDataUri(dataUri: string, fileName: string): Prom
     });
 }
 
+async function shareNativePdfFile(uri: string, fileName: string): Promise<void> {
+    if (!(await Sharing.isAvailableAsync())) {
+        throw new Error('Sharing tidak tersedia di perangkat ini');
+    }
+    await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: `Download ${fileName}.pdf`,
+        UTI: 'com.adobe.pdf',
+    });
+}
+
+async function downloadServerPdfNative(options: ExportPublicReceiptOptions): Promise<void> {
+    if (!options.receiptId) {
+        throw new Error('ID struk tidak valid');
+    }
+
+    const path = buildPublicReceiptPdfPath(options.receiptType, options.receiptId);
+    const fileName = sanitizeFileName(options.receipt.transactionNumber);
+    const target = `${FileSystem.cacheDirectory}${fileName}.pdf`;
+    const token = useAuthStore.getState().token;
+    const headers: Record<string, string> = {};
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    const result = await FileSystem.downloadAsync(`${BASE_URL}${path}`, target, { headers });
+    if (result.status < 200 || result.status >= 300) {
+        throw new Error(`Gagal mengunduh PDF (status ${result.status})`);
+    }
+
+    const info = await FileSystem.getInfoAsync(result.uri);
+    if (!info.exists || (info.size != null && info.size < 50)) {
+        throw new Error('File PDF kosong dari server');
+    }
+
+    await shareNativePdfFile(result.uri, fileName);
+}
+
 async function shareNativeImageFromDataUri(dataUri: string): Promise<void> {
     const fileName = `struk_${Date.now()}.png`;
     const target = `${FileSystem.cacheDirectory}${fileName}`;
@@ -73,8 +114,22 @@ async function shareNativeImageFromDataUri(dataUri: string): Promise<void> {
 
 export async function exportPublicReceiptPdf(options: ExportPublicReceiptOptions): Promise<void> {
     const fileName = sanitizeFileName(options.receipt.transactionNumber);
-    const dataUri = await captureCardNative(options.cardRef);
-    await saveNativePdfFromDataUri(dataUri, fileName);
+    try {
+        await downloadServerPdfNative(options);
+    } catch (serverError) {
+        console.warn('[exportPublicReceiptPdf] server PDF failed, fallback to capture:', serverError);
+        try {
+            const dataUri = await captureCardNative(options.cardRef);
+            await saveNativePdfFromDataUri(dataUri, fileName);
+        } catch (captureError) {
+            console.error('[exportPublicReceiptPdf] capture fallback failed:', captureError);
+            const message =
+                (serverError as Error)?.message ||
+                (captureError as Error)?.message ||
+                'Gagal membuat PDF struk';
+            throw new Error(message);
+        }
+    }
 }
 
 export async function exportPublicReceiptImage(options: ExportPublicReceiptOptions): Promise<void> {

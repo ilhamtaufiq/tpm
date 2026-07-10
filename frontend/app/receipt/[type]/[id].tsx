@@ -171,18 +171,20 @@ export default function PublicReceiptPage() {
     };
 
     const handleDownloadPDF = async () => {
-        if (!receipt) return;
+        if (!receipt || !id) return;
         try {
             setActionLoading('pdf');
-            await runCaptureExport(() => exportPublicReceiptPdf({
+            // Prefer server PDF (no DOM capture). Capture mode only used on fallback.
+            await exportPublicReceiptPdf({
                 receipt,
                 receiptType: type as PublicReceiptType,
+                receiptId: id,
                 shareUrl,
                 cardRef,
-            }));
-            showToast('PDF struk berhasil dibuat');
+            });
+            showToast('PDF struk berhasil diunduh');
         } catch (err: any) {
-            showToast(getErrorMessage(err, 'Gagal mengunduh PDF'));
+            showToast(getErrorMessage(err, 'Gagal membuat PDF struk'));
         } finally {
             setActionLoading(null);
         }
@@ -224,6 +226,7 @@ export default function PublicReceiptPage() {
             await runCaptureExport(() => exportPublicReceiptImage({
                 receipt,
                 receiptType: type as PublicReceiptType,
+                receiptId: id,
                 shareUrl,
                 cardRef,
             }));

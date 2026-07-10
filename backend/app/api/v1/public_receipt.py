@@ -100,7 +100,10 @@ def get_bengkel_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
     
     # Public workshop receipts must be addressed by an unguessable token, not
     # by the internal sequential database ID.
-    transaction = db.query(TransaksiPenjualanBengkel).filter(
+    transaction = db.query(TransaksiPenjualanBengkel).options(
+        joinedload(TransaksiPenjualanBengkel.detail_services),
+        joinedload(TransaksiPenjualanBengkel.detail_parts),
+    ).filter(
         TransaksiPenjualanBengkel.public_receipt_token == transaction_id
     ).first()
     
@@ -111,25 +114,21 @@ def get_bengkel_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
     services = []
     parts = []
     
-    # Add services
-    if hasattr(transaction, 'detail_services'):
-        for service in transaction.detail_services:
-            services.append({
-                "description": service.nama_jasa,
-                "quantity": int(service.qty or 1),
-                "unitPrice": float(service.harga),
-                "subtotal": float(service.subtotal or service.harga)
-            })
+    for service in (transaction.detail_services or []):
+        services.append({
+            "description": service.nama_jasa,
+            "quantity": int(service.qty or 1),
+            "unitPrice": float(service.harga),
+            "subtotal": float(service.subtotal or service.harga)
+        })
     
-    # Add parts
-    if hasattr(transaction, 'detail_parts'):
-        for part in transaction.detail_parts:
-            parts.append({
-                "description": part.spare_part_nama or "Sparepart",
-                "quantity": int(part.qty or 1),
-                "unitPrice": float(part.harga_jual or 0),
-                "subtotal": float(part.subtotal)
-            })
+    for part in (transaction.detail_parts or []):
+        parts.append({
+            "description": part.spare_part_nama or "Sparepart",
+            "quantity": int(part.qty or 1),
+            "unitPrice": float(part.harga_jual or 0),
+            "subtotal": float(part.subtotal)
+        })
 
     items = services + parts
     
@@ -749,6 +748,32 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
 
 
 
+def _draw_wrapped_centered(p, text: str, x: float, y: float, max_width: float, font_name: str, font_size: int) -> float:
+    """Draw centered text, wrapping by approximate width. Returns next y."""
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+
+    words = str(text or "").split()
+    if not words:
+        return y
+
+    lines = []
+    current = words[0]
+    for word in words[1:]:
+        candidate = f"{current} {word}"
+        if stringWidth(candidate, font_name, font_size) <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+
+    for line in lines:
+        p.setFont(font_name, font_size)
+        p.drawCentredString(x, y, line)
+        y -= font_size + 3
+    return y
+
+
 @router.get("/{receipt_type}/{transaction_id}/pdf")
 async def get_receipt_pdf(
     receipt_type: str, 
@@ -772,7 +797,6 @@ async def get_receipt_pdf(
         # Generate PDF
         from reportlab.pdfgen import canvas
         from reportlab.lib.pagesizes import A5
-        from reportlab.lib import colors
         
         buffer = io.BytesIO()
         p = canvas.Canvas(buffer, pagesize=A5)
@@ -784,129 +808,171 @@ async def get_receipt_pdf(
         y_cursor = height - 40
         
         logo_img_pdf = None
-        if data.get("customLogo") and data["customLogo"] != "tpm_default":
+        custom_logo = data.get("customLogo")
+        if custom_logo and custom_logo != "tpm_default":
             try:
-                header, encoded = data["customLogo"].split(",", 1)
-                logo_data = base64.b64decode(encoded)
-                logo_img_pdf = io.BytesIO(logo_data)
-            except:
-                pass
+                if isinstance(custom_logo, str) and "," in custom_logo:
+                    _header, encoded = custom_logo.split(",", 1)
+                    logo_img_pdf = io.BytesIO(base64.b64decode(encoded))
+            except Exception as logo_err:
+                print(f"Custom logo decode failed: {logo_err}")
+                logo_img_pdf = None
         
-        if not logo_img_pdf and os.path.exists(logo_path):
+        if logo_img_pdf is None and os.path.exists(logo_path):
             logo_img_pdf = logo_path
-            
-            try:
-                # Place logo centered
-                p.drawImage(logo_img_pdf, width/2 - 40, y_cursor - 40, width=80, height=40, mask='auto', preserveAspectRatio=True)
-                y_cursor -= 50
-            except:
-                pass
 
-        # Header Text from settings
+        if logo_img_pdf is not None:
+            try:
+                p.drawImage(
+                    logo_img_pdf,
+                    width / 2 - 40,
+                    y_cursor - 40,
+                    width=80,
+                    height=40,
+                    mask='auto',
+                    preserveAspectRatio=True,
+                )
+                y_cursor -= 50
+            except Exception as logo_err:
+                print(f"Logo draw failed: {logo_err}")
+
+        # Header text from settings
         if data.get("customHeader"):
             p.setFont("Helvetica", 8)
-            p.drawCentredString(width/2, y_cursor + 45, data["customHeader"])
+            p.drawCentredString(width / 2, y_cursor + 8, str(data["customHeader"])[:80])
+            y_cursor -= 12
 
         # Header
-        p.setFont("Helvetica-Bold", 16)
-        p.drawCentredString(width/2, y_cursor, data['companyName'])
-        y_cursor -= 15
-        p.setFont("Helvetica", 10)
-        p.drawCentredString(width/2, y_cursor, data['companyAddress'])
-        y_cursor -= 13
-        p.drawCentredString(width/2, y_cursor, f"Telp: {data['companyPhone']}")
-        y_cursor -= 12
+        p.setFont("Helvetica-Bold", 14)
+        p.drawCentredString(width / 2, y_cursor, str(data.get("companyName") or "Tiga Putra Motor")[:60])
+        y_cursor -= 16
+        y_cursor = _draw_wrapped_centered(
+            p,
+            str(data.get("companyAddress") or "-"),
+            width / 2,
+            y_cursor,
+            width - 80,
+            "Helvetica",
+            9,
+        )
+        p.setFont("Helvetica", 9)
+        p.drawCentredString(width / 2, y_cursor, f"Telp: {data.get('companyPhone') or '-'}")
+        y_cursor -= 14
         
         p.line(30, y_cursor, width - 30, y_cursor)
-        y_cursor -= 20
+        y_cursor -= 18
         
         # Receipt Info
-        p.setFont("Helvetica", 11)
+        p.setFont("Helvetica", 10)
         y = y_cursor
-        p.drawString(30, y, f"Nomor Transaksi: {data['transactionNumber']}")
+        p.drawString(30, y, f"No: {str(data.get('transactionNumber') or '-')[:28]}")
         
         try:
-            dt = datetime.fromisoformat(data['date'])
+            raw_date = data.get("date") or ""
+            dt = datetime.fromisoformat(str(raw_date).replace("Z", "+00:00"))
             formatted_date = dt.strftime("%d/%m/%Y %H:%M")
-        except:
-            formatted_date = data['date']
+        except Exception:
+            formatted_date = str(data.get("date") or "-")
             
-        p.drawRightString(width - 30, y, f"Tanggal: {formatted_date}")
-        y -= 20
-        p.drawString(30, y, f"Pelanggan: {data['customerName']}")
+        p.drawRightString(width - 30, y, formatted_date)
+        y -= 16
+        p.drawString(30, y, f"Pelanggan: {str(data.get('customerName') or 'Umum')[:40]}")
         
         if data.get('vehiclePlate'):
-            y -= 20
-            p.drawString(30, y, f"No. Polisi: {data['vehiclePlate']} / {data.get('vehicleType', '-')}")
+            y -= 16
+            plate = str(data.get("vehiclePlate") or "")
+            vtype = str(data.get("vehicleType") or "-")
+            p.drawString(30, y, f"No. Polisi: {plate} / {vtype}"[:55])
             
-        y -= 30
+        y -= 22
         p.line(30, y, width - 30, y)
-        y -= 20
+        y -= 16
         
         # Items Table Header
-        p.setFont("Helvetica-Bold", 11)
+        p.setFont("Helvetica-Bold", 10)
         p.drawString(30, y, "ITEM")
-        p.drawRightString(width - 120, y, "QTY x HARGA")
+        p.drawRightString(width - 110, y, "QTY x HARGA")
         p.drawRightString(width - 30, y, "SUBTOTAL")
-        y -= 15
+        y -= 12
         p.line(30, y, width - 30, y)
-        y -= 20
+        y -= 16
         
-        # Items list
-        p.setFont("Helvetica", 10)
-        for item in data.get('items', []):
-            if y < 50: # Page break logic simplified (A5 is small)
+        # Items list (services+parts combined as items)
+        items = data.get("items") or []
+        if not items:
+            items = (data.get("services") or []) + (data.get("parts") or [])
+
+        p.setFont("Helvetica", 9)
+        for item in items:
+            if y < 60:
                 p.showPage()
                 y = height - 50
-                p.setFont("Helvetica", 10)
+                p.setFont("Helvetica", 9)
+
+            desc = str(item.get("description") or "-")[:42]
+            qty = int(item.get("quantity") or 1)
+            unit_price = float(item.get("unitPrice") or 0)
+            subtotal = float(item.get("subtotal") or 0)
+            p.drawString(30, y, desc)
+            p.drawRightString(width - 110, y, f"{qty} x {unit_price:,.0f}")
+            p.drawRightString(width - 30, y, f"{subtotal:,.0f}")
+            y -= 14
+
+        if data.get("discount"):
+            y -= 4
+            p.setFont("Helvetica", 9)
+            p.drawString(30, y, "Diskon")
+            p.drawRightString(width - 30, y, f"-{float(data.get('discount') or 0):,.0f}")
+            y -= 14
             
-            p.drawString(30, y, item['description'][:40])
-            p.drawRightString(width - 120, y, f"{int(item['quantity'])} x {item['unitPrice']:,.0f}")
-            p.drawRightString(width - 30, y, f"{item['subtotal']:,.0f}")
-            y -= 15
-            
-        y -= 10
+        y -= 6
         p.line(30, y, width - 30, y)
-        y -= 25
+        y -= 20
         
         # Total
         p.setFont("Helvetica-Bold", 12)
         p.drawString(30, y, "TOTAL")
-        p.drawRightString(width - 30, y, f"Rp {data['total']:,.0f}")
+        p.drawRightString(width - 30, y, f"Rp {float(data.get('total') or 0):,.0f}")
+        
+        y -= 24
+        remaining = float(data.get("remaining") or 0)
+        status_text = "LUNAS" if remaining <= 0 else "BELUM LUNAS"
+        p.drawCentredString(width / 2, y, f"*** {status_text} ***")
         
         y -= 30
-        status_text = "LUNAS" if data.get('remaining', 0) <= 0 else "BELUM LUNAS"
-        p.drawCentredString(width/2, y, f"*** {status_text} ***")
-        
-        y -= 40
         p.setFont("Helvetica-Oblique", 9)
-        p.drawCentredString(width/2, y, "TERIMA KASIH")
+        p.drawCentredString(width / 2, y, "TERIMA KASIH")
         if data.get("customFooter"):
             y -= 12
-            p.setFont("Helvetica-Bold", 9)
-            p.drawCentredString(width/2, y, data["customFooter"])
+            p.setFont("Helvetica-Bold", 8)
+            p.drawCentredString(width / 2, y, str(data["customFooter"])[:70])
             
         if data.get("showQRCode"):
-            y -= 25
+            y -= 22
             p.setFont("Helvetica", 7)
-            p.rect(width/2 - 50, y - 5, 100, 15)
-            p.drawCentredString(width/2, y, "DIGITAL RECEIPT VERIFIED")
+            p.rect(width / 2 - 50, y - 5, 100, 15)
+            p.drawCentredString(width / 2, y, "DIGITAL RECEIPT VERIFIED")
         
         p.save()
         buffer.seek(0)
         
         # Generate Filename
-        # nomor_transaksi-nama_pelanggan-nomor_polisi-tanggal
         def clean(s):
-            return re.sub(r'[^a-zA-Z0-9]', '_', str(s))
+            return re.sub(r'[^a-zA-Z0-9]', '_', str(s or ""))
             
         try:
-            dt = datetime.fromisoformat(data['date'])
+            raw_date = data.get("date") or ""
+            dt = datetime.fromisoformat(str(raw_date).replace("Z", "+00:00"))
             date_part = dt.strftime("%d%m%Y")
-        except:
+        except Exception:
             date_part = datetime.now().strftime("%d%m%Y")
             
-        filename = f"{clean(data['transactionNumber'])}-{clean(data['customerName'])}-{clean(data.get('vehiclePlate', 'NoPol'))}-{date_part}.pdf"
+        filename = (
+            f"{clean(data.get('transactionNumber'))}-"
+            f"{clean(data.get('customerName'))}-"
+            f"{clean(data.get('vehiclePlate') or 'NoPol')}-"
+            f"{date_part}.pdf"
+        )
         
         headers = {
             'Content-Disposition': f'attachment; filename="{filename}"'
@@ -914,6 +980,8 @@ async def get_receipt_pdf(
         
         return StreamingResponse(buffer, headers=headers, media_type="application/pdf")
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error generating PDF: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Gagal membuat PDF struk: {e}")
