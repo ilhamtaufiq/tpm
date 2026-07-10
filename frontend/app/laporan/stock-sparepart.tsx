@@ -12,6 +12,7 @@ import { formatCurrency } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import {
+import { isAlwaysReadyStock } from '../../utils/sparepartStock';
     ReportPageHeader,
     ReportStatsBento,
     ReportDateControls,
@@ -148,13 +149,13 @@ export default function StockSparepartReportScreen() {
                                 <span style="font-size: 8px; color: #94a3b8;">${escapeHtml(part.kode)}</span>
                             </td>
                             <td style="padding: 8px; text-align: center;">
-                                <span style="font-weight: bold; color: ${part.stok === 999 ? '#10b981' : (part.stok <= (part.stok_minimum || 0) ? '#ef4444' : '#1e293b')};">
-                                    ${part.stok === 999 ? 'Ready' : part.stok}
+                                <span style="font-weight: bold; color: ${isAlwaysReadyStock(part.stok) ? '#10b981' : (part.stok <= (part.stok_minimum || 0) ? '#ef4444' : '#1e293b')};">
+                                    ${isAlwaysReadyStock(part.stok) ? 'Ready' : part.stok}
                                 </span>
                                 <span style="font-size: 8px; color: #94a3b8;">${part.satuan || 'Unit'}</span>
                             </td>
                             <td style="padding: 8px; text-align: right; font-weight: bold;">
-                                ${part.stok === 999 ? formatCurrency(0) : formatCurrency(part.stok * part.harga_beli)}
+                                ${isAlwaysReadyStock(part.stok) ? formatCurrency(0) : formatCurrency(part.stok * part.harga_beli)}
                             </td>
                         </tr>
                     `).join('')}
@@ -253,13 +254,13 @@ export default function StockSparepartReportScreen() {
 
                                     <View className="items-end">
                                         <View className="flex-row items-center">
-                                            <Typography variant="body2" weight="bold" className={part.stok === 999 ? 'text-emerald-600' : (part.stok <= part.stok_minimum ? 'text-error' : 'text-gray-800')}>
-                                                {part.stok === 999 ? 'Ready' : part.stok}
+                                            <Typography variant="body2" weight="bold" className={isAlwaysReadyStock(part.stok) ? 'text-emerald-600' : (part.stok <= part.stok_minimum ? 'text-error' : 'text-gray-800')}>
+                                                {isAlwaysReadyStock(part.stok) ? 'Ready' : part.stok}
                                             </Typography>
                                             <Typography variant="caption" className="text-gray-400 ml-1">{part.satuan || 'Unit'}</Typography>
                                         </View>
                                         <Typography variant="caption" className="text-gray-500">
-                                            Value: {part.stok === 999 ? formatCurrency(0) : formatCurrency(part.stok * part.harga_beli)}
+                                            Value: {isAlwaysReadyStock(part.stok) ? formatCurrency(0) : formatCurrency(part.stok * part.harga_beli)}
                                         </Typography>
                                     </View>
                                 </View>

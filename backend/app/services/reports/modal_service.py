@@ -21,6 +21,7 @@ from app.utils.constants import (
     PaymentMethod,
     WorkshopStatus
 )
+from app.utils.sparepart_stock import ALWAYS_READY_STOCK, is_always_ready_stock
 from app.utils.workshop_finance import (
     internal_mobil_workshop_filters,
     workshop_finance_recognized_filters,
@@ -795,12 +796,12 @@ class ModalService(BaseReportService):
 
     def get_part_stock_value(self, as_of: date) -> float:
         """Calculate total spare part stock value as of date"""
-        # Always Ready (stok=999) = catalog only, modal = 0
+        # Always Ready (stok=999999) = catalog only, modal = 0
         # Normal items = stok × harga_beli
         from app.models.bengkel import SparePart
         return float(self.db.query(func.sum(
             case(
-                (SparePart.stok == 999, 0),
+                (SparePart.stok == ALWAYS_READY_STOCK, 0),
                 else_=SparePart.stok * SparePart.harga_beli
             )
         )).filter(SparePart.deleted_at.is_(None)).scalar() or 0)

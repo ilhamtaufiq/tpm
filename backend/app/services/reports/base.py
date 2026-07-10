@@ -41,6 +41,7 @@ from app.utils.constants import (
     InvestorDisbursementStatus,
     WorkshopStatus
 )
+from app.utils.sparepart_stock import ALWAYS_READY_STOCK, is_always_ready_stock
 from app.utils.workshop_finance import (
     internal_mobil_workshop_filters,
     workshop_finance_recognized_filters,
@@ -396,7 +397,7 @@ class BaseReportService:
         
         # Part Stock
         # Keep consistent with spare part stock valuation rules:
-        # - "Always Ready" items use stok=999 sentinel → modal = 0 (catalog only, no physical stock).
+        # - "Always Ready" items use stok=999999 sentinel → modal = 0 (catalog only, no physical stock).
         # - Normal items are valued as stok * harga_beli.
         # - Ignore soft-deleted rows.
         # 6. Spare Part Inventory Value (Point-in-Time)
@@ -404,7 +405,7 @@ class BaseReportService:
         current_stock_val = float(self.db.query(
             func.sum(
                 case(
-                    (SparePart.stok == 999, 0),
+                    (SparePart.stok == ALWAYS_READY_STOCK, 0),
                     else_=SparePart.stok * SparePart.harga_beli
                 )
             )

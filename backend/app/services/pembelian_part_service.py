@@ -14,6 +14,7 @@ from app.models.bengkel import (
 )
 from app.models.supplier import Supplier
 from app.schemas.bengkel import PembelianSparePartCreate
+from app.utils.sparepart_stock import ALWAYS_READY_STOCK, is_always_ready_stock
 from app.utils.constants import (
     PaymentStatus,
     PaymentMethod,
@@ -213,7 +214,7 @@ class PembelianPartService:
 
         for item in data.detail:
             spare_part = spare_parts_map[item.spare_part_id]
-            if spare_part.stok != 999:
+            if not is_always_ready_stock(spare_part.stok):
                 spare_part.stok += item.qty
             spare_part.harga_beli = item.harga_satuan
 
@@ -354,7 +355,7 @@ class PembelianPartService:
 
         for detail in pembelian.detail:
             spare_part = self.db.query(SparePart).filter(SparePart.id == detail.spare_part_id).first()
-            if spare_part and spare_part.stok != 999:
+            if spare_part and not is_always_ready_stock(spare_part.stok):
                 spare_part.stok -= detail.qty
                 if spare_part.stok < 0:
                     spare_part.stok = 0
@@ -545,7 +546,7 @@ class PembelianPartService:
                 .filter(SparePart.id == detail.spare_part_id)
                 .first()
             )
-            if spare_part and spare_part.stok != 999:
+            if spare_part and not is_always_ready_stock(spare_part.stok):
                 spare_part.stok -= detail.qty
                 if spare_part.stok < 0:
                     spare_part.stok = 0

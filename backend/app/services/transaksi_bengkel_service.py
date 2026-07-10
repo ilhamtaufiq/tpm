@@ -20,6 +20,7 @@ from app.models.jasa_angkut import JasaAngkutPartService
 from app.schemas.bengkel import DetailPartCreate, DetailServiceCreate, TransaksiBengkelCreate, PaymentItem
 from app.realtime import publish_realtime_event
 from app.utils.helpers import get_jakarta_date
+from app.utils.sparepart_stock import ALWAYS_READY_STOCK, is_always_ready_stock
 from app.utils.constants import (
     PaymentStatus,
     PaymentMethod,
@@ -402,7 +403,7 @@ class TransaksiBengkelService:
         # Reduce spare part stock
         for item in data.detail_parts:
             sp = spare_parts_map[item.spare_part_id]
-            if sp.stok != 999:
+            if not is_always_ready_stock(sp.stok):
                 sp.stok -= item.qty
 
         # Create piutang if not fully paid (external) or internal unit transfer
@@ -718,7 +719,7 @@ class TransaksiBengkelService:
         # 1. Restore stock
         for detail in transaksi.detail_parts:
             sp = self.db.query(SparePart).filter(SparePart.id == detail.spare_part_id).first()
-            if sp and sp.stok != 999:
+            if sp and not is_always_ready_stock(sp.stok):
                 sp.stok += detail.qty
 
         # 2. Delete old details
@@ -826,7 +827,7 @@ class TransaksiBengkelService:
         # 6. Apply stock
         for item in data.detail_parts:
             sp = spare_parts_map[item.spare_part_id]
-            if sp.stok != 999:
+            if not is_always_ready_stock(sp.stok):
                 sp.stok -= item.qty
 
         # Create piutang only if none exists (first time CICILAN after update)
@@ -1515,7 +1516,7 @@ class TransaksiBengkelService:
                     .filter(SparePart.id == detail.spare_part_id)
                     .first()
                 )
-                if spare_part and spare_part.stok != 999:
+                if spare_part and not is_always_ready_stock(spare_part.stok):
                     spare_part.stok += detail.qty
 
             # 2. Void related Piutang (external + internal unit transfers)

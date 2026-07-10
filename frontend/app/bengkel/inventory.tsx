@@ -39,11 +39,12 @@ import { BaseModal } from '../../components/ui/BaseModal';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { FILE_URL } from '../../utils/api';
+import { isAlwaysReadyStock } from '../../utils/sparepartStock';
 
 type StockFilter = 'ALL' | 'low' | 'available' | 'empty' | 'always';
 
 const getPartStockStatus = (part: any): 'always' | 'low' | 'empty' | 'ok' => {
-    if (part.stok === 999) return 'always';
+    if (isAlwaysReadyStock(part.stok)) return 'always';
     if (Number(part.stok || 0) <= 0) return 'empty';
     if (Number(part.stok) < Number(part.stok_minimum || 0)) return 'low';
     return 'ok';
@@ -549,7 +550,7 @@ export default function InventoryScreen() {
                                         </Typography>
                                         <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-50">
                                             <Typography className="text-textGray text-[10px] font-semibold">
-                                                {part.stok !== 999 ? `Min: ${part.stok_minimum} ${part.satuan || 'pcs'}` : 'Katalog referensi'}
+                                                {!isAlwaysReadyStock(part.stok) ? `Min: ${part.stok_minimum} ${part.satuan || 'pcs'}` : 'Katalog referensi'}
                                             </Typography>
                                             <Typography weight="bold" className="text-primary text-sm">
                                                 {formatCurrency(part.harga_jual)}
@@ -692,7 +693,7 @@ export default function InventoryScreen() {
                                         keyboardType="numeric"
                                     />
 
-                                    {!isEditing && selectedPart?.stok !== 999 && (
+                                    {!isEditing && !isAlwaysReadyStock(selectedPart?.stok) && (
                                         <Pressable
                                             onPress={() => {
                                                 setScannedPart(selectedPart);
@@ -747,7 +748,7 @@ export default function InventoryScreen() {
                     <Card className="bg-gray-50 border-gray-100 p-4 mb-6">
                         <Typography variant="body1" weight="bold">{scannedPart?.nama}</Typography>
                         <Typography variant="caption" className="text-textGray mt-1">
-                            Kode: {scannedPart?.kode} • Stok Saat Ini: {scannedPart?.stok === 999 ? 'Always Ready' : `${scannedPart?.stok} ${scannedPart?.satuan || 'pcs'}`}
+                            Kode: {scannedPart?.kode} • Stok Saat Ini: {isAlwaysReadyStock(scannedPart?.stok) ? 'Always Ready' : `${scannedPart?.stok} ${scannedPart?.satuan || 'pcs'}`}
                         </Typography>
                     </Card>
 

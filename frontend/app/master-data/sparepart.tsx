@@ -808,7 +808,7 @@ export default function SparePartMasterScreen() {
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-indigo-700">Download Format Import Stok</Typography>
-                                <Typography variant="caption" className="text-textGray">Sheet Import Stok + tab Instruksi. Isi &quot;Tanpa Stok&quot; di kolom Stok untuk Always Ready (otomatis stok 999).</Typography>
+                                <Typography variant="caption" className="text-textGray">Sheet Import Stok + tab Instruksi. Isi &quot;Tanpa Stok&quot; di kolom Stok untuk Always Ready (otomatis stok 999999).</Typography>
                             </View>
                         </Pressable>
 

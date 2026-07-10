@@ -247,7 +247,7 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                             </Pressable>
                         </View>
                         <TextInput className={`bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 ${isAlwaysReady ? 'opacity-50' : ''}`} placeholder="0" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={form.stok} onChangeText={(t) => setForm({ ...form, stok: t })} editable={!isAlwaysReady} />
-                        {isAlwaysReady && <Typography className="text-[8px] text-indigo-500 mt-1 italic font-bold">* Mode Always Ready: Stok diset ke 999 dan tidak akan berkurang.</Typography>}
+                        {isAlwaysReady && <Typography className="text-[8px] text-indigo-500 mt-1 italic font-bold">* Mode Always Ready: Stok diset ke 999999 dan tidak akan berkurang.</Typography>}
                     </View>
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Min. Stok</Typography>

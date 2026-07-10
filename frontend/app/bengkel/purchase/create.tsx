@@ -32,6 +32,7 @@ import { formatNumber, parseNumber, formatCurrency } from '../../../utils/format
 import { findSparePartByBarcode } from '../../../utils/barcodeScan';
 import { bengkelService } from '../../../services/bengkel';
 import { useDebounce } from '../../../hooks';
+import { isAlwaysReadyStock } from '../../../utils/sparepartStock';
 
 type NoticeType = 'error' | 'success' | 'info';
 
@@ -565,7 +566,7 @@ export default function PurchaseScreen() {
                                                         </Typography>
                                                     </View>
                                                     <Typography className="text-gray-400 text-[11px] mt-1">
-                                                        {part.kode || '-'} • Stok: {part.stok === 999 ? 'Always Ready' : Number(part.stok || 0)}
+                                                        {part.kode || '-'} • Stok: {isAlwaysReadyStock(part.stok) ? 'Always Ready' : Number(part.stok || 0)}
                                                     </Typography>
                                                     {!selected && (
                                                         <Typography className="text-primary text-xs font-bold mt-1">

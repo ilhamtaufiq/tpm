@@ -11,6 +11,7 @@ from sqlalchemy import func, or_, case, text
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, UploadFile
 from app.config import settings
+from app.utils.sparepart_stock import ALWAYS_READY_STOCK, is_always_ready_stock
 from app.realtime import publish_realtime_event
 
 from app.models.bengkel import SparePart
@@ -265,7 +266,7 @@ class SparePartService:
         if low_stock_only:
             query = query.filter(
                 SparePart.stok <= SparePart.stok_minimum,
-                SparePart.stok != 999
+                SparePart.stok != ALWAYS_READY_STOCK
             )
 
         # Count total
@@ -337,10 +338,10 @@ class SparePartService:
         spare_part = self.get_by_id(spare_part_id)
 
         if operation == "add":
-            if spare_part.stok != 999:
+            if not is_always_ready_stock(spare_part.stok):
                 spare_part.stok += quantity
         elif operation == "subtract":
-            if spare_part.stok != 999:
+            if not is_always_ready_stock(spare_part.stok):
                 if spare_part.stok < quantity:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
@@ -386,7 +387,7 @@ class SparePartService:
             .filter(
                 SparePart.deleted_at.is_(None),
                 SparePart.stok <= SparePart.stok_minimum,
-                SparePart.stok != 999,
+                SparePart.stok != ALWAYS_READY_STOCK,
             )
             .order_by(SparePart.stok.asc())
             .all()
@@ -395,18 +396,18 @@ class SparePartService:
     def get_stock_value(self) -> Dict[str, Any]:
         """Get total stock value."""
         # For normal items: modal = stok × harga_beli
-        # For Always Ready (999): modal = 0 (catalog reference only, no physical stock)
+        # For Always Ready (999999): modal = 0 (catalog reference only, no physical stock)
         result = (
             self.db.query(
                 func.sum(
                     case(
-                        (SparePart.stok == 999, 0),
+                        (SparePart.stok == ALWAYS_READY_STOCK, 0),
                         else_=SparePart.stok * SparePart.harga_beli
                     )
                 ).label("total_value"),
                 func.sum(
                     case(
-                        (SparePart.stok != 999, SparePart.stok),
+                        (SparePart.stok != ALWAYS_READY_STOCK, SparePart.stok),
                         else_=0
                     )
                 ).label("total_items"),
@@ -514,7 +515,7 @@ class SparePartService:
             self.db.query(SparePart)
             .filter(
                 SparePart.deleted_at.is_(None),
-                SparePart.stok != 999
+                SparePart.stok != ALWAYS_READY_STOCK
             )
             .order_by(SparePart.stok.asc())
             .limit(5)
@@ -589,7 +590,7 @@ class SparePartService:
         F(5): Stok
         G(6): Satuan
         H(7): Total Modal (used to derive exact stok for normal items)
-        I(8): Always Ready (optional, true/ya/yes/1 = stok 999, modal=0)
+        I(8): Always Ready (optional, true/ya/yes/1 = stok 999999, modal=0)
         K(10): Total Fix (validation total, read separately)
         """
         nama = str(row[1]).strip() if row[1] else None
@@ -626,13 +627,13 @@ class SparePartService:
             
             if always_ready:
                 if stok_is_tanpa_stok:
-                    # "Tanpa Stok" in kolom Stok → selalu katalog (stok 999)
-                    stok = Decimal("999")
+                    # "Tanpa Stok" in kolom Stok → selalu katalog (stok 999999)
+                    stok = ALWAYS_READY_STOCK
                 elif excel_modal > 0 and harga_beli > 0:
                     # AR via kolom I + Total Modal: derive stok fisik dari modal
                     stok = excel_modal / harga_beli
                 else:
-                    stok = Decimal("999")
+                    stok = ALWAYS_READY_STOCK
             else:
                 # Normal item: use Total Modal to derive exact stok if available
                 if excel_modal > 0 and harga_beli > 0:
@@ -692,7 +693,7 @@ class SparePartService:
             stok_raw = row[6]
             if self._is_tanpa_stok_marker(stok_raw):
                 # Always Ready / katalog tanpa stok fisik
-                stok = Decimal("999")
+                stok = ALWAYS_READY_STOCK
             elif stok_raw is None or str(stok_raw).strip() == "":
                 stok = Decimal("0")
             else:
@@ -1035,16 +1036,16 @@ class SparePartService:
                 "C - Kode Part: kode pabrik / GS1 (opsional).",
                 "D - Harga Beli: harga modal per satuan (angka).",
                 "E - Harga Jual: harga jual per satuan (angka).",
-                "F - Stok: angka, atau teks 'Tanpa Stok' (otomatis Always Ready, stok 999).",
+                "F - Stok: angka, atau teks 'Tanpa Stok' (otomatis Always Ready, stok 999999).",
                 "G - Satuan: pcs, liter, set, dll. Default pcs.",
                 "H - Total Modal: harga beli × stok. Dipakai untuk hitung stok akurat.",
                 "I - Always Ready: isi ya / true / 1 (opsional jika kolom Stok sudah 'Tanpa Stok').",
                 "K - Total Fix: total modal keseluruhan untuk validasi (opsional).",
                 "",
                 "CATATAN ALWAYS READY:",
-                "• Kolom Stok berisi 'Tanpa Stok' → sistem otomatis set stok 999.",
+                "• Kolom Stok berisi 'Tanpa Stok' → sistem otomatis set stok 999999.",
                 "• Kolom I + Total Modal > 0 → stok dihitung dari modal (barang AR dengan stok fisik).",
-                "• Always Ready tanpa modal → stok 999 (katalog saja).",
+                "• Always Ready tanpa modal → stok 999999 (katalog saja).",
                 "",
                 "TIPS:",
                 "• Pastikan Total Modal = Harga Beli × Stok untuk barang biasa.",

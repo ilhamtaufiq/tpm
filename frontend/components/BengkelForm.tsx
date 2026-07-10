@@ -28,6 +28,7 @@ import { printSettingsService, PrintSettings } from '../utils/printSettings';
 import { useJasaList } from '../hooks/useJasaServis';
 import { getCustomTabBarBottomPadding } from './ui/CustomTabBar';
 import { isBengkelTransactionLocked } from '../utils/bengkelTransaction';
+import { isAlwaysReadyStock } from '../utils/sparepartStock';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -492,7 +493,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
             setScanLog(prev => [{
                 id: Math.random().toString(),
                 title: part.nama,
-                subtitle: `Kode: ${part.kode} • ${part.stok === 999 ? 'Always Ready' : `Stok: ${part.stok}`}`,
+                subtitle: `Kode: ${part.kode} • ${isAlwaysReadyStock(part.stok) ? 'Always Ready' : `Stok: ${part.stok}`}`,
                 timestamp: Date.now()
             }, ...prev]);
 

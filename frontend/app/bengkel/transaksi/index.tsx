@@ -28,6 +28,7 @@ import { findSparePartByBarcode, formatSparePartCodes, getBarcodeSearchQuery, ge
 import { useScanSound } from '../../../utils/sounds';
 import { BottomSheetContainer } from '../../../components/ui/BottomSheetContainer';
 import { ModalThemeView } from '../../../components/ui/ModalThemeView';
+import { isAlwaysReadyStock } from '../../../utils/sparepartStock';
 
 type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
 type PaymentMode = 'TUNAI' | 'TRANSFER' | 'SPLIT';
@@ -465,7 +466,7 @@ export default function BengkelTransaksiScreen() {
     };
 
     const togglePart = (part: any) => {
-        if (part.stok !== 999 && Number(part.stok || 0) <= 0) return;
+        if (!isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0) return;
         setSelectedParts(prev => {
             const next = { ...prev };
             if (next[part.id]) delete next[part.id];
@@ -518,7 +519,7 @@ export default function BengkelTransaksiScreen() {
     };
 
     const addScannedPart = (part: any): boolean => {
-        if (part.stok !== 999 && Number(part.stok || 0) <= 0) {
+        if (!isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0) {
             showNotice('error', 'Stok Habis', `${part.nama} tidak bisa dipilih karena stok kosong.`);
             return false;
         }
@@ -529,7 +530,7 @@ export default function BengkelTransaksiScreen() {
         setScanLog(prev => [{
             id: Math.random().toString(),
             title: part.nama,
-            subtitle: `Kode: ${formatSparePartCodes(part)} - ${part.stok === 999 ? 'Always Ready' : `Stok: ${part.stok}`}`,
+            subtitle: `Kode: ${formatSparePartCodes(part)} - ${isAlwaysReadyStock(part.stok) ? 'Always Ready' : `Stok: ${part.stok}`}`,
             timestamp: Date.now(),
         }, ...prev]);
         return true;
@@ -989,7 +990,7 @@ export default function BengkelTransaksiScreen() {
                         <View className="w-full">
                             {isPartsLoading ? <ActivityIndicator color="#023C69" /> : visibleParts.map((part: any) => {
                                 const selected = selectedParts[part.id];
-                                const outOfStock = !selected && part.stok !== 999 && Number(part.stok || 0) <= 0;
+                                const outOfStock = !selected && !isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0;
                                 return (
                                     <Pressable key={part.id} disabled={outOfStock} onPress={() => togglePart(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-gray-50 border-gray-100 opacity-60' : selected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}>
                                         <View className="flex-row items-start">
@@ -1001,7 +1002,7 @@ export default function BengkelTransaksiScreen() {
                                                     <Package size={18} color={selected ? '#2563EB' : outOfStock ? '#CBD5E1' : '#94A3B8'} />
                                                     <Typography weight="bold" className={`text-sm ml-2 flex-1 ${outOfStock ? 'text-gray-400' : 'text-textMain'}`} numberOfLines={1}>{part.nama}</Typography>
                                                 </View>
-                                                <Typography className="text-gray-400 text-[11px] mt-1">{part.kode || '-'} - Stok {part.stok === 999 ? 'Always Ready' : Number(part.stok || 0)}</Typography>
+                                                <Typography className="text-gray-400 text-[11px] mt-1">{part.kode || '-'} - Stok {isAlwaysReadyStock(part.stok) ? 'Always Ready' : Number(part.stok || 0)}</Typography>
                                                 {outOfStock && <Typography className="text-rose-500 text-[10px] font-bold mt-1">STOK HABIS</Typography>}
                                                 <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(part.harga_jual || 0)}</Typography>
                                             </View>
@@ -1954,7 +1955,7 @@ export default function BengkelTransaksiScreen() {
                         >
                             {isPartsLoading ? <ActivityIndicator color="#023C69" /> : visibleParts.map((part: any) => {
                                 const selected = selectedParts[part.id];
-                                const outOfStock = !selected && part.stok !== 999 && Number(part.stok || 0) <= 0;
+                                const outOfStock = !selected && !isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0;
                                 return (
                                     <Pressable key={`sheet-part-${part.id}`} disabled={outOfStock} onPress={() => togglePart(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-gray-50 border-gray-100 opacity-60' : selected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}>
                                         <View className="flex-row items-start">
@@ -1966,7 +1967,7 @@ export default function BengkelTransaksiScreen() {
                                                     <Package size={18} color={selected ? '#2563EB' : outOfStock ? '#CBD5E1' : '#94A3B8'} />
                                                     <Typography weight="bold" className={`text-sm ml-2 flex-1 ${outOfStock ? 'text-gray-400' : 'text-textMain'}`} numberOfLines={1}>{part.nama}</Typography>
                                                 </View>
-                                                <Typography className="text-gray-400 text-[11px] mt-1">{part.kode || '-'} - Stok {part.stok === 999 ? 'Always Ready' : Number(part.stok || 0)}</Typography>
+                                                <Typography className="text-gray-400 text-[11px] mt-1">{part.kode || '-'} - Stok {isAlwaysReadyStock(part.stok) ? 'Always Ready' : Number(part.stok || 0)}</Typography>
                                                 {outOfStock && <Typography className="text-rose-500 text-[10px] font-bold mt-1">STOK HABIS</Typography>}
                                                 <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(part.harga_jual || 0)}</Typography>
                                             </View>

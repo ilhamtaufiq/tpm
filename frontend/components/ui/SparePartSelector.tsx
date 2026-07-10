@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency } from '../../utils/format';
 import { getBarcodeSearchQuery } from '../../utils/barcodeScan';
+import { isAlwaysReadyStock } from '../../utils/sparepartStock';
 
 interface SparePartSelectorProps {
     value?: any; // Selected object or null
@@ -72,7 +73,7 @@ export const SparePartSelector = ({
                             <>
                                 <Typography weight="semibold" className="text-text text-base">{value.nama || value.nama_sparepart}</Typography>
                                 <Typography variant="caption" className="text-gray-500">
-                                    {[value.kode_part, value.kode_ean, value.kode].filter(Boolean).join(' • ')} • {value.stok === 999 ? 'Always Ready' : `Stok: ${value.stok}`}
+                                    {[value.kode_part, value.kode_ean, value.kode].filter(Boolean).join(' • ')} • {isAlwaysReadyStock(value.stok) ? 'Always Ready' : `Stok: ${value.stok}`}
                                 </Typography>
                             </>
                         ) : (
@@ -156,8 +157,8 @@ export const SparePartSelector = ({
                                                         {item.kode}
                                                     </Typography>
                                                     <Badge
-                                                        label={item.stok === 999 ? "Always Ready" : `Stok: ${item.stok}`}
-                                                        variant={item.stok === 999 ? "infinity" : (item.stok > 0 ? "success" : "error")}
+                                                        label={isAlwaysReadyStock(item.stok) ? "Always Ready" : `Stok: ${item.stok}`}
+                                                        variant={isAlwaysReadyStock(item.stok) ? "infinity" : (item.stok > 0 ? "success" : "error")}
                                                     />
                                                 </View>
                                                 <Typography weight="bold" className="text-primary mt-1">
