@@ -15,6 +15,33 @@ export interface PrepareReceiptAssetsOptions {
     skipQrImage?: boolean;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+    return new Promise((resolve) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+            if (!settled) {
+                settled = true;
+                resolve(fallback);
+            }
+        }, ms);
+        promise
+            .then((value) => {
+                if (!settled) {
+                    settled = true;
+                    clearTimeout(timer);
+                    resolve(value);
+                }
+            })
+            .catch(() => {
+                if (!settled) {
+                    settled = true;
+                    clearTimeout(timer);
+                    resolve(fallback);
+                }
+            });
+    });
+}
+
 export async function prepareReceiptAssets(
     data: PrintReceiptData,
     settings?: PrintSettings,
@@ -27,7 +54,12 @@ export async function prepareReceiptAssets(
         paperSize: paper.paperSize,
     };
 
-    const base64Logo = await ensureLogoBase64(normalizedSettings.logoUri ?? 'tpm_default');
+    // Cap logo conversion — never block BLE print on slow/remote logo fetch.
+    const base64Logo = await withTimeout(
+        ensureLogoBase64(normalizedSettings.logoUri ?? 'tpm_default'),
+        5000,
+        normalizedSettings.logoUri?.startsWith('data:') ? normalizedSettings.logoUri : null,
+    );
     const processedSettings: PrintSettings = {
         ...normalizedSettings,
         logoUri: base64Logo,
@@ -38,7 +70,8 @@ export async function prepareReceiptAssets(
         const doc = buildReceiptDocument(data, processedSettings);
         if (doc.showQr && doc.qrUrl) {
             const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${paper.qrSizePx}x${paper.qrSizePx}&data=${encodeURIComponent(doc.qrUrl)}`;
-            qrImageDataUrl = await fetchImageAsDataUrl(qrApiUrl);
+            // Cap QR download — offline/slow network must not freeze the print button.
+            qrImageDataUrl = await withTimeout(fetchImageAsDataUrl(qrApiUrl), 4000, null);
         }
     }
 

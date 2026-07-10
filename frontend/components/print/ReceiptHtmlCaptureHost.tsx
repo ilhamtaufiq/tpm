@@ -9,7 +9,8 @@ import { getBleRasterSpec, getPaperDimensions } from '../../utils/paperSize';
 import { buildReceiptRasterHtml } from '../../utils/receiptHtmlRaster';
 import { ensureHtml2CanvasCacheBaseUrl } from '../../utils/html2canvasBundle';
 
-const CAPTURE_TIMEOUT_MS = 45000;
+/** Keep short so BLE UI never spins for tens of seconds. */
+const CAPTURE_TIMEOUT_MS = 12000;
 
 export function ReceiptHtmlCaptureHost() {
     const [job, setJob] = useState<ReceiptHtmlCaptureJob | null>(null);

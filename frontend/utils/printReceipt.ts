@@ -161,13 +161,24 @@ ${qrHtml}
 
 export async function printReceipt(data: PrintReceiptData, settings?: PrintSettings): Promise<void> {
     try {
+        // Android BLE: text ESC/POS path — do NOT prepare full HTML/QR first.
+        // prepareReceiptHtml (logo+QR network) is what made "Printing..." hang for a long time
+        // while the thermal printer still received nothing.
+        if (Platform.OS === 'android') {
+            const activeSettings = settings ?? await printSettingsService.getSettings();
+            const normalized: PrintSettings = {
+                ...activeSettings,
+                paperSize: getPaperDimensions(activeSettings.paperSize).paperSize,
+            };
+            await executeAndroidThermalPrint(data, normalized);
+            return;
+        }
+
         const { html, settings: processedSettings } = await prepareReceiptHtml(data, settings);
         const paperWidthPoints = getPaperDimensions(processedSettings.paperSize).widthPx;
 
         if (Platform.OS === 'web') {
             await printHtmlOnWeb(html, processedSettings);
-        } else if (Platform.OS === 'android') {
-            await executeAndroidThermalPrint(data, processedSettings);
         } else {
             await Print.printAsync({ html, width: paperWidthPoints });
         }

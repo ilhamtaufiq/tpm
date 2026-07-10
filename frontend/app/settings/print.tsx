@@ -15,7 +15,6 @@ import { settingsService } from '../../services/settings';
 import * as ImagePicker from 'expo-image-picker';
 import { Tabs } from '../../components/ui/Tabs';
 import { printBleTestReceipt } from '../../utils/printBleReceipt';
-import { ensureBLEPrinterReady } from '../../utils/blePrinter';
 import { getSavedBlePrinterMac } from '../../utils/androidThermalPrint';
 
 export default function PrintSettingsScreen() {
@@ -278,7 +277,7 @@ export default function PrintSettingsScreen() {
     };
 
     const handleMobileBleTestPrint = async () => {
-        if (!settings || Platform.OS !== 'android' || testingBlePrint) {
+        if (!settings || Platform.OS !== 'android') {
             return;
         }
 
@@ -297,16 +296,13 @@ export default function PrintSettingsScreen() {
                 return;
             }
 
-            await ensureBLEPrinterReady();
-            await printSettingsService.saveSettings(settings);
-
             const macAddress = await getSavedBlePrinterMac();
-            const latestSettings = await printSettingsService.getSettings();
-            const paper = getPaperDimensions(latestSettings.paperSize);
-
+            // Use in-memory settings for speed — avoid save+reload before print.
+            const paper = getPaperDimensions(settings.paperSize);
             await printBleTestReceipt(
                 {
-                    ...latestSettings,
+                    ...settings,
+                    paperSize: paper.paperSize,
                     footer: `Test ${paper.paperSize} • ${new Date().toLocaleString('id-ID')}`,
                 },
                 macAddress,
@@ -466,7 +462,6 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                             title={testingBlePrint ? 'Mencetak...' : 'Test Print Bluetooth'}
                             onPress={handleMobileBleTestPrint}
                             loading={testingBlePrint}
-                            disabled={testingBlePrint}
                             variant="outline-neutral"
                             className="h-14 rounded-2xl"
                         />
