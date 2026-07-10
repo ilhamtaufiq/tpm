@@ -1,6 +1,4 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import text
-from datetime import date
 from app.models.bengkel import (
     TransaksiPenjualanBengkel,
     DetailTransaksiSpareParts,
@@ -20,7 +18,6 @@ from app.models.mobil import (
     MobilMedia,
     Mobil
 )
-from app.utils.constants import CarStatus, KasBankType, KasBankSource, KasBankJenis
 
 
 class MaintenanceService:
@@ -90,37 +87,6 @@ class MaintenanceService:
             # Menghapus Stock Mobil (Inventory) - Sesuai permintaan user
             print("RESET: Deleting car inventory stock (Mobil)...")
             self.db.query(Mobil).delete()
-
-            # 7. Initial Capital Injection (Setoran Modal)
-            # 5M to Kas Utama, 5M to Bank Utama
-            print("RESET: Injecting initial capital (5M Tunai, 5M Bank)...")
-            
-            today_str = date.today().strftime("%y%m%d")
-            
-            initial_tunai = KasBank(
-                nomor_transaksi=f"KAS{today_str}0001",
-                tanggal=date.today(),
-                jenis=KasBankJenis.KAS_UTAMA,
-                tipe=KasBankType.MASUK,
-                sumber=KasBankSource.MODAL,
-                nominal=5000000,
-                saldo_sebelum=0,
-                saldo_sesudah=5000000,
-                keterangan="Setoran Modal Awal (Kas Utama) - System Reset"
-            )
-            initial_bank = KasBank(
-                nomor_transaksi=f"KAS{today_str}0002",
-                tanggal=date.today(),
-                jenis=KasBankJenis.BANK_UTAMA,
-                tipe=KasBankType.MASUK,
-                sumber=KasBankSource.MODAL,
-                nominal=5000000,
-                saldo_sebelum=0,
-                saldo_sesudah=5000000,
-                keterangan="Setoran Modal Awal (Bank Utama) - System Reset"
-            )
-            self.db.add(initial_tunai)
-            self.db.add(initial_bank)
 
             self.db.commit()
             print("RESET: Success.")
