@@ -259,17 +259,26 @@ function RootLayoutContent() {
         const isWeb = Platform.OS === 'web';
         const isEnvDisabled = process.env.EXPO_PUBLIC_DISABLE_WEB_ACCESS === 'true';
 
-        if (isWeb && (protectedFeatures.disable_web_access || isEnvDisabled) && segments[0] !== 'landing') {
+        const inAuthGroup = segments[0] === '(auth)';
+        const inSecurityGroup = segments[0] === '(security)';
+        // Public share/QR receipt pages must work without login (customer-facing)
+        const inPublicReceipt = segments[0] === 'receipt';
+        const inLanding = segments[0] === 'landing';
+
+        // Web lock: allow landing + public receipt so shared struk still opens in browser
+        if (
+            isWeb &&
+            (protectedFeatures.disable_web_access || isEnvDisabled) &&
+            !inLanding &&
+            !inPublicReceipt
+        ) {
             console.log('LAYOUT: Web access restricted (Setting or ENV)');
             router.replace('/landing?reason=mobile_only');
             return;
         }
 
-        const inAuthGroup = segments[0] === '(auth)';
-        const inSecurityGroup = segments[0] === '(security)';
-
-        // 1. Auth guard
-        if (!isAuthenticated && !inAuthGroup) {
+        // 1. Auth guard — skip for public receipt & landing
+        if (!isAuthenticated && !inAuthGroup && !inPublicReceipt && !inLanding) {
             router.replace('/(auth)/login');
             return;
         }
@@ -279,7 +288,7 @@ function RootLayoutContent() {
         }
 
         // 2. PIN guard — only applies when PIN is enabled
-        if (!isPinEnabled || !isAuthenticated || inSecurityGroup || inAuthGroup) return;
+        if (!isPinEnabled || !isAuthenticated || inSecurityGroup || inAuthGroup || inPublicReceipt) return;
 
         // 2a. Global app lock (after background / restart)
         if (isLocked && protectedFeatures.app_lock) {
