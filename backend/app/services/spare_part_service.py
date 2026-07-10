@@ -691,9 +691,13 @@ class SparePartService:
         try:
             stok_raw = row[6]
             if self._is_tanpa_stok_marker(stok_raw):
-                stok = 999
+                # Always Ready / katalog tanpa stok fisik
+                stok = Decimal("999")
+            elif stok_raw is None or str(stok_raw).strip() == "":
+                stok = Decimal("0")
             else:
-                stok = int(stok_raw) if stok_raw is not None else 0
+                # Numeric(15,2) — jaga stok desimal (0.5, 3.3) agar grand modal tetap akurat
+                stok = Decimal(str(stok_raw).strip().replace(",", "."))
             harga_beli = Decimal(str(row[8] or 0))
             
             return {
