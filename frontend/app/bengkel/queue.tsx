@@ -294,6 +294,8 @@ export default function QueueScreen() {
             await sharePublicReceiptLink({
                 shareUrl,
                 transactionNumber: item?.nomor_transaksi,
+                receiptType: 'bengkel',
+                receiptId: receiptToken,
                 onCopied: () => {
                     setDialogConfig({
                         visible: true,

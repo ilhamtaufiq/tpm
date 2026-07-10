@@ -3,7 +3,7 @@ Public Receipt API Endpoints
 Accessible without authentication for QR code scanning
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session, joinedload
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -284,8 +284,8 @@ def get_font_path(bold=False):
             return p
     return None
 
-def generate_receipt_image(data: Dict[str, Any]) -> io.BytesIO:
-    """Generate a thermal-style OG image for the receipt"""
+def generate_receipt_image(data: Dict[str, Any], public_url: Optional[str] = None) -> io.BytesIO:
+    """Generate a thermal-style OG / WhatsApp share image for the receipt"""
     # Create canvas (1200x630)
     width, height = 1200, 630
     
@@ -419,6 +419,15 @@ def generate_receipt_image(data: Dict[str, Any]) -> io.BytesIO:
     y += 60
     status_text = "LUNAS" if data.get('remaining', 0) <= 0 else "BELUM LUNAS"
     draw.text((width/2, y), f"*** {status_text} ***", font=body_bold_font, fill="black", anchor="mm")
+
+    # Public link at bottom so WhatsApp image shares still carry the URL
+    if public_url:
+        y = height - 48
+        for x in range(paper_x + 20, paper_x + paper_width - 20, 10):
+            draw.line([x, y - 12, x + 5, y - 12], fill="#9ca3af", width=1)
+        draw.text((width / 2, y), "Lihat struk online:", font=sub_header_font, fill="#4b5563", anchor="mm")
+        url_draw = public_url if len(public_url) <= 64 else public_url[:61] + "..."
+        draw.text((width / 2, y + 22), url_draw, font=sub_header_font, fill="#023C69", anchor="mm")
     
     # Save to bytes
     buf = io.BytesIO()
@@ -431,10 +440,12 @@ def generate_receipt_image(data: Dict[str, Any]) -> io.BytesIO:
 async def get_receipt_image(
     receipt_type: str, 
     transaction_id: str,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """
-    Generate dynamic OG image for the receipt
+    Generate dynamic OG / share image for the receipt (PNG).
+    Used by WhatsApp / social share and client share-with-image.
     """
     try:
         if receipt_type == "bengkel":
@@ -445,8 +456,15 @@ async def get_receipt_image(
             data = get_mobil_receipt(db, transaction_id)
         else:
             raise HTTPException(status_code=400, detail="Invalid receipt type")
+
+        # Prefer app public page URL for share caption on image
+        origin = str(request.base_url).rstrip("/")
+        # API is usually /api/v1 — public SPA lives on same host without /api
+        if origin.endswith("/api/v1") or origin.endswith("/api"):
+            origin = origin.rsplit("/api", 1)[0]
+        public_url = f"{origin}/receipt/{receipt_type}/{transaction_id}"
             
-        img_buf = generate_receipt_image(data)
+        img_buf = generate_receipt_image(data, public_url=public_url)
         return Response(content=img_buf.getvalue(), media_type="image/png")
     except Exception as e:
         print(f"Error generating OG image: {e}")

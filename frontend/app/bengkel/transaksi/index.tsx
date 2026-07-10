@@ -711,8 +711,10 @@ export default function BengkelTransaksiScreen() {
                 await sharePublicReceiptLink({
                     shareUrl,
                     transactionNumber: createdTransaction?.nomor_transaksi,
+                    receiptType: 'bengkel',
+                    receiptId: token,
                 });
-                setReceiptActionMessage('Link struk berhasil dibagikan.');
+                setReceiptActionMessage('Struk (gambar + link) berhasil dibagikan.');
                 return;
             }
             setReceiptActionMessage(error?.message || 'Gagal membagikan struk.');

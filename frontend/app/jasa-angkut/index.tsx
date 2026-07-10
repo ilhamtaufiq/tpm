@@ -405,6 +405,8 @@ export default function JasaAngkutScreen() {
             await sharePublicReceiptLink({
                 shareUrl,
                 transactionNumber: trip?.nomor_transaksi,
+                receiptType: 'jasa_angkut',
+                receiptId,
                 onCopied: () => {
                     setDialogConfig({
                         visible: true,

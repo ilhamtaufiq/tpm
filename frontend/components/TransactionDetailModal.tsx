@@ -256,6 +256,8 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
             await sharePublicReceiptLink({
                 shareUrl,
                 transactionNumber,
+                receiptType: unit,
+                receiptId,
                 onCopied: () => {
                     setDialogConfig({
                         visible: true,

@@ -37,6 +37,7 @@ import {
     buildPublicReceiptShareUrl,
     copyPublicReceiptLink,
     sharePublicReceiptLink,
+    writeReceiptImageDataUriToCache,
 } from '../../../utils/sharePublicReceipt';
 
 type ReceiptType = 'bengkel' | 'jasa_angkut' | 'mobil';
@@ -191,21 +192,57 @@ export default function PublicReceiptPage() {
     };
 
     const handleShareLink = async () => {
-        if (!receipt || !shareUrl) return;
+        if (!receipt || !shareUrl || !id) return;
         try {
             setActionLoading('share');
+            // Capture on-screen card on native (best visual); web/server OG as fallback.
+            let imageFileUri: string | undefined;
+            let imageDataUri: string | undefined;
+            if (Platform.OS !== 'web' && cardRef.current) {
+                try {
+                    setCaptureMode(true);
+                    await prepareReceiptCapture();
+                    // Dynamic require: view-shot is native-only.
+                    // eslint-disable-next-line @typescript-eslint/no-require-imports
+                    const { captureRef } = require('react-native-view-shot') as {
+                        captureRef: (
+                            ref: unknown,
+                            opts: Record<string, unknown>,
+                        ) => Promise<string>;
+                    };
+                    imageDataUri = await captureRef(cardRef, {
+                        format: 'png',
+                        quality: 1,
+                        result: 'data-uri',
+                    });
+                    imageFileUri = await writeReceiptImageDataUriToCache(
+                        imageDataUri,
+                        receipt.transactionNumber,
+                    );
+                } catch (captureErr) {
+                    console.warn('[Share] card capture failed, using server image:', captureErr);
+                } finally {
+                    setCaptureMode(false);
+                }
+            }
+
             const result = await sharePublicReceiptLink({
                 shareUrl,
                 transactionNumber: receipt.transactionNumber,
-                onCopied: () => showToast('Link struk disalin'),
+                receiptType: type as PublicReceiptType,
+                receiptId: id,
+                imageFileUri,
+                imageDataUri,
+                onCopied: () => showToast('Link struk disalin (gambar diunduh bila tersedia)'),
             });
             if (result === 'shared') {
-                showToast('Link struk berhasil dibagikan');
+                showToast('Struk dibagikan (gambar + link)');
             }
         } catch (err: any) {
-            showToast(getErrorMessage(err, 'Gagal membagikan link'));
+            showToast(getErrorMessage(err, 'Gagal membagikan struk'));
         } finally {
             setActionLoading(null);
+            setCaptureMode(false);
         }
     };
 
@@ -371,7 +408,7 @@ export default function PublicReceiptPage() {
                             </View>
                             <Button
                                 variant="secondary"
-                                title="Bagikan Link"
+                                title="Bagikan (Gambar + Link)"
                                 onPress={handleShareLink}
                                 loading={actionLoading === 'share'}
                                 icon={<Share2 size={18} color="white" />}

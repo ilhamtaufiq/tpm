@@ -214,6 +214,8 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
             const result = await sharePublicReceiptLink({
                 shareUrl,
                 transactionNumber,
+                receiptType: 'mobil',
+                receiptId: receiptToken,
             });
 
             if (result === 'copied' && Platform.OS === 'web') {
