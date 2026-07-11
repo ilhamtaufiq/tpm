@@ -198,7 +198,7 @@ export async function printReceipt(data: PrintReceiptData, settings?: PrintSetti
         const hint = Platform.OS === 'web'
             ? 'Cek koneksi QZ Tray di Pengaturan Cetak.'
             : Platform.OS === 'android'
-                ? 'Pastikan printer Bluetooth sudah dipair dan menyala.'
+                ? 'Mobile memakai layout HTML sama QZ. Pastikan printer Bluetooth dipair & menyala, lalu coba lagi.'
                 : 'Pastikan printer terhubung.';
         throw new Error(`Gagal mencetak struk. ${hint}${detail}`);
     }

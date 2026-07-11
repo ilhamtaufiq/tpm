@@ -9,8 +9,8 @@ import { getBleRasterSpec, getPaperDimensions } from '../../utils/paperSize';
 import { buildReceiptRasterHtml } from '../../utils/receiptHtmlRaster';
 import { ensureHtml2CanvasCacheBaseUrl } from '../../utils/html2canvasBundle';
 
-/** Keep short so BLE UI never spins for tens of seconds. */
-const CAPTURE_TIMEOUT_MS = 12000;
+/** HTML/QZ path only — allow enough time for logo/QR + html2canvas. */
+const CAPTURE_TIMEOUT_MS = 20000;
 
 export function ReceiptHtmlCaptureHost() {
     const [job, setJob] = useState<ReceiptHtmlCaptureJob | null>(null);
@@ -149,11 +149,14 @@ export function ReceiptHtmlCaptureHost() {
 
 const styles = StyleSheet.create({
     host: {
+        // Off-screen but not opacity:0 — some Android WebViews skip paint when fully invisible,
+        // which produced blank rasters and forced the old (different-looking) text fallback.
         position: 'absolute',
-        left: -10000,
+        left: 0,
         top: 0,
-        opacity: 0,
+        opacity: 0.02,
         zIndex: -1,
         overflow: 'hidden',
+        elevation: 0,
     },
 });
