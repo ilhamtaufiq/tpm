@@ -130,7 +130,7 @@ export function generateBleReceiptText(
 
     if (options?.includeFooter !== false) {
         appendCenter(lines, doc.footer, width);
-        lines.push('');
+        // Single trailing newline only — extra blank lines made long empty paper after cut.
         lines.push('');
     }
 

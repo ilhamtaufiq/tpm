@@ -118,7 +118,9 @@ export function ReceiptHtmlCaptureHost() {
     const paper = getPaperDimensions(job.settings.paperSize);
     const raster = getBleRasterSpec(job.settings.paperSize);
     const rasterHtml = buildReceiptRasterHtml(job.receiptHtml, job.settings.paperSize);
-    const webViewHeight = raster.layoutMaxHeightPx;
+    // Tall enough for long receipts, but measureHeight uses content bottom only
+    // (not this host height) so we no longer print a huge blank tail.
+    const webViewHeight = Math.min(raster.layoutMaxHeightPx, 1600);
 
     return (
         <View

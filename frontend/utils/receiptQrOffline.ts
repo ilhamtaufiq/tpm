@@ -18,10 +18,12 @@ export async function buildOfflineQrDataUrl(
         };
 
         const dataUrl = await QRCode.toDataURL(content, {
+            // Higher ECC survives thermal threshold/blur better.
             errorCorrectionLevel: 'M',
             type: 'image/png',
-            margin: 1,
-            width: Math.max(64, Math.min(sizePx, 200)),
+            margin: 2,
+            // Allow up to 360px so 80mm QR stays sharp after scale-down.
+            width: Math.max(96, Math.min(sizePx, 360)),
             color: {
                 dark: '#000000',
                 light: '#FFFFFF',

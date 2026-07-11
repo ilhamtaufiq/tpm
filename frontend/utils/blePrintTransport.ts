@@ -82,8 +82,8 @@ export function printBillTextFireAndForget(text: string, opts?: BleBillOptions):
 }
 
 /**
- * Print logo/image via patched native printImageData (JSON payload with imageBase64).
- * Fire-and-forget — callback often never fires.
+ * Print logo/image via patched native printImageData (JSON payload with imageBase64/path).
+ * Fire-and-forget — use printImageDataAsync when order matters (logo before text).
  */
 export function printImageDataFireAndForget(payloadJson: string): void {
     if (!RNBLEPrinter?.printImageData) {
@@ -93,6 +93,51 @@ export function printImageDataFireAndForget(payloadJson: string): void {
         throw new Error('Payload gambar kosong.');
     }
     RNBLEPrinter.printImageData(payloadJson, () => {});
+}
+
+/**
+ * Await logo/image print. Native invokes callback with empty error on success
+ * (patched). Times out as soft-success so a stuck callback never blocks text forever.
+ */
+export function printImageDataAsync(payloadJson: string, timeoutMs = 12000): Promise<void> {
+    return new Promise((resolve, reject) => {
+        if (!RNBLEPrinter?.printImageData) {
+            reject(new Error('Native printImageData tidak tersedia. Rebuild APK setelah update printer.'));
+            return;
+        }
+        if (!payloadJson || payloadJson.length < 8) {
+            reject(new Error('Payload gambar kosong.'));
+            return;
+        }
+
+        let settled = false;
+        const finish = (error?: string) => {
+            if (settled) return;
+            settled = true;
+            if (error) {
+                reject(new Error(error));
+                return;
+            }
+            resolve();
+        };
+
+        try {
+            RNBLEPrinter.printImageData(payloadJson, (error: string) => {
+                finish(error || undefined);
+            });
+        } catch (e) {
+            finish(e instanceof Error ? e.message : String(e));
+            return;
+        }
+
+        // Soft success on timeout: older APKs may never invoke the success callback.
+        setTimeout(() => {
+            if (!settled) {
+                console.warn('[Print] printImageData callback timeout — assuming sent');
+                finish();
+            }
+        }, timeoutMs);
+    });
 }
 
 /**
@@ -108,6 +153,47 @@ export function printQrCodeFireAndForget(content: string): void {
         throw new Error('Konten QR kosong.');
     }
     RNBLEPrinter.printQrCode(value, () => {});
+}
+
+export function printQrCodeAsync(content: string, timeoutMs = 8000): Promise<void> {
+    return new Promise((resolve, reject) => {
+        if (!RNBLEPrinter?.printQrCode) {
+            reject(new Error('Native printQrCode tidak tersedia. Rebuild APK setelah update printer.'));
+            return;
+        }
+        const value = (content || '').trim();
+        if (!value) {
+            reject(new Error('Konten QR kosong.'));
+            return;
+        }
+
+        let settled = false;
+        const finish = (error?: string) => {
+            if (settled) return;
+            settled = true;
+            if (error) {
+                reject(new Error(error));
+                return;
+            }
+            resolve();
+        };
+
+        try {
+            RNBLEPrinter.printQrCode(value, (error: string) => {
+                finish(error || undefined);
+            });
+        } catch (e) {
+            finish(e instanceof Error ? e.message : String(e));
+            return;
+        }
+
+        setTimeout(() => {
+            if (!settled) {
+                console.warn('[Print] printQrCode callback timeout — assuming sent');
+                finish();
+            }
+        }, timeoutMs);
+    });
 }
 
 export function isBleImagePrintAvailable(): boolean {

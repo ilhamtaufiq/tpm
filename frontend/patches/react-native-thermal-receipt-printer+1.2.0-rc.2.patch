@@ -46,7 +46,7 @@ index 209c18a..18fb257 100644
  
  
 diff --git a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
-index 431c179..e55d2e7 100644
+index 431c179..90d97d5 100644
 --- a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
 +++ b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
 @@ -14,6 +14,7 @@ import com.facebook.react.bridge.ActivityEventListener;
@@ -272,18 +272,18 @@ index 431c179..e55d2e7 100644
 +        if (source == null || maxWidth <= 0) {
 +            return source;
 +        }
- 
--        final Bitmap bitmapImage = getBitmapFromURL(imageUrl);
++
 +        int width = source.getWidth();
 +        int height = source.getHeight();
 +        if (width <= maxWidth) {
 +            return source;
 +        }
-+
+ 
+-        final Bitmap bitmapImage = getBitmapFromURL(imageUrl);
 +        int newHeight = Math.max(1, Math.round((float) height * maxWidth / width));
 +        return Bitmap.createScaledBitmap(source, maxWidth, newHeight, true);
 +    }
- 
++
 +    private Bitmap decodePrintPayload(String imageUrl) {
 +        if (imageUrl == null || imageUrl.trim().isEmpty()) {
 +            return null;
@@ -324,7 +324,7 @@ index 431c179..e55d2e7 100644
 +                    }
 +                    Log.w(LOG_TAG, "decodePrintPayload path decode failed: " + path);
 +                }
-+
+ 
 +                String fileUrl = payload.optString("url", "");
 +                if (!fileUrl.isEmpty()) {
 +                    Bitmap decoded = decodeBitmapSource(fileUrl);
@@ -356,7 +356,7 @@ index 431c179..e55d2e7 100644
              errorCallback.invoke("bluetooth connection is not built, may be you forgot to connectPrinter");
              return;
          }
-@@ -286,18 +500,12 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+@@ -286,29 +500,40 @@ public class BLEPrinterAdapter implements PrinterAdapter{
              printerOutputStream.write(CENTER_ALIGN);
  
              for (int y = 0; y < pixels.length; y += 24) {
@@ -375,11 +375,19 @@ index 431c179..e55d2e7 100644
                  printerOutputStream.write(LINE_FEED);
              }
              printerOutputStream.write(SET_LINE_SPACE_32);
-@@ -307,8 +515,19 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+             printerOutputStream.write(LINE_FEED);
+ 
+             printerOutputStream.flush();
++            // Empty invoke = success (same contract as printRawData) so JS can await.
++            if (errorCallback != null) {
++                errorCallback.invoke();
++            }
          } catch (IOException e) {
              Log.e(LOG_TAG, "failed to print data");
              e.printStackTrace();
-+            errorCallback.invoke("failed to print image");
++            if (errorCallback != null) {
++                errorCallback.invoke("failed to print image");
++            }
          }
 +    }
  
@@ -394,4 +402,20 @@ index 431c179..e55d2e7 100644
 +        sendBitmapToPrinter(bitmapImage, errorCallback);
      }
  
+ 
+@@ -354,9 +579,15 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+             printerOutputStream.write(LINE_FEED);
+ 
+             printerOutputStream.flush();
++            if (errorCallback != null) {
++                errorCallback.invoke();
++            }
+         } catch (IOException e) {
+             Log.e(LOG_TAG, "failed to print data");
+             e.printStackTrace();
++            if (errorCallback != null) {
++                errorCallback.invoke("failed to print QR");
++            }
+         }
+     }
  

@@ -176,13 +176,14 @@ ${qrHtml}
 
 export async function printReceipt(data: PrintReceiptData, settings?: PrintSettings): Promise<void> {
     try {
-        // Android BLE: HTML/QZ-matching raster first, native ESC/POS fallback (see printBleReceipt).
+        // Android BLE: native ESC/POS (sharp text + logo + QR). See printBleReceipt.
         if (Platform.OS === 'android') {
             const activeSettings = settings ?? await printSettingsService.getSettings();
             const normalized: PrintSettings = {
                 ...activeSettings,
                 paperSize: getPaperDimensions(activeSettings.paperSize).paperSize,
                 logoUri: activeSettings.logoUri || 'tpm_default',
+                showQRCode: activeSettings.showQRCode !== false,
             };
             await executeAndroidThermalPrint(data, normalized);
             return;

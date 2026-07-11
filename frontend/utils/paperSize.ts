@@ -39,14 +39,15 @@ const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
         widthPx: 220,
         widthIn: 2.28,
         padding: '2mm',
-        fontBase: 10,
-        fontSmall: 9,
-        fontTitle: 13,
-        fontFooter: 9,
+        // Slightly larger fonts so HTML/QZ and any raster stay readable on thermal
+        fontBase: 11,
+        fontSmall: 10,
+        fontTitle: 14,
+        fontFooter: 10,
         charWidth: 32,
-        qrSizePx: 64,
-        // ~half of layout width so logo stays centered and readable on narrow roll
-        logoMaxPx: 96,
+        // Larger QR for scan reliability on narrow roll
+        qrSizePx: 100,
+        logoMaxPx: 90,
         bleImageWidthPx: 384,
         bleMaxImageHeightPx: 2048,
     },
@@ -55,13 +56,13 @@ const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
         widthPx: 302,
         widthIn: 3.15,
         padding: '3mm',
-        fontBase: 11,
-        fontSmall: 10,
-        fontTitle: 15,
-        fontFooter: 10,
+        fontBase: 12,
+        fontSmall: 11,
+        fontTitle: 16,
+        fontFooter: 11,
         charWidth: 48,
-        qrSizePx: 96,
-        logoMaxPx: 120,
+        qrSizePx: 128,
+        logoMaxPx: 110,
         bleImageWidthPx: 576,
         bleMaxImageHeightPx: 3072,
     },
@@ -116,16 +117,19 @@ export function getBleNativeLayout(paperSize?: string | null): BleNativeLayout {
     const padCols = paper.paperSize === '58mm' ? 2 : 2;
     const textCharWidth = Math.max(24, Math.min(paper.charWidth, fullCols - padCols));
 
+    // Slightly larger than pure HTML scale so logo stays clearly visible on thermal.
     const logoMaxDots = Math.max(
-        96,
-        Math.min(paper.bleImageWidthPx, Math.round(paper.logoMaxPx * captureScale)),
-    );
-    const qrSizeDots = Math.max(
-        96,
+        140,
         Math.min(
-            Math.round(paper.bleImageWidthPx * 0.55),
-            Math.round(paper.qrSizePx * captureScale),
+            Math.round(paper.bleImageWidthPx * 0.5),
+            Math.round(paper.logoMaxPx * captureScale * 1.15),
         ),
+    );
+    // QR large enough to scan; cap ~55% roll so body still fits.
+    const qrFromHtml = Math.round(paper.qrSizePx * captureScale);
+    const qrSizeDots = Math.max(
+        140,
+        Math.min(Math.round(paper.bleImageWidthPx * 0.55), qrFromHtml),
     );
 
     return {
@@ -133,7 +137,8 @@ export function getBleNativeLayout(paperSize?: string | null): BleNativeLayout {
         textCharWidth,
         logoMaxDots,
         qrSizeDots,
-        qrEncodePx: Math.min(320, Math.max(128, qrSizeDots * 2)),
+        // Encode sharper than print size, then scale down via maxWidth.
+        qrEncodePx: Math.min(360, Math.max(160, qrSizeDots * 2)),
         rollWidthDots: paper.bleImageWidthPx,
         captureScale,
     };

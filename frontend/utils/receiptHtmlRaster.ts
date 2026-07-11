@@ -28,16 +28,29 @@ export function buildReceiptRasterHtml(
   }
 
   function measureHeight() {
+    // Prefer content bottom — NOT WebView clientHeight (host is very tall → long blank tail).
     var body = document.body;
-    var html = document.documentElement;
-    var raw = Math.max(
-      body.scrollHeight,
-      body.offsetHeight,
-      body.clientHeight,
-      html ? html.scrollHeight : 0,
-      480
-    );
-    return Math.min(raw, ${raster.layoutMaxHeightPx});
+    var bottom = 0;
+    var nodes = body ? body.children : [];
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (el.tagName === 'SCRIPT') continue;
+      var rect = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+      var edge = rect
+        ? (rect.bottom + (window.scrollY || 0))
+        : (el.offsetTop + el.offsetHeight);
+      if (edge > bottom) bottom = edge;
+    }
+    var contentH = Math.ceil(bottom + 12);
+    if (contentH < 80) {
+      contentH = Math.max(
+        body.scrollHeight || 0,
+        body.offsetHeight || 0,
+        120
+      );
+    }
+    // Never use full viewport height of the offscreen WebView host.
+    return Math.min(contentH, ${raster.layoutMaxHeightPx});
   }
 
   function finalizeForThermal(canvas) {
@@ -57,16 +70,17 @@ export function buildReceiptRasterHtml(
 
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, targetW, targetH);
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    // Nearest-neighbor keeps text/QR edges hard for 1-bit thermal.
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(canvas, 0, 0, targetW, targetH);
     return out;
   }
 
   function shouldPrint(r, g, b, a) {
     if (a < 128) return false;
+    // Darker threshold so gray anti-aliased text becomes solid black.
     var luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-    return luminance < 127;
+    return luminance < 160;
   }
 
   function bytesToBase64(bytes) {
@@ -125,7 +139,8 @@ export function buildReceiptRasterHtml(
       pushByte(0x0A);
     }
 
-    pushBytes([0x1B, 0x33, 32]);
+    // Minimal feed after image — avoid long blank before cut.
+    pushBytes([0x1B, 0x33, 24]);
     pushByte(0x0A);
 
     return bytesToBase64(bytes);

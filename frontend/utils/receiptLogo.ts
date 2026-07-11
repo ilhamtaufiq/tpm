@@ -237,47 +237,80 @@ function stripDataUrlPrefix(dataUrl: string): string | null {
 }
 
 /**
- * Writes the resolved logo to cache and returns a JSON payload for the patched BLE
- * printImageData native method ({ url, maxWidth }).
+ * Writes the resolved logo to app cache and returns a JSON payload for the patched
+ * BLE printImageData native method.
+ *
+ * Prefer file path over huge base64 (logo_tpm.png is ~340KB → bridge-safe via cache).
+ * Always falls back to bundled default so logo is never silently empty.
  */
 export async function prepareBleLogoPayload(
     logoUri: string | null | undefined,
     maxWidthPx: number,
 ): Promise<string | null> {
-    // Prefer default/local logo for speed; still accept data: URIs.
-    let dataUrl = await ensureLogoBase64(logoUri ?? 'tpm_default');
+    // Always resolve a printable logo — custom → default asset.
+    let dataUrl = await ensureLogoBase64(logoUri || 'tpm_default');
     if (!dataUrl) {
         dataUrl = await ensureLogoBase64('tpm_default');
     }
-    if (!dataUrl) return null;
+    if (!dataUrl) {
+        console.error('[Print] prepareBleLogoPayload: no logo data (custom + default failed)');
+        return null;
+    }
 
     const base64 = stripDataUrlPrefix(dataUrl);
-    if (!base64 || base64.length < 64) return null;
+    if (!base64 || base64.length < 64) {
+        console.error('[Print] prepareBleLogoPayload: invalid base64 logo');
+        return null;
+    }
 
     const cacheDir = FileSystem.cacheDirectory;
     let absoluteCachePath = '';
+    let fileUri = '';
     if (cacheDir) {
         try {
-            const fileUri = `${cacheDir}tpm_receipt_logo.png`;
+            fileUri = `${cacheDir}tpm_receipt_logo.png`;
             await FileSystem.writeAsStringAsync(fileUri, base64, {
                 encoding: FileSystem.EncodingType.Base64,
             });
-            absoluteCachePath = fileUri.replace(/^file:\/\//, '');
-        } catch {
-            // cache optional — imageBase64 is enough for native decode
+            const info = await FileSystem.getInfoAsync(fileUri);
+            if (info.exists && (info.size ?? 0) > 64) {
+                absoluteCachePath = fileUri.replace(/^file:\/\//, '');
+            }
+        } catch (e) {
+            console.warn('[Print] logo cache write failed:', e);
         }
     }
 
-    // maxWidth in thermal dots (203dpi). Caller passes logoMaxDots from getBleNativeLayout
-    // (HTML logoMaxPx × captureScale) so 58mm/80mm match the QZ raster path.
-    const maxWidth = Math.max(80, Math.min(576, Math.round(maxWidthPx)));
+    // maxWidth in thermal dots (203dpi). Keep logo visible on 58mm and 80mm.
+    const maxWidth = Math.max(120, Math.min(384, Math.round(maxWidthPx)));
 
-    return JSON.stringify({
-        imageBase64: base64,
+    // Prefer path/cache for large logos (native decode from file is more reliable).
+    // Still attach imageBase64 when small enough for bridge fallback.
+    const payload: Record<string, string | number> = {
         cacheFile: 'tpm_receipt_logo.png',
-        path: absoluteCachePath || undefined,
-        url: absoluteCachePath ? `file://${absoluteCachePath}` : undefined,
-        mime: 'image/png',
+        mime: dataUrl.includes('image/jpeg') ? 'image/jpeg' : 'image/png',
         maxWidth,
-    });
+    };
+
+    if (absoluteCachePath) {
+        payload.path = absoluteCachePath;
+        payload.absoluteCachePath = absoluteCachePath;
+        payload.url = absoluteCachePath.startsWith('/')
+            ? `file://${absoluteCachePath}`
+            : (fileUri || `file://${absoluteCachePath}`);
+    }
+
+    // Bridge-safe threshold ~150KB raw base64 (~112KB binary). Full logo often larger.
+    if (base64.length <= 150_000 || !absoluteCachePath) {
+        payload.imageBase64 = base64;
+    }
+
+    return JSON.stringify(payload);
+}
+
+/** Force default TPM logo payload — used when custom logo fails. */
+export async function prepareDefaultBleLogoPayload(maxWidthPx: number): Promise<string | null> {
+    // Clear memo so we re-read asset if previous attempt cached a bad value.
+    defaultLogoCache = null;
+    return prepareBleLogoPayload('tpm_default', maxWidthPx);
 }

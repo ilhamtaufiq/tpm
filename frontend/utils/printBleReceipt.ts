@@ -3,22 +3,16 @@ import { PrintSettings } from './printSettings';
 import { getBLEPrinter } from './blePrinter';
 import { getBleNativeLayout, getPaperDimensions } from './paperSize';
 import { buildReceiptDocument } from './receiptDocument';
-import { prepareReceiptHtml } from './prepareReceiptHtml';
 import { generateBleReceiptText } from './generateBleReceiptText';
 import {
     isBleImagePrintAvailable,
     isBleQrPrintAvailable,
     printBillTextFireAndForget,
+    printImageDataAsync,
     printImageDataFireAndForget,
-    printQrCodeFireAndForget,
-    printRawBase64,
+    printQrCodeAsync,
 } from './blePrintTransport';
-import {
-    captureReceiptHtmlToEscPos,
-    waitForReceiptHtmlCaptureHost,
-} from './receiptHtmlCapture';
-import { appendEscPosPaperCut } from './receiptEscPos';
-import { prepareBleLogoPayload } from './receiptLogo';
+import { prepareBleLogoPayload, prepareDefaultBleLogoPayload } from './receiptLogo';
 import { buildOfflineQrDataUrl } from './receiptQrOffline';
 
 function delay(ms: number): Promise<void> {
@@ -42,9 +36,6 @@ function stripDataUrlPrefix(dataUrl: string): string | null {
 
 function formatBlePrintError(error: unknown): Error {
     const raw = error instanceof Error ? error.message : String(error || 'unknown');
-    if (raw.includes('belum siap') || raw.includes('WebView')) {
-        return new Error(`Cetak struk (layout QZ) gagal: ${raw}`);
-    }
     if (raw.toLowerCase().includes('timeout')) {
         return new Error(
             `Cetak struk timeout: ${raw} Pastikan printer Bluetooth menyala, dekat, dan sudah dipair.`,
@@ -57,202 +48,120 @@ function formatBlePrintError(error: unknown): Error {
 }
 
 /**
- * Primary path: same HTML as QZ Tray → WebView html2canvas → ESC/POS raster.
- * Responsive 58mm/80mm + logo + QR embedded in one bitmap (visual match to QZ).
+ * Logo is required on every thermal receipt.
+ * Try settings logo → default asset → clear cache and retry default.
  */
-async function printBleReceiptHtml(
-    data: PrintReceiptData,
-    settings: PrintSettings,
-): Promise<void> {
-    await withTimeout(
-        waitForReceiptHtmlCaptureHost(12000),
-        13000,
-        'Timeout menunggu layanan render struk WebView.',
-    );
-
-    const prepared = await withTimeout(
-        prepareReceiptHtml(data, settings),
-        12000,
-        'Timeout siapkan HTML struk (logo/QR).',
-    );
-
-    if (!prepared.html || prepared.html.length < 64) {
-        throw new Error('HTML struk kosong. Periksa pengaturan cetak.');
-    }
-
-    if (!prepared.settings.logoUri) {
-        console.warn('[Print] HTML path: logo empty after prepare — receipt will print without logo');
-    }
-
-    const escPosBase64 = await withTimeout(
-        captureReceiptHtmlToEscPos(prepared.html, prepared.settings),
-        20000,
-        'Timeout render struk WebView (html2canvas).',
-    );
-
-    if (!escPosBase64 || escPosBase64.length < 32) {
-        throw new Error('Data raster struk kosong setelah render.');
-    }
-
-    const payload = appendEscPosPaperCut(escPosBase64);
-    printRawBase64(payload, 8000).catch((err) => {
-        console.warn('[Print] printRawData settle (data already sent):', err);
-    });
-    await delay(1500);
-
-    console.log('[Print] BLE HTML/QZ raster sent', {
-        paper: settings.paperSize,
-        logo: Boolean(prepared.settings.logoUri),
-        bytesApprox: Math.round((payload.length * 3) / 4),
-    });
-}
-
-async function prepareLogoPayloadSafe(
+async function prepareLogoPayloadRequired(
     settings: PrintSettings,
     maxWidthPx: number,
 ): Promise<string | null> {
-    if (!isBleImagePrintAvailable()) return null;
-    try {
-        return await withTimeout(
-            prepareBleLogoPayload(settings.logoUri ?? 'tpm_default', maxWidthPx),
-            6000,
-            'logo-timeout',
-        );
-    } catch (error) {
-        console.warn('[Print] logo prepare skipped:', error);
+    if (!isBleImagePrintAvailable()) {
+        console.error('[Print] printImageData native missing — logo cannot print. Rebuild APK.');
         return null;
+    }
+
+    const tryPrepare = async (uri: string | null | undefined, forceDefault = false) => {
+        try {
+            if (forceDefault) {
+                return await withTimeout(
+                    prepareDefaultBleLogoPayload(maxWidthPx),
+                    8000,
+                    'logo-default-timeout',
+                );
+            }
+            return await withTimeout(
+                prepareBleLogoPayload(uri || 'tpm_default', maxWidthPx),
+                8000,
+                'logo-timeout',
+            );
+        } catch (error) {
+            console.warn('[Print] logo prepare attempt failed:', error);
+            return null;
+        }
+    };
+
+    let payload = await tryPrepare(settings.logoUri ?? 'tpm_default');
+    if (!payload) {
+        payload = await tryPrepare('tpm_default', true);
+    }
+    if (!payload) {
+        console.error('[Print] logo prepare failed completely');
+    }
+    return payload;
+}
+
+/** Print logo and wait until native finishes (or soft-timeout). */
+async function printLogoRequired(logoPayload: string): Promise<boolean> {
+    try {
+        await printImageDataAsync(logoPayload, 10000);
+        // Small settle so BLE buffer drains before text ESC/POS.
+        await delay(200);
+        return true;
+    } catch (error) {
+        console.warn('[Print] logo print failed, retry once:', error);
+        try {
+            printImageDataFireAndForget(logoPayload);
+            await delay(1200);
+            return true;
+        } catch (retryErr) {
+            console.error('[Print] logo print retry failed:', retryErr);
+            return false;
+        }
     }
 }
 
 /**
- * Prefer sized offline PNG QR (matches HTML qrSize after scale).
- * Native printQrCode size is printer-fixed and often too large on 58mm.
+ * Print QR for thermal:
+ * 1) Native ZXing (sharp modules, most reliable on BLE printers)
+ * 2) Offline PNG via printImageData (sized to paper)
  */
 async function printQrGraphics(
     qrUrl: string,
     qrSizeDots: number,
     qrEncodePx: number,
 ): Promise<boolean> {
-    if (isBleImagePrintAvailable()) {
-        try {
-            const dataUrl = await withTimeout(
-                buildOfflineQrDataUrl(qrUrl, qrEncodePx),
-                3000,
-                'qr-encode-timeout',
-            );
-            if (dataUrl) {
-                const base64 = stripDataUrlPrefix(dataUrl);
-                if (base64) {
-                    const payload = JSON.stringify({
-                        imageBase64: base64,
-                        mime: 'image/png',
-                        maxWidth: qrSizeDots,
-                    });
-                    printImageDataFireAndForget(payload);
-                    // Larger QR on 80mm needs a bit more BLE buffer time.
-                    await delay(qrSizeDots > 160 ? 700 : 500);
-                    return true;
-                }
-            }
-        } catch (error) {
-            console.warn('[Print] sized QR image failed, try native:', error);
-        }
-    }
-
     if (isBleQrPrintAvailable()) {
         try {
-            printQrCodeFireAndForget(qrUrl);
-            await delay(500);
+            await printQrCodeAsync(qrUrl, 8000);
+            await delay(150);
             return true;
         } catch (error) {
-            console.warn('[Print] native printQrCode failed:', error);
+            console.warn('[Print] native printQrCode failed, try image:', error);
         }
     }
 
-    return false;
-}
-
-/**
- * Fallback path: native ESC/POS text + logo/QR sized from the same paper map as HTML/QZ.
- */
-async function printBleReceiptNative(
-    data: PrintReceiptData,
-    settings: PrintSettings,
-): Promise<void> {
-    const layout = getBleNativeLayout(settings.paperSize);
-    const doc = buildReceiptDocument(data, settings);
-    const wantQr = Boolean(doc.showQr && doc.qrUrl);
-    const tryQrGraphics = wantQr && (isBleQrPrintAvailable() || isBleImagePrintAvailable());
-
-    const receiptText = generateBleReceiptText(data, settings, {
-        includeFooter: !tryQrGraphics,
-        includeQrPlaceholder: wantQr && !tryQrGraphics,
-        charWidth: layout.textCharWidth,
-    });
-    if (!receiptText || receiptText.trim().length < 8) {
-        throw new Error('Struk kosong. Periksa pengaturan cetak.');
+    if (!isBleImagePrintAvailable()) {
+        return false;
     }
 
-    const logoPayload = await prepareLogoPayloadSafe(settings, layout.logoMaxDots);
-
-    console.log('[Print] BLE native fallback (HTML-aligned sizes)', {
-        paper: layout.paperSize,
-        textCols: layout.textCharWidth,
-        logoDots: layout.logoMaxDots,
-        qrDots: layout.qrSizeDots,
-        logo: Boolean(logoPayload),
-        wantQr,
-        tryQrGraphics,
-        chars: receiptText.length,
-    });
-
-    if (logoPayload) {
-        try {
-            printImageDataFireAndForget(logoPayload);
-            // Wait scales with logo size so text does not interleave mid-raster.
-            await delay(layout.logoMaxDots > 200 ? 1000 : 800);
-        } catch (logoErr) {
-            console.warn('[Print] logo print skipped:', logoErr);
-        }
-    }
-
-    printBillTextFireAndForget(receiptText, {
-        cut: !tryQrGraphics,
-        beep: false,
-        tailingLine: !tryQrGraphics,
-        encoding: 'UTF8',
-    });
-    await delay(tryQrGraphics ? 550 : 750);
-
-    if (tryQrGraphics && doc.qrUrl) {
-        const qrOk = await printQrGraphics(
-            doc.qrUrl,
-            layout.qrSizeDots,
-            layout.qrEncodePx,
+    try {
+        const dataUrl = await withTimeout(
+            buildOfflineQrDataUrl(qrUrl, qrEncodePx),
+            4000,
+            'qr-encode-timeout',
         );
-        const tailLines = [
-            `<C>${doc.qrCaption}</C>`,
-            qrOk ? '' : '<C>Buka link struk digital di HP</C>',
-            `<C>${doc.footer}</C>`,
-            '',
-            '',
-        ].filter((line, i, arr) => !(line === '' && arr[i - 1] === ''));
+        if (!dataUrl) return false;
 
-        printBillTextFireAndForget(tailLines.join('\n'), {
-            cut: true,
-            beep: false,
-            tailingLine: true,
-            encoding: 'UTF8',
+        const base64 = stripDataUrlPrefix(dataUrl);
+        if (!base64) return false;
+
+        const payload = JSON.stringify({
+            imageBase64: base64,
+            mime: 'image/png',
+            maxWidth: Math.max(120, Math.min(320, qrSizeDots)),
         });
-        await delay(550);
+        await printImageDataAsync(payload, 8000);
+        await delay(150);
+        return true;
+    } catch (error) {
+        console.warn('[Print] QR image failed:', error);
+        return false;
     }
 }
 
 /**
- * Android BLE thermal print.
- *
- * 1) Primary: HTML identical to QZ Tray (logo + 58/80mm layout + QR) via WebView raster
- * 2) Fallback: native ESC/POS text + printImageData logo + QR
+ * Android BLE thermal — native ESC/POS (sharp text).
+ * Logo + body text + QR + short footer; no HTML raster (was blurry + huge blank tail).
  */
 export async function printBleReceipt(
     data: PrintReceiptData,
@@ -265,10 +174,47 @@ export async function printBleReceipt(
     }
 
     const paper = getPaperDimensions(settings.paperSize);
+    const layout = getBleNativeLayout(paper.paperSize);
     const normalizedSettings: PrintSettings = {
         ...settings,
         paperSize: paper.paperSize,
+        showQRCode: settings.showQRCode !== false,
     };
+
+    const doc = buildReceiptDocument(data, normalizedSettings);
+    const wantQr = Boolean(normalizedSettings.showQRCode && doc.qrUrl);
+    const canGraphics = isBleQrPrintAvailable() || isBleImagePrintAvailable();
+    // Always try graphics when QR wanted; if hardware APIs missing, text placeholder.
+    const tryQrGraphics = wantQr && canGraphics;
+
+    const receiptText = generateBleReceiptText(data, normalizedSettings, {
+        // Footer printed after QR so cut does not leave a long blank before QR.
+        includeFooter: !tryQrGraphics,
+        includeQrPlaceholder: wantQr && !tryQrGraphics,
+        charWidth: layout.textCharWidth,
+    });
+    if (!receiptText || receiptText.trim().length < 8) {
+        throw new Error('Struk kosong. Periksa pengaturan cetak.');
+    }
+
+    // Prepare logo before connect so print path always has bytes ready.
+    const logoPayload = await prepareLogoPayloadRequired(
+        normalizedSettings,
+        layout.logoMaxDots,
+    );
+
+    console.log('[Print] BLE native ESC/POS', {
+        paper: layout.paperSize,
+        textCols: layout.textCharWidth,
+        logoDots: layout.logoMaxDots,
+        qrDots: layout.qrSizeDots,
+        logo: Boolean(logoPayload),
+        imageApi: isBleImagePrintAvailable(),
+        wantQr,
+        tryQrGraphics,
+        qrUrl: doc.qrUrl ? doc.qrUrl.slice(0, 48) : null,
+        chars: receiptText.length,
+    });
 
     try {
         await withTimeout(
@@ -282,19 +228,64 @@ export async function printBleReceipt(
             'Timeout koneksi printer. Pastikan printer menyala, dekat, dan sudah dipair.',
         );
 
-        try {
-            await withTimeout(
-                printBleReceiptHtml(data, normalizedSettings),
-                28000,
-                'Timeout cetak HTML struk (mode QZ).',
-            );
-            return;
-        } catch (htmlError) {
-            console.warn('[Print] HTML/QZ path failed, native fallback:', htmlError);
+        // 1) Logo — required; print before text and wait for native completion.
+        if (logoPayload) {
+            const logoOk = await printLogoRequired(logoPayload);
+            if (!logoOk) {
+                // Last resort: re-prepare default and fire once more.
+                const fallback = await prepareLogoPayloadRequired(
+                    { ...normalizedSettings, logoUri: 'tpm_default' },
+                    layout.logoMaxDots,
+                );
+                if (fallback) {
+                    await printLogoRequired(fallback);
+                }
+            }
+        } else {
+            console.error('[Print] printing without logo — prepare failed');
         }
 
-        await printBleReceiptNative(data, normalizedSettings);
-        console.log('[Print] BLE native fallback sent');
+        // 2) Body — no cut yet if QR follows; minimal tail feed (avoid long blank).
+        printBillTextFireAndForget(receiptText, {
+            cut: !tryQrGraphics,
+            beep: false,
+            tailingLine: false,
+            encoding: 'UTF8',
+        });
+        await delay(tryQrGraphics ? 450 : 600);
+
+        // 3) QR + caption + footer + cut
+        if (tryQrGraphics && doc.qrUrl) {
+            const qrOk = await printQrGraphics(
+                doc.qrUrl,
+                layout.qrSizeDots,
+                layout.qrEncodePx,
+            );
+
+            const tailLines: string[] = [];
+            if (qrOk) {
+                tailLines.push(`<C>${doc.qrCaption}</C>`);
+            } else {
+                // QR graphics failed — still print caption so user knows digital receipt exists.
+                tailLines.push(`<C>${doc.qrCaption}</C>`);
+                tailLines.push('<C>Buka link struk digital di HP</C>');
+            }
+            if (doc.footer) {
+                tailLines.push(`<C>${doc.footer}</C>`);
+            }
+            // One blank line only before cut (not a long feed).
+            tailLines.push('');
+
+            printBillTextFireAndForget(tailLines.join('\n'), {
+                cut: true,
+                beep: false,
+                tailingLine: false,
+                encoding: 'UTF8',
+            });
+            await delay(500);
+        }
+
+        console.log('[Print] BLE native sent');
     } catch (error) {
         console.error('[Print] BLE print failed:', error);
         throw formatBlePrintError(error);
@@ -328,7 +319,6 @@ export async function printBleTestReceipt(
         {
             ...settings,
             showQRCode: true,
-            // Force default logo on test if unset so logo path is exercised.
             logoUri: settings.logoUri || 'tpm_default',
             footer: `Test ${paper.paperSize} • ${new Date().toLocaleString('id-ID')}`,
         },
