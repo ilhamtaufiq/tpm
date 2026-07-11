@@ -1,5 +1,5 @@
 import { PrintSettings } from './printSettings';
-import { getPaperDimensions, receiptDivider } from './paperSize';
+import { getBleNativeLayout, receiptDivider } from './paperSize';
 import { PrintReceiptData } from './printReceipt';
 import { buildReceiptDocument } from './receiptDocument';
 import {
@@ -26,29 +26,31 @@ export interface GenerateBleReceiptTextOptions {
     includeQrPlaceholder?: boolean;
     /** When false, omit footer (caller prints footer after QR). Default true. */
     includeFooter?: boolean;
+    /** Override column width (dots/12). Defaults to getBleNativeLayout().textCharWidth. */
+    charWidth?: number;
 }
 
 /**
  * Native thermal ESC/POS receipt for Android BLE.
  *
  * Content comes from the same buildReceiptDocument() as web/QZ HTML
- * (fields, order, totals). Layout is character-column thermal, not HTML.
- * Logo + QR are printed separately via native image/QR APIs.
+ * (fields, order, totals). Column width tracks 58mm/80mm via getBleNativeLayout
+ * so fallback is closer to the HTML/QZ raster path.
  */
 export function generateBleReceiptText(
     data: PrintReceiptData,
     settings: PrintSettings,
     options?: GenerateBleReceiptTextOptions,
 ): string {
-    const paper = getPaperDimensions(settings.paperSize);
-    // Slightly under nominal width so physical margins don't wrap left/right columns.
-    const width = Math.max(24, paper.charWidth - 2);
+    const layout = getBleNativeLayout(settings.paperSize);
+    const width = options?.charWidth ?? layout.textCharWidth;
     const divider = receiptDivider(width);
     const doc = buildReceiptDocument(data, settings);
     const lines: string[] = [];
 
     // ── Header (same fields as QZ HTML header) ──
-    appendCenter(lines, doc.companyName, width);
+    // Company name first line mirrors bold title in HTML.
+    appendCenter(lines, doc.companyName.toUpperCase(), width);
     if (doc.headerText) {
         appendCenter(lines, doc.headerText, width);
     }
@@ -75,6 +77,7 @@ export function generateBleReceiptText(
         }
         appendCenter(lines, `--- ${section.title} ---`, width);
         for (const item of section.items) {
+            // Bold-ish item name: uppercase like HTML font-weight bold
             lines.push(String(item.description || '-').toUpperCase());
             appendRow(
                 lines,
@@ -92,6 +95,7 @@ export function generateBleReceiptText(
     if (doc.discount) {
         appendRow(lines, 'Diskon', `-${doc.discount}`, width);
     }
+    // TOTAL emphasized — uppercase label matches HTML larger TOTAL row
     appendRow(lines, 'TOTAL', doc.total, width);
     if (doc.paid) {
         appendRow(lines, 'Dibayar', doc.paid, width);
@@ -117,8 +121,7 @@ export function generateBleReceiptText(
 
     lines.push(divider);
 
-    // QR bitmap is printed natively after this text (printQrCode). Footer follows QR.
-    // Keep a short placeholder only when QR graphics unavailable (handled by caller).
+    // QR bitmap is printed after this text. Footer follows QR.
     if (options?.includeQrPlaceholder && doc.showQr) {
         appendCenter(lines, doc.qrCaption, width);
         appendCenter(lines, 'Buka link struk digital di HP', width);

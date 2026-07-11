@@ -87,7 +87,8 @@ body { font-family:'Courier New',monospace; font-size:${fontBase}px; padding:${p
 .divider { border-top:1px dashed #000; margin:4px 0; }
 .center { text-align:center; }
 .bold { font-weight:bold; }
-img { max-width: ${logoMaxPx}px; height: auto; display: block; margin: 0 auto 5px; }
+img { max-width: ${logoMaxPx}px; max-height: ${Math.round(logoMaxPx * 0.85)}px; width: auto; height: auto; display: block; margin: 0 auto 6px; object-fit: contain; }
+.logo-wrap { text-align: center; margin: 0 0 4px; }
 </style>
 </head>
 <body style="width:${widthPx}px;max-width:${widthMm}mm;height:auto;">

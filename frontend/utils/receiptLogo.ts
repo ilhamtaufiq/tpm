@@ -117,7 +117,10 @@ async function fetchAsDataUrl(uri: string): Promise<string | null> {
     }
 }
 
-async function convertUriToBase64(uri: string, maxWidth = 160): Promise<string | null> {
+/** Target logo decode width — enough for 80mm thermal (~120 layout px × capture scale). */
+const LOGO_CONVERT_MAX_PX = 240;
+
+async function convertUriToBase64(uri: string, maxWidth = LOGO_CONVERT_MAX_PX): Promise<string | null> {
     if (!uri) return null;
     if (uri.startsWith('data:')) return uri;
 
@@ -159,9 +162,11 @@ async function loadDefaultLogoBase64(): Promise<string | null> {
         await asset.downloadAsync();
         const sourceUri = asset.localUri || asset.uri;
         if (sourceUri) {
+            // Prefer file read on native (works offline in APK). Canvas path for web.
             const converted = Platform.OS === 'web'
-                ? await convertUriToBase64(sourceUri, 160)
-                : await readFileUriAsDataUrl(sourceUri);
+                ? await convertUriToBase64(sourceUri, LOGO_CONVERT_MAX_PX)
+                : (await readFileUriAsDataUrl(sourceUri))
+                    ?? (await convertUriToBase64(sourceUri, LOGO_CONVERT_MAX_PX));
             if (converted) {
                 defaultLogoCache = converted;
                 return converted;
@@ -174,7 +179,10 @@ async function loadDefaultLogoBase64(): Promise<string | null> {
     try {
         const resolved = Image.resolveAssetSource(DEFAULT_LOGO);
         if (resolved?.uri) {
-            const converted = await convertUriToBase64(resolved.uri, 160);
+            const converted = Platform.OS === 'web'
+                ? await convertUriToBase64(resolved.uri, LOGO_CONVERT_MAX_PX)
+                : (await readFileUriAsDataUrl(resolved.uri))
+                    ?? (await convertUriToBase64(resolved.uri, LOGO_CONVERT_MAX_PX));
             if (converted) {
                 defaultLogoCache = converted;
                 return converted;
@@ -197,7 +205,7 @@ export async function ensureLogoBase64(uri: string | null | undefined): Promise<
 
     if (logoCache.has(uri)) return logoCache.get(uri)!;
 
-    const converted = await convertUriToBase64(uri, 160);
+    const converted = await convertUriToBase64(uri, LOGO_CONVERT_MAX_PX);
     if (converted) {
         logoCache.set(uri, converted);
         return converted;
@@ -208,8 +216,19 @@ export async function ensureLogoBase64(uri: string | null | undefined): Promise<
 
 export function buildReceiptLogoHtml(logoUri: string | null | undefined, maxPx = 80): string {
     if (!logoUri) return '';
+    // Only embed printable sources — remote http URLs often fail offline on Android WebView.
+    const printable =
+        logoUri.startsWith('data:')
+        || logoUri.startsWith('file://')
+        || logoUri.startsWith('content://')
+        || logoUri.startsWith('blob:');
+    if (!printable && !logoUri.startsWith('http://') && !logoUri.startsWith('https://')) {
+        return '';
+    }
     const safeSrc = logoUri.replace(/"/g, '&quot;');
-    return `<img src="${safeSrc}" width="${maxPx}" height="auto" style="max-width:${maxPx}px;height:auto;display:block;margin:0 auto 6px" alt="Logo" />`;
+    // Explicit width + max-height keeps logo proportional on 58mm and 80mm rolls.
+    const maxH = Math.round(maxPx * 0.85);
+    return `<img src="${safeSrc}" width="${maxPx}" alt="Logo" style="max-width:${maxPx}px;max-height:${maxH}px;width:auto;height:auto;display:block;margin:0 auto 6px;object-fit:contain" />`;
 }
 
 function stripDataUrlPrefix(dataUrl: string): string | null {
@@ -226,30 +245,38 @@ export async function prepareBleLogoPayload(
     maxWidthPx: number,
 ): Promise<string | null> {
     // Prefer default/local logo for speed; still accept data: URIs.
-    const dataUrl = await ensureLogoBase64(logoUri ?? 'tpm_default');
+    let dataUrl = await ensureLogoBase64(logoUri ?? 'tpm_default');
+    if (!dataUrl) {
+        dataUrl = await ensureLogoBase64('tpm_default');
+    }
     if (!dataUrl) return null;
 
     const base64 = stripDataUrlPrefix(dataUrl);
     if (!base64 || base64.length < 64) return null;
 
     const cacheDir = FileSystem.cacheDirectory;
+    let absoluteCachePath = '';
     if (cacheDir) {
         try {
             const fileUri = `${cacheDir}tpm_receipt_logo.png`;
             await FileSystem.writeAsStringAsync(fileUri, base64, {
                 encoding: FileSystem.EncodingType.Base64,
             });
+            absoluteCachePath = fileUri.replace(/^file:\/\//, '');
         } catch {
             // cache optional — imageBase64 is enough for native decode
         }
     }
 
-    // maxWidth in thermal dots (203dpi). Keep logo modest so text still fits.
-    const maxWidth = Math.max(96, Math.min(280, Math.round(maxWidthPx)));
+    // maxWidth in thermal dots (203dpi). Caller passes logoMaxDots from getBleNativeLayout
+    // (HTML logoMaxPx × captureScale) so 58mm/80mm match the QZ raster path.
+    const maxWidth = Math.max(80, Math.min(576, Math.round(maxWidthPx)));
 
     return JSON.stringify({
         imageBase64: base64,
         cacheFile: 'tpm_receipt_logo.png',
+        path: absoluteCachePath || undefined,
+        url: absoluteCachePath ? `file://${absoluteCachePath}` : undefined,
         mime: 'image/png',
         maxWidth,
     });

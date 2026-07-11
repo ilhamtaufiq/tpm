@@ -135,16 +135,20 @@ export function generateReceiptHTML(
         : '';
 
     return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=${paper.widthPx}, initial-scale=1"><style>
 @page { size: ${paperWidth} auto; margin: 0; }
 * { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:${paper.widthPx}px; max-width:${paperWidth}; }
 body { font-family:'Courier New',monospace; font-size:${fsB}px; padding:${pad}; background:#fff; color:#000; width:${paper.widthPx}px; max-width:${paperWidth}; }
 .divider { border-top:1px dashed #000; margin:4px 0; }
 .center { text-align:center; }
 .bold { font-weight:bold; }
 table { width:100%; border-collapse:collapse; }
+img { max-width:100%; height:auto; }
+.logo-wrap { text-align:center; margin:0 0 4px; }
+.logo-wrap img { max-width:${paper.logoMaxPx}px; max-height:${Math.round(paper.logoMaxPx * 0.85)}px; width:auto; height:auto; display:block; margin:0 auto; object-fit:contain; }
 </style></head><body>
-<div class="center">${logoHtml}</div>
+<div class="logo-wrap center">${logoHtml}</div>
 <div class="center bold" style="font-size:${fsTitle}px">${escapeHtml(doc.companyName)}</div>
 ${doc.headerText ? `<div class="center" style="font-size:${fsS}px">${escapeHtml(doc.headerText)}</div>` : ''}
 ${doc.address ? `<div class="center" style="font-size:${fsS}px">${escapeHtml(doc.address)}</div>` : ''}
@@ -172,12 +176,13 @@ ${qrHtml}
 
 export async function printReceipt(data: PrintReceiptData, settings?: PrintSettings): Promise<void> {
     try {
-        // Android BLE: native ESC/POS only (no WebView/HTML raster).
+        // Android BLE: HTML/QZ-matching raster first, native ESC/POS fallback (see printBleReceipt).
         if (Platform.OS === 'android') {
             const activeSettings = settings ?? await printSettingsService.getSettings();
             const normalized: PrintSettings = {
                 ...activeSettings,
                 paperSize: getPaperDimensions(activeSettings.paperSize).paperSize,
+                logoUri: activeSettings.logoUri || 'tpm_default',
             };
             await executeAndroidThermalPrint(data, normalized);
             return;

@@ -177,17 +177,29 @@ export function buildReceiptRasterHtml(
   function waitForImages() {
     var imgs = Array.prototype.slice.call(document.images || []);
     if (!imgs.length) {
-      setTimeout(capture, 320);
+      // Still settle layout a bit so fonts/CSS apply before raster.
+      setTimeout(capture, 400);
       return;
     }
 
     var pending = imgs.length;
+    var settled = false;
     var done = function () {
       pending -= 1;
-      if (pending <= 0) {
-        setTimeout(capture, 320);
+      if (pending <= 0 && !settled) {
+        settled = true;
+        // Extra delay so decoded logo paints into the DOM before html2canvas.
+        setTimeout(capture, 450);
       }
     };
+
+    // Hard cap so a stuck image never blocks the whole print.
+    setTimeout(function () {
+      if (!settled) {
+        settled = true;
+        capture();
+      }
+    }, 6000);
 
     imgs.forEach(function (img) {
       if (img.complete && img.naturalWidth > 0) {

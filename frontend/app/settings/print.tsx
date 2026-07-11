@@ -315,7 +315,7 @@ export default function PrintSettingsScreen() {
             setDialogConfig({
                 visible: true,
                 title: 'Test Print Berhasil',
-                message: `Struk test ${paper.paperSize} dikirim ke printer Bluetooth (native ESC/POS).`,
+                message: `Struk test ${paper.paperSize} dikirim ke printer Bluetooth (layout mirip QZ Tray, logo + QR).`,
                 variant: 'success',
                 type: 'alert',
             });

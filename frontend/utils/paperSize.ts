@@ -41,11 +41,12 @@ const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
         padding: '2mm',
         fontBase: 10,
         fontSmall: 9,
-        fontTitle: 14,
+        fontTitle: 13,
         fontFooter: 9,
         charWidth: 32,
-        qrSizePx: 56,
-        logoMaxPx: 64,
+        qrSizePx: 64,
+        // ~half of layout width so logo stays centered and readable on narrow roll
+        logoMaxPx: 96,
         bleImageWidthPx: 384,
         bleMaxImageHeightPx: 2048,
     },
@@ -53,14 +54,14 @@ const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
         widthMm: 80,
         widthPx: 302,
         widthIn: 3.15,
-        padding: '4mm',
+        padding: '3mm',
         fontBase: 11,
         fontSmall: 10,
-        fontTitle: 16,
+        fontTitle: 15,
         fontFooter: 10,
         charWidth: 48,
-        qrSizePx: 80,
-        logoMaxPx: 80,
+        qrSizePx: 96,
+        logoMaxPx: 120,
         bleImageWidthPx: 576,
         bleMaxImageHeightPx: 3072,
     },
@@ -80,6 +81,61 @@ export function getBleRasterSpec(paperSize?: string | null): BleRasterSpec {
         captureScale,
         layoutMaxHeightPx,
         jpegQuality: 0.85,
+    };
+}
+
+/**
+ * Native ESC/POS fallback sizes — derived from the same HTML/QZ paper map so
+ * logo/QR/text columns track 58mm vs 80mm like the WebView raster path.
+ *
+ * HTML logoMaxPx/qrSizePx are layout pixels; multiply by captureScale to get
+ * thermal dots (same scale used when html2canvas upsamples to bleImageWidthPx).
+ */
+export interface BleNativeLayout {
+    paperSize: PaperSize;
+    /** Font-A character columns (12-dot font @ 203dpi ≈ bleImageWidth/12). */
+    textCharWidth: number;
+    /** Logo max width in dots — matches HTML logoMaxPx after raster scale. */
+    logoMaxDots: number;
+    /** QR edge in dots — matches HTML qrSizePx after raster scale. */
+    qrSizeDots: number;
+    /** Offline QR encode pixel size (2× dots, then printer scales via maxWidth). */
+    qrEncodePx: number;
+    /** Full printable width in dots. */
+    rollWidthDots: number;
+    captureScale: number;
+}
+
+export function getBleNativeLayout(paperSize?: string | null): BleNativeLayout {
+    const paper = getPaperDimensions(paperSize);
+    const captureScale = paper.bleImageWidthPx / paper.widthPx;
+
+    // ESC/POS Font A ≈ 12 dots wide. Match full roll, then subtract a little for
+    // the same side padding the HTML body uses (2–3 mm ≈ 1–2 chars).
+    const fullCols = Math.max(24, Math.round(paper.bleImageWidthPx / 12));
+    const padCols = paper.paperSize === '58mm' ? 2 : 2;
+    const textCharWidth = Math.max(24, Math.min(paper.charWidth, fullCols - padCols));
+
+    const logoMaxDots = Math.max(
+        96,
+        Math.min(paper.bleImageWidthPx, Math.round(paper.logoMaxPx * captureScale)),
+    );
+    const qrSizeDots = Math.max(
+        96,
+        Math.min(
+            Math.round(paper.bleImageWidthPx * 0.55),
+            Math.round(paper.qrSizePx * captureScale),
+        ),
+    );
+
+    return {
+        paperSize: paper.paperSize,
+        textCharWidth,
+        logoMaxDots,
+        qrSizeDots,
+        qrEncodePx: Math.min(320, Math.max(128, qrSizeDots * 2)),
+        rollWidthDots: paper.bleImageWidthPx,
+        captureScale,
     };
 }
 

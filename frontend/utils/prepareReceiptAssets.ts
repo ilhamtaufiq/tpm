@@ -58,19 +58,27 @@ export async function prepareReceiptAssets(
     };
 
     const logoSource = normalizedSettings.logoUri ?? 'tpm_default';
-    // Cap logo work so BLE never freezes on remote logo; fall back to default.
-    const base64Logo = await withTimeout(
-        ensureLogoBase64(
-            options?.localLogoOnly && logoSource !== 'tpm_default' && !logoSource.startsWith('data:')
-                ? 'tpm_default'
-                : logoSource,
-        ),
-        4000,
+    // Prefer local/default logo on Android BLE so HTML raster never hangs on network.
+    const resolvedSource =
+        options?.localLogoOnly
+        && logoSource !== 'tpm_default'
+        && !logoSource.startsWith('data:')
+            ? 'tpm_default'
+            : logoSource;
+
+    // Cap logo work; on timeout still try default so logo is not silently dropped.
+    let base64Logo = await withTimeout(
+        ensureLogoBase64(resolvedSource),
+        5000,
         null,
     );
+    if (!base64Logo) {
+        base64Logo = await withTimeout(ensureLogoBase64('tpm_default'), 4000, null);
+    }
 
     const processedSettings: PrintSettings = {
         ...normalizedSettings,
+        // Keep data URL when ready; null means generateReceiptHTML omits <img>.
         logoUri: base64Logo,
     };
 
