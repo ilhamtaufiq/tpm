@@ -283,6 +283,11 @@ export default function PrintSettingsScreen() {
 
         setTestingBlePrint(true);
 
+        // Hard UI unstick: never leave loading on if something hangs under the hood.
+        const stuckTimer = setTimeout(() => {
+            setTestingBlePrint(false);
+        }, 20000);
+
         try {
             const hasPermission = await requestBlePermissions();
             if (!hasPermission) {
@@ -297,7 +302,6 @@ export default function PrintSettingsScreen() {
             }
 
             const macAddress = await getSavedBlePrinterMac();
-            // Use in-memory settings for speed — avoid save+reload before print.
             const paper = getPaperDimensions(settings.paperSize);
             await printBleTestReceipt(
                 {
@@ -311,7 +315,7 @@ export default function PrintSettingsScreen() {
             setDialogConfig({
                 visible: true,
                 title: 'Test Print Berhasil',
-                message: `Struk test ${paper.paperSize} dikirim ke printer Bluetooth.`,
+                message: `Struk test ${paper.paperSize} dikirim ke printer Bluetooth (native ESC/POS).`,
                 variant: 'success',
                 type: 'alert',
             });
@@ -324,6 +328,7 @@ export default function PrintSettingsScreen() {
                 type: 'alert',
             });
         } finally {
+            clearTimeout(stuckTimer);
             setTestingBlePrint(false);
         }
     };

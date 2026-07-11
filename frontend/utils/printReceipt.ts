@@ -172,8 +172,7 @@ ${qrHtml}
 
 export async function printReceipt(data: PrintReceiptData, settings?: PrintSettings): Promise<void> {
     try {
-        // Android BLE prepares its own offline HTML (same layout as QZ) inside printBleReceipt.
-        // Avoid double prepare + network here so UI stays snappy.
+        // Android BLE: native ESC/POS only (no WebView/HTML raster).
         if (Platform.OS === 'android') {
             const activeSettings = settings ?? await printSettingsService.getSettings();
             const normalized: PrintSettings = {
@@ -198,7 +197,7 @@ export async function printReceipt(data: PrintReceiptData, settings?: PrintSetti
         const hint = Platform.OS === 'web'
             ? 'Cek koneksi QZ Tray di Pengaturan Cetak.'
             : Platform.OS === 'android'
-                ? 'Mobile memakai layout HTML sama QZ. Pastikan printer Bluetooth dipair & menyala, lalu coba lagi.'
+                ? 'Pastikan printer Bluetooth dipair, menyala, dan dekat. Coba Test Print di Pengaturan Cetak.'
                 : 'Pastikan printer terhubung.';
         throw new Error(`Gagal mencetak struk. ${hint}${detail}`);
     }
