@@ -21,13 +21,25 @@ function appendRow(lines: string[], left: string, right: string, width: number):
     lines.push(padReceiptColumns(left, right, width));
 }
 
+export interface GenerateBleReceiptTextOptions {
+    /** When true, print text caption instead of native QR image. Default false. */
+    includeQrPlaceholder?: boolean;
+    /** When false, omit footer (caller prints footer after QR). Default true. */
+    includeFooter?: boolean;
+}
+
 /**
  * Native thermal ESC/POS receipt for Android BLE.
  *
  * Content comes from the same buildReceiptDocument() as web/QZ HTML
  * (fields, order, totals). Layout is character-column thermal, not HTML.
+ * Logo + QR are printed separately via native image/QR APIs.
  */
-export function generateBleReceiptText(data: PrintReceiptData, settings: PrintSettings): string {
+export function generateBleReceiptText(
+    data: PrintReceiptData,
+    settings: PrintSettings,
+    options?: GenerateBleReceiptTextOptions,
+): string {
     const paper = getPaperDimensions(settings.paperSize);
     // Slightly under nominal width so physical margins don't wrap left/right columns.
     const width = Math.max(24, paper.charWidth - 2);
@@ -105,17 +117,19 @@ export function generateBleReceiptText(data: PrintReceiptData, settings: PrintSe
 
     lines.push(divider);
 
-    // QR image needs graphics mode; native text path shows short caption only.
-    if (doc.showQr) {
+    // QR bitmap is printed natively after this text (printQrCode). Footer follows QR.
+    // Keep a short placeholder only when QR graphics unavailable (handled by caller).
+    if (options?.includeQrPlaceholder && doc.showQr) {
         appendCenter(lines, doc.qrCaption, width);
         appendCenter(lines, 'Buka link struk digital di HP', width);
         lines.push(divider);
     }
 
-    appendCenter(lines, doc.footer, width);
-    // Feed a bit for paper cut
-    lines.push('');
-    lines.push('');
+    if (options?.includeFooter !== false) {
+        appendCenter(lines, doc.footer, width);
+        lines.push('');
+        lines.push('');
+    }
 
     return `${lines.join('\n')}\n`;
 }

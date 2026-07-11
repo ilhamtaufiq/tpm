@@ -80,3 +80,40 @@ export function printBillTextFireAndForget(text: string, opts?: BleBillOptions):
 
     RNBLEPrinter.printRawData(base64, () => {});
 }
+
+/**
+ * Print logo/image via patched native printImageData (JSON payload with imageBase64).
+ * Fire-and-forget — callback often never fires.
+ */
+export function printImageDataFireAndForget(payloadJson: string): void {
+    if (!RNBLEPrinter?.printImageData) {
+        throw new Error('Native printImageData tidak tersedia. Rebuild APK setelah update printer.');
+    }
+    if (!payloadJson || payloadJson.length < 8) {
+        throw new Error('Payload gambar kosong.');
+    }
+    RNBLEPrinter.printImageData(payloadJson, () => {});
+}
+
+/**
+ * Print QR via native ZXing encode (BLEPrinterAdapter.printQrCode).
+ * Content is usually the public receipt URL.
+ */
+export function printQrCodeFireAndForget(content: string): void {
+    if (!RNBLEPrinter?.printQrCode) {
+        throw new Error('Native printQrCode tidak tersedia. Rebuild APK setelah update printer.');
+    }
+    const value = (content || '').trim();
+    if (!value) {
+        throw new Error('Konten QR kosong.');
+    }
+    RNBLEPrinter.printQrCode(value, () => {});
+}
+
+export function isBleImagePrintAvailable(): boolean {
+    return Boolean(RNBLEPrinter?.printImageData);
+}
+
+export function isBleQrPrintAvailable(): boolean {
+    return Boolean(RNBLEPrinter?.printQrCode);
+}

@@ -225,24 +225,32 @@ export async function prepareBleLogoPayload(
     logoUri: string | null | undefined,
     maxWidthPx: number,
 ): Promise<string | null> {
-    const dataUrl = await ensureLogoBase64(logoUri);
+    // Prefer default/local logo for speed; still accept data: URIs.
+    const dataUrl = await ensureLogoBase64(logoUri ?? 'tpm_default');
     if (!dataUrl) return null;
 
     const base64 = stripDataUrlPrefix(dataUrl);
-    if (!base64) return null;
+    if (!base64 || base64.length < 64) return null;
 
     const cacheDir = FileSystem.cacheDirectory;
-    if (!cacheDir) return null;
+    if (cacheDir) {
+        try {
+            const fileUri = `${cacheDir}tpm_receipt_logo.png`;
+            await FileSystem.writeAsStringAsync(fileUri, base64, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+        } catch {
+            // cache optional — imageBase64 is enough for native decode
+        }
+    }
 
-    const fileUri = `${cacheDir}tpm_receipt_logo.png`;
-    await FileSystem.writeAsStringAsync(fileUri, base64, {
-        encoding: FileSystem.EncodingType.Base64,
-    });
+    // maxWidth in thermal dots (203dpi). Keep logo modest so text still fits.
+    const maxWidth = Math.max(96, Math.min(280, Math.round(maxWidthPx)));
 
     return JSON.stringify({
         imageBase64: base64,
         cacheFile: 'tpm_receipt_logo.png',
         mime: 'image/png',
-        maxWidth: Math.max(64, Math.round(maxWidthPx * 0.55)),
+        maxWidth,
     });
 }
