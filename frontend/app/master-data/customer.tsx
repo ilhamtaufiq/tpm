@@ -673,7 +673,7 @@ export default function CustomerScreen() {
                             }}
                         >
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
-                            <ScrollView className="flex-1">
+                            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {renderSheetContent()}
                             </ScrollView>
                         </View>

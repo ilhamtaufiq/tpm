@@ -690,7 +690,7 @@ export default function PencairanInvestorScreen() {
                         }} />
                         <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
-                            <ScrollView className="flex-1">
+                            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {renderProcessDisbursementContent()}
                             </ScrollView>
                         </View>

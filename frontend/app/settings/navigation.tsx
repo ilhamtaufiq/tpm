@@ -4,6 +4,7 @@ import { appAlert, appConfirm } from '../../utils/appAlert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, RotateCcw, ChevronRight, SlidersHorizontal, Check, Home, ShieldCheck, Wrench, CarFront, Truck, BarChart3, History, Receipt, User, Plus, X } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
+import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 import { router } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
 import { PageFabSettingId, useNavigationStore, defaultPageFabSlots } from '../../store/useNavigationStore';
@@ -335,7 +336,12 @@ export default function NavigationSettingsScreen() {
                 onRequestClose={() => setPickerVisible(false)}
             >
                 <View className="flex-1 justify-end bg-slate-900/30">
-                    <View className="bg-white rounded-t-[48px] shadow-2xl max-h-[85%] border-t border-gray-100">
+                    <BoundedSheetPanel
+                        maxHeightRatio={0.85}
+                        bottomInset={insets.bottom}
+                        style={{ borderTopLeftRadius: 48, borderTopRightRadius: 48 }}
+                        className="border-t border-gray-100 shadow-2xl"
+                    >
                         {/* Drag Handle */}
                         <View className="items-center pt-4 pb-2">
                             <View className="w-12 h-1 bg-gray-200 rounded-full" />
@@ -373,7 +379,13 @@ export default function NavigationSettingsScreen() {
                         </View>
 
                         {/* Options List */}
-                        <ScrollView className="px-6 pb-8" showsVerticalScrollIndicator={false}>
+                        <BoundedSheetScrollView
+                            maxHeightRatio={0.85}
+                            headerReserve={140}
+                            bottomInset={insets.bottom}
+                            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}
+                            showsVerticalScrollIndicator={false}
+                        >
                             <View className="gap-y-3 pb-8">
                                 {NAV_OPTIONS.filter(opt => pickerMode === 'bar' || opt.id !== 'fab-plus').map((option) => {
                                     const OptionIcon = option.icon;
@@ -427,8 +439,8 @@ export default function NavigationSettingsScreen() {
                                     );
                                 })}
                             </View>
-                        </ScrollView>
-                    </View>
+                        </BoundedSheetScrollView>
+                    </BoundedSheetPanel>
                 </View>
             </Modal>
         </SafeAreaView>

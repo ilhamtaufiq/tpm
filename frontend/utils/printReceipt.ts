@@ -91,9 +91,9 @@ function buildReceiptQrHtml(
     }
 
     return `
-<div class="center" style="margin-top:8px">
+<div class="center" style="margin-top:4px">
     <img src="${imgSrc}" width="${qr}" height="${qr}" alt="QR Struk" style="display:block;margin:0 auto" />
-    <div style="font-size:${paper.fontSmall}px;margin-top:4px">Scan untuk lihat struk online</div>
+    <div style="font-size:${paper.fontSmall}px;margin-top:2px">Scan untuk lihat struk online</div>
 </div>`;
 }
 
@@ -170,7 +170,7 @@ ${doc.paymentMethod ? `<tr><td style="font-size:${fsS}px">Metode Bayar:</td><td 
 ${doc.notes ? `<div class="divider"></div><div style="font-size:${fsS}px">Catatan: ${escapeHtml(doc.notes)}</div>` : ''}
 <div class="divider"></div>
 ${qrHtml}
-<div class="center" style="font-size:${fsFooter}px">${escapeHtml(doc.footer)}</div>
+<div class="center" style="font-size:${fsFooter}px;margin-top:4px">${escapeHtml(doc.footer)}</div>
 </body></html>`;
 }
 

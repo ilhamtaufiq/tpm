@@ -6,6 +6,7 @@ import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 import {
     ChevronLeft,
     Plus,
@@ -1837,7 +1838,7 @@ export default function BengkelScreen() {
         <View style={{ flex: 1 }}>
             {selectedItem ? (
                 Platform.OS === 'web' ? (
-                    <ScrollView className="flex-1">
+                    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                         <View className="px-5 pt-3 pb-24">
                             {renderDetailContent()}
                         </View>
@@ -2046,13 +2047,22 @@ export default function BengkelScreen() {
                             className="flex-1"
                             onPress={() => setShowWalletModal(false)}
                         />
-                        <View className="bg-white rounded-t-[48px] shadow-2xl relative overflow-hidden" style={{ maxWidth: 640, alignSelf: 'center', width: '100%', maxHeight: '90%' }}>
-                            <ScrollView showsVerticalScrollIndicator={false}>
+                        <BoundedSheetPanel
+                            maxHeightRatio={0.9}
+                            bottomInset={insets.bottom}
+                            style={{ maxWidth: 640, alignSelf: 'center' }}
+                        >
+                            <BoundedSheetScrollView
+                                maxHeightRatio={0.9}
+                                headerReserve={16}
+                                bottomInset={insets.bottom}
+                                showsVerticalScrollIndicator={false}
+                            >
                                 <View className="pt-16 px-9 pb-12">
                                     {renderWalletContent()}
                                 </View>
-                            </ScrollView>
-                        </View>
+                            </BoundedSheetScrollView>
+                        </BoundedSheetPanel>
                     </View>
                 </Modal>
                 </>

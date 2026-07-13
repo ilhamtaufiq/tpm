@@ -509,7 +509,7 @@ export default function AssetScreen() {
                         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleCloseSheet} />
                         <View className="bg-white rounded-t-[32px] shadow-2xl h-[90%] max-w-[640px] self-center w-full">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
-                            <ScrollView className="flex-1">{renderSheetContent()}</ScrollView>
+                            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">{renderSheetContent()}</ScrollView>
                         </View>
                     </View>
                 </Modal>

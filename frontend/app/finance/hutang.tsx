@@ -838,7 +838,14 @@ export default function HutangUsahaScreen() {
                     <Modal visible={createVisible} transparent animationType="fade">
                         <View style={styles.modalOverlay}>
                             <View style={styles.webModalContent}>
-                                <ScrollView>{renderCreateContent()}</ScrollView>
+                                <ScrollView
+                                    style={{ maxHeight: 480, flexGrow: 0 }}
+                                    showsVerticalScrollIndicator
+                                    nestedScrollEnabled
+                                    keyboardShouldPersistTaps="handled"
+                                >
+                                    {renderCreateContent()}
+                                </ScrollView>
                             </View>
                         </View>
                     </Modal>

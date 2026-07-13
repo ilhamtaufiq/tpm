@@ -831,7 +831,7 @@ export default function SlipGajiScreen() {
                         <Pressable className="absolute inset-0" onPress={() => setSelectedSlip(null)} />
                         <View className="bg-white rounded-t-[56px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
-                            <ScrollView className="px-10 flex-1">
+                            <ScrollView style={{ flex: 1 }} className="px-10" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {selectedSlip && renderDetailContent()}
                             </ScrollView>
                         </View>

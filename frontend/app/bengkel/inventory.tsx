@@ -1,6 +1,7 @@
 ﻿import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, FlatList, Image, Platform, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Typography } from '../../components/ui/Typography';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -591,7 +592,11 @@ export default function InventoryScreen() {
                                 setIsEditing(false);
                             }}
                         />
-                        <View className="bg-white rounded-t-[48px] p-6 max-h-[90%]">
+                        <BoundedSheetPanel
+                            maxHeightRatio={0.9}
+                            bottomInset={insets.bottom}
+                            style={{ paddingHorizontal: 24, paddingTop: 24 }}
+                        >
                             <View className="flex-row justify-between items-center mb-5">
                                 <View>
                                     <Typography variant="h3" weight="bold">
@@ -612,7 +617,12 @@ export default function InventoryScreen() {
                                 </Pressable>
                             </View>
 
-                            <ScrollView showsVerticalScrollIndicator={false}>
+                            <BoundedSheetScrollView
+                                maxHeightRatio={0.9}
+                                headerReserve={88}
+                                bottomInset={insets.bottom}
+                                showsVerticalScrollIndicator={false}
+                            >
                                 <View className="items-center mb-5">
                                     <View className="w-32 h-32 bg-gray-50 rounded-3xl items-center justify-center overflow-hidden border border-gray-100">
                                         {formData.gambar ? (
@@ -733,8 +743,8 @@ export default function InventoryScreen() {
                                         )}
                                     </View>
                                 </View>
-                            </ScrollView>
-                        </View>
+                            </BoundedSheetScrollView>
+                        </BoundedSheetPanel>
                     </View>
                 </Modal>
             )}
@@ -886,12 +896,21 @@ export default function InventoryScreen() {
                 >
                     <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
                         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setSheetIndex(-1)} />
-                        <View className="bg-white rounded-t-[48px] shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: 640, height: '80%', alignSelf: 'center' }}>
+                        <BoundedSheetPanel
+                            maxHeightRatio={0.8}
+                            bottomInset={insets.bottom}
+                            style={{ maxWidth: 640, alignSelf: 'center' }}
+                        >
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
-                            <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}>
+                            <BoundedSheetScrollView
+                                maxHeightRatio={0.8}
+                                headerReserve={48}
+                                bottomInset={insets.bottom}
+                                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
+                            >
                                 {renderSortContent()}
-                            </ScrollView>
-                        </View>
+                            </BoundedSheetScrollView>
+                        </BoundedSheetPanel>
                     </View>
                 </Modal>
             ) : (

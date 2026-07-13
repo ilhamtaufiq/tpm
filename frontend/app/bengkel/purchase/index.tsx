@@ -14,7 +14,7 @@ import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
-import { BottomSheetContainer } from '../../../components/ui/BottomSheetContainer';
+import { BottomSheetContainer, BoundedSheetScrollView } from '../../../components/ui/BottomSheetContainer';
 import {
     ChevronLeft,
     Search,
@@ -226,11 +226,11 @@ export default function PurchaseIndexScreen() {
                             </Pressable>
                         </View>
 
-                        <ScrollView
-                            style={{ flexShrink: 1 }}
+                        <BoundedSheetScrollView
+                            maxHeightRatio={0.85}
+                            headerReserve={140}
+                            bottomInset={insets.bottom}
                             showsVerticalScrollIndicator={false}
-                            keyboardShouldPersistTaps="handled"
-                            nestedScrollEnabled
                         >
                             {/* Summary Card */}
                             <Card variant="outlined" className="p-5 border-gray-100 bg-gray-50/30 mb-6">
@@ -306,7 +306,7 @@ export default function PurchaseIndexScreen() {
                                     </Typography>
                                 </View>
                             </View>
-                        </ScrollView>
+                        </BoundedSheetScrollView>
                 </BottomSheetContainer>
             </Modal>
         </SafeAreaView>

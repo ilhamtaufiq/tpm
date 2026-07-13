@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Pressable, TextInput, Modal, Platform, ActivityIndicator } from 'react-native';
+import { View, Pressable, TextInput, Modal, Platform, ActivityIndicator } from 'react-native';
 import { Typography } from './Typography';
 import { Button } from './Button';
 import { Card } from './Card';
@@ -9,7 +9,7 @@ import { masterDataService, Customer } from '../../services/masterData';
 import { useCreateCustomer } from '../../hooks/useMasterData';
 import { getErrorMessage } from '../../utils/error';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BottomSheetContainer } from './BottomSheetContainer';
+import { BottomSheetContainer, BoundedSheetScrollView } from './BottomSheetContainer';
 
 interface CustomerFormModalProps {
     visible: boolean;
@@ -119,11 +119,11 @@ export const CustomerFormModal = ({
                         </Pressable>
                     </View>
 
-                    <ScrollView
-                        style={{ flexShrink: 1 }}
-                        className="px-6"
-                        keyboardShouldPersistTaps="handled"
-                        nestedScrollEnabled
+                    <BoundedSheetScrollView
+                        maxHeightRatio={0.9}
+                        headerReserve={160}
+                        bottomInset={insets.bottom}
+                        contentContainerStyle={{ paddingHorizontal: 24 }}
                     >
                         <View className="space-y-4">
                             <View>
@@ -239,7 +239,7 @@ export const CustomerFormModal = ({
                                 ))}
                             </View>
                         </View>
-                    </ScrollView>
+                    </BoundedSheetScrollView>
             </BottomSheetContainer>
         </Modal>
     );

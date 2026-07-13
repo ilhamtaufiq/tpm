@@ -1,9 +1,11 @@
 import { appAlert } from '../../utils/appAlert';
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable, ActivityIndicator, RefreshControl, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../ui/Typography';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
+import { BoundedSheetPanel, BoundedSheetScrollView } from '../ui/BottomSheetContainer';
 import { useArmadaDetail } from '../../hooks/useJasaAngkut';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import {
@@ -37,6 +39,7 @@ interface ArmadaDetailProps {
 }
 
 export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
+    const insets = useSafeAreaInsets();
     const { data: detailData, isLoading, refetch } = useArmadaDetail(id);
     const [activeTab, setActiveTab] = useState<'trips' | 'repairs' | 'expenses'>('trips');
     const [refreshing, setRefreshing] = useState(false);
@@ -529,9 +532,18 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                 onRequestClose={() => setSelectedTrip(null)}
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <View className="bg-white rounded-t-[32px] p-6 pb-10 max-h-[85%]">
+                    <BoundedSheetPanel
+                        maxHeightRatio={0.85}
+                        bottomInset={insets.bottom}
+                        style={{ paddingHorizontal: 24, paddingTop: 24, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}
+                    >
                         {selectedTrip && (
-                            <ScrollView showsVerticalScrollIndicator={false}>
+                            <BoundedSheetScrollView
+                                maxHeightRatio={0.85}
+                                headerReserve={24}
+                                bottomInset={insets.bottom}
+                                showsVerticalScrollIndicator={false}
+                            >
                                 <View className="flex-row justify-between items-start mb-6">
                                     <View className="flex-1 pr-4">
                                         <Typography variant="h3" weight="bold" className="text-textMain">
@@ -645,9 +657,9 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                         </View>
                                     ) : null}
                                 </Card>
-                            </ScrollView>
+                            </BoundedSheetScrollView>
                         )}
-                    </View>
+                    </BoundedSheetPanel>
                 </View>
             </Modal>
 
@@ -659,9 +671,18 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                 onRequestClose={() => setSelectedRepair(null)}
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <View className="bg-white rounded-t-[32px] p-6 pb-10 max-h-[85%]">
+                    <BoundedSheetPanel
+                        maxHeightRatio={0.85}
+                        bottomInset={insets.bottom}
+                        style={{ paddingHorizontal: 24, paddingTop: 24, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}
+                    >
                         {selectedRepair && (
-                            <ScrollView showsVerticalScrollIndicator={false}>
+                            <BoundedSheetScrollView
+                                maxHeightRatio={0.85}
+                                headerReserve={24}
+                                bottomInset={insets.bottom}
+                                showsVerticalScrollIndicator={false}
+                            >
                                 <View className="flex-row justify-between items-start mb-6">
                                     <View className="flex-1 pr-4">
                                         <Typography variant="h3" weight="bold" className="text-textMain">
@@ -756,9 +777,9 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                         <Typography variant="body2">{selectedRepair.catatan}</Typography>
                                     </Card>
                                 ) : null}
-                            </ScrollView>
+                            </BoundedSheetScrollView>
                         )}
-                    </View>
+                    </BoundedSheetPanel>
                 </View>
             </Modal>
 
@@ -770,9 +791,18 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                 onRequestClose={() => setSelectedExpense(null)}
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <View className="bg-white rounded-t-[32px] p-6 pb-10 max-h-[85%]">
+                    <BoundedSheetPanel
+                        maxHeightRatio={0.85}
+                        bottomInset={insets.bottom}
+                        style={{ paddingHorizontal: 24, paddingTop: 24, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}
+                    >
                         {selectedExpense && (
-                            <ScrollView showsVerticalScrollIndicator={false}>
+                            <BoundedSheetScrollView
+                                maxHeightRatio={0.85}
+                                headerReserve={24}
+                                bottomInset={insets.bottom}
+                                showsVerticalScrollIndicator={false}
+                            >
                                 <View className="flex-row justify-between items-start mb-6">
                                     <View className="flex-1 pr-4">
                                         <Typography variant="h3" weight="bold" className="text-textMain">
@@ -886,9 +916,9 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                         )}
                                     </Card>
                                 )}
-                            </ScrollView>
+                            </BoundedSheetScrollView>
                         )}
-                    </View>
+                    </BoundedSheetPanel>
                 </View>
             </Modal>
 
@@ -900,7 +930,11 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                 onRequestClose={() => setShowExpenseModal(false)}
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <View className="bg-white rounded-t-[32px] p-6 pb-12">
+                    <BoundedSheetPanel
+                        maxHeightRatio={0.88}
+                        bottomInset={insets.bottom}
+                        style={{ paddingHorizontal: 24, paddingTop: 24, borderTopLeftRadius: 32, borderTopRightRadius: 32 }}
+                    >
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold">Input Biaya Operasional</Typography>
                             <Pressable
@@ -913,7 +947,12 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                             </Pressable>
                         </View>
 
-                        <ScrollView className="max-h-[70vh]" showsVerticalScrollIndicator={false}>
+                        <BoundedSheetScrollView
+                            maxHeightRatio={0.88}
+                            headerReserve={88}
+                            bottomInset={insets.bottom}
+                            showsVerticalScrollIndicator={false}
+                        >
                             <View className="space-y-4">
                                 <Input
                                     label="Deskripsi"
@@ -1021,8 +1060,8 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                     className="mt-4"
                                 />
                             </View>
-                        </ScrollView>
-                    </View>
+                        </BoundedSheetScrollView>
+                    </BoundedSheetPanel>
                 </View>
             </Modal>
         </ScrollView>

@@ -75,23 +75,23 @@ export const ThermalReceiptView = React.forwardRef<View, ThermalReceiptViewProps
                     styles.root,
                     {
                         width: paper.widthPx,
-                        minHeight: 320,
                         paddingHorizontal: padH,
-                        paddingVertical: 8,
+                        paddingTop: 6,
+                        paddingBottom: 6,
                     },
                 ]}
             >
                 <View style={styles.center}>
-                    {logoUri ? (
+                    {logoUri && logoUri !== 'tpm_default' ? (
                         <Image
                             source={{ uri: logoUri }}
-                            style={{ width: paper.logoMaxPx, height: paper.logoMaxPx, marginBottom: 6 }}
+                            style={{ width: paper.logoMaxPx, height: Math.round(paper.logoMaxPx * 0.75), marginBottom: 4 }}
                             resizeMode="contain"
                         />
                     ) : (
                         <Image
                             source={require('../../assets/logo_tpm.png')}
-                            style={{ width: paper.logoMaxPx, height: paper.logoMaxPx, marginBottom: 6 }}
+                            style={{ width: paper.logoMaxPx, height: Math.round(paper.logoMaxPx * 0.75), marginBottom: 4 }}
                             resizeMode="contain"
                         />
                     )}
@@ -169,17 +169,17 @@ export const ThermalReceiptView = React.forwardRef<View, ThermalReceiptViewProps
                 <Divider />
 
                 {doc.showQr && qrImageDataUrl ? (
-                    <View style={styles.center}>
+                    <View style={[styles.center, { marginTop: 2 }]}>
                         <Image
                             source={{ uri: qrImageDataUrl }}
-                            style={{ width: paper.qrSizePx, height: paper.qrSizePx, marginTop: 4 }}
+                            style={{ width: paper.qrSizePx, height: paper.qrSizePx, marginTop: 2 }}
                             resizeMode="contain"
                         />
-                        <Text style={[styles.centerText, { fontSize: fsS, marginTop: 4 }]}>{doc.qrCaption}</Text>
+                        <Text style={[styles.centerText, { fontSize: fsS, marginTop: 2 }]}>{doc.qrCaption}</Text>
                     </View>
                 ) : null}
 
-                <Text style={[styles.centerText, { fontSize: fsFooter, marginTop: doc.showQr && qrImageDataUrl ? 6 : 0 }]}>
+                <Text style={[styles.centerText, { fontSize: fsFooter, marginTop: doc.showQr && qrImageDataUrl ? 4 : 2 }]}>
                     {doc.footer}
                 </Text>
             </View>

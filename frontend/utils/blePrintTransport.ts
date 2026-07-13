@@ -18,10 +18,100 @@ const DEFAULT_BILL_OPTIONS: Required<BleBillOptions> = {
     encoding: 'UTF8',
 };
 
+/**
+ * EPToolkit.exchange_text has a flag bug:
+ *   if (typeof opt === "boolean" && controller[key]) { apply }
+ * So cut/beep/tailingLine:false still APPLY (controller buffers are truthy).
+ * Only pass a flag when it is true; omit it when false so the library skips it.
+ *
+ * Also replaces ESC 2 (0x1B 0x32 = "Select default line spacing") with ESC 3 n.
+ * After bit-image logo/QR, some cheap printers treat the bare "2" as printable text
+ * → "2Scan untuk lihat struk online".
+ */
+function sanitizeEscPosBuffer(buffer: Buffer): Buffer {
+    const out: number[] = [];
+    for (let i = 0; i < buffer.length; i += 1) {
+        // ESC 2 → ESC 3 30 (line spacing that does not embed ASCII '2')
+        if (buffer[i] === 0x1b && i + 1 < buffer.length && buffer[i + 1] === 0x32) {
+            out.push(0x1b, 0x33, 30);
+            i += 1;
+            continue;
+        }
+        out.push(buffer[i]);
+    }
+    return Buffer.from(out);
+}
+
 export function billTextToBase64(text: string, opts?: BleBillOptions): string {
     const options = { ...DEFAULT_BILL_OPTIONS, ...opts };
-    const buffer = EPToolkit.exchange_text(text, options);
+
+    // Only include true flags — omit false so EPToolkit does not still apply them.
+    const toolkitOpts: Record<string, unknown> = {
+        encoding: options.encoding || 'UTF8',
+    };
+    if (options.cut) toolkitOpts.cut = true;
+    if (options.beep) toolkitOpts.beep = true;
+    if (options.tailingLine) toolkitOpts.tailingLine = true;
+
+    // IOptions requires all flags; partial object is intentional so false flags are omitted (EPToolkit bug).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw = EPToolkit.exchange_text(text, toolkitOpts as any);
+    const buffer = sanitizeEscPosBuffer(raw);
+
+    // When cut was requested, EPToolkit uses ESC i which many BLE printers ignore.
+    // Append GS V 0 (partial cut) as a more compatible cut sequence.
+    if (options.cut) {
+        const withCut = Buffer.concat([buffer, Buffer.from([0x0a, 0x1d, 0x56, 0x00])]);
+        return withCut.toString('base64');
+    }
+
     return buffer.toString('base64');
+}
+
+/**
+ * Minimal centered lines after logo/QR bitmaps — no EPToolkit ESC 2 / UTF8 FS codes.
+ * Avoids the "2Scan..." artifact and extra blank feeds on thermal BLE printers.
+ */
+export function billCenterLinesToBase64(
+    lines: string[],
+    opts?: { cut?: boolean },
+): string {
+    const chunks: number[] = [];
+    // ESC @ init
+    chunks.push(0x1b, 0x40);
+    // ESC 3 28 — tight line spacing (no ASCII digit command)
+    chunks.push(0x1b, 0x33, 28);
+
+    for (const rawLine of lines) {
+        const line = String(rawLine || '').trim();
+        if (!line) continue;
+        // ESC a 1 center (binary 1, not ASCII '1')
+        chunks.push(0x1b, 0x61, 0x01);
+        for (let i = 0; i < line.length; i += 1) {
+            const code = line.charCodeAt(i);
+            // Latin-1 safe for Indonesian receipt captions
+            chunks.push(code <= 0xff ? code : 0x3f);
+        }
+        chunks.push(0x0a);
+    }
+
+    // ESC a 0 left + one small feed
+    chunks.push(0x1b, 0x61, 0x00);
+    chunks.push(0x0a);
+
+    if (opts?.cut) {
+        // GS V 0 partial cut
+        chunks.push(0x1d, 0x56, 0x00);
+    }
+
+    let binary = '';
+    const bytes = new Uint8Array(chunks);
+    const step = 8192;
+    for (let i = 0; i < bytes.length; i += step) {
+        const slice = bytes.subarray(i, i + step);
+        binary += String.fromCharCode(...slice);
+    }
+    return btoa(binary);
 }
 
 export function printRawBase64(base64: string, timeoutMs = 12000): Promise<void> {
@@ -37,13 +127,14 @@ export function printRawBase64(base64: string, timeoutMs = 12000): Promise<void>
         }
 
         let settled = false;
-        const finish = (error?: string) => {
+        const finish = (error?: string, soft = false) => {
             if (settled) return;
             settled = true;
-            if (error) {
+            if (error && !soft) {
                 reject(new Error(error));
                 return;
             }
+            // soft timeout: data usually already on the wire (callback never fires on some APKs)
             resolve();
         };
 
@@ -53,10 +144,22 @@ export function printRawBase64(base64: string, timeoutMs = 12000): Promise<void>
 
         setTimeout(() => {
             if (!settled) {
-                finish('Printer tidak merespons. Pastikan printer menyala dan sudah terhubung.');
+                console.warn('[Print] printRawData callback timeout — assuming sent');
+                finish(undefined, true);
             }
         }, timeoutMs);
     });
+}
+
+/** Fire printRawData without waiting (pairing test path). */
+export function printRawBase64FireAndForget(base64: string): void {
+    if (!RNBLEPrinter?.printRawData) {
+        throw new Error('Native printRawData tidak tersedia. Rebuild APK setelah update printer.');
+    }
+    if (!base64 || base64.length < 8) {
+        throw new Error('Data cetak kosong.');
+    }
+    RNBLEPrinter.printRawData(base64, () => {});
 }
 
 export async function printBillText(text: string, opts?: BleBillOptions): Promise<void> {

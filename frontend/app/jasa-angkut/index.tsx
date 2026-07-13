@@ -1814,7 +1814,7 @@ export default function JasaAngkutScreen() {
                                         <X size={18} color="#64748B" />
                                     </Pressable>
                                 </View>
-                                <ScrollView className="flex-1 p-6">
+                                <ScrollView style={{ flex: 1 }} className="p-6" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                     {historyData?.data?.map((item: any) => (
                                         <View key={item.id} className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100 flex-row items-center mb-4">
                                             <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
@@ -1890,7 +1890,7 @@ export default function JasaAngkutScreen() {
                                         <X size={20} color="#64748B" />
                                     </Pressable>
                                 </View>
-                                <ScrollView className="flex-1 p-8">
+                                <ScrollView style={{ flex: 1 }} className="p-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                     {historyData?.data?.map((item: any) => (
                                         <View key={item.id} className="bg-gray-50/50 p-5 rounded-[32px] border border-gray-100 flex-row items-center mb-4">
                                             <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'}`}>

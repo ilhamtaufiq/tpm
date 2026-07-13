@@ -24,7 +24,7 @@ import {
 } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
-import { BottomSheetContainer, CenterModalContainer } from '../../../components/ui/BottomSheetContainer';
+import { BottomSheetContainer, CenterModalContainer, BoundedSheetScrollView } from '../../../components/ui/BottomSheetContainer';
 import { onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { useCreatePembelianParts, useSparePartsList, useUpdatePembelianParts } from '../../../hooks/useBengkel';
@@ -809,12 +809,12 @@ export default function PurchaseScreen() {
                             </Pressable>
                         </View>
 
-                        <ScrollView
-                            style={{ flexShrink: 1 }}
+                        <BoundedSheetScrollView
+                            maxHeightRatio={0.82}
+                            headerReserve={140}
+                            bottomInset={insets.bottom}
+                            contentBottomPad={16}
                             showsVerticalScrollIndicator={false}
-                            contentContainerStyle={{ paddingBottom: 16 }}
-                            keyboardShouldPersistTaps="handled"
-                            nestedScrollEnabled
                         >
                             {/* Metode Pembayaran */}
                             <View className="mb-6">
@@ -984,17 +984,19 @@ export default function PurchaseScreen() {
                                     )}
                                 </View>
                             </View>
-                        </ScrollView>
+                        </BoundedSheetScrollView>
                 </BottomSheetContainer>
             </Modal>
 
             {/* Confirm Submit Modal */}
             <Modal visible={confirmSubmitOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setConfirmSubmitOpen(false)}>
                 <CenterModalContainer onClose={() => setConfirmSubmitOpen(false)} insets={insets}>
-                    <ScrollView
+                    <BoundedSheetScrollView
+                        maxHeightRatio={0.88}
+                        headerReserve={80}
+                        contentBottomPad={12}
                         bounces={false}
                         showsVerticalScrollIndicator={false}
-                        style={{ flexShrink: 1 }}
                         contentContainerStyle={{ padding: 20, paddingBottom: 12 }}
                     >
                         <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-4">
@@ -1013,7 +1015,7 @@ export default function PurchaseScreen() {
                             <View className="h-[1px] bg-slate-200 my-2" />
                             <SummaryRow label="Total" value={formatCurrency(total)} />
                         </View>
-                    </ScrollView>
+                    </BoundedSheetScrollView>
                     <View className="flex-row gap-3 px-5 pb-5 pt-3 border-t border-gray-100">
                         <Button title="Batal" variant="outline" size="sm" className="flex-1 min-w-0" onPress={() => setConfirmSubmitOpen(false)} />
                         <Button title={isEditMode ? 'Update' : 'Simpan'} size="sm" className="flex-1 min-w-0" onPress={handleSubmit} loading={createPembelianMutation.isPending || updatePembelianMutation.isPending} />
@@ -1024,10 +1026,12 @@ export default function PurchaseScreen() {
             {/* Success Modal */}
             <Modal visible={successModalOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }}>
                 <CenterModalContainer onClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }} insets={insets}>
-                    <ScrollView
+                    <BoundedSheetScrollView
+                        maxHeightRatio={0.88}
+                        headerReserve={80}
+                        contentBottomPad={12}
                         bounces={false}
                         showsVerticalScrollIndicator={false}
-                        style={{ flexShrink: 1 }}
                         contentContainerStyle={{ padding: 24, paddingBottom: 12, alignItems: 'center' }}
                         className="w-full"
                     >
@@ -1042,7 +1046,7 @@ export default function PurchaseScreen() {
                                 ? 'Transaksi pembelian dan pembayaran berhasil diproses.'
                                 : 'Data pembelian sparepart berhasil disimpan.'}
                         </Typography>
-                    </ScrollView>
+                    </BoundedSheetScrollView>
                     <View className="w-full px-6 pb-6 pt-2 border-t border-gray-100">
                         <Button
                             title="OK"

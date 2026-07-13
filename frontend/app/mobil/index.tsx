@@ -1222,7 +1222,7 @@ export default function MobilInventoryScreen() {
                                             <X size={18} color="#64748B" />
                                         </Pressable>
                                     </View>
-                                    <ScrollView className="flex-1 p-6">
+                                    <ScrollView style={{ flex: 1 }} className="p-6" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                         {isHistoryLoading && (
                                             <View className="py-20 items-center">
                                                 <ActivityIndicator color="#023C69" />
@@ -1381,7 +1381,7 @@ export default function MobilInventoryScreen() {
                                             <X size={20} color="#64748B" />
                                         </Pressable>
                                     </View>
-                                    <ScrollView className="flex-1 p-8">
+                                    <ScrollView style={{ flex: 1 }} className="p-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                         {isHistoryLoading && (
                                             <View className="py-20 items-center">
                                                 <ActivityIndicator color="#023C69" />

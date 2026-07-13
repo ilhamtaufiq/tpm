@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
+import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 import {
     ChevronLeft,
     Search,
@@ -722,8 +723,12 @@ export default function QueueScreen() {
                 >
                     <View className="flex-1 justify-end bg-black/50">
                         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setDetailModalOpen(false)} />
-                        <View className="bg-white rounded-t-[48px] p-6 max-h-[85%] overflow-hidden">
-                            <View className="flex-row justify-between items-center mb-6">
+                        <BoundedSheetPanel
+                            maxHeightRatio={0.88}
+                            bottomInset={insets.bottom}
+                            style={{ paddingHorizontal: 24, paddingTop: 24 }}
+                        >
+                            <View className="flex-row justify-between items-center mb-4">
                                 <View className="flex-1 mr-3">
                                     <Typography variant="h3" weight="bold">Detail Antrian</Typography>
                                     <Typography className="text-gray-400 text-xs mt-0.5" numberOfLines={1}>
@@ -735,7 +740,11 @@ export default function QueueScreen() {
                                 </Pressable>
                             </View>
 
-                            <ScrollView showsVerticalScrollIndicator={false}>
+                            <BoundedSheetScrollView
+                                maxHeightRatio={0.88}
+                                headerReserve={72}
+                                bottomInset={insets.bottom}
+                            >
                                 <View className="flex-row justify-between items-start mb-4">
                                     <View className="flex-1 mr-3">
                                         <Typography variant="h2" weight="bold" className="text-xl tracking-tight">{selectedItem.nomor_plat}</Typography>
@@ -960,8 +969,8 @@ export default function QueueScreen() {
                                         </Typography>
                                     </Pressable>
                                 ) : null}
-                            </ScrollView>
-                        </View>
+                            </BoundedSheetScrollView>
+                        </BoundedSheetPanel>
                     </View>
                 </Modal>
             )}

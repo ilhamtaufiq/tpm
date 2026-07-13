@@ -650,7 +650,12 @@ export default function AkunKeuanganScreen() {
                                     <X size={24} color="#6B7280" />
                                 </Pressable>
                             </View>
-                            <ScrollView showsVerticalScrollIndicator={false}>
+                            <ScrollView
+                                style={{ maxHeight: 480, flexGrow: 0 }}
+                                showsVerticalScrollIndicator
+                                nestedScrollEnabled
+                                keyboardShouldPersistTaps="handled"
+                            >
                                 {renderAdjustContent()}
                             </ScrollView>
                         </View>

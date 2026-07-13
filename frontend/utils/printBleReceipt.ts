@@ -5,13 +5,17 @@ import { getBleNativeLayout, getPaperDimensions } from './paperSize';
 import { buildReceiptDocument } from './receiptDocument';
 import { generateBleReceiptText } from './generateBleReceiptText';
 import {
+    billCenterLinesToBase64,
     isBleImagePrintAvailable,
     isBleQrPrintAvailable,
     printBillTextFireAndForget,
     printImageDataAsync,
     printImageDataFireAndForget,
     printQrCodeAsync,
+    printRawBase64,
+    printRawBase64FireAndForget,
 } from './blePrintTransport';
+import { buildLogoEscPosBase64 } from './bleLogoEscPos';
 import { prepareBleLogoPayload, prepareDefaultBleLogoPayload } from './receiptLogo';
 import { buildOfflineQrDataUrl } from './receiptQrOffline';
 
@@ -48,120 +52,146 @@ function formatBlePrintError(error: unknown): Error {
 }
 
 /**
- * Logo is required on every thermal receipt.
- * Try settings logo → default asset → clear cache and retry default.
+ * Print logo — primary path is ESC/POS via printRawData (works on all APKs that print text).
+ * Secondary: native printImageData JSON payload (needs patched APK).
  */
-async function prepareLogoPayloadRequired(
+async function printLogoRequired(
     settings: PrintSettings,
-    maxWidthPx: number,
-): Promise<string | null> {
-    if (!isBleImagePrintAvailable()) {
-        console.error('[Print] printImageData native missing — logo cannot print. Rebuild APK.');
-        return null;
-    }
-
-    const tryPrepare = async (uri: string | null | undefined, forceDefault = false) => {
-        try {
-            if (forceDefault) {
-                return await withTimeout(
-                    prepareDefaultBleLogoPayload(maxWidthPx),
-                    8000,
-                    'logo-default-timeout',
-                );
-            }
-            return await withTimeout(
-                prepareBleLogoPayload(uri || 'tpm_default', maxWidthPx),
-                8000,
-                'logo-timeout',
-            );
-        } catch (error) {
-            console.warn('[Print] logo prepare attempt failed:', error);
-            return null;
-        }
-    };
-
-    let payload = await tryPrepare(settings.logoUri ?? 'tpm_default');
-    if (!payload) {
-        payload = await tryPrepare('tpm_default', true);
-    }
-    if (!payload) {
-        console.error('[Print] logo prepare failed completely');
-    }
-    return payload;
-}
-
-/** Print logo and wait until native finishes (or soft-timeout). */
-async function printLogoRequired(logoPayload: string): Promise<boolean> {
+    logoMaxDots: number,
+): Promise<boolean> {
+    // 1) ESC/POS raster → printRawData (same transport as body text — most reliable)
     try {
-        await printImageDataAsync(logoPayload, 10000);
-        // Small settle so BLE buffer drains before text ESC/POS.
-        await delay(200);
-        return true;
-    } catch (error) {
-        console.warn('[Print] logo print failed, retry once:', error);
-        try {
-            printImageDataFireAndForget(logoPayload);
-            await delay(1200);
-            return true;
-        } catch (retryErr) {
-            console.error('[Print] logo print retry failed:', retryErr);
-            return false;
+        const escPos = await withTimeout(
+            buildLogoEscPosBase64(settings.logoUri || 'tpm_default', logoMaxDots),
+            10000,
+            'logo-escpos-timeout',
+        );
+        if (escPos && escPos.length > 32) {
+            try {
+                await printRawBase64(escPos, 12000);
+                await delay(250);
+                console.log('[Print] logo sent via printRawData ESC/POS');
+                return true;
+            } catch (rawErr) {
+                console.warn('[Print] logo raw await failed, fire-and-forget:', rawErr);
+                printRawBase64FireAndForget(escPos);
+                await delay(1500);
+                console.log('[Print] logo sent via printRawData (fire-and-forget)');
+                return true;
+            }
         }
+    } catch (e) {
+        console.warn('[Print] logo ESC/POS path failed:', e);
+    }
+
+    // 2) Fallback native printImageData (patched JSON payload)
+    if (!isBleImagePrintAvailable()) {
+        console.error('[Print] logo failed: no ESC/POS and no printImageData');
+        return false;
+    }
+
+    try {
+        let payload = await withTimeout(
+            prepareBleLogoPayload(settings.logoUri || 'tpm_default', logoMaxDots),
+            8000,
+            'logo-payload-timeout',
+        );
+        if (!payload) {
+            payload = await withTimeout(
+                prepareDefaultBleLogoPayload(logoMaxDots),
+                8000,
+                'logo-default-timeout',
+            );
+        }
+        if (!payload) return false;
+
+        try {
+            await printImageDataAsync(payload, 10000);
+            await delay(200);
+            console.log('[Print] logo sent via printImageData');
+            return true;
+        } catch {
+            printImageDataFireAndForget(payload);
+            await delay(1200);
+            console.log('[Print] logo sent via printImageData (fire-and-forget)');
+            return true;
+        }
+    } catch (e) {
+        console.error('[Print] logo printImageData path failed:', e);
+        return false;
     }
 }
 
 /**
- * Print QR for thermal:
- * 1) Native ZXing (sharp modules, most reliable on BLE printers)
- * 2) Offline PNG via printImageData (sized to paper)
+ * Print QR for thermal (prefer our ESC/POS path — tighter feed, no native "2" artifact):
+ * 1) Offline PNG → ESC/POS raw (same raster path as logo)
+ * 2) Offline PNG via printImageData
+ * 3) Native ZXing last (has extra line-space feed + ASCII align byte)
  */
 async function printQrGraphics(
     qrUrl: string,
     qrSizeDots: number,
     qrEncodePx: number,
 ): Promise<boolean> {
-    if (isBleQrPrintAvailable()) {
-        try {
-            await printQrCodeAsync(qrUrl, 8000);
-            await delay(150);
-            return true;
-        } catch (error) {
-            console.warn('[Print] native printQrCode failed, try image:', error);
-        }
-    }
-
-    if (!isBleImagePrintAvailable()) {
-        return false;
-    }
-
     try {
         const dataUrl = await withTimeout(
             buildOfflineQrDataUrl(qrUrl, qrEncodePx),
             4000,
             'qr-encode-timeout',
         );
-        if (!dataUrl) return false;
+        if (dataUrl) {
+            // Prefer raw ESC/POS so QR works without printImageData patch
+            // and avoids native SET_LINE_SPACE_32 gap after the bitmap.
+            const escPos = await withTimeout(
+                buildLogoEscPosBase64(dataUrl, qrSizeDots),
+                6000,
+                'qr-escpos-timeout',
+            );
+            if (escPos && escPos.length > 32) {
+                try {
+                    await printRawBase64(escPos, 10000);
+                    await delay(120);
+                    return true;
+                } catch {
+                    printRawBase64FireAndForget(escPos);
+                    await delay(800);
+                    return true;
+                }
+            }
 
-        const base64 = stripDataUrlPrefix(dataUrl);
-        if (!base64) return false;
-
-        const payload = JSON.stringify({
-            imageBase64: base64,
-            mime: 'image/png',
-            maxWidth: Math.max(120, Math.min(320, qrSizeDots)),
-        });
-        await printImageDataAsync(payload, 8000);
-        await delay(150);
-        return true;
+            if (isBleImagePrintAvailable()) {
+                const base64 = stripDataUrlPrefix(dataUrl);
+                if (base64) {
+                    const payload = JSON.stringify({
+                        imageBase64: base64,
+                        mime: 'image/png',
+                        maxWidth: Math.max(120, Math.min(320, qrSizeDots)),
+                    });
+                    await printImageDataAsync(payload, 8000);
+                    await delay(120);
+                    return true;
+                }
+            }
+        }
     } catch (error) {
-        console.warn('[Print] QR image failed:', error);
-        return false;
+        console.warn('[Print] QR image failed, try native:', error);
     }
+
+    if (isBleQrPrintAvailable()) {
+        try {
+            await printQrCodeAsync(qrUrl, 8000);
+            await delay(120);
+            return true;
+        } catch (error) {
+            console.warn('[Print] native printQrCode failed:', error);
+        }
+    }
+
+    return false;
 }
 
 /**
- * Android BLE thermal — native ESC/POS (sharp text).
- * Logo + body text + QR + short footer; no HTML raster (was blurry + huge blank tail).
+ * Android BLE thermal — native ESC/POS (sharp text) + logo via printRawData raster.
  */
 export async function printBleReceipt(
     data: PrintReceiptData,
@@ -179,16 +209,15 @@ export async function printBleReceipt(
         ...settings,
         paperSize: paper.paperSize,
         showQRCode: settings.showQRCode !== false,
+        logoUri: settings.logoUri || 'tpm_default',
     };
 
     const doc = buildReceiptDocument(data, normalizedSettings);
     const wantQr = Boolean(normalizedSettings.showQRCode && doc.qrUrl);
-    const canGraphics = isBleQrPrintAvailable() || isBleImagePrintAvailable();
-    // Always try graphics when QR wanted; if hardware APIs missing, text placeholder.
-    const tryQrGraphics = wantQr && canGraphics;
+    // QR can use raw ESC/POS even without image APIs
+    const tryQrGraphics = wantQr;
 
     const receiptText = generateBleReceiptText(data, normalizedSettings, {
-        // Footer printed after QR so cut does not leave a long blank before QR.
         includeFooter: !tryQrGraphics,
         includeQrPlaceholder: wantQr && !tryQrGraphics,
         charWidth: layout.textCharWidth,
@@ -197,22 +226,13 @@ export async function printBleReceipt(
         throw new Error('Struk kosong. Periksa pengaturan cetak.');
     }
 
-    // Prepare logo before connect so print path always has bytes ready.
-    const logoPayload = await prepareLogoPayloadRequired(
-        normalizedSettings,
-        layout.logoMaxDots,
-    );
-
     console.log('[Print] BLE native ESC/POS', {
         paper: layout.paperSize,
         textCols: layout.textCharWidth,
         logoDots: layout.logoMaxDots,
         qrDots: layout.qrSizeDots,
-        logo: Boolean(logoPayload),
         imageApi: isBleImagePrintAvailable(),
         wantQr,
-        tryQrGraphics,
-        qrUrl: doc.qrUrl ? doc.qrUrl.slice(0, 48) : null,
         chars: receiptText.length,
     });
 
@@ -228,31 +248,36 @@ export async function printBleReceipt(
             'Timeout koneksi printer. Pastikan printer menyala, dekat, dan sudah dipair.',
         );
 
-        // 1) Logo — required; print before text and wait for native completion.
-        if (logoPayload) {
-            const logoOk = await printLogoRequired(logoPayload);
-            if (!logoOk) {
-                // Last resort: re-prepare default and fire once more.
-                const fallback = await prepareLogoPayloadRequired(
-                    { ...normalizedSettings, logoUri: 'tpm_default' },
-                    layout.logoMaxDots,
+        // 1) Logo (required) — printRawData ESC/POS first
+        const logoOk = await printLogoRequired(normalizedSettings, layout.logoMaxDots);
+        if (!logoOk) {
+            console.error('[Print] WARNING: logo did not print — retry default');
+            // One more attempt with forced default asset
+            try {
+                const retryEsc = await withTimeout(
+                    buildLogoEscPosBase64('tpm_default', layout.logoMaxDots),
+                    8000,
+                    'logo-retry-timeout',
                 );
-                if (fallback) {
-                    await printLogoRequired(fallback);
+                if (retryEsc && retryEsc.length > 32) {
+                    await printRawBase64(retryEsc, 10000);
+                    await delay(200);
+                    console.log('[Print] logo retry default OK');
                 }
+            } catch (retryErr) {
+                console.error('[Print] logo retry failed:', retryErr);
             }
-        } else {
-            console.error('[Print] printing without logo — prepare failed');
         }
 
-        // 2) Body — no cut yet if QR follows; minimal tail feed (avoid long blank).
+        // 2) Body text — no cut/tail while QR still pending (fixed EPToolkit flags)
         printBillTextFireAndForget(receiptText, {
             cut: !tryQrGraphics,
             beep: false,
             tailingLine: false,
             encoding: 'UTF8',
         });
-        await delay(tryQrGraphics ? 450 : 600);
+        // Body only needs a short gap before QR — old path left 5 blank lines (flag bug)
+        await delay(tryQrGraphics ? 280 : 400);
 
         // 3) QR + caption + footer + cut
         if (tryQrGraphics && doc.qrUrl) {
@@ -262,30 +287,28 @@ export async function printBleReceipt(
                 layout.qrEncodePx,
             );
 
+            // Safe centered lines (no ESC 2 → no "2Scan..." artifact)
             const tailLines: string[] = [];
             if (qrOk) {
-                tailLines.push(`<C>${doc.qrCaption}</C>`);
+                tailLines.push(doc.qrCaption);
             } else {
-                // QR graphics failed — still print caption so user knows digital receipt exists.
-                tailLines.push(`<C>${doc.qrCaption}</C>`);
-                tailLines.push('<C>Buka link struk digital di HP</C>');
+                tailLines.push(doc.qrCaption);
+                tailLines.push('Buka link struk digital di HP');
             }
             if (doc.footer) {
-                tailLines.push(`<C>${doc.footer}</C>`);
+                tailLines.push(doc.footer);
             }
-            // One blank line only before cut (not a long feed).
-            tailLines.push('');
 
-            printBillTextFireAndForget(tailLines.join('\n'), {
-                cut: true,
-                beep: false,
-                tailingLine: false,
-                encoding: 'UTF8',
-            });
-            await delay(500);
+            const tailBase64 = billCenterLinesToBase64(tailLines, { cut: true });
+            try {
+                await printRawBase64(tailBase64, 8000);
+            } catch {
+                printRawBase64FireAndForget(tailBase64);
+            }
+            await delay(300);
         }
 
-        console.log('[Print] BLE native sent');
+        console.log('[Print] BLE native sent', { logoOk });
     } catch (error) {
         console.error('[Print] BLE print failed:', error);
         throw formatBlePrintError(error);

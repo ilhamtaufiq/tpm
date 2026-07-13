@@ -26,7 +26,7 @@ import {
 import api from '../../../utils/api';
 import { findSparePartByBarcode, formatSparePartCodes, getBarcodeSearchQuery, getSparePartSearchDisplayQuery, parseBarcodeScan, pickBestSparePartMatch } from '../../../utils/barcodeScan';
 import { useScanSound } from '../../../utils/sounds';
-import { BottomSheetContainer } from '../../../components/ui/BottomSheetContainer';
+import { BottomSheetContainer, BoundedSheetScrollView } from '../../../components/ui/BottomSheetContainer';
 import { ModalThemeView } from '../../../components/ui/ModalThemeView';
 import { isAlwaysReadyStock } from '../../../utils/sparepartStock';
 
@@ -1542,12 +1542,12 @@ export default function BengkelTransaksiScreen() {
                             </Pressable>
                         </View>
 
-                        <ScrollView
-                            style={{ flexShrink: 1 }}
+                        <BoundedSheetScrollView
+                            maxHeightRatio={0.82}
+                            headerReserve={140}
+                            bottomInset={insets.bottom}
+                            contentBottomPad={16}
                             showsVerticalScrollIndicator={false}
-                            contentContainerStyle={{ paddingBottom: 16 }}
-                            keyboardShouldPersistTaps="handled"
-                            nestedScrollEnabled
                         >
                             <View className="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-4">
                                 <SummaryRow label="Subtotal" value={formatCurrency(grossSubtotal)} />
@@ -1692,13 +1692,16 @@ export default function BengkelTransaksiScreen() {
                                     <Typography className="text-amber-700 text-xs mt-1">{kategori === 'jasa_angkut' ? 'Dicatat sebagai hutang internal JA → Bengkel. Dompet unit tidak dipotong; biaya masuk laporan trip/armada.' : 'Dicatat sebagai hutang internal Mobil → Bengkel. Dompet tidak dipotong; biaya masuk HPP mobil. Pelunasan buku saat mobil terjual.'}</Typography>
                                 </View>
                             )}
-                        </ScrollView>
+                        </BoundedSheetScrollView>
                 </BottomSheetContainer>
             </Modal>
             <Modal visible={confirmSubmitOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setConfirmSubmitOpen(false)}>
                 <ModalThemeView className="flex-1 items-center justify-center px-5" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
                     <View className="bg-white rounded-[28px] w-full max-w-sm overflow-hidden" style={{ maxHeight: '88%' }}>
-                        <ScrollView
+                        <BoundedSheetScrollView
+                            maxHeightRatio={0.88}
+                            headerReserve={24}
+                            contentBottomPad={12}
                             bounces={false}
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={{ padding: 20, paddingBottom: 12 }}
@@ -1729,7 +1732,7 @@ export default function BengkelTransaksiScreen() {
                                     </>
                                 )}
                             </View>
-                        </ScrollView>
+                        </BoundedSheetScrollView>
                         <View className="flex-row gap-3 px-5 pb-5 pt-3 border-t border-gray-100">
                             <Button title="Batal" variant="outline" size="sm" className="flex-1 min-w-0" onPress={() => setConfirmSubmitOpen(false)} />
                             <Button title={transactionToUpdateId ? 'Update' : 'Simpan'} size="sm" className="flex-1 min-w-0" onPress={submit} loading={createMutation.isPending || updateMutation.isPending || updatePaymentMutation.isPending} />
@@ -1741,7 +1744,10 @@ export default function BengkelTransaksiScreen() {
             <Modal visible={successModalOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }}>
                 <ModalThemeView className="flex-1 items-center justify-center px-5" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
                     <View className="bg-white rounded-[28px] w-full max-w-sm overflow-hidden items-center" style={{ maxHeight: '88%' }}>
-                        <ScrollView
+                        <BoundedSheetScrollView
+                            maxHeightRatio={0.88}
+                            headerReserve={80}
+                            contentBottomPad={12}
                             bounces={false}
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={{ padding: 24, paddingBottom: 12, alignItems: 'center' }}
@@ -1784,7 +1790,7 @@ export default function BengkelTransaksiScreen() {
                             />
                         </View>
                         ) : null}
-                        </ScrollView>
+                        </BoundedSheetScrollView>
                         <View className="w-full px-6 pb-6 pt-2 border-t border-gray-100">
                             <Button
                                 title="OK"
@@ -1828,12 +1834,12 @@ export default function BengkelTransaksiScreen() {
                             </View>
                             <ChevronLeft size={18} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />
                         </Pressable>
-                        <ScrollView
-                            style={{ flexShrink: 1 }}
+                        <BoundedSheetScrollView
+                            maxHeightRatio={0.78}
+                            headerReserve={200}
+                            bottomInset={insets.bottom}
+                            contentBottomPad={16}
                             showsVerticalScrollIndicator={false}
-                            contentContainerStyle={{ paddingBottom: 16 }}
-                            keyboardShouldPersistTaps="handled"
-                            nestedScrollEnabled
                         >
                             {isExistingTransactionsLoading ? (
                                 <View className="py-8">
@@ -1884,7 +1890,7 @@ export default function BengkelTransaksiScreen() {
                                     </Pressable>
                                 );
                             })}
-                        </ScrollView>
+                        </BoundedSheetScrollView>
                 </BottomSheetContainer>
             </Modal>
 
@@ -1946,12 +1952,12 @@ export default function BengkelTransaksiScreen() {
                             </Pressable>
                         </View>
                         <SearchBox value={partSearch} onChange={setPartSearch} placeholder="Cari sparepart..." />
-                        <ScrollView
-                            style={{ flexShrink: 1 }}
+                        <BoundedSheetScrollView
+                            maxHeightRatio={0.78}
+                            headerReserve={180}
+                            bottomInset={insets.bottom}
+                            contentBottomPad={16}
                             showsVerticalScrollIndicator={false}
-                            contentContainerStyle={{ paddingBottom: 16 }}
-                            keyboardShouldPersistTaps="handled"
-                            nestedScrollEnabled
                             onScroll={handlePartsScroll}
                             scrollEventThrottle={16}
                         >
@@ -1991,7 +1997,7 @@ export default function BengkelTransaksiScreen() {
                                     <ActivityIndicator color="#023C69" />
                                 </View>
                             )}
-                        </ScrollView>
+                        </BoundedSheetScrollView>
                 </BottomSheetContainer>
             </Modal>
             <Modal visible={serviceSheetOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setServiceSheetOpen(false)}>
@@ -2009,12 +2015,12 @@ export default function BengkelTransaksiScreen() {
                             </Pressable>
                         </View>
                         <SearchBox value={serviceSearch} onChange={setServiceSearch} placeholder="Cari service..." />
-                        <ScrollView
-                            style={{ flexShrink: 1 }}
+                        <BoundedSheetScrollView
+                            maxHeightRatio={0.78}
+                            headerReserve={180}
+                            bottomInset={insets.bottom}
+                            contentBottomPad={16}
                             showsVerticalScrollIndicator={false}
-                            contentContainerStyle={{ paddingBottom: 16 }}
-                            keyboardShouldPersistTaps="handled"
-                            nestedScrollEnabled
                         >
                             {isJasaLoading ? <ActivityIndicator color="#023C69" /> : visibleServices.map((service: any) => {
                                 const selected = selectedServices[String(service.id)];
@@ -2057,7 +2063,7 @@ export default function BengkelTransaksiScreen() {
                                     </Pressable>
                                 );
                             })}
-                        </ScrollView>
+                        </BoundedSheetScrollView>
                 </BottomSheetContainer>
             </Modal>
         </SafeAreaView>

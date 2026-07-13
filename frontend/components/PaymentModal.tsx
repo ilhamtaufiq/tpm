@@ -449,7 +449,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         style={{ flexShrink: 0, zIndex: 2, elevation: 16 }}
                     >
                         <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
-                        <ScrollView className="flex-1">
+                        <ScrollView
+                            style={{ flex: 1 }}
+                            showsVerticalScrollIndicator
+                            nestedScrollEnabled
+                            keyboardShouldPersistTaps="handled"
+                            contentContainerStyle={{ paddingBottom: 32 }}
+                        >
                             {renderContent()}
                         </ScrollView>
                     </View>

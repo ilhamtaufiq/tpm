@@ -569,8 +569,16 @@ export default function UserManagementScreen() {
             {Platform.OS === 'web' ? (
                 sheetVisible && (
                     <View className="absolute inset-0 bg-black/50 justify-end z-50">
-                        <View className="bg-white rounded-t-[40px] h-[90%] max-w-xl self-center w-full">
-                            <ScrollView>{renderSheetContent()}</ScrollView>
+                        <View className="bg-white rounded-t-[40px] h-[90%] max-w-xl self-center w-full overflow-hidden">
+                            <ScrollView
+                                style={{ flex: 1 }}
+                                showsVerticalScrollIndicator
+                                nestedScrollEnabled
+                                keyboardShouldPersistTaps="handled"
+                                contentContainerStyle={{ paddingBottom: 40 }}
+                            >
+                                {renderSheetContent()}
+                            </ScrollView>
                         </View>
                     </View>
                 )

@@ -1,12 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { View, Modal, Pressable, ScrollView, TextInput } from 'react-native';
+import { View, Modal, Pressable, TextInput, useWindowDimensions } from 'react-native';
 import { X, Banknote, Wallet, ChevronRight, CheckCircle2, Calculator } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ModalFlexBackdrop, BottomSheetFooter } from './ui/BottomSheetContainer';
+import {
+    ModalFlexBackdrop,
+    BottomSheetFooter,
+    BoundedSheetScrollView,
+    resolveSheetMaxHeightPx,
+} from './ui/BottomSheetContainer';
 import { ModalThemeView } from './ui/ModalThemeView';
 
 export interface PaymentItem {
@@ -130,6 +135,11 @@ export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
         });
     };
 
+    const { height: windowHeight } = useWindowDimensions();
+    const sheetMaxPx = resolveSheetMaxHeightPx(windowHeight, '90%');
+    // Header (~72) + footer actions (~140) + bottom inset
+    const scrollHeaderReserve = 72 + 140;
+
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
             <ModalThemeView style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
@@ -137,13 +147,13 @@ export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
                 <View
                     style={{
                         width: '100%',
-                        maxHeight: '90%',
+                        maxHeight: sheetMaxPx,
                         backgroundColor: '#FFFFFF',
                         borderTopLeftRadius: 48,
                         borderTopRightRadius: 48,
                         padding: 24,
                         paddingBottom: insets.bottom + 16,
-                        flexShrink: 0,
+                        flexShrink: 1,
                         zIndex: 2,
                         elevation: 16,
                         overflow: 'hidden',
@@ -169,11 +179,12 @@ export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
                         </Pressable>
                     </View>
 
-                    <ScrollView
-                        style={{ flexShrink: 1 }}
+                    <BoundedSheetScrollView
+                        sheetMaxHeight={sheetMaxPx}
+                        headerReserve={scrollHeaderReserve}
+                        bottomInset={insets.bottom}
+                        contentBottomPad={16}
                         showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
-                        nestedScrollEnabled
                         className="mb-4"
                     >
                         {/* Summary Card */}
@@ -480,7 +491,7 @@ export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
                                 </Typography>
                             </View>
                         )}
-                    </ScrollView>
+                    </BoundedSheetScrollView>
 
                     <BottomSheetFooter>
                         <Button

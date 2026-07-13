@@ -584,7 +584,10 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                     </View>
 
                     <ScrollView
-                        showsVerticalScrollIndicator={false}
+                        style={{ flex: 1 }}
+                        showsVerticalScrollIndicator
+                        nestedScrollEnabled
+                        keyboardShouldPersistTaps="handled"
                         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 220 }}
                     >
                         {loading ? (

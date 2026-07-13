@@ -215,7 +215,8 @@ export async function ensureLogoBase64(uri: string | null | undefined): Promise<
 }
 
 export function buildReceiptLogoHtml(logoUri: string | null | undefined, maxPx = 80): string {
-    if (!logoUri) return '';
+    // Always attempt a logo — missing/invalid uri falls back to empty (caller should pass data: after ensureLogoBase64)
+    if (!logoUri || logoUri === 'tpm_default') return '';
     // Only embed printable sources — remote http URLs often fail offline on Android WebView.
     const printable =
         logoUri.startsWith('data:')
@@ -284,9 +285,9 @@ export async function prepareBleLogoPayload(
     // maxWidth in thermal dots (203dpi). Keep logo visible on 58mm and 80mm.
     const maxWidth = Math.max(120, Math.min(384, Math.round(maxWidthPx)));
 
-    // Prefer path/cache for large logos (native decode from file is more reliable).
-    // Still attach imageBase64 when small enough for bridge fallback.
+    // Always send imageBase64 — path alone often fails when Expo cache != native getCacheDir().
     const payload: Record<string, string | number> = {
+        imageBase64: base64,
         cacheFile: 'tpm_receipt_logo.png',
         mime: dataUrl.includes('image/jpeg') ? 'image/jpeg' : 'image/png',
         maxWidth,
@@ -298,11 +299,6 @@ export async function prepareBleLogoPayload(
         payload.url = absoluteCachePath.startsWith('/')
             ? `file://${absoluteCachePath}`
             : (fileUri || `file://${absoluteCachePath}`);
-    }
-
-    // Bridge-safe threshold ~150KB raw base64 (~112KB binary). Full logo often larger.
-    if (base64.length <= 150_000 || !absoluteCachePath) {
-        payload.imageBase64 = base64;
     }
 
     return JSON.stringify(payload);

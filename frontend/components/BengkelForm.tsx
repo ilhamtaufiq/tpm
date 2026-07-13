@@ -1616,7 +1616,12 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                 };
 
                                 return hasSearchQuery ? (
-                                    <View style={{ maxHeight: 420 }}>
+                                    <ScrollView
+                                        style={{ maxHeight: 420, flexGrow: 0 }}
+                                        nestedScrollEnabled
+                                        keyboardShouldPersistTaps="handled"
+                                        showsVerticalScrollIndicator
+                                    >
                                         <Typography variant="body2" weight="semibold" className="mb-1">Hasil Pencarian</Typography>
                                         <Typography variant="caption" className="text-gray-400 mb-4">
                                             Hasil dibagi per kategori, tetap dalam satu section pencarian.
@@ -1649,7 +1654,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                 filteredServiceChoices.map((item) => renderSelectableItem(item, false, true))
                                             )}
                                         </View>
-                                    </View>
+                                    </ScrollView>
                                 ) : (
                             <SectionList
                                 sections={sections as any}
