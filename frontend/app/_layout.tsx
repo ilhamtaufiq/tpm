@@ -1,3 +1,4 @@
+import { Buffer } from 'buffer';
 import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,6 +9,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect, useState } from 'react';
 import * as Updates from 'expo-updates';
 import { View, Text, ActivityIndicator, AppState, AppStateStatus, Platform, Pressable } from 'react-native';
+
+// Hermes has no Node Buffer — thermal print (EPToolkit) and some utils need it.
+const __g = globalThis as typeof globalThis & { Buffer?: typeof Buffer };
+if (!__g.Buffer) {
+    __g.Buffer = Buffer;
+}
 import {
     useFonts,
     Outfit_400Regular,

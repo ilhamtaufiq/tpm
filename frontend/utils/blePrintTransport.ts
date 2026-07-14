@@ -1,6 +1,13 @@
 import { NativeModules, Platform } from 'react-native';
+import { Buffer } from 'buffer';
 // Same ESC/POS encoder used by BLEPrinter.printBill / printText in the library.
 import * as EPToolkit from 'react-native-thermal-receipt-printer/dist/utils/EPToolkit';
+
+// Hermes has no Node Buffer. EPToolkit + body text encoding need it after logo.
+const g = globalThis as typeof globalThis & { Buffer?: typeof Buffer };
+if (!g.Buffer) {
+    g.Buffer = Buffer;
+}
 
 const RNBLEPrinter = Platform.OS === 'android' ? NativeModules.RNBLEPrinter : null;
 
@@ -42,30 +49,73 @@ function sanitizeEscPosBuffer(buffer: Buffer): Buffer {
     return Buffer.from(out);
 }
 
+/** Minimal Latin-1 ESC/POS text (no EPToolkit / no iconv) — last-resort body path. */
+function simpleBillTextToBase64(text: string, opts?: BleBillOptions): string {
+    const options = { ...DEFAULT_BILL_OPTIONS, ...opts };
+    const chunks: number[] = [];
+    // ESC @ init + ESC 3 28 line spacing (avoid ESC 2 ASCII artifact)
+    chunks.push(0x1b, 0x40, 0x1b, 0x33, 28);
+    // ESC a 0 left
+    chunks.push(0x1b, 0x61, 0x00);
+
+    const lines = String(text || '').split(/\r?\n/);
+    for (const line of lines) {
+        // Strip simple <C>/<B> tags used by generateBleReceiptText so plain path still readable
+        const plain = line
+            .replace(/<\/?(?:C|B|CB|CM|CD|D|M|L|R)>/gi, '')
+            .replace(/&nbsp;/g, ' ');
+        for (let i = 0; i < plain.length; i += 1) {
+            const code = plain.charCodeAt(i);
+            chunks.push(code <= 0xff ? code : 0x3f);
+        }
+        chunks.push(0x0a);
+    }
+
+    if (options.tailingLine) {
+        chunks.push(0x0a, 0x0a);
+    }
+    if (options.cut) {
+        chunks.push(0x0a, 0x1d, 0x56, 0x00);
+    }
+
+    let binary = '';
+    const bytes = new Uint8Array(chunks);
+    const step = 8192;
+    for (let i = 0; i < bytes.length; i += step) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + step));
+    }
+    return btoa(binary);
+}
+
 export function billTextToBase64(text: string, opts?: BleBillOptions): string {
     const options = { ...DEFAULT_BILL_OPTIONS, ...opts };
 
-    // Only include true flags — omit false so EPToolkit does not still apply them.
-    const toolkitOpts: Record<string, unknown> = {
-        encoding: options.encoding || 'UTF8',
-    };
-    if (options.cut) toolkitOpts.cut = true;
-    if (options.beep) toolkitOpts.beep = true;
-    if (options.tailingLine) toolkitOpts.tailingLine = true;
+    try {
+        // Only include true flags — omit false so EPToolkit does not still apply them.
+        const toolkitOpts: Record<string, unknown> = {
+            encoding: options.encoding || 'UTF8',
+        };
+        if (options.cut) toolkitOpts.cut = true;
+        if (options.beep) toolkitOpts.beep = true;
+        if (options.tailingLine) toolkitOpts.tailingLine = true;
 
-    // IOptions requires all flags; partial object is intentional so false flags are omitted (EPToolkit bug).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const raw = EPToolkit.exchange_text(text, toolkitOpts as any);
-    const buffer = sanitizeEscPosBuffer(raw);
+        // IOptions requires all flags; partial object is intentional so false flags are omitted (EPToolkit bug).
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = EPToolkit.exchange_text(text, toolkitOpts as any);
+        const buffer = sanitizeEscPosBuffer(raw);
 
-    // When cut was requested, EPToolkit uses ESC i which many BLE printers ignore.
-    // Append GS V 0 (partial cut) as a more compatible cut sequence.
-    if (options.cut) {
-        const withCut = Buffer.concat([buffer, Buffer.from([0x0a, 0x1d, 0x56, 0x00])]);
-        return withCut.toString('base64');
+        // When cut was requested, EPToolkit uses ESC i which many BLE printers ignore.
+        // Append GS V 0 (partial cut) as a more compatible cut sequence.
+        if (options.cut) {
+            const withCut = Buffer.concat([buffer, Buffer.from([0x0a, 0x1d, 0x56, 0x00])]);
+            return withCut.toString('base64');
+        }
+
+        return buffer.toString('base64');
+    } catch (e) {
+        console.warn('[Print] EPToolkit bill encode failed, using simple path:', e);
+        return simpleBillTextToBase64(text, opts);
     }
-
-    return buffer.toString('base64');
 }
 
 /**

@@ -46,7 +46,7 @@ index 209c18a..18fb257 100644
  
  
 diff --git a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
-index 431c179..90d97d5 100644
+index 431c179..c77d17f 100644
 --- a/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
 +++ b/node_modules/react-native-thermal-receipt-printer/android/src/main/java/com/pinmi/react/printer/adapter/BLEPrinterAdapter.java
 @@ -14,6 +14,7 @@ import com.facebook.react.bridge.ActivityEventListener;
@@ -74,6 +74,15 @@ index 431c179..90d97d5 100644
  import com.facebook.react.modules.core.DeviceEventManagerModule;
  import com.google.zxing.qrcode.QRCodeWriter;
  import com.google.zxing.qrcode.encoder.ByteMatrix;
+@@ -76,7 +80,7 @@ public class BLEPrinterAdapter implements PrinterAdapter{
+     private static BLEPrinterAdapter mInstance;
+ 
+ 
+-    private String LOG_TAG = "RNBLEPrinter";
++    private static final String LOG_TAG = "RNBLEPrinter";
+ 
+     private BluetoothDevice mBluetoothDevice;
+     private BluetoothSocket mBluetoothSocket;
 @@ -132,11 +136,15 @@ public class BLEPrinterAdapter implements PrinterAdapter{
          BluetoothAdapter bluetoothAdapter = getBTAdapter();
          List<PrinterDevice> printerDevices = new ArrayList<>();

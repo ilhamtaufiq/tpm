@@ -53,24 +53,20 @@ function decodeJpegRgba(bytes: Uint8Array): RgbaImage | null {
 
 function decodePngRgba(bytes: Uint8Array): RgbaImage | null {
     try {
-        // Prefer browser build under Metro; fall back to package root.
+        // Browser build only — Node main entry (lib/png.js) requires `stream`
+        // and breaks Metro/EAS Android bundles.
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        let PNG: {
-            sync: {
-                read: (buf: Buffer | Uint8Array) => {
-                    width: number;
-                    height: number;
-                    data: Buffer | Uint8Array;
+        const { PNG } = require('pngjs/browser') as {
+            PNG: {
+                sync: {
+                    read: (buf: Buffer | Uint8Array) => {
+                        width: number;
+                        height: number;
+                        data: Buffer | Uint8Array;
+                    };
                 };
             };
         };
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            PNG = require('pngjs/browser').PNG;
-        } catch {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            PNG = require('pngjs').PNG;
-        }
 
         // pngjs expects Buffer-like; polyfill Buffer when Hermes omits it.
         // eslint-disable-next-line @typescript-eslint/no-require-imports
