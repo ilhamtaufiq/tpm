@@ -145,6 +145,7 @@ def get_bengkel_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
         "subtotal": float(transaction.subtotal or 0),
         "tax": 0,
         "discount": float(transaction.diskon or 0),
+        "showDiscount": bool(getattr(transaction, "tampilkan_diskon_struk", True)),
         "total": float(transaction.grand_total or 0),
         "paid": float(transaction.jumlah_bayar or 0),
         "remaining": float(transaction.grand_total or 0) - float(transaction.jumlah_bayar or 0),
@@ -730,7 +731,7 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
                     <span>SUBTOTAL</span>
                     <span>{data.get('subtotal', 0):,.0f}</span>
                 </div>
-                {f'<div class="summary-row"><span>DISKON</span><span>-{data["discount"]:,.0f}</span></div>' if data.get('discount', 0) > 0 else ''}
+                {f'<div class="summary-row"><span>DISKON</span><span>-{data["discount"]:,.0f}</span></div>' if data.get('discount', 0) > 0 and data.get('showDiscount', True) else ''}
                 
                 <div class="summary-row grand-total">
                     <span>TOTAL</span>
@@ -936,7 +937,7 @@ async def get_receipt_pdf(
             p.drawRightString(width - 30, y, f"{subtotal:,.0f}")
             y -= 14
 
-        if data.get("discount"):
+        if data.get("discount") and data.get("showDiscount", True):
             y -= 4
             p.setFont("Helvetica", 9)
             p.drawString(30, y, "Diskon")

@@ -266,6 +266,9 @@ class TransaksiBengkelCreate(BaseModel):
     detail_parts: List[DetailPartCreate] = []
     detail_services: List[DetailServiceCreate] = []
     diskon: Decimal = Field(default=Decimal("0"), ge=0)
+    # Optional so partial clients / status updates do not overwrite stored print preference.
+    # Create path defaults to True when omitted (see service).
+    tampilkan_diskon_struk: Optional[bool] = None
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
     jumlah_bayar: Decimal = Field(default=Decimal("0"), ge=0)
     payments: List[PaymentItem] = []  # For split payments
@@ -288,6 +291,7 @@ class TransaksiBengkelUpdate(BaseModel):
     detail_parts: Optional[List[DetailPartCreate]] = None
     detail_services: Optional[List[DetailServiceCreate]] = None
     diskon: Optional[Decimal] = Field(None, ge=0)
+    tampilkan_diskon_struk: Optional[bool] = None
     metode_bayar: Optional[PaymentMethod] = None
     jumlah_bayar: Optional[Decimal] = Field(None, ge=0)
     payments: Optional[List[PaymentItem]] = None
@@ -343,6 +347,7 @@ class TransaksiBengkelResponse(BaseModel):
     subtotal: Decimal
     diskon: Decimal
     grand_total: Decimal
+    tampilkan_diskon_struk: bool = True
     hpp_parts: Decimal
     laba_kotor: Decimal
     status_pengerjaan: WorkshopStatus

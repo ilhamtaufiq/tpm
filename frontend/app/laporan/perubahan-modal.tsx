@@ -98,6 +98,7 @@ export default function LaporanPerubahanModalScreen() {
                 investorFunding: 0,
                 labaBersih: 0,
                 labaInvestor: 0,
+                diskonPenjualanBengkel: 0,
                 prive: 0,
                 pembayaranInvestor: 0,
                 modalAkhir: 0,
@@ -117,6 +118,8 @@ export default function LaporanPerubahanModalScreen() {
         const labaBersih = r.info?.laba_bersih || 0;
         // Laba investor hanya diakui setelah penjualan mobil LUNAS/TERJUAL (bukan saat DP/booking).
         const labaInvestor = r.info?.laba_investor || 0;
+        // Sudah net di laba_bersih; tampilkan untuk rekonsiliasi (bukan baris penambah/pengurang ekuitas).
+        const diskonPenjualanBengkel = r.info?.diskon_penjualan_bengkel || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
         const pembayaranInvestor = r.pengurangan?.pembayaran_investor || 0;
         const modalAkhir = r.modal_akhir || 0;
@@ -137,6 +140,7 @@ export default function LaporanPerubahanModalScreen() {
             investorFunding,
             labaBersih,
             labaInvestor,
+            diskonPenjualanBengkel,
             prive,
             pembayaranInvestor,
             modalAkhir,
@@ -302,7 +306,16 @@ export default function LaporanPerubahanModalScreen() {
                                     <FinancialRow label="Dana Investor Mobil" value={equity.investorFunding} color="text-emerald-700" />
                                 )}
                                 {equity.labaBersih >= 0 && (
-                                    <FinancialRow label="Laba Bersih Periode" value={equity.labaBersih} color="text-emerald-700" />
+                                    <>
+                                        <FinancialRow label="Laba Bersih Periode" value={equity.labaBersih} color="text-emerald-700" />
+                                        {equity.diskonPenjualanBengkel > 0 && (
+                                            <View className="mb-2 pl-1">
+                                                <Typography variant="caption" className="text-rose-500 text-[11px]">
+                                                    · sudah dipotong diskon penjualan bengkel −{formatCurrency(equity.diskonPenjualanBengkel)}
+                                                </Typography>
+                                            </View>
+                                        )}
+                                    </>
                                 )}
                                 {equity.labaInvestor > 0 && (
                                     <FinancialRow label="Laba Investor (Unit Terjual)" value={equity.labaInvestor} color="text-emerald-700" />
@@ -317,7 +330,16 @@ export default function LaporanPerubahanModalScreen() {
                                     <FinancialRow label="Prive / Pengambilan Pemilik" value={0} />
                                 )}
                                 {equity.labaBersih < 0 && (
-                                    <FinancialRow label="Rugi Periode" value={Math.abs(equity.labaBersih)} isNegative />
+                                    <>
+                                        <FinancialRow label="Rugi Periode" value={Math.abs(equity.labaBersih)} isNegative />
+                                        {equity.diskonPenjualanBengkel > 0 && (
+                                            <View className="mb-2 pl-1">
+                                                <Typography variant="caption" className="text-rose-500 text-[11px]">
+                                                    · termasuk diskon penjualan bengkel −{formatCurrency(equity.diskonPenjualanBengkel)}
+                                                </Typography>
+                                            </View>
+                                        )}
+                                    </>
                                 )}
                                 {equity.labaInvestor < 0 && (
                                     <FinancialRow label="Rugi Investor (Jual Beli Mobil)" value={Math.abs(equity.labaInvestor)} isNegative />

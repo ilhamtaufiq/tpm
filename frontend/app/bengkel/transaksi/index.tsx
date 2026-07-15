@@ -304,6 +304,7 @@ export default function BengkelTransaksiScreen() {
         setKategori(editingTransaction.kategori || 'umum');
         setNote(editingTransaction.catatan || '');
         setDiscount(formatNumber(Number(editingTransaction.diskon || 0) || 0));
+        setShowDiscountInReceipt(editingTransaction.tampilkan_diskon_struk !== false);
         setPaymentMode(editingTransaction.metode_bayar === 'TRANSFER' ? 'TRANSFER' : editingTransaction.metode_bayar === 'SPLIT' ? 'SPLIT' : 'TUNAI');
         setPaymentAmount('');
         setSplitTunai('');
@@ -802,6 +803,7 @@ export default function BengkelTransaksiScreen() {
                 detail_parts: billPartList.map(row => ({ spare_part_id: row.item.id, qty: row.qty, harga_jual: Number(row.item.harga_jual || 0) })),
                 detail_services: billServiceList.map(row => ({ nama_jasa: row.item.nama, harga: Number(row.item.harga || 0), qty: row.qty })),
                 diskon: discountAmount,
+                tampilkan_diskon_struk: showDiscountInReceipt,
                 // Jual beli mobil: PROSES selama unit belum TERJUAL; SELESAI otomatis saat unit terjual.
                 // Kategori lain: SELESAI hanya ketika pembayaran lunas.
                 status_pengerjaan: isMobil

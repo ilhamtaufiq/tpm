@@ -26,6 +26,7 @@ export interface PublicReceiptData {
     subtotal: number;
     tax?: number;
     discount?: number;
+    showDiscount?: boolean;
     total: number;
     paid?: number;
     remaining?: number;
@@ -292,7 +293,7 @@ export function PublicReceiptCard({ receipt, receiptType, shareUrl, captureMode 
 
                 <Row label="Subtotal" value={formatCurrency(receipt.subtotal)} />
                 {(receipt.tax || 0) > 0 ? <Row label="Pajak" value={formatCurrency(receipt.tax!)} /> : null}
-                {(receipt.discount || 0) > 0 ? (
+                {(receipt.discount || 0) > 0 && receipt.showDiscount !== false ? (
                     <Row label="Diskon" value={`-${formatCurrency(receipt.discount!)}`} />
                 ) : null}
 

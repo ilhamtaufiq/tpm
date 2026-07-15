@@ -45,22 +45,39 @@ def _workshop_activity_source(item) -> str:
     return "bengkel"
 
 
+def _meaningful_text(value, fallback: str) -> str:
+    """Treat blank / dash placeholders as missing (common guest plate default)."""
+    text = str(value or "").strip()
+    if not text or text in {"-", "—", "–", "n/a", "N/A", "null", "None"}:
+        return fallback
+    return text
+
+
 def _workshop_activity_labels(item) -> tuple[str, str]:
     kategori = (getattr(item, "kategori", None) or "umum").lower()
-    plat = item.nomor_plat or "Tanpa Plat"
+    plat = _meaningful_text(item.nomor_plat, "Tanpa Plat")
+    customer = _meaningful_text(item.nama_customer, "Guest")
+    jenis = _meaningful_text(item.jenis_kendaraan, "Kendaraan")
+    nomor = _meaningful_text(item.nomor_transaksi, f"#{getattr(item, 'id', '')}")
+
     if kategori == "jual_beli_mobil":
         return (
             f"Servis Stok • {plat}",
-            f"{item.jenis_kendaraan or 'Mobil'} • {item.nomor_transaksi}",
+            f"{_meaningful_text(item.jenis_kendaraan, 'Mobil')} • {nomor}",
         )
     if kategori == "jasa_angkut":
         return (
             f"Servis Armada • {plat}",
-            f"{item.nama_customer or 'Armada'} • {item.nomor_transaksi}",
+            f"{customer if customer != 'Guest' else 'Armada'} • {nomor}",
         )
+    # Umum: prefer customer name when plate is missing so home cards aren't just "-"
+    if plat == "Tanpa Plat":
+        title = f"Servis • {customer}"
+    else:
+        title = f"{plat} • {customer}" if customer != "Guest" else plat
     return (
-        plat,
-        f"{item.jenis_kendaraan or 'Kendaraan'} • {item.nama_customer or 'Guest'}",
+        title,
+        f"{jenis} • {nomor}",
     )
 
 

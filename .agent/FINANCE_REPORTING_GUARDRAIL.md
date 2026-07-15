@@ -75,6 +75,17 @@ Untuk muatan jasa angkut dengan biaya operasional (tol, dll.) yang **dipotong da
 
 **Pitfall**: Menghapus entri kas legacy tanpa rebuild `saldo_sesudah` membuat `KAS_UNIT_JASA_ANGKUT` tampak Rp0 padahal ada pemasukan sebagian → neraca selisih = laba ditahan − piutang JA.
 
+## Diskon Penjualan Bengkel di Laporan
+
+- Diskon transaksi bengkel disimpan di `transaksi_penjualan_bengkel.diskon`.
+- `grand_total = subtotal - diskon`, `laba_kotor = grand_total - hpp`.
+- Kas / piutang / hutang internal memakai `grand_total` (net), bukan subtotal gross.
+- **Laba Rugi**: tampilkan baris "Diskon Penjualan"; total pendapatan = `SUM(grand_total)`.
+- **Penjualan Bengkel**: kartu Pendapatan = net; kartu Diskon = `total_diskon` (audit).
+- **Perubahan Modal / Neraca**: diskon **tidak** jadi baris penambah/pengurang ekuitas terpisah — sudah tertanam di `laba_bersih` / `retained_earnings` lewat `laba_kotor` net.
+- Preferensi cetak struk `tampilkan_diskon_struk` hanya UI struk; tidak mempengaruhi hitungan laporan.
+- **Pitfall**: transaksi diskon 100% (`grand_total = 0`) ter-filter keluar dari summary finansial (`grand_total > 0`); HPP free-service tidak masuk P&L. Hindari diskon full tanpa meninjau dampak stok/HPP, atau sesuaikan filter laporan jika kasus ini dipakai operasional.
+
 ## Checklist Verifikasi Minimum
 
 - UI sesuai flow terbaru.

@@ -224,6 +224,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
             setJenisKendaraan(initialData.jenis_kendaraan || '');
             setGuestName(initialData.customer_nama || initialData.nama_customer || '');
             setDiskon(formatNumber(initialData.diskon?.toString() || '0'));
+            setShowDiscountOnPrint(initialData.tampilkan_diskon_struk !== false);
             setCatatan(initialData.catatan || '');
 
             // Restore IDs for internal linking
@@ -639,6 +640,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
             detail_services: detailServices,
             detail_parts: detailParts,
             diskon: 0,
+            tampilkan_diskon_struk: showDiscountOnPrint,
             payments: kategori === 'umum' ? paymentItems : [],
             jumlah_bayar: kategori === 'umum' ? totalPaid : 0,
             catatan: catatan

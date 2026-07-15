@@ -376,12 +376,14 @@ export default function HistoryTab() {
                                 <View className="flex-1 min-w-0">
                                     <View className="flex-row items-center mb-0.5">
                                         <Typography variant="body2" weight="bold" className="text-textMain tracking-tight flex-1" numberOfLines={1}>
-                                            {item.title}
+                                            {(!item.title || item.title.trim() === '-' || item.title.trim() === '—')
+                                                ? (item.ref_number || item.subtitle || 'Transaksi')
+                                                : item.title}
                                         </Typography>
                                     </View>
 
                                     <Typography variant="caption" className="text-textGray/60 italic leading-4 mb-1" numberOfLines={1}>
-                                        {item.subtitle}
+                                        {item.subtitle && item.subtitle.trim() !== '-' ? item.subtitle : (item.ref_number || '')}
                                     </Typography>
 
                                     <View className="flex-row items-center">

@@ -55,7 +55,7 @@ export function buildBengkelPrintData(source: any): PrintReceiptData {
         change: num(source?.kembalian),
         paymentMethod: source?.metode_bayar,
         notes: source?.catatan,
-        showDiscount: true,
+        showDiscount: source?.tampilkan_diskon_struk !== false && source?.showDiscount !== false,
     };
 }
 

@@ -385,6 +385,10 @@ class TransaksiBengkelService:
             subtotal=subtotal,
             diskon=data.diskon,
             grand_total=grand_total,
+            tampilkan_diskon_struk=(
+                True if getattr(data, "tampilkan_diskon_struk", None) is None
+                else bool(data.tampilkan_diskon_struk)
+            ),
             hpp_parts=hpp_parts,
             laba_kotor=laba_kotor,
             status_bayar=status_bayar,
@@ -812,6 +816,8 @@ class TransaksiBengkelService:
         transaksi.subtotal = subtotal
         transaksi.diskon = data.diskon
         transaksi.grand_total = grand_total
+        if getattr(data, "tampilkan_diskon_struk", None) is not None:
+            transaksi.tampilkan_diskon_struk = bool(data.tampilkan_diskon_struk)
         transaksi.hpp_parts = hpp_parts
         transaksi.laba_kotor = laba_kotor
         transaksi.status_bayar = status_bayar
@@ -1482,6 +1488,7 @@ class TransaksiBengkelService:
                     for detail in transaksi.detail_services
                 ],
                 diskon=transaksi.diskon,
+                tampilkan_diskon_struk=bool(getattr(transaksi, "tampilkan_diskon_struk", True)),
                 metode_bayar=transaksi.metode_bayar,
                 jumlah_bayar=transaksi.jumlah_bayar,
                 payments=[],

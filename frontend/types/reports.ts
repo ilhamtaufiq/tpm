@@ -224,6 +224,8 @@ export interface CapitalReport {
         laba_bengkel: number;
         laba_mobil: number;
         laba_investor: number;
+        /** Diskon penjualan bengkel (sudah dipotong di laba_bersih / laba_kotor). */
+        diskon_penjualan_bengkel?: number;
         laba_jasa_angkut: number;
         laba_usaha?: number;
         overhead_gaji: number;

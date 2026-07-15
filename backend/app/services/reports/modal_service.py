@@ -717,6 +717,11 @@ class ModalService(BaseReportService):
                 "laba_bengkel": laba_bengkel_tpm_gross,
                 "laba_mobil": laba_mobil_tpm_gross,
                 "laba_investor": laba_investor_periode,
+                # Diskon penjualan bengkel sudah dipotong di laba_kotor/laba_bersih
+                # (grand_total = subtotal - diskon). Dipaparkan untuk audit rekonsiliasi.
+                "diskon_penjualan_bengkel": float(
+                    data.get("raw_summaries", {}).get("bengkel", {}).get("total_diskon", 0) or 0
+                ),
                 "uang_muka_penjualan": customer_dp,
                 "piutang_booking": piutang_booking,
                 "laba_jasa_angkut": laba_ja_tpm_gross,

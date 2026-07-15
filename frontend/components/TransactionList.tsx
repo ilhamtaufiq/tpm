@@ -11,6 +11,12 @@ import { router } from 'expo-router';
 import { formatCurrency } from '../utils/format';
 import { TransactionDetailModal } from './TransactionDetailModal';
 
+/** True for empty / dash placeholders stored as plate/customer defaults. */
+const isPlaceholderText = (value?: string | null) => {
+    const text = String(value ?? '').trim();
+    return !text || text === '-' || text === '—' || text === '–' || text.toLowerCase() === 'n/a';
+};
+
 const getSourceConfig = (source: string, title?: string) => {
     const s = source?.toLowerCase() || '';
     const t = title?.toLowerCase() || '';
@@ -132,19 +138,30 @@ export const TransactionList = () => {
 
                             <View className="flex-1 mr-2">
                                 <Typography variant="body2" weight="bold" className="text-gray-800 mb-0.5 tracking-tight" numberOfLines={1}>
-                                    {item.title}
+                                    {isPlaceholderText(item.title)
+                                        ? (item.ref_number || item.subtitle || 'Transaksi')
+                                        : item.title}
                                 </Typography>
                                 <View className="flex-row items-center">
                                     <Typography variant="caption" className="text-gray-400 text-[10px]" numberOfLines={1}>
-                                        {item.subtitle ? `${item.subtitle} • ` : ''}
+                                        {item.subtitle && !isPlaceholderText(item.subtitle) ? `${item.subtitle} • ` : ''}
                                         {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: localeID })}
                                     </Typography>
                                 </View>
                             </View>
 
                             <View className="items-end">
-                                <Typography weight="bold" className={item.is_incoming ? "text-emerald-500" : "text-rose-500"}>
-                                    {item.is_incoming ? '+' : '-'} {formatCurrency(item.amount)}
+                                <Typography
+                                    weight="bold"
+                                    className={
+                                        item.type === 'financial'
+                                            ? (item.is_incoming ? 'text-emerald-500' : 'text-rose-500')
+                                            : 'text-gray-800'
+                                    }
+                                >
+                                    {/* Match history: +/- only for kas (financial). Workshop/transport = nominal transaksi. */}
+                                    {item.type === 'financial' ? (item.is_incoming ? '+ ' : '− ') : ''}
+                                    {formatCurrency(item.amount)}
                                 </Typography>
                             </View>
                         </Pressable>

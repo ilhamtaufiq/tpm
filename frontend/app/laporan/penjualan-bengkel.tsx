@@ -6,7 +6,7 @@ import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
 import {
     Wrench, TrendingUp, User, ClipboardList,
-    Package, HandHelping, MoreHorizontal, X
+    Package, HandHelping, MoreHorizontal, X, Percent
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -149,6 +149,7 @@ export default function PenjualanBengkelReportScreen() {
     const secondaryStats = useMemo(() => [
         { label: 'Spare Part', value: formatCurrency(summary?.total_parts || 0), icon: Package, color: '#F59E0B', bg: 'bg-amber-50' },
         { label: 'Jasa', value: formatCurrency(summary?.total_jasa || 0), icon: HandHelping, color: '#A855F7', bg: 'bg-purple-50' },
+        { label: 'Diskon', value: formatCurrency(summary?.total_diskon || 0), icon: Percent, color: '#F43F5E', bg: 'bg-rose-50' },
     ], [summary]);
 
     const buildExportHtml = useCallback(() => {
@@ -156,7 +157,7 @@ export default function PenjualanBengkelReportScreen() {
         return `
             <div class="section-header">RINGKASAN BENGKEL</div>
             <div class="row-item">
-                <span>Total Pendapatan</span>
+                <span>Total Pendapatan (Net)</span>
                 <span class="font-bold">${formatCurrency(summary.total_penjualan || 0)}</span>
             </div>
             <div class="row-item">
@@ -170,6 +171,10 @@ export default function PenjualanBengkelReportScreen() {
             <div class="row-item">
                 <span>Penjualan Sparepart</span>
                 <span>${formatCurrency(summary.total_parts || 0)}</span>
+            </div>
+            <div class="row-item">
+                <span>Total Diskon</span>
+                <span class="text-danger font-bold">-${formatCurrency(summary.total_diskon || 0)}</span>
             </div>
             <div class="row-item">
                 <span>Total Nota</span>

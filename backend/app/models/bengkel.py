@@ -182,6 +182,8 @@ class TransaksiPenjualanBengkel(Base, TimestampMixin):
     subtotal: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     diskon: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     grand_total: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    # Print preference: whether discount line appears on customer receipt
+    tampilkan_diskon_struk: Mapped[bool] = mapped_column(default=True, server_default="1")
 
     # Status Pengerjaan
     status_pengerjaan: Mapped[WorkshopStatus] = mapped_column(

@@ -91,6 +91,10 @@ function run() {
     const totalIdx = html.indexOf('>TOTAL<');
     assert(diskonIdx > -1 && totalIdx > diskonIdx, 'Diskon should appear before TOTAL');
 
+    const hidden = buildReceiptDocument({ ...sampleData, showDiscount: false }, baseSettings);
+    assert(!hidden.discount, 'discount line should hide when showDiscount=false');
+    assert(hidden.total === doc.total, 'TOTAL stays net even when discount line hidden');
+
     console.log('receiptDocument.test.ts: all checks passed');
 }
 

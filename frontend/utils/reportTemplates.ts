@@ -238,6 +238,7 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
     const modalNonKas = data.penambahan?.modal_non_kas?.total || 0;
     const investorFunding = data.penambahan?.investor_funding || 0;
     const labaBersih = data.info?.laba_bersih ?? data.laba_ditahan_periode ?? 0;
+    const diskonPenjualanBengkel = data.info?.diskon_penjualan_bengkel || 0;
     const prive = (data.pengurangan?.prive || 0) + (data.pengurangan?.pengembalian_modal || 0);
     const pembayaranInvestor = data.pengurangan?.pembayaran_investor || 0;
     const modalAkhir = data.modal_akhir || 0;
@@ -290,6 +291,11 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                 <tr>
                     <td>Laba Bersih Periode</td>
                     <td class="amount positive">${formatCurrency(labaBersih)}</td>
+                </tr>` : ''}
+                ${diskonPenjualanBengkel > 0 ? `
+                <tr>
+                    <td style="padding-left: 18px; color: #be123c; font-size: 11px;">(sudah dipotong diskon penjualan bengkel)</td>
+                    <td class="amount negative" style="font-size: 11px;">(${formatCurrency(diskonPenjualanBengkel)})</td>
                 </tr>` : ''}
 
                 <tr class="section-title"><td colspan="2">C. PENGURANGAN EKUITAS</td></tr>
