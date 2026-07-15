@@ -31,18 +31,27 @@ const DEFAULT_BILL_OPTIONS: Required<BleBillOptions> = {
  * So cut/beep/tailingLine:false still APPLY (controller buffers are truthy).
  * Only pass a flag when it is true; omit it when false so the library skips it.
  *
- * Also replaces ESC 2 (0x1B 0x32 = "Select default line spacing") with ESC 3 n.
- * After bit-image logo/QR, some cheap printers treat the bare "2" as printable text
- * → "2Scan untuk lihat struk online".
+ * Line-spacing commands that use ASCII digit opcodes leak on cheap BLE printers
+ * when ESC is dropped/desynced after bit-image logo:
+ *   ESC 2 (0x1B 0x32) → printable "2"  e.g. "2Scan untuk lihat struk..."
+ *   ESC 3 n (0x1B 0x33 n) → printable "3"  e.g. "3TIGA PUTRA MOTOR"
+ * Strip both; rely on ESC @ defaults instead of substituting one digit for another.
  */
 function sanitizeEscPosBuffer(buffer: Buffer): Buffer {
     const out: number[] = [];
     for (let i = 0; i < buffer.length; i += 1) {
-        // ESC 2 → ESC 3 30 (line spacing that does not embed ASCII '2')
-        if (buffer[i] === 0x1b && i + 1 < buffer.length && buffer[i + 1] === 0x32) {
-            out.push(0x1b, 0x33, 30);
-            i += 1;
-            continue;
+        if (buffer[i] === 0x1b && i + 1 < buffer.length) {
+            const cmd = buffer[i + 1];
+            // ESC 2 — select default line spacing (ASCII '2')
+            if (cmd === 0x32) {
+                i += 1;
+                continue;
+            }
+            // ESC 3 n — set line spacing to n (ASCII '3' + binary n)
+            if (cmd === 0x33 && i + 2 < buffer.length) {
+                i += 2;
+                continue;
+            }
         }
         out.push(buffer[i]);
     }
@@ -53,8 +62,8 @@ function sanitizeEscPosBuffer(buffer: Buffer): Buffer {
 function simpleBillTextToBase64(text: string, opts?: BleBillOptions): string {
     const options = { ...DEFAULT_BILL_OPTIONS, ...opts };
     const chunks: number[] = [];
-    // ESC @ init + ESC 3 28 line spacing (avoid ESC 2 ASCII artifact)
-    chunks.push(0x1b, 0x40, 0x1b, 0x33, 28);
+    // ESC @ init only — do not emit ESC 2 / ESC 3 (ASCII digit leak on cheap printers)
+    chunks.push(0x1b, 0x40);
     // ESC a 0 left
     chunks.push(0x1b, 0x61, 0x00);
 
@@ -127,10 +136,8 @@ export function billCenterLinesToBase64(
     opts?: { cut?: boolean },
 ): string {
     const chunks: number[] = [];
-    // ESC @ init
+    // ESC @ init only — avoid ESC 3 (ASCII '3' leak → "3TIGA PUTRA MOTOR")
     chunks.push(0x1b, 0x40);
-    // ESC 3 28 — tight line spacing (no ASCII digit command)
-    chunks.push(0x1b, 0x33, 28);
 
     for (const rawLine of lines) {
         const line = String(rawLine || '').trim();

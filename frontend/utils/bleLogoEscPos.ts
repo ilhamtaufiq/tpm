@@ -133,9 +133,10 @@ function rgbaToLogoEscPos(img: RgbaImage): Uint8Array {
         for (const v of arr) push(v);
     };
 
-    // Init + tighter line spacing + center
+    // Init + center. Avoid ESC 2 / ESC 3 here — if the stream desyncs after
+    // bit-image, those opcodes are ASCII '2'/'3' and print as garbage digits
+    // before the company name (e.g. "3TIGA PUTRA MOTOR").
     pushArr([0x1b, 0x40]);
-    pushArr([0x1b, 0x33, 24]);
     pushArr([0x1b, 0x61, 0x01]);
 
     for (let y = 0; y < height; y += 24) {
@@ -161,10 +162,9 @@ function rgbaToLogoEscPos(img: RgbaImage): Uint8Array {
         push(0x0a);
     }
 
-    // Restore text mode cleanly after bit-image (avoid leftover align/line-space)
+    // Restore text mode cleanly after bit-image (no digit line-spacing opcodes)
     pushArr([0x1b, 0x40]); // ESC @ init
     pushArr([0x1b, 0x61, 0x00]); // left align
-    pushArr([0x1b, 0x33, 28]); // tight spacing without ESC 2
     push(0x0a); // single small feed after logo
 
     return new Uint8Array(chunks);

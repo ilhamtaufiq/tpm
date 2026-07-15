@@ -71,6 +71,31 @@ class TransaksiBengkelService:
             return PaymentStatus.CICILAN, kembalian
         return PaymentStatus.BELUM_LUNAS, kembalian
 
+    @classmethod
+    def _resolve_work_status_for_payment(
+        cls,
+        kategori: Optional[str],
+        status_bayar: PaymentStatus,
+        current_status: Optional[WorkshopStatus],
+        requested_status: Optional[WorkshopStatus] = None,
+    ) -> WorkshopStatus:
+        """Work status rules for external (umum) sales.
+
+        - Never override BATAL.
+        - When payment is LUNAS → SELESAI (source of truth; do not rely on client alone).
+        - Otherwise keep requested status if provided, else current, else ANTRE.
+        - Internal JA/JBM: do not auto-complete on payment (no tunai lunas path).
+        """
+        base = requested_status or current_status or WorkshopStatus.ANTRE
+        if base == WorkshopStatus.BATAL:
+            return WorkshopStatus.BATAL
+        if (
+            status_bayar == PaymentStatus.LUNAS
+            and not cls._is_internal_kategori(kategori)
+        ):
+            return WorkshopStatus.SELESAI
+        return base
+
     def _emit_change(self, transaksi: TransaksiPenjualanBengkel, action: str) -> None:
         scopes = {"bengkel"}
         if transaksi.kategori == "jasa_angkut":
@@ -360,6 +385,12 @@ class TransaksiBengkelService:
             kategori,
             grand_total,
             total_pembayaran,
+        )
+        requested_work_status = self._resolve_work_status_for_payment(
+            kategori,
+            status_bayar,
+            WorkshopStatus.ANTRE,
+            requested_work_status,
         )
 
         # Customer name from customer record or input
@@ -793,12 +824,22 @@ class TransaksiBengkelService:
 
         kategori = data.kategori or transaksi.kategori or "umum"
         is_internal = self._is_internal_kategori(kategori)
-        preserved_jumlah_bayar = Decimal("0") if is_internal else transaksi.jumlah_bayar
+        # Keep stored payment total. Fresh cash from "Lanjut Pembayaran" is applied
+        # only in update_payment() to avoid double-counting kas / jumlah_bayar.
+        preserved_jumlah_bayar = Decimal("0") if is_internal else (transaksi.jumlah_bayar or Decimal("0"))
 
         status_bayar, kembalian = self._resolve_status_bayar(
             kategori,
             grand_total,
             preserved_jumlah_bayar,
+        )
+        # If already fully paid (e.g. DP covers grand_total after edit), mark SELESAI.
+        # New full payment on this submit is finalized in update_payment().
+        requested_work_status = self._resolve_work_status_for_payment(
+            kategori,
+            status_bayar,
+            transaksi.status_pengerjaan,
+            data.status_pengerjaan,
         )
 
         # 5. Update main record
@@ -821,6 +862,7 @@ class TransaksiBengkelService:
         transaksi.hpp_parts = hpp_parts
         transaksi.laba_kotor = laba_kotor
         transaksi.status_bayar = status_bayar
+        transaksi.kembalian = kembalian
         if is_internal:
             transaksi.metode_bayar = PaymentMethod.INTERNAL
             transaksi.jumlah_bayar = Decimal("0")
@@ -1392,14 +1434,20 @@ class TransaksiBengkelService:
             transaksi.kembalian = abs(sisa)
         else:
             transaksi.status_bayar = PaymentStatus.CICILAN
+            transaksi.kembalian = Decimal("0")
 
         transaksi.jumlah_bayar = total_bayar
         if effective_method:
             transaksi.metode_bayar = effective_method
 
-        # Update status_pengerjaan if provided
-        if status_pengerjaan:
-            transaksi.status_pengerjaan = status_pengerjaan
+        # Work status: LUNAS always promotes to SELESAI for external sales.
+        # Client may also pass status_pengerjaan; lunas still wins via helper.
+        transaksi.status_pengerjaan = self._resolve_work_status_for_payment(
+            transaksi.kategori,
+            transaksi.status_bayar,
+            transaksi.status_pengerjaan,
+            status_pengerjaan,
+        )
 
         # Update piutang if exists
         piutang = (

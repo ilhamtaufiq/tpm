@@ -804,33 +804,47 @@ export default function BengkelTransaksiScreen() {
                 detail_services: billServiceList.map(row => ({ nama_jasa: row.item.nama, harga: Number(row.item.harga || 0), qty: row.qty })),
                 diskon: discountAmount,
                 tampilkan_diskon_struk: showDiscountInReceipt,
-                // Jual beli mobil: PROSES selama unit belum TERJUAL; SELESAI otomatis saat unit terjual.
-                // Kategori lain: SELESAI hanya ketika pembayaran lunas.
+                // Jual beli mobil: PROSES sampai unit TERJUAL.
+                // Umum create: SELESAI hanya jika bayar lunas di request yang sama.
+                // Umum update: jangan set SELESAI di PUT — biar update_payment (LUNAS) yang set,
+                // supaya status tidak SELESAI dulu jika bayar gagal.
                 status_pengerjaan: isMobil
                     ? (isSelectedMobilSold ? 'SELESAI' : 'PROSES')
-                    : (shouldPay && willBeLunas ? 'SELESAI' : undefined),
+                    : (!transactionToUpdateId && shouldPay && willBeLunas ? 'SELESAI' : undefined),
                 metode_bayar: shouldPay
                     ? (isJA ? 'INTERNAL' : isMobil ? 'KREDIT' : paymentMode)
                     : (editingTransaction?.metode_bayar || selectedOpenTransactionDetail?.metode_bayar || 'KREDIT'),
+                // On update, keep stored paid amount only — incremental cash goes to /payment.
+                // Sending full total here would double-count if paired with update_payment.
                 jumlah_bayar: shouldPay
-                    ? (isJA ? subtotal : (isMobil ? 0 : paymentMode === 'SPLIT' ? splitTunaiAmount + splitTransferAmount + existingDp : receivedAmount + existingDp))
-                    : existingDp, // Preserve existing DP when updating without payment
+                    ? (isJA
+                        ? subtotal
+                        : isMobil
+                            ? 0
+                            : transactionToUpdateId
+                                ? existingDp
+                                : (paymentMode === 'SPLIT'
+                                    ? splitTunaiAmount + splitTransferAmount + existingDp
+                                    : receivedAmount + existingDp))
+                    : existingDp,
                 payments: !shouldPay
                     ? []
                     : isJA
                     ? [{ metode: 'INTERNAL', jumlah: subtotal }]
                     : isMobil
                         ? []
-                        : paymentMode === 'SPLIT'
-                            ? [
-                                ...(existingDp > 0 ? [{ metode: 'TUNAI', jumlah: existingDp }] : []),
-                                ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
-                                ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
-                            ]
-                            : [
-                                ...(existingDp > 0 ? [{ metode: 'TUNAI', jumlah: existingDp }] : []),
-                                ...(receivedAmount > 0 ? [{ metode: paymentMode, jumlah: receivedAmount }] : []),
-                            ],
+                        : transactionToUpdateId
+                            ? [] // incremental payments sent via update_payment only
+                            : paymentMode === 'SPLIT'
+                                ? [
+                                    ...(existingDp > 0 ? [{ metode: 'TUNAI', jumlah: existingDp }] : []),
+                                    ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
+                                    ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
+                                ]
+                                : [
+                                    ...(existingDp > 0 ? [{ metode: 'TUNAI', jumlah: existingDp }] : []),
+                                    ...(receivedAmount > 0 ? [{ metode: paymentMode, jumlah: receivedAmount }] : []),
+                                ],
                 catatan: note || selectedOpenTransactionDetail?.catatan || editingTransaction?.catatan || '',
             };
             let transaction: any;
@@ -838,21 +852,26 @@ export default function BengkelTransaksiScreen() {
                 transaction = await updateMutation.mutateAsync({ id: transactionToUpdateId, data: payload });
                 if (shouldPay && kategori === 'umum') {
                     const incrementalPayment = paymentMode === 'SPLIT' ? splitTotal : receivedAmount;
-                    const splitPayments = paymentMode === 'SPLIT'
-                        ? [
-                            ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
-                            ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
-                        ]
-                        : undefined;
-                    transaction = await updatePaymentMutation.mutateAsync({
-                        id: transactionToUpdateId,
-                        data: {
-                            jumlah_bayar: incrementalPayment,
-                            metode_bayar: paymentMode,
-                            payments: splitPayments,
-                            status_pengerjaan: willBeLunas ? 'SELESAI' : undefined,
-                        },
-                    });
+                    if (incrementalPayment <= 0 && !willBeLunas) {
+                        // No new cash and still not lunas — bill update only.
+                    } else if (incrementalPayment > 0) {
+                        const splitPayments = paymentMode === 'SPLIT'
+                            ? [
+                                ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
+                                ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
+                            ]
+                            : undefined;
+                        transaction = await updatePaymentMutation.mutateAsync({
+                            id: transactionToUpdateId,
+                            data: {
+                                jumlah_bayar: incrementalPayment,
+                                metode_bayar: paymentMode,
+                                payments: splitPayments,
+                                // Backend also auto-SELESAI when LUNAS; send explicitly for clarity.
+                                status_pengerjaan: willBeLunas ? 'SELESAI' : undefined,
+                            },
+                        });
+                    }
                 }
             } else {
                 transaction = await createMutation.mutateAsync(payload);

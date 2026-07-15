@@ -39,6 +39,8 @@ Untuk transaksi bengkel:
 - Belum lunas (`BELUM_LUNAS`/`CICILAN`) = piutang dibuat, kas belum naik.
 - `Update Transaksi` / `Simpan Transaksi` tanpa pembayaran **tidak** mengubah status kerja ke `SELESAI`; status tetap `ANTRE`/`PROSES`.
 - `SELESAI` (status kerja) hanya dari: (1) pembayaran lunas, atau (2) ubah status manual di daftar antrian.
+- **LUNAS ⇒ SELESAI (umum)**: backend `create` / `update_payment` auto-set `status_pengerjaan = SELESAI` saat `status_bayar = LUNAS` untuk kategori `umum` (sumber kebenaran; frontend tidak boleh diandalkan sendirian). Internal JA/JBM tidak ikut aturan ini.
+- **Update + bayar**: PUT update hanya menyimpan item/bill + `jumlah_bayar` existing; kas incremental lewat `PATCH .../payment` agar tidak double-count. Jangan set `SELESAI` di PUT sebelum payment sukses.
 - `grand_total = 0` = belum ada tagihan (kecuali ada DP tercatat terpisah).
 - DP pada transaksi tanpa item (`grand_total = 0`) dicatat sebagai kas masuk dan muncul di Neraca sebagai "Uang Muka Penjualan" (Hutang).
 - Saat transaksi di-settle (SELESAI), DP diakui sebagai pendapatan dan pos "Uang Muka Penjualan" hilang.

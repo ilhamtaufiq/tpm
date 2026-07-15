@@ -111,9 +111,9 @@ export function buildReceiptRasterHtml(
       }
     }
 
+    // ESC @ + center (binary 1). No ESC 2/3 — digit opcodes can print as "2"/"3".
     pushBytes([0x1B, 0x40]);
-    pushBytes([0x1B, 0x33, 24]);
-    pushBytes([0x1B, 0x61, 0x31]);
+    pushBytes([0x1B, 0x61, 0x01]);
 
     for (var y = 0; y < h; y += 24) {
       pushBytes([0x1B, 0x2A, 33]);
@@ -139,8 +139,9 @@ export function buildReceiptRasterHtml(
       pushByte(0x0A);
     }
 
-    // Minimal feed after image — avoid long blank before cut.
-    pushBytes([0x1B, 0x33, 24]);
+    // Minimal feed after image — reset without digit line-spacing opcodes.
+    pushBytes([0x1B, 0x40]);
+    pushBytes([0x1B, 0x61, 0x00]);
     pushByte(0x0A);
 
     return bytesToBase64(bytes);

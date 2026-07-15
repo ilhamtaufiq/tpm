@@ -52,8 +52,10 @@ export function rgbaToEscPosBytes(data: Uint8Array, width: number, height: numbe
         }
     };
 
-    pushBytes([0x1b, 0x33, 24]);
-    pushBytes([0x1b, 0x61, 0x31]);
+    // ESC @ + center with binary 1 (0x01), not ASCII '1' (0x31).
+    // Avoid ESC 2 / ESC 3 — digit opcodes leak as "2"/"3" on desynced cheap printers.
+    pushBytes([0x1b, 0x40]);
+    pushBytes([0x1b, 0x61, 0x01]);
 
     for (let y = 0; y < height; y += 24) {
         pushBytes([0x1b, 0x2a, 33]);
@@ -79,7 +81,8 @@ export function rgbaToEscPosBytes(data: Uint8Array, width: number, height: numbe
         pushByte(0x0a);
     }
 
-    pushBytes([0x1b, 0x33, 32]);
+    pushBytes([0x1b, 0x40]); // reset text mode cleanly
+    pushBytes([0x1b, 0x61, 0x00]);
     pushByte(0x0a);
 
     return new Uint8Array(chunks);
