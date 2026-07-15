@@ -455,7 +455,7 @@ export default function QueueScreen() {
                         </View>
 
                         <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                            <View className="flex-row items-center">
+                            <View className="flex-row items-center flex-1 mr-2">
                                 <Clock size={12} color="#9CA3AF" />
                                 <Typography className="text-textGray text-[10px] font-semibold ml-1">
                                     {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID }) : '-'}
@@ -465,6 +465,11 @@ export default function QueueScreen() {
                                         • {itemCount} item
                                     </Typography>
                                 )}
+                                {Number(item.grand_total || 0) <= 0 && itemCount === 0 && (
+                                    <View className="ml-2 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200">
+                                        <Typography className="text-slate-500 text-[8px] font-bold uppercase">Belum tagihan</Typography>
+                                    </View>
+                                )}
                             </View>
                             <View className="items-end">
                                 {payment.hasPartialPayment && (
@@ -472,8 +477,13 @@ export default function QueueScreen() {
                                         Terbayar {formatCurrency(payment.paid)}
                                     </Typography>
                                 )}
-                                <Typography weight="bold" className="text-primary text-sm">
-                                    {formatCurrency(item.grand_total || 0)}
+                                <Typography
+                                    weight="bold"
+                                    className={`text-sm ${Number(item.grand_total || 0) <= 0 && itemCount === 0 ? 'text-gray-400' : 'text-primary'}`}
+                                >
+                                    {Number(item.grand_total || 0) <= 0 && itemCount === 0
+                                        ? 'Belum tagihan'
+                                        : formatCurrency(item.grand_total || 0)}
                                 </Typography>
                             </View>
                         </View>

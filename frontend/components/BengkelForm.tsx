@@ -643,6 +643,8 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
             tampilkan_diskon_struk: showDiscountOnPrint,
             payments: kategori === 'umum' ? paymentItems : [],
             jumlah_bayar: kategori === 'umum' ? totalPaid : 0,
+            // Open antrian (often Rp0 bill) must stay ANTRE — never send SELESAI on create.
+            status_pengerjaan: initialData?.status_pengerjaan || 'ANTRE',
             catatan: catatan
         };
 

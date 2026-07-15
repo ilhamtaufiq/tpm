@@ -56,18 +56,36 @@ class TransaksiBengkelService:
         kategori: Optional[str],
         grand_total: Decimal,
         jumlah_bayar: Decimal,
+        subtotal: Optional[Decimal] = None,
     ) -> tuple[PaymentStatus, Decimal]:
-        """Resolve customer-facing payment status. Internal unit transfers skip tunai flow."""
+        """Resolve customer-facing payment status. Internal unit transfers skip tunai flow.
+
+        Open queue tickets (no billable lines, grand_total=0 and subtotal=0) are NOT LUNAS —
+        they stay BELUM_LUNAS / CICILAN (DP only) so antrian remains ANTRE until real bill/pay.
+        """
         if cls._is_internal_kategori(kategori):
             return PaymentStatus.INTERNAL, Decimal("0")
 
         kembalian = Decimal("0")
-        if grand_total <= 0:
-            return PaymentStatus.LUNAS, jumlah_bayar
-        if jumlah_bayar >= grand_total:
-            kembalian = jumlah_bayar - grand_total
+        gt = grand_total if grand_total is not None else Decimal("0")
+        paid = jumlah_bayar if jumlah_bayar is not None else Decimal("0")
+        # When subtotal omitted, fall back to grand_total (legacy callers).
+        st = subtotal if subtotal is not None else gt
+
+        if gt <= 0:
+            # Empty work order / belum ada tagihan (antrian bare)
+            if (st or Decimal("0")) <= 0:
+                if paid > 0:
+                    # DP without invoice yet → uang muka, not settled sale
+                    return PaymentStatus.CICILAN, Decimal("0")
+                return PaymentStatus.BELUM_LUNAS, Decimal("0")
+            # Had line items but net zero (e.g. 100% discount) → nothing owed
+            return PaymentStatus.LUNAS, paid if paid > 0 else Decimal("0")
+
+        if paid >= gt:
+            kembalian = paid - gt
             return PaymentStatus.LUNAS, kembalian
-        if jumlah_bayar > 0:
+        if paid > 0:
             return PaymentStatus.CICILAN, kembalian
         return PaymentStatus.BELUM_LUNAS, kembalian
 
@@ -78,19 +96,22 @@ class TransaksiBengkelService:
         status_bayar: PaymentStatus,
         current_status: Optional[WorkshopStatus],
         requested_status: Optional[WorkshopStatus] = None,
+        grand_total: Optional[Decimal] = None,
     ) -> WorkshopStatus:
         """Work status rules for external (umum) sales.
 
         - Never override BATAL.
-        - When payment is LUNAS → SELESAI (source of truth; do not rely on client alone).
-        - Otherwise keep requested status if provided, else current, else ANTRE.
+        - LUNAS + grand_total > 0 → SELESAI (real settled invoice only).
+        - Open tickets (Rp0 bill) must NOT auto-SELESAI even if status_bayar was wrongly LUNAS.
         - Internal JA/JBM: do not auto-complete on payment (no tunai lunas path).
         """
         base = requested_status or current_status or WorkshopStatus.ANTRE
         if base == WorkshopStatus.BATAL:
             return WorkshopStatus.BATAL
+        has_bill = grand_total is None or grand_total > 0
         if (
             status_bayar == PaymentStatus.LUNAS
+            and has_bill
             and not cls._is_internal_kategori(kategori)
         ):
             return WorkshopStatus.SELESAI
@@ -385,12 +406,14 @@ class TransaksiBengkelService:
             kategori,
             grand_total,
             total_pembayaran,
+            subtotal=subtotal,
         )
         requested_work_status = self._resolve_work_status_for_payment(
             kategori,
             status_bayar,
             WorkshopStatus.ANTRE,
             requested_work_status,
+            grand_total=grand_total,
         )
 
         # Customer name from customer record or input
@@ -832,14 +855,17 @@ class TransaksiBengkelService:
             kategori,
             grand_total,
             preserved_jumlah_bayar,
+            subtotal=subtotal,
         )
         # If already fully paid (e.g. DP covers grand_total after edit), mark SELESAI.
         # New full payment on this submit is finalized in update_payment().
+        # Open tickets (Rp0) stay ANTRE/PROSES — never auto-SELESAI.
         requested_work_status = self._resolve_work_status_for_payment(
             kategori,
             status_bayar,
             transaksi.status_pengerjaan,
             data.status_pengerjaan,
+            grand_total=grand_total,
         )
 
         # 5. Update main record
@@ -1440,13 +1466,14 @@ class TransaksiBengkelService:
         if effective_method:
             transaksi.metode_bayar = effective_method
 
-        # Work status: LUNAS always promotes to SELESAI for external sales.
-        # Client may also pass status_pengerjaan; lunas still wins via helper.
+        # Work status: LUNAS + bill > 0 promotes to SELESAI for external sales.
+        # Client may also pass status_pengerjaan; settled invoice still wins via helper.
         transaksi.status_pengerjaan = self._resolve_work_status_for_payment(
             transaksi.kategori,
             transaksi.status_bayar,
             transaksi.status_pengerjaan,
             status_pengerjaan,
+            grand_total=transaksi.grand_total,
         )
 
         # Update piutang if exists

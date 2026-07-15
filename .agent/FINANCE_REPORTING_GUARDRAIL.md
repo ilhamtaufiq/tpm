@@ -42,6 +42,7 @@ Untuk transaksi bengkel:
 - **LUNAS ⇒ SELESAI (umum)**: backend `create` / `update_payment` auto-set `status_pengerjaan = SELESAI` saat `status_bayar = LUNAS` untuk kategori `umum` (sumber kebenaran; frontend tidak boleh diandalkan sendirian). Internal JA/JBM tidak ikut aturan ini.
 - **Update + bayar**: PUT update hanya menyimpan item/bill + `jumlah_bayar` existing; kas incremental lewat `PATCH .../payment` agar tidak double-count. Jangan set `SELESAI` di PUT sebelum payment sukses.
 - `grand_total = 0` = belum ada tagihan (kecuali ada DP tercatat terpisah).
+- **Antrian kosong (Rp0, subtotal=0)**: `status_bayar = BELUM_LUNAS` (atau `CICILAN` jika ada DP), `status_pengerjaan = ANTRE`. **Jangan** set LUNAS/SELESAI — bug lama di `_resolve_status_bayar` (`grand_total <= 0 → LUNAS`) + auto-SELESAI membuat order baru langsung selesai.
 - DP pada transaksi tanpa item (`grand_total = 0`) dicatat sebagai kas masuk dan muncul di Neraca sebagai "Uang Muka Penjualan" (Hutang).
 - Saat transaksi di-settle (SELESAI), DP diakui sebagai pendapatan dan pos "Uang Muka Penjualan" hilang.
 - **Pitfall**: Jangan double-counting `customer_dp` di `kewajiban_usaha` (`modal_service.py`) karena `hutang_usaha_total` sudah memuatnya.
