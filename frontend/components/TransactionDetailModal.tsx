@@ -262,7 +262,18 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                     setDialogConfig({
                         visible: true,
                         title: 'Berhasil',
-                        message: 'Link struk telah disalin ke clipboard.',
+                        message: Platform.OS === 'web'
+                            ? 'Link disalin. Gambar struk diunduh bila tersedia — lampirkan manual di chat.'
+                            : 'Link struk telah disalin ke clipboard.',
+                        variant: 'success',
+                        type: 'alert',
+                    });
+                },
+                onShared: () => {
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Berhasil',
+                        message: 'Struk berhasil dibagikan.',
                         variant: 'success',
                         type: 'alert',
                     });

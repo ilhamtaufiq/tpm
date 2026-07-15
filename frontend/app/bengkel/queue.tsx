@@ -292,7 +292,7 @@ export default function QueueScreen() {
 
         try {
             const shareUrl = await buildPublicReceiptShareUrl('bengkel', receiptToken);
-            await sharePublicReceiptLink({
+            const result = await sharePublicReceiptLink({
                 shareUrl,
                 transactionNumber: item?.nomor_transaksi,
                 receiptType: 'bengkel',
@@ -301,11 +301,24 @@ export default function QueueScreen() {
                     setDialogConfig({
                         visible: true,
                         title: 'Berhasil',
-                        message: 'Link struk publik telah disalin ke clipboard.',
+                        message: Platform.OS === 'web'
+                            ? 'Link disalin. Gambar struk diunduh bila tersedia — lampirkan manual di chat.'
+                            : 'Link struk publik telah disalin ke clipboard.',
+                        variant: 'success',
+                    });
+                },
+                onShared: () => {
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Berhasil',
+                        message: 'Struk berhasil dibagikan.',
                         variant: 'success',
                     });
                 },
             });
+            if (result === 'cancelled') {
+                // user dismissed sheet — silent
+            }
         } catch (error: any) {
             setDialogConfig({
                 visible: true,

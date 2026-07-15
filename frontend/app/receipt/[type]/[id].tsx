@@ -195,13 +195,28 @@ export default function PublicReceiptPage() {
         if (!receipt || !shareUrl || !id) return;
         try {
             setActionLoading('share');
-            // Capture on-screen card on native (best visual); web/server OG as fallback.
+            // Capture card when possible (native view-shot / web html2canvas).
+            // Server OG PNG is fallback via receiptType+receiptId.
             let imageFileUri: string | undefined;
             let imageDataUri: string | undefined;
-            if (Platform.OS !== 'web' && cardRef.current) {
-                try {
-                    setCaptureMode(true);
-                    await prepareReceiptCapture();
+            try {
+                setCaptureMode(true);
+                await prepareReceiptCapture();
+                if (Platform.OS === 'web' && typeof document !== 'undefined') {
+                    // Capture DOM card → data URI for Web Share / download attach
+                    const el = document.getElementById(PUBLIC_RECEIPT_CAPTURE_ROOT_ID);
+                    if (el) {
+                        const html2canvas = (await import('html2canvas')).default;
+                        const canvas = await html2canvas(el as HTMLElement, {
+                            scale: 2,
+                            useCORS: true,
+                            allowTaint: false,
+                            backgroundColor: '#f8fafc',
+                            logging: false,
+                        });
+                        imageDataUri = canvas.toDataURL('image/png');
+                    }
+                } else if (cardRef.current) {
                     // Dynamic require: view-shot is native-only.
                     // eslint-disable-next-line @typescript-eslint/no-require-imports
                     const { captureRef } = require('react-native-view-shot') as {
@@ -219,11 +234,11 @@ export default function PublicReceiptPage() {
                         imageDataUri,
                         receipt.transactionNumber,
                     );
-                } catch (captureErr) {
-                    console.warn('[Share] card capture failed, using server image:', captureErr);
-                } finally {
-                    setCaptureMode(false);
                 }
+            } catch (captureErr) {
+                console.warn('[Share] card capture failed, using server image:', captureErr);
+            } finally {
+                setCaptureMode(false);
             }
 
             const result = await sharePublicReceiptLink({
@@ -233,10 +248,14 @@ export default function PublicReceiptPage() {
                 receiptId: id,
                 imageFileUri,
                 imageDataUri,
-                onCopied: () => showToast('Link struk disalin (gambar diunduh bila tersedia)'),
+                onCopied: () => showToast('Link disalin + gambar diunduh (siap dilampirkan)'),
             });
             if (result === 'shared') {
-                showToast('Struk dibagikan (gambar + link)');
+                showToast(
+                    Platform.OS === 'web'
+                        ? 'Struk dibagikan / link siap'
+                        : 'Struk dibagikan (gambar + link di judul)',
+                );
             }
         } catch (err: any) {
             showToast(getErrorMessage(err, 'Gagal membagikan struk'));

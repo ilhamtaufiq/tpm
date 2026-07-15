@@ -93,20 +93,24 @@ export function buildPublicReceiptImageApiUrl(
 
 /**
  * Persist a PNG data-URI to the app cache and return a file:// URI.
+ * On web without FileSystem cache, returns the data-URI unchanged.
  */
 export async function writeReceiptImageDataUriToCache(
     dataUri: string,
     fileLabel = 'struk',
 ): Promise<string> {
-    const cacheDir = FileSystem.cacheDirectory;
-    if (!cacheDir) {
-        throw new Error('Cache aplikasi tidak tersedia untuk menyimpan gambar struk.');
-    }
-    const target = `${cacheDir}struk_${sanitizeFilePart(fileLabel)}_${Date.now()}.png`;
     const base64 = stripDataUrlPrefix(dataUri);
     if (!base64 || base64.length < 32) {
         throw new Error('Data gambar struk kosong.');
     }
+
+    const cacheDir = FileSystem.cacheDirectory;
+    // Web / limited environments: keep data-URI so share/download still works
+    if (!cacheDir || Platform.OS === 'web') {
+        return dataUri.startsWith('data:') ? dataUri : `data:image/png;base64,${base64}`;
+    }
+
+    const target = `${cacheDir}struk_${sanitizeFilePart(fileLabel)}_${Date.now()}.png`;
     await FileSystem.writeAsStringAsync(target, base64, {
         encoding: FileSystem.EncodingType.Base64,
     });
@@ -121,16 +125,11 @@ export async function downloadPublicReceiptImageToCache(
     idOrToken: string,
     fileLabel?: string,
 ): Promise<string> {
-    const cacheDir = FileSystem.cacheDirectory;
-    if (!cacheDir) {
-        throw new Error('Cache aplikasi tidak tersedia untuk mengunduh gambar struk.');
-    }
-
-    const target = `${cacheDir}struk_${sanitizeFilePart(fileLabel || idOrToken)}_${Date.now()}.png`;
     const url = buildPublicReceiptImageApiUrl(type, idOrToken);
+    const label = fileLabel || idOrToken;
 
     if (Platform.OS === 'web') {
-        const response = await fetch(url);
+        const response = await fetch(url, { credentials: 'omit' });
         if (!response.ok) {
             throw new Error(`Gagal mengunduh gambar struk (HTTP ${response.status})`);
         }
@@ -138,7 +137,6 @@ export async function downloadPublicReceiptImageToCache(
         if (blob.size < 50) {
             throw new Error('Gambar struk kosong dari server.');
         }
-        // Web: convert blob → data URL → cache file when FileSystem supports it
         const dataUrl = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -148,14 +146,15 @@ export async function downloadPublicReceiptImageToCache(
             reader.onerror = () => reject(new Error('Gagal membaca gambar struk.'));
             reader.readAsDataURL(blob);
         });
-        try {
-            return await writeReceiptImageDataUriToCache(dataUrl, fileLabel || idOrToken);
-        } catch {
-            // FileSystem may be limited on web — return data URL for web share path
-            return dataUrl;
-        }
+        return writeReceiptImageDataUriToCache(dataUrl, label);
     }
 
+    const cacheDir = FileSystem.cacheDirectory;
+    if (!cacheDir) {
+        throw new Error('Cache aplikasi tidak tersedia untuk mengunduh gambar struk.');
+    }
+
+    const target = `${cacheDir}struk_${sanitizeFilePart(label)}_${Date.now()}.png`;
     const result = await FileSystem.downloadAsync(url, target);
     if (result.status < 200 || result.status >= 300) {
         throw new Error(`Gagal mengunduh gambar struk (HTTP ${result.status})`);
@@ -201,88 +200,147 @@ async function resolveShareImageFileUri(
     return null;
 }
 
+async function imageUriToFile(imageUri: string, fileName = 'struk-tpm.png'): Promise<File | null> {
+    if (typeof File === 'undefined' || typeof fetch === 'undefined') return null;
+    try {
+        if (imageUri.startsWith('data:')) {
+            const res = await fetch(imageUri);
+            const blob = await res.blob();
+            return new File([blob], fileName, { type: blob.type || 'image/png' });
+        }
+        if (
+            imageUri.startsWith('blob:')
+            || imageUri.startsWith('http://')
+            || imageUri.startsWith('https://')
+        ) {
+            const res = await fetch(imageUri);
+            const blob = await res.blob();
+            return new File([blob], fileName, { type: blob.type || 'image/png' });
+        }
+    } catch (error) {
+        console.warn('[Share] imageUriToFile failed:', error);
+    }
+    return null;
+}
+
+function downloadBlobOrUri(fileOrUri: File | string, fileName = 'struk-tpm.png'): void {
+    if (typeof document === 'undefined') return;
+    try {
+        const link = document.createElement('a');
+        if (typeof fileOrUri === 'string') {
+            link.href = fileOrUri;
+        } else {
+            link.href = URL.createObjectURL(fileOrUri);
+        }
+        link.download = fileName;
+        link.rel = 'noopener';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        if (typeof fileOrUri !== 'string') {
+            setTimeout(() => URL.revokeObjectURL(link.href), 1500);
+        }
+    } catch (error) {
+        console.warn('[Share] download trigger failed:', error);
+    }
+}
+
+/** Clipboard with textarea fallback (works when Clipboard API is blocked). */
+async function copyTextWeb(text: string): Promise<boolean> {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch {
+            // fall through
+        }
+    }
+
+    if (typeof document === 'undefined') return false;
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        ta.style.top = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Web share: Web Share API (mobile/secure) → copy link + download image (desktop).
+ * Never hard-fail if at least link can be copied or image downloaded.
+ */
 async function shareOnWeb(
     message: string,
     title: string,
     shareUrl: string,
     imageUri: string | null,
 ): Promise<SharePublicReceiptLinkResult> {
-    let file: File | null = null;
+    const file = imageUri ? await imageUriToFile(imageUri) : null;
 
-    if (imageUri && typeof File !== 'undefined') {
-        try {
-            if (imageUri.startsWith('data:')) {
-                const res = await fetch(imageUri);
-                const blob = await res.blob();
-                file = new File([blob], 'struk-tpm.png', { type: blob.type || 'image/png' });
-            } else if (imageUri.startsWith('blob:') || imageUri.startsWith('http')) {
-                const res = await fetch(imageUri);
-                const blob = await res.blob();
-                file = new File([blob], 'struk-tpm.png', { type: blob.type || 'image/png' });
-            } else if (typeof FileSystem !== 'undefined') {
-                // file:// from expo web — try fetch
-                const res = await fetch(imageUri);
-                const blob = await res.blob();
-                file = new File([blob], 'struk-tpm.png', { type: 'image/png' });
-            }
-        } catch (error) {
-            console.warn('[Share] web file prepare failed:', error);
-        }
-    }
-
-    if (file && typeof navigator !== 'undefined' && navigator.share) {
-        const payload: ShareData = {
+    // 1) Native Web Share (Chrome Android / Safari iOS / some desktop)
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        const basePayload: ShareData = {
             title,
             text: message,
             url: shareUrl,
         };
-        const withFiles = { ...payload, files: [file] };
-        try {
-            if (typeof navigator.canShare === 'function' && navigator.canShare(withFiles)) {
-                await navigator.share(withFiles);
-                return 'shared';
-            }
-        } catch (error) {
-            if (isShareCancelled(error)) return 'cancelled';
-            // fall through to share without files
-        }
-        try {
-            await navigator.share(payload);
-            // Still try to trigger download of image so user can attach manually
+
+        if (file) {
+            const withFiles = { ...basePayload, files: [file] } as ShareData;
             try {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(file);
-                link.download = 'struk-tpm.png';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } catch {
-                // ignore
+                const canFiles = typeof navigator.canShare !== 'function'
+                    || navigator.canShare(withFiles);
+                if (canFiles) {
+                    await navigator.share(withFiles);
+                    return 'shared';
+                }
+            } catch (error) {
+                if (isShareCancelled(error)) return 'cancelled';
+                console.warn('[Share] web share with files failed:', error);
             }
+        }
+
+        try {
+            await navigator.share(basePayload);
+            if (file) downloadBlobOrUri(file);
+            else if (imageUri) downloadBlobOrUri(imageUri);
             return 'shared';
         } catch (error) {
             if (isShareCancelled(error)) return 'cancelled';
+            console.warn('[Share] web share text failed, clipboard fallback:', error);
         }
     }
 
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(message);
-        if (file) {
-            try {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(file);
-                link.download = 'struk-tpm.png';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } catch {
-                // ignore
-            }
+    // 2) Desktop / unsupported share: copy link + download PNG
+    const copied = await copyTextWeb(message);
+    if (file) downloadBlobOrUri(file);
+    else if (imageUri) downloadBlobOrUri(imageUri);
+
+    if (copied) return 'copied';
+
+    // 3) Last resort: open share URL so user can copy from address bar
+    if (typeof window !== 'undefined' && shareUrl) {
+        try {
+            window.open(shareUrl, '_blank', 'noopener,noreferrer');
+            return 'shared';
+        } catch {
+            // ignore
         }
-        return 'copied';
     }
 
-    throw new Error('Berbagi tidak didukung di browser ini.');
+    throw new Error(
+        'Browser memblokir berbagi otomatis. Salin link struk manual atau gunakan HTTPS.',
+    );
 }
 
 async function shareOnNative(
@@ -291,57 +349,44 @@ async function shareOnNative(
     shareUrl: string,
     imageUri: string | null,
 ): Promise<SharePublicReceiptLinkResult> {
-    // iOS: Share.share can take file url + message (image + caption/link).
-    if (Platform.OS === 'ios' && imageUri) {
+    // Prefer expo-sharing for local image files — reliable on Android WhatsApp/Telegram.
+    // RN Share.share({ url: file:// }) often only sends text on many Android OEMs.
+    if (imageUri && (await Sharing.isAvailableAsync())) {
         try {
+            await Sharing.shareAsync(imageUri, {
+                mimeType: 'image/png',
+                dialogTitle: `${title}\n${message}`,
+                UTI: 'public.png',
+            });
+            return 'shared';
+        } catch (error) {
+            if (isShareCancelled(error)) return 'cancelled';
+            console.warn('[Share] Sharing.shareAsync image failed:', error);
+        }
+    }
+
+    // iOS / fallback: system share sheet with caption + optional file URL
+    try {
+        if (imageUri && Platform.OS === 'ios') {
             await Share.share({
                 message,
                 url: imageUri,
                 title,
             });
             return 'shared';
-        } catch (error) {
-            if (isShareCancelled(error)) return 'cancelled';
-            console.warn('[Share] iOS image+message failed, fallback:', error);
         }
+
+        await Share.share({
+            message,
+            // On Android, `url` as https link is often appended; file:// is unreliable.
+            url: Platform.OS === 'ios' ? shareUrl : undefined,
+            title,
+        });
+        return 'shared';
+    } catch (error) {
+        if (isShareCancelled(error)) return 'cancelled';
+        throw error;
     }
-
-    // Android (and iOS fallback): share image file; message includes link in dialog title.
-    // WhatsApp often lets user add caption — put link in message sheet first when no image.
-    if (imageUri && (await Sharing.isAvailableAsync())) {
-        try {
-            // Try RN Share with both (some Android OEMs forward message as caption).
-            try {
-                await Share.share({
-                    message,
-                    url: imageUri,
-                    title,
-                });
-                return 'shared';
-            } catch (shareErr) {
-                if (isShareCancelled(shareErr)) return 'cancelled';
-            }
-
-            await Sharing.shareAsync(imageUri, {
-                mimeType: 'image/png',
-                dialogTitle: `${title}\n${shareUrl}`,
-                UTI: 'public.png',
-            });
-            // After image share sheet, also offer text via a second soft path only if needed —
-            // Prefer one sheet: image is primary; link is in dialog title + message when OEMs support it.
-            return 'shared';
-        } catch (error) {
-            if (isShareCancelled(error)) return 'cancelled';
-            console.warn('[Share] native image share failed, link-only fallback:', error);
-        }
-    }
-
-    await Share.share({
-        message,
-        url: shareUrl,
-        title,
-    });
-    return 'shared';
 }
 
 /**
@@ -388,8 +433,11 @@ export async function copyPublicReceiptLink(
 ): Promise<void> {
     const message = buildPublicReceiptShareMessage(transactionNumber, shareUrl);
 
-    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(message);
+    if (Platform.OS === 'web') {
+        const ok = await copyTextWeb(message);
+        if (!ok) {
+            throw new Error('Gagal menyalin link. Izinkan akses clipboard di browser.');
+        }
         return;
     }
 

@@ -268,8 +268,9 @@ def register_push_token(
 ):
     """Register Expo push token for the current user."""
     service = AuthService(db)
-    service.set_push_token(current_user.id, data.expo_push_token)
-    return {"message": "Push token registered successfully"}
+    # Must return the User model — response_model=UserResponse; a message dict
+    # caused ResponseValidationError so token never stuck on the client.
+    return service.set_push_token(current_user.id, data.expo_push_token)
 
 
 @router.delete("/me/push-token", response_model=UserResponse)
@@ -279,8 +280,7 @@ def clear_push_token(
 ):
     """Clear Expo push token for the current user."""
     service = AuthService(db)
-    service.clear_push_token(current_user.id)
-    return {"message": "Push token cleared successfully"}
+    return service.clear_push_token(current_user.id)
 
 
 # Admin endpoints for user management

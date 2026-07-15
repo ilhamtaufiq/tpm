@@ -87,18 +87,60 @@ def _chunks(items: list[dict[str, Any]], size: int = 100) -> Iterable[list[dict[
         yield items[index:index + size]
 
 
-def _send_expo_push(messages: list[dict[str, Any]]) -> None:
+def _send_expo_push(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """POST to Expo Push API. Returns ticket objects (aligned with messages order)."""
     if not messages:
-        return
+        return []
 
-    with httpx.Client(timeout=10.0) as client:
+    tickets: list[dict[str, Any]] = []
+    headers = {
+        "Accept": "application/json",
+        "Accept-Encoding": "gzip, deflate",
+        "Content-Type": "application/json",
+    }
+
+    with httpx.Client(timeout=15.0, headers=headers) as client:
         for chunk in _chunks(messages, 100):
             try:
                 response = client.post(PUSH_ENDPOINT, json=chunk)
                 if response.status_code >= 400:
                     print("[Push] Expo push error", response.status_code, response.text)
+                    tickets.extend([{}] * len(chunk))
+                    continue
+                body = response.json() if response.content else {}
+                data = body.get("data")
+                if isinstance(data, list):
+                    tickets.extend(data)
+                elif isinstance(data, dict):
+                    # Single-message response shape
+                    tickets.append(data)
+                else:
+                    tickets.extend([{}] * len(chunk))
             except Exception as exc:
                 print("[Push] Failed to send expo push", exc)
+                tickets.extend([{}] * len(chunk))
+
+    return tickets
+
+
+def _clear_invalid_tokens(tokens: set[str]) -> None:
+    if not tokens:
+        return
+    db = SessionLocal()
+    try:
+        updated = (
+            db.query(User)
+            .filter(User.expo_push_token.in_(list(tokens)))
+            .update({User.expo_push_token: None}, synchronize_session=False)
+        )
+        db.commit()
+        if updated:
+            print(f"[Push] Cleared {updated} invalid Expo push token(s)")
+    except Exception as exc:
+        db.rollback()
+        print("[Push] Failed to clear invalid tokens", exc)
+    finally:
+        db.close()
 
 
 def enqueue_push_notification(payload: dict[str, Any]) -> None:
@@ -137,6 +179,10 @@ def send_push_notification(payload: dict[str, Any]) -> None:
             token = (user.expo_push_token or "").strip()
             if not token:
                 continue
+            # Expo tokens look like ExponentPushToken[xxx]
+            if not (token.startswith("ExponentPushToken[") or token.startswith("ExpoPushToken[")):
+                print(f"[Push] Skip non-Expo token for user {user.id}")
+                continue
 
             messages.append({
                 "to": token,
@@ -148,6 +194,28 @@ def send_push_notification(payload: dict[str, Any]) -> None:
                 "channelId": "default",
             })
 
-        _send_expo_push(messages)
+        tickets = _send_expo_push(messages)
+
+        # Drop DeviceNotRegistered tokens so future sends stay clean
+        invalid: set[str] = set()
+        for message, ticket in zip(messages, tickets):
+            if not isinstance(ticket, dict) or ticket.get("status") != "error":
+                continue
+            details = ticket.get("details")
+            detail_error = ""
+            if isinstance(details, dict):
+                detail_error = str(details.get("error") or "")
+            else:
+                detail_error = str(details or "")
+            err_blob = f"{ticket.get('message') or ''} {detail_error}"
+            if "DeviceNotRegistered" in err_blob:
+                token = str(message.get("to") or "").strip()
+                if token:
+                    invalid.add(token)
+            else:
+                print("[Push] Expo ticket error", ticket)
     finally:
         db.close()
+
+    if invalid:
+        _clear_invalid_tokens(invalid)

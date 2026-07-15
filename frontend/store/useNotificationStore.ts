@@ -59,7 +59,8 @@ export const useNotificationStore = create<NotificationState>()(
             markAsRead: (id) => set((state) => {
                 let unreadCount = state.unreadCount;
                 const items = state.items.map(item => {
-                    if (item.id !== id || item.read) return item;
+                    // Match by id or sourceId (push taps pass event_id as sourceId)
+                    if ((item.id !== id && item.sourceId !== id) || item.read) return item;
                     unreadCount = Math.max(0, unreadCount - 1);
                     return { ...item, read: true };
                 });

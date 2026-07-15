@@ -540,7 +540,7 @@ export default function BengkelScreen() {
 
         try {
             const shareUrl = await buildPublicReceiptShareUrl('bengkel', receiptToken);
-            await sharePublicReceiptLink({
+            const result = await sharePublicReceiptLink({
                 shareUrl,
                 transactionNumber: item.nomor_transaksi,
                 receiptType: 'bengkel',
@@ -549,12 +549,24 @@ export default function BengkelScreen() {
                     setDialogConfig({
                         visible: true,
                         title: 'Berhasil',
-                        message: 'Link struk telah disalin ke clipboard.',
+                        message: Platform.OS === 'web'
+                            ? 'Link disalin. Gambar struk diunduh bila tersedia — lampirkan manual di chat.'
+                            : 'Link struk telah disalin ke clipboard.',
+                        variant: 'success',
+                        type: 'alert',
+                    });
+                },
+                onShared: () => {
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Berhasil',
+                        message: 'Struk berhasil dibagikan.',
                         variant: 'success',
                         type: 'alert',
                     });
                 },
             });
+            if (result === 'cancelled') return;
         } catch (error: any) {
             console.error('Error sharing link:', error);
             setDialogConfig({

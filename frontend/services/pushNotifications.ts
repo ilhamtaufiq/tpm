@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
@@ -12,6 +13,7 @@ import { useNotificationStore } from '../store/useNotificationStore';
 type PushPayload = Record<string, any>;
 
 const ANDROID_CHANNEL_ID = 'default';
+const LAST_RESPONSE_ID_KEY = '@tpm_last_push_response_id';
 
 const ensureNotificationHandler = () => {
     if (Platform.OS === 'web') {
@@ -124,6 +126,43 @@ const registerForPushNotificationsAsync = async () => {
     return token.data;
 };
 
+const getResponseId = (response: Notifications.NotificationResponse) => {
+    return (
+        response.notification.request.identifier
+        || toStringValue((response.notification.request.content.data as PushPayload)?.event_id)
+        || ''
+    );
+};
+
+const handleNotificationResponse = async (
+    response: Notifications.NotificationResponse,
+    options?: { skipIfAlreadyHandled?: boolean },
+) => {
+    const responseId = getResponseId(response);
+    if (options?.skipIfAlreadyHandled && responseId) {
+        try {
+            const lastId = await AsyncStorage.getItem(LAST_RESPONSE_ID_KEY);
+            if (lastId && lastId === responseId) {
+                return;
+            }
+        } catch {
+            // ignore storage errors
+        }
+    }
+
+    if (responseId) {
+        try {
+            await AsyncStorage.setItem(LAST_RESPONSE_ID_KEY, responseId);
+        } catch {
+            // ignore
+        }
+    }
+
+    const payload = syncIncomingNotification(response.notification, true);
+    const route = buildRouteFromPayload(payload);
+    router.push(route as any);
+};
+
 export function usePushNotifications() {
     useEffect(() => {
         ensureNotificationHandler();
@@ -149,10 +188,11 @@ export function usePushNotifications() {
         }
 
         void Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-            name: 'default',
+            name: 'TPM Notifikasi',
             importance: Notifications.AndroidImportance.MAX,
             vibrationPattern: [0, 250, 250, 250],
             lightColor: '#023C69',
+            sound: 'default',
         });
     }, []);
 
@@ -172,16 +212,33 @@ export function usePushNotifications() {
                     return;
                 }
 
-                if (currentUserToken === deviceToken) {
+                // Already registered this session and server matches
+                if (
+                    currentUserToken === deviceToken
+                    || lastRegisteredTokenRef.current === deviceToken
+                ) {
                     lastRegisteredTokenRef.current = deviceToken;
-                    return;
+                    // Still sync to server if user object missing token (stale login payload)
+                    if (currentUserToken === deviceToken) {
+                        return;
+                    }
                 }
 
                 const updatedUser = await authService.registerPushToken(deviceToken, Platform.OS);
                 if (!cancelled) {
                     lastRegisteredTokenRef.current = deviceToken;
-                    if (updatedUser) {
-                        updateUser(updatedUser);
+                    if (updatedUser?.id) {
+                        updateUser({
+                            ...user,
+                            ...updatedUser,
+                            expo_push_token: updatedUser.expo_push_token || deviceToken,
+                        });
+                    } else {
+                        // Fallback if API shape is unexpected — keep local truth
+                        updateUser({
+                            ...(user || {}),
+                            expo_push_token: deviceToken,
+                        });
                     }
                 }
             } catch (error) {
@@ -194,7 +251,7 @@ export function usePushNotifications() {
         return () => {
             cancelled = true;
         };
-    }, [isAuthenticated, token, user?.expo_push_token, updateUser]);
+    }, [isAuthenticated, token, user, updateUser]);
 
     useEffect(() => {
         if (Platform.OS === 'web') {
@@ -206,19 +263,15 @@ export function usePushNotifications() {
         });
 
         const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-            const payload = syncIncomingNotification(response.notification, true);
-            const route = buildRouteFromPayload(payload);
-            router.push(route as any);
+            void handleNotificationResponse(response);
         });
 
+        // Cold start: only navigate once per notification (avoid re-open on every app launch)
         void Notifications.getLastNotificationResponseAsync().then((response) => {
             if (!response) {
                 return;
             }
-
-            const payload = syncIncomingNotification(response.notification, true);
-            const route = buildRouteFromPayload(payload);
-            router.push(route as any);
+            void handleNotificationResponse(response, { skipIfAlreadyHandled: true });
         });
 
         return () => {
