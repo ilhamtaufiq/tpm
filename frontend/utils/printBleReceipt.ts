@@ -8,7 +8,7 @@ import {
     billCenterLinesToBase64,
     isBleImagePrintAvailable,
     isBleQrPrintAvailable,
-    printBillTextFireAndForget,
+    printBillText,
     printImageDataAsync,
     printImageDataFireAndForget,
     printQrCodeAsync,
@@ -248,12 +248,12 @@ export async function printBleReceipt(
             'Timeout koneksi printer. Pastikan printer menyala, dekat, dan sudah dipair.',
         );
 
-        // 1) Logo (required) — printRawData ESC/POS first
-        const logoOk = await printLogoRequired(normalizedSettings, layout.logoMaxDots);
-        if (!logoOk) {
-            console.error('[Print] WARNING: logo did not print — retry default');
-            // One more attempt with forced default asset
-            try {
+        // 1) Logo — best-effort; never block body text if logo fails
+        let logoOk = false;
+        try {
+            logoOk = await printLogoRequired(normalizedSettings, layout.logoMaxDots);
+            if (!logoOk) {
+                console.error('[Print] WARNING: logo did not print — retry default');
                 const retryEsc = await withTimeout(
                     buildLogoEscPosBase64('tpm_default', layout.logoMaxDots),
                     8000,
@@ -261,23 +261,31 @@ export async function printBleReceipt(
                 );
                 if (retryEsc && retryEsc.length > 32) {
                     await printRawBase64(retryEsc, 10000);
-                    await delay(200);
+                    await delay(300);
+                    logoOk = true;
                     console.log('[Print] logo retry default OK');
                 }
-            } catch (retryErr) {
-                console.error('[Print] logo retry failed:', retryErr);
             }
+        } catch (logoErr) {
+            console.error('[Print] logo path failed, continue with text:', logoErr);
         }
 
-        // 2) Body text — no cut/tail while QR still pending (fixed EPToolkit flags)
-        printBillTextFireAndForget(receiptText, {
-            cut: !tryQrGraphics,
-            beep: false,
-            tailingLine: false,
-            encoding: 'UTF8',
-        });
-        // Body only needs a short gap before QR — old path left 5 blank lines (flag bug)
-        await delay(tryQrGraphics ? 280 : 400);
+        // Let bitmap drain before text (avoids BLE buffer overwrite on cheap printers)
+        await delay(logoOk ? 450 : 150);
+
+        // 2) Body text — await send (fire-and-forget was finishing UI while printer got nothing)
+        try {
+            await printBillText(receiptText, {
+                cut: !tryQrGraphics,
+                beep: false,
+                tailingLine: false,
+                encoding: 'UTF8',
+            });
+            await delay(tryQrGraphics ? 350 : 500);
+        } catch (bodyErr) {
+            console.error('[Print] body text failed:', bodyErr);
+            throw bodyErr;
+        }
 
         // 3) QR + caption + footer + cut
         if (tryQrGraphics && doc.qrUrl) {
@@ -287,7 +295,6 @@ export async function printBleReceipt(
                 layout.qrEncodePx,
             );
 
-            // Safe centered lines (no ESC 2 → no "2Scan..." artifact)
             const tailLines: string[] = [];
             if (qrOk) {
                 tailLines.push(doc.qrCaption);
@@ -308,7 +315,7 @@ export async function printBleReceipt(
             await delay(300);
         }
 
-        console.log('[Print] BLE native sent', { logoOk });
+        console.log('[Print] BLE native sent', { logoOk, bodyChars: receiptText.length });
     } catch (error) {
         console.error('[Print] BLE print failed:', error);
         throw formatBlePrintError(error);

@@ -111,8 +111,9 @@ export function buildReceiptRasterHtml(
       }
     }
 
-    // ESC @ + center (binary 1). No ESC 2/3 — digit opcodes can print as "2"/"3".
+    // ESC * 24-dot needs ESC 3 24 during bands; ESC @ after clears it (no "3" leak).
     pushBytes([0x1B, 0x40]);
+    pushBytes([0x1B, 0x33, 24]);
     pushBytes([0x1B, 0x61, 0x01]);
 
     for (var y = 0; y < h; y += 24) {
@@ -139,7 +140,6 @@ export function buildReceiptRasterHtml(
       pushByte(0x0A);
     }
 
-    // Minimal feed after image — reset without digit line-spacing opcodes.
     pushBytes([0x1B, 0x40]);
     pushBytes([0x1B, 0x61, 0x00]);
     pushByte(0x0A);

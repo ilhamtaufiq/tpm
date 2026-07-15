@@ -1407,7 +1407,7 @@ class TransaksiBengkelService:
                 detail="Transaksi sudah lunas",
             )
 
-        # Apply discount if provided
+        # Apply discount if provided — must recompute laba_kotor so modal/P&L stay balanced.
         if diskon is not None and diskon > 0:
             transaksi.diskon = (transaksi.diskon or Decimal("0")) + diskon
             new_grand_total = transaksi.subtotal - transaksi.diskon
@@ -1417,47 +1417,37 @@ class TransaksiBengkelService:
                     detail="Diskon melebihi subtotal",
                 )
             transaksi.grand_total = new_grand_total
+            transaksi.laba_kotor = new_grand_total - (transaksi.hpp_parts or Decimal("0"))
 
         # Determine effective payment amount & method
-        effective_payment = jumlah_bayar
+        effective_payment = jumlah_bayar or Decimal("0")
         effective_method = metode_bayar or transaksi.metode_bayar
-
-        # Handle split payments
         if payments and len(payments) > 0:
-            total_from_payments = sum(p.jumlah for p in payments)
+            total_from_payments = sum((p.jumlah for p in payments if p.jumlah > 0), Decimal("0"))
             if total_from_payments > 0:
                 methods = list(set(p.metode for p in payments if p.jumlah > 0))
                 effective_method = PaymentMethod.SPLIT if len(methods) > 1 else methods[0]
-                # Use the total from payments instead of jumlah_bayar
-                # jumlah_bayar in this context is total being paid NOW
-                # But if caller passed both, payments takes precedence
-                if total_from_payments != effective_payment:
-                    # payments list is the source of truth
-                    pass  # keep effective_payment as-is, or override:
-            # Record each split payment to kas/bank
-            for p in payments:
-                if p.jumlah > 0:
-                    create_kas_entry(
-                        db=self.db,
-                        tanggal=date.today(),
-                        tipe=KasBankType.MASUK,
-                        nominal=p.jumlah,
-                        sumber=KasBankSource.BENGKEL,
-                        metode_bayar=p.metode or effective_method,
-                        referensi_id=transaksi.id,
-                        nomor_referensi=transaksi.nomor_transaksi,
-                        keterangan=f"Pembayaran bengkel {transaksi.nomor_transaksi} ({p.metode.value})",
-                        user_id=user_id,
-                        kas_jenis=p.kas_jenis,
-                    )
+                # payments list is source of truth for amount paid NOW
+                effective_payment = total_from_payments
 
-        # Update payment
-        total_bayar = transaksi.jumlah_bayar + effective_payment
-        sisa = transaksi.grand_total - total_bayar
+        # Cap book payment at remaining invoice (after discount). Excess is kembalian
+        # and must NOT enter kas — same rule as create() LUNAS path. Uncapped kas
+        # after diskon inflates modal_aktual and shows as selisih ≈ total diskon.
+        already_paid = transaksi.jumlah_bayar or Decimal("0")
+        remaining_invoice = max(Decimal("0"), (transaksi.grand_total or Decimal("0")) - already_paid)
+        kas_to_record = min(effective_payment, remaining_invoice)
+        book_payment = kas_to_record  # jumlah_bayar book never exceeds grand_total
+
+        # Update payment books
+        total_bayar = already_paid + book_payment
+        sisa = (transaksi.grand_total or Decimal("0")) - total_bayar
+        kembalian = max(Decimal("0"), effective_payment - book_payment)
 
         if sisa <= 0:
             transaksi.status_bayar = PaymentStatus.LUNAS
-            transaksi.kembalian = abs(sisa)
+            transaksi.kembalian = kembalian
+            total_bayar = transaksi.grand_total or Decimal("0")
+            sisa = Decimal("0")
         else:
             transaksi.status_bayar = PaymentStatus.CICILAN
             transaksi.kembalian = Decimal("0")
@@ -1467,7 +1457,6 @@ class TransaksiBengkelService:
             transaksi.metode_bayar = effective_method
 
         # Work status: LUNAS + bill > 0 promotes to SELESAI for external sales.
-        # Client may also pass status_pengerjaan; settled invoice still wins via helper.
         transaksi.status_pengerjaan = self._resolve_work_status_for_payment(
             transaksi.kategori,
             transaksi.status_bayar,
@@ -1476,7 +1465,7 @@ class TransaksiBengkelService:
             grand_total=transaksi.grand_total,
         )
 
-        # Update piutang if exists
+        # Update piutang if exists — keep nominal aligned with discounted grand_total
         piutang = (
             self.db.query(PiutangUsaha)
             .filter(
@@ -1486,6 +1475,7 @@ class TransaksiBengkelService:
             .first()
         )
         if piutang:
+            piutang.nominal_piutang = transaksi.grand_total or Decimal("0")
             piutang.total_dibayar = transaksi.jumlah_bayar
             piutang.sisa_piutang = max(sisa, Decimal("0"))
             if sisa <= 0:
@@ -1504,23 +1494,44 @@ class TransaksiBengkelService:
         self.db.commit()
         self.db.refresh(transaksi)
 
-        # Record single payment to kas/bank (if no split payments recorded above)
-        if not payments and effective_payment > 0:
-            # Use explicit kas_jenis from request if provided
-            kas_jenis_value = kas_jenis
-            create_kas_entry(
-                db=self.db,
-                tanggal=date.today(),
-                tipe=KasBankType.MASUK,
-                nominal=effective_payment,
-                sumber=KasBankSource.BENGKEL,
-                metode_bayar=effective_method,
-                referensi_id=transaksi.id,
-                nomor_referensi=transaksi.nomor_transaksi,
-                keterangan=f"Pembayaran bengkel {transaksi.nomor_transaksi}",
-                user_id=user_id,
-                kas_jenis=kas_jenis_value,
-            )
+        # Record kas only up to remaining invoice (never kembalian / overpay)
+        if kas_to_record > 0:
+            remaining_to_record = kas_to_record
+            if payments and len(payments) > 0:
+                for p in payments:
+                    if remaining_to_record <= 0:
+                        break
+                    if not p.jumlah or p.jumlah <= 0:
+                        continue
+                    rec_amount = min(p.jumlah, remaining_to_record)
+                    create_kas_entry(
+                        db=self.db,
+                        tanggal=date.today(),
+                        tipe=KasBankType.MASUK,
+                        nominal=rec_amount,
+                        sumber=KasBankSource.BENGKEL,
+                        metode_bayar=p.metode or effective_method,
+                        referensi_id=transaksi.id,
+                        nomor_referensi=transaksi.nomor_transaksi,
+                        keterangan=f"Pembayaran bengkel {transaksi.nomor_transaksi} ({getattr(p.metode, 'value', p.metode)})",
+                        user_id=user_id,
+                        kas_jenis=p.kas_jenis,
+                    )
+                    remaining_to_record -= rec_amount
+            else:
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=date.today(),
+                    tipe=KasBankType.MASUK,
+                    nominal=kas_to_record,
+                    sumber=KasBankSource.BENGKEL,
+                    metode_bayar=effective_method,
+                    referensi_id=transaksi.id,
+                    nomor_referensi=transaksi.nomor_transaksi,
+                    keterangan=f"Pembayaran bengkel {transaksi.nomor_transaksi}",
+                    user_id=user_id,
+                    kas_jenis=kas_jenis,
+                )
 
         self._emit_change(transaksi, "payment_updated")
         return transaksi

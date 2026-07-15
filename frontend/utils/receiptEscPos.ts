@@ -52,10 +52,10 @@ export function rgbaToEscPosBytes(data: Uint8Array, width: number, height: numbe
         }
     };
 
-    // ESC @ + center with binary 1 (0x01), not ASCII '1' (0x31).
-    // Avoid ESC 2 / ESC 3 — digit opcodes leak as "2"/"3" on desynced cheap printers.
+    // 24-dot bit-image bands need ESC 3 24; reset with ESC @ after so no digit leak.
     pushBytes([0x1b, 0x40]);
-    pushBytes([0x1b, 0x61, 0x01]);
+    pushBytes([0x1b, 0x33, 24]);
+    pushBytes([0x1b, 0x61, 0x01]); // center (binary 1, not ASCII '1')
 
     for (let y = 0; y < height; y += 24) {
         pushBytes([0x1b, 0x2a, 33]);
@@ -81,7 +81,7 @@ export function rgbaToEscPosBytes(data: Uint8Array, width: number, height: numbe
         pushByte(0x0a);
     }
 
-    pushBytes([0x1b, 0x40]); // reset text mode cleanly
+    pushBytes([0x1b, 0x40]); // clear graphics line spacing
     pushBytes([0x1b, 0x61, 0x00]);
     pushByte(0x0a);
 

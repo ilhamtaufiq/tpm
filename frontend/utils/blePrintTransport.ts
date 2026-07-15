@@ -221,7 +221,11 @@ export function printRawBase64FireAndForget(base64: string): void {
 
 export async function printBillText(text: string, opts?: BleBillOptions): Promise<void> {
     const base64 = billTextToBase64(text, opts);
-    await printRawBase64(base64);
+    if (!base64 || base64.length < 8) {
+        throw new Error('Data teks struk kosong (encode gagal).');
+    }
+    console.log('[Print] bill text base64 length', base64.length);
+    await printRawBase64(base64, 15000);
 }
 
 /**

@@ -310,8 +310,8 @@ export default function LaporanPerubahanModalScreen() {
                                         <FinancialRow label="Laba Bersih Periode" value={equity.labaBersih} color="text-emerald-700" />
                                         {equity.diskonPenjualanBengkel > 0 && (
                                             <View className="mb-2 pl-1">
-                                                <Typography variant="caption" className="text-rose-500 text-[11px]">
-                                                    · sudah dipotong diskon penjualan bengkel −{formatCurrency(equity.diskonPenjualanBengkel)}
+                                                <Typography variant="caption" className="text-slate-500 text-[11px]">
+                                                    · info: diskon bengkel {formatCurrency(equity.diskonPenjualanBengkel)} sudah di laba (bukan baris modal terpisah)
                                                 </Typography>
                                             </View>
                                         )}
@@ -334,8 +334,8 @@ export default function LaporanPerubahanModalScreen() {
                                         <FinancialRow label="Rugi Periode" value={Math.abs(equity.labaBersih)} isNegative />
                                         {equity.diskonPenjualanBengkel > 0 && (
                                             <View className="mb-2 pl-1">
-                                                <Typography variant="caption" className="text-rose-500 text-[11px]">
-                                                    · termasuk diskon penjualan bengkel −{formatCurrency(equity.diskonPenjualanBengkel)}
+                                                <Typography variant="caption" className="text-slate-500 text-[11px]">
+                                                    · info: diskon bengkel {formatCurrency(equity.diskonPenjualanBengkel)} sudah di laba (bukan baris modal terpisah)
                                                 </Typography>
                                             </View>
                                         )}

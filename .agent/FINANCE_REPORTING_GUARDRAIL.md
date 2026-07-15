@@ -40,6 +40,7 @@ Untuk transaksi bengkel:
 - `Update Transaksi` / `Simpan Transaksi` tanpa pembayaran **tidak** mengubah status kerja ke `SELESAI`; status tetap `ANTRE`/`PROSES`.
 - `SELESAI` (status kerja) hanya dari: (1) pembayaran lunas, atau (2) ubah status manual di daftar antrian.
 - **LUNAS ⇒ SELESAI (umum)**: backend `create` / `update_payment` auto-set `status_pengerjaan = SELESAI` saat `status_bayar = LUNAS` untuk kategori `umum` (sumber kebenaran; frontend tidak boleh diandalkan sendirian). Internal JA/JBM tidak ikut aturan ini.
+- **Diskon di `update_payment`**: wajib (1) recompute `laba_kotor = grand_total - hpp`, (2) cap kas masuk ke sisa invoice setelah diskon (kembalian **tidak** masuk kas), (3) sinkron `piutang.nominal_piutang` ke `grand_total` baru. Tanpa cap, `modal_aktual` kelebihan ≈ total diskon/kembalian → selisih Perubahan Modal.
 - **Update + bayar**: PUT update hanya menyimpan item/bill + `jumlah_bayar` existing; kas incremental lewat `PATCH .../payment` agar tidak double-count. Jangan set `SELESAI` di PUT sebelum payment sukses.
 - `grand_total = 0` = belum ada tagihan (kecuali ada DP tercatat terpisah).
 - **Antrian kosong (Rp0, subtotal=0)**: `status_bayar = BELUM_LUNAS` (atau `CICILAN` jika ada DP), `status_pengerjaan = ANTRE`. **Jangan** set LUNAS/SELESAI — bug lama di `_resolve_status_bayar` (`grand_total <= 0 → LUNAS`) + auto-SELESAI membuat order baru langsung selesai.

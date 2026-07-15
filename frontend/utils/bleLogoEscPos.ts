@@ -133,14 +133,16 @@ function rgbaToLogoEscPos(img: RgbaImage): Uint8Array {
         for (const v of arr) push(v);
     };
 
-    // Init + center. Avoid ESC 2 / ESC 3 here — if the stream desyncs after
-    // bit-image, those opcodes are ASCII '2'/'3' and print as garbage digits
-    // before the company name (e.g. "3TIGA PUTRA MOTOR").
-    pushArr([0x1b, 0x40]);
-    pushArr([0x1b, 0x61, 0x01]);
+    // ESC * 24-dot bands NEED ESC 3 24 line spacing or many printers print
+    // nothing / garbage and desync the BLE stream (body text never appears).
+    // After the bitmap we hard-reset with ESC @ so ESC 3 never sits right
+    // before company-name text (that caused the "3TIGA PUTRA MOTOR" artifact).
+    pushArr([0x1b, 0x40]); // init
+    pushArr([0x1b, 0x33, 24]); // line spacing = 24 dots (graphics only)
+    pushArr([0x1b, 0x61, 0x01]); // center
 
     for (let y = 0; y < height; y += 24) {
-        pushArr([0x1b, 0x2a, 33]);
+        pushArr([0x1b, 0x2a, 33]); // ESC * m=33 double-density 24-dot
         push(width & 0xff);
         push((width >> 8) & 0xff);
 
@@ -162,10 +164,10 @@ function rgbaToLogoEscPos(img: RgbaImage): Uint8Array {
         push(0x0a);
     }
 
-    // Restore text mode cleanly after bit-image (no digit line-spacing opcodes)
-    pushArr([0x1b, 0x40]); // ESC @ init
-    pushArr([0x1b, 0x61, 0x00]); // left align
-    push(0x0a); // single small feed after logo
+    // Full re-init clears ESC 3 so the next text job never starts with a bare "3"
+    pushArr([0x1b, 0x40]);
+    pushArr([0x1b, 0x61, 0x00]); // left
+    push(0x0a);
 
     return new Uint8Array(chunks);
 }

@@ -294,8 +294,8 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                 </tr>` : ''}
                 ${diskonPenjualanBengkel > 0 ? `
                 <tr>
-                    <td style="padding-left: 18px; color: #be123c; font-size: 11px;">(sudah dipotong diskon penjualan bengkel)</td>
-                    <td class="amount negative" style="font-size: 11px;">(${formatCurrency(diskonPenjualanBengkel)})</td>
+                    <td style="padding-left: 18px; color: #64748b; font-size: 11px;">Info: diskon penjualan bengkel (sudah di laba, bukan baris modal)</td>
+                    <td class="amount" style="font-size: 11px; color: #64748b;">${formatCurrency(diskonPenjualanBengkel)}</td>
                 </tr>` : ''}
 
                 <tr class="section-title"><td colspan="2">C. PENGURANGAN EKUITAS</td></tr>
