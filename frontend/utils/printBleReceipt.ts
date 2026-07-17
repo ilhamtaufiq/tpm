@@ -280,6 +280,7 @@ export async function printBleReceipt(
                 beep: false,
                 tailingLine: false,
                 encoding: 'UTF8',
+                charWidth: layout.textCharWidth,
             });
             await delay(tryQrGraphics ? 350 : 500);
         } catch (bodyErr) {
@@ -306,7 +307,10 @@ export async function printBleReceipt(
                 tailLines.push(doc.footer);
             }
 
-            const tailBase64 = billCenterLinesToBase64(tailLines, { cut: true });
+            const tailBase64 = billCenterLinesToBase64(tailLines, {
+                cut: true,
+                charWidth: layout.textCharWidth,
+            });
             try {
                 await printRawBase64(tailBase64, 8000);
             } catch {

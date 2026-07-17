@@ -73,6 +73,26 @@ export function wrapCenteredLines(text: string, width: number): string[] {
     return lines;
 }
 
+/**
+ * Pad a single line with spaces so it appears centered on fixed-width thermal paper.
+ * Prefer this over ESC a (hardware align): after logo bit-images, cheap BLE printers
+ * often drop ESC and print the "a" from ESC a 1 → "aTIGA PUTRA MOTOR" left-aligned.
+ */
+export function padCenteredLine(text: string, width: number): string {
+    const t = String(text || '').trim();
+    if (!t) return '';
+    if (width < 1) return t;
+    if (t.length >= width) return t.slice(0, width);
+    const pad = width - t.length;
+    const left = Math.floor(pad / 2);
+    return `${' '.repeat(left)}${t}`;
+}
+
+/** Wrap then space-pad each line for software-centered thermal output. */
+export function formatCenteredReceiptLines(text: string, width: number): string[] {
+    return wrapCenteredLines(text, width).map((line) => padCenteredLine(line, width));
+}
+
 export interface ReceiptSections {
     services: ReceiptLineItem[];
     parts: ReceiptLineItem[];

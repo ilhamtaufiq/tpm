@@ -3,17 +3,18 @@ import { getBleNativeLayout, receiptDivider } from './paperSize';
 import { PrintReceiptData } from './printReceipt';
 import { buildReceiptDocument } from './receiptDocument';
 import {
+    formatCenteredReceiptLines,
     formatReceiptCurrency,
     padReceiptColumns,
-    wrapCenteredLines,
 } from './receiptFormatters';
 
 /**
- * Centered line. Avoid <B>/<CB> — many BLE printers use double-width bold and wrap columns.
+ * Software-centered line (spaces). Do NOT use <C>/ESC a — after logo bitmaps many
+ * BLE printers drop ESC and print "a" + left-aligned text ("aTiga Putra Motor").
  */
 function appendCenter(lines: string[], text: string, width: number): void {
-    for (const line of wrapCenteredLines(text, width)) {
-        lines.push(`<C>${line}</C>`);
+    for (const line of formatCenteredReceiptLines(text, width)) {
+        lines.push(line);
     }
 }
 
@@ -114,9 +115,7 @@ export function generateBleReceiptText(
 
     if (doc.notes) {
         lines.push(divider);
-        for (const line of wrapCenteredLines(`Catatan: ${doc.notes}`, width)) {
-            lines.push(line);
-        }
+        appendCenter(lines, `Catatan: ${doc.notes}`, width);
     }
 
     lines.push(divider);

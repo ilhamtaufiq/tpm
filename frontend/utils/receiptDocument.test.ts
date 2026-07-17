@@ -87,6 +87,16 @@ function run() {
     assert(html.includes('Catatan:'), 'HTML missing Catatan');
     assert(text.includes('Catatan:'), 'BLE text missing Catatan');
 
+    // Software center: no <C>/ESC a tags (those leak as "aTiga..." on cheap BLE printers)
+    assert(!text.includes('<C>'), 'BLE text must not use <C> center tags');
+    assert(!text.includes('aTIGA'), 'BLE text must not prefix company with leaked ESC a');
+    const companyLine = text.split('\n').find((l) => l.includes('TIGA PUTRA MOTOR'));
+    assert(Boolean(companyLine), 'BLE text missing company name');
+    assert(
+        Boolean(companyLine && companyLine.startsWith(' ') && companyLine.trimStart().startsWith('TIGA PUTRA MOTOR')),
+        `company name should be space-centered, got ${JSON.stringify(companyLine)}`,
+    );
+
     const diskonIdx = html.indexOf('Diskon');
     const totalIdx = html.indexOf('>TOTAL<');
     assert(diskonIdx > -1 && totalIdx > diskonIdx, 'Diskon should appear before TOTAL');

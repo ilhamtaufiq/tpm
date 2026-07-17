@@ -1,13 +1,4 @@
 import { NativeModules, Platform } from 'react-native';
-import { Buffer } from 'buffer';
-// Same ESC/POS encoder used by BLEPrinter.printBill / printText in the library.
-import * as EPToolkit from 'react-native-thermal-receipt-printer/dist/utils/EPToolkit';
-
-// Hermes has no Node Buffer. EPToolkit + body text encoding need it after logo.
-const g = globalThis as typeof globalThis & { Buffer?: typeof Buffer };
-if (!g.Buffer) {
-    g.Buffer = Buffer;
-}
 
 const RNBLEPrinter = Platform.OS === 'android' ? NativeModules.RNBLEPrinter : null;
 
@@ -16,9 +7,11 @@ export type BleBillOptions = {
     cut?: boolean;
     tailingLine?: boolean;
     encoding?: string;
+    /** Thermal Font-A columns — used to software-center legacy <C> lines. */
+    charWidth?: number;
 };
 
-const DEFAULT_BILL_OPTIONS: Required<BleBillOptions> = {
+const DEFAULT_BILL_OPTIONS: Required<Omit<BleBillOptions, 'charWidth'>> = {
     beep: false,
     cut: true,
     tailingLine: true,
@@ -26,53 +19,40 @@ const DEFAULT_BILL_OPTIONS: Required<BleBillOptions> = {
 };
 
 /**
- * EPToolkit.exchange_text has a flag bug:
- *   if (typeof opt === "boolean" && controller[key]) { apply }
- * So cut/beep/tailingLine:false still APPLY (controller buffers are truthy).
- * Only pass a flag when it is true; omit it when false so the library skips it.
- *
- * Line-spacing commands that use ASCII digit opcodes leak on cheap BLE printers
- * when ESC is dropped/desynced after bit-image logo:
- *   ESC 2 (0x1B 0x32) → printable "2"  e.g. "2Scan untuk lihat struk..."
- *   ESC 3 n (0x1B 0x33 n) → printable "3"  e.g. "3TIGA PUTRA MOTOR"
- * Strip both; rely on ESC @ defaults instead of substituting one digit for another.
+ * Pad text to fixed thermal width with leading spaces (software center).
+ * Avoids ESC a hardware align which leaks as printable "a" when ESC is dropped
+ * after logo bit-images → "aTiga Putra Motor" left-aligned.
  */
-function sanitizeEscPosBuffer(buffer: Buffer): Buffer {
-    const out: number[] = [];
-    for (let i = 0; i < buffer.length; i += 1) {
-        if (buffer[i] === 0x1b && i + 1 < buffer.length) {
-            const cmd = buffer[i + 1];
-            // ESC 2 — select default line spacing (ASCII '2')
-            if (cmd === 0x32) {
-                i += 1;
-                continue;
-            }
-            // ESC 3 n — set line spacing to n (ASCII '3' + binary n)
-            if (cmd === 0x33 && i + 2 < buffer.length) {
-                i += 2;
-                continue;
-            }
-        }
-        out.push(buffer[i]);
-    }
-    return Buffer.from(out);
+function padCenter(text: string, width: number): string {
+    const t = String(text || '').trim();
+    if (!t) return '';
+    if (width < 1 || t.length >= width) return t.slice(0, Math.max(1, width));
+    const left = Math.floor((width - t.length) / 2);
+    return `${' '.repeat(left)}${t}`;
 }
 
-/** Minimal Latin-1 ESC/POS text (no EPToolkit / no iconv) — last-resort body path. */
+/**
+ * Minimal Latin-1 ESC/POS body — primary path for BLE after logo.
+ * Only ESC @ init; no ESC a / ESC 2 / ESC 3 (letter/digit leaks on cheap printers).
+ * Centered lines must already be space-padded (or still use legacy <C> tags — we pad).
+ */
 function simpleBillTextToBase64(text: string, opts?: BleBillOptions): string {
     const options = { ...DEFAULT_BILL_OPTIONS, ...opts };
+    const width = Math.max(24, options.charWidth ?? 32);
     const chunks: number[] = [];
-    // ESC @ init only — do not emit ESC 2 / ESC 3 (ASCII digit leak on cheap printers)
+    // ESC @ init only — do not emit ESC a / ESC 2 / ESC 3
     chunks.push(0x1b, 0x40);
-    // ESC a 0 left
-    chunks.push(0x1b, 0x61, 0x00);
 
     const lines = String(text || '').split(/\r?\n/);
     for (const line of lines) {
-        // Strip simple <C>/<B> tags used by generateBleReceiptText so plain path still readable
-        const plain = line
+        const isCenterTag = /<C(?:B|M|D)?>/i.test(line);
+        let plain = line
             .replace(/<\/?(?:C|B|CB|CM|CD|D|M|L|R)>/gi, '')
             .replace(/&nbsp;/g, ' ');
+        // If caller still uses <C>, space-pad; otherwise keep existing spaces (software center).
+        if (isCenterTag) {
+            plain = padCenter(plain, width);
+        }
         for (let i = 0; i < plain.length; i += 1) {
             const code = plain.charCodeAt(i);
             chunks.push(code <= 0xff ? code : 0x3f);
@@ -97,63 +77,34 @@ function simpleBillTextToBase64(text: string, opts?: BleBillOptions): string {
 }
 
 export function billTextToBase64(text: string, opts?: BleBillOptions): string {
-    const options = { ...DEFAULT_BILL_OPTIONS, ...opts };
-
-    try {
-        // Only include true flags — omit false so EPToolkit does not still apply them.
-        const toolkitOpts: Record<string, unknown> = {
-            encoding: options.encoding || 'UTF8',
-        };
-        if (options.cut) toolkitOpts.cut = true;
-        if (options.beep) toolkitOpts.beep = true;
-        if (options.tailingLine) toolkitOpts.tailingLine = true;
-
-        // IOptions requires all flags; partial object is intentional so false flags are omitted (EPToolkit bug).
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const raw = EPToolkit.exchange_text(text, toolkitOpts as any);
-        const buffer = sanitizeEscPosBuffer(raw);
-
-        // When cut was requested, EPToolkit uses ESC i which many BLE printers ignore.
-        // Append GS V 0 (partial cut) as a more compatible cut sequence.
-        if (options.cut) {
-            const withCut = Buffer.concat([buffer, Buffer.from([0x0a, 0x1d, 0x56, 0x00])]);
-            return withCut.toString('base64');
-        }
-
-        return buffer.toString('base64');
-    } catch (e) {
-        console.warn('[Print] EPToolkit bill encode failed, using simple path:', e);
-        return simpleBillTextToBase64(text, opts);
-    }
+    // Prefer simple encoder after logo bitmaps — EPToolkit emits ESC a / ESC 2 which
+    // leak as "a"/"2"/"3" when ESC desyncs on cheap BLE printers.
+    return simpleBillTextToBase64(text, opts);
 }
 
 /**
- * Minimal centered lines after logo/QR bitmaps — no EPToolkit ESC 2 / UTF8 FS codes.
- * Avoids the "2Scan..." artifact and extra blank feeds on thermal BLE printers.
+ * Minimal centered lines after logo/QR bitmaps — space padding only (no ESC a).
+ * Avoids "aTiga..." / "2Scan..." / "3TIGA..." artifacts on thermal BLE printers.
  */
 export function billCenterLinesToBase64(
     lines: string[],
-    opts?: { cut?: boolean },
+    opts?: { cut?: boolean; charWidth?: number },
 ): string {
+    const width = Math.max(24, opts?.charWidth ?? 32);
     const chunks: number[] = [];
-    // ESC @ init only — avoid ESC 3 (ASCII '3' leak → "3TIGA PUTRA MOTOR")
+    // ESC @ init only
     chunks.push(0x1b, 0x40);
 
     for (const rawLine of lines) {
-        const line = String(rawLine || '').trim();
+        const line = padCenter(String(rawLine || ''), width);
         if (!line) continue;
-        // ESC a 1 center (binary 1, not ASCII '1')
-        chunks.push(0x1b, 0x61, 0x01);
         for (let i = 0; i < line.length; i += 1) {
             const code = line.charCodeAt(i);
-            // Latin-1 safe for Indonesian receipt captions
             chunks.push(code <= 0xff ? code : 0x3f);
         }
         chunks.push(0x0a);
     }
 
-    // ESC a 0 left + one small feed
-    chunks.push(0x1b, 0x61, 0x00);
     chunks.push(0x0a);
 
     if (opts?.cut) {
