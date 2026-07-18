@@ -1,6 +1,6 @@
 import { appAlert } from '../../utils/appAlert';
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, KeyboardAvoidingView } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -22,7 +22,7 @@ import {
     Trash2,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Platform, Modal } from 'react-native';
 
 import { sdmService, Karyawan, EmployeeStatus } from '../../services/sdm';
@@ -144,11 +144,23 @@ export default function KaryawanScreen() {
         loadData();
     };
 
+    const openSheet = useCallback((preferMaxHeight = false) => {
+        if (Platform.OS === 'web') {
+            setIsSheetOpen(true);
+            return;
+        }
+        // Form needs more vertical space; detail can open at the mid snap.
+        if (preferMaxHeight) {
+            bottomSheetRef.current?.snapToIndex(1);
+        } else {
+            bottomSheetRef.current?.snapToIndex(0);
+        }
+    }, []);
+
     const openDetail = (karyawan: Karyawan) => {
         setSelectedKaryawan(karyawan);
         setViewMode('detail');
-        if (Platform.OS === 'web') setIsSheetOpen(true);
-        else bottomSheetRef.current?.expand();
+        openSheet(false);
     };
 
     const openAddForm = () => {
@@ -167,8 +179,7 @@ export default function KaryawanScreen() {
             catatan: '',
         });
         setViewMode('form');
-        if (Platform.OS === 'web') setIsSheetOpen(true);
-        else bottomSheetRef.current?.expand();
+        openSheet(true);
     };
 
     const openEditForm = (karyawan: Karyawan) => {
@@ -187,8 +198,7 @@ export default function KaryawanScreen() {
             catatan: karyawan.catatan || '',
         });
         setViewMode('form');
-        if (Platform.OS === 'web') setIsSheetOpen(true);
-        else bottomSheetRef.current?.expand();
+        openSheet(true);
     };
 
     const createKaryawanMutation = useCreateKaryawan();
@@ -467,9 +477,20 @@ export default function KaryawanScreen() {
                 <Modal visible={isSheetOpen} transparent animationType="slide" onRequestClose={handleCloseSheet}>
                     <View className="flex-1 justify-end bg-black/40">
                         <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
-                        <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
+                        <View
+                            className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative z-10"
+                            style={{ maxHeight: '90%' }}
+                        >
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
-                            <ScrollView style={{ flex: 1 }} className="px-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                            <ScrollView
+                                style={{ flex: 1 }}
+                                className="px-8"
+                                contentContainerStyle={{ paddingBottom: 48 }}
+                                showsVerticalScrollIndicator
+                                nestedScrollEnabled
+                                keyboardShouldPersistTaps="handled"
+                                keyboardDismissMode="on-drag"
+                            >
                                 {viewMode === 'detail' && selectedKaryawan ? renderDetailContent(selectedKaryawan) : renderFormContent()}
                             </ScrollView>
                         </View>
@@ -481,11 +502,21 @@ export default function KaryawanScreen() {
                     index={-1}
                     snapPoints={snapPoints}
                     enablePanDownToClose
+                    enableContentPanningGesture
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
+                    backdropComponent={renderBackdrop}
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     topInset={insets.top}
                     onClose={() => setIsSheetOpen(false)}
                 >
-                    <BottomSheetScrollView className="px-8">
+                    <BottomSheetScrollView
+                        className="px-8"
+                        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 48 }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                    >
                         {viewMode === 'detail' && selectedKaryawan ? renderDetailContent(selectedKaryawan) : renderFormContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>
@@ -618,12 +649,12 @@ export default function KaryawanScreen() {
     }
 
     function renderFormContent() {
+        // BottomSheetTextInput keeps keyboard/scroll in sync with @gorhom/bottom-sheet.
+        // On web, use regular TextInput (BottomSheetTextInput is native-oriented).
+        const Input = Platform.OS === 'web' ? TextInput : BottomSheetTextInput;
+
         return (
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-                className="pb-10"
-            >
+            <View className="pb-10">
                 <View className="flex-row justify-between items-center mb-10">
                     <View className="flex-row items-center">
                         <View className="w-1 h-6 bg-primary rounded-full mr-3" />
@@ -636,13 +667,14 @@ export default function KaryawanScreen() {
                     </Pressable>
                 </View>
 
-                <View className="space-y-6">
+                <View style={{ gap: 24 }}>
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Lengkap *</Typography>
                         <View className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 flex-row items-center">
                             <User size={18} color="#9CA3AF" />
-                            <TextInput
+                            <Input
                                 className="flex-1 ml-3 text-textMain font-medium"
+                                style={{ flex: 1, marginLeft: 12, color: '#111827', fontWeight: '500' }}
                                 placeholderTextColor="#9CA3AF"
                                 placeholder="E.g. Jajang Sukmarat"
                                 value={formData.nama}
@@ -654,8 +686,9 @@ export default function KaryawanScreen() {
                     <View className="flex-row justify-between">
                         <View className="w-[48%]">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">NIK</Typography>
-                            <TextInput
+                            <Input
                                 className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 text-textMain font-medium"
+                                style={{ backgroundColor: '#F9FAFB', borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 16, color: '#111827', fontWeight: '500' }}
                                 placeholder="16 Digit NIK"
                                 placeholderTextColor="#9CA3AF"
                                 value={formData.nik}
@@ -665,8 +698,9 @@ export default function KaryawanScreen() {
                         </View>
                         <View className="w-[48%]">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Telepon</Typography>
-                            <TextInput
+                            <Input
                                 className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 text-textMain font-medium"
+                                style={{ backgroundColor: '#F9FAFB', borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 16, color: '#111827', fontWeight: '500' }}
                                 placeholder="08xxxxxxxx"
                                 placeholderTextColor="#9CA3AF"
                                 value={formData.telepon}
@@ -678,8 +712,9 @@ export default function KaryawanScreen() {
 
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Jabatan / Peran *</Typography>
-                        <TextInput
+                        <Input
                             className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 text-textMain font-medium"
+                            style={{ backgroundColor: '#F9FAFB', borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 16, color: '#111827', fontWeight: '500' }}
                             placeholder="E.g. Mekanik Head"
                             placeholderTextColor="#9CA3AF"
                             value={formData.jabatan}
@@ -690,8 +725,9 @@ export default function KaryawanScreen() {
                     <View className="flex-row justify-between">
                         <View className="w-[48%]">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Gaji Pokok *</Typography>
-                            <TextInput
+                            <Input
                                 className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 text-textMain font-medium"
+                                style={{ backgroundColor: '#F9FAFB', borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 16, color: '#111827', fontWeight: '500' }}
                                 placeholder="Rp 0"
                                 placeholderTextColor="#9CA3AF"
                                 value={formData.gaji_pokok}
@@ -701,8 +737,9 @@ export default function KaryawanScreen() {
                         </View>
                         <View className="w-[48%]">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Tunjangan</Typography>
-                            <TextInput
+                            <Input
                                 className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 text-textMain font-medium"
+                                style={{ backgroundColor: '#F9FAFB', borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 16, color: '#111827', fontWeight: '500' }}
                                 placeholder="Rp 0"
                                 placeholderTextColor="#9CA3AF"
                                 value={formData.tunjangan}
@@ -714,8 +751,9 @@ export default function KaryawanScreen() {
 
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Catatan Tambahan</Typography>
-                        <TextInput
+                        <Input
                             className="bg-gray-50 rounded-[32px] border border-gray-100 px-5 py-4 text-textMain font-medium h-24"
+                            style={{ backgroundColor: '#F9FAFB', borderRadius: 32, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 20, paddingVertical: 16, color: '#111827', fontWeight: '500', minHeight: 96, textAlignVertical: 'top' }}
                             placeholder="Keahlian khusus, preferensi shift, dll..."
                             placeholderTextColor="#9CA3AF"
                             value={formData.catatan}
@@ -733,7 +771,7 @@ export default function KaryawanScreen() {
                         </Typography>
                     </Pressable>
                 </View>
-            </KeyboardAvoidingView>
+            </View>
         );
     }
 }
