@@ -791,9 +791,9 @@ export default function SlipGajiScreen() {
                         )}
                     </View>
 
-                    {/* Bulk Generate FAB */}
-                    {activeTab === 'pending' && filteredPending.length > 0 && (
-                        <View className="absolute left-6 right-6" style={{ bottom: 100, elevation: 5, zIndex: 999 }}>
+                    {/* Bulk Generate FAB — hide while detail sheet open so elevation cannot cover it */}
+                    {activeTab === 'pending' && filteredPending.length > 0 && !selectedSlip && (
+                        <View className="absolute left-6 right-6" style={{ bottom: 100, elevation: 5, zIndex: 50 }}>
                             <Pressable
                                 onPress={handleGenerateBulk}
                                 disabled={createBulkMutation.isPending}
@@ -811,9 +811,9 @@ export default function SlipGajiScreen() {
                 </View>
             </ScrollView>
 
-            {/* Summary Panel for History */}
-            {activeTab === 'history' && summary && (
-                <View className="absolute left-0 right-0 bg-white p-4 sm:p-6 rounded-t-[40px] sm:rounded-t-[48px] shadow-2xl border-t border-gray-100 flex-row items-center justify-between" style={{ bottom: 85, elevation: 10, zIndex: 999 }}>
+            {/* Summary Panel for History — hide while detail sheet open */}
+            {activeTab === 'history' && summary && !selectedSlip && (
+                <View className="absolute left-0 right-0 bg-white p-4 sm:p-6 rounded-t-[40px] sm:rounded-t-[48px] shadow-2xl border-t border-gray-100 flex-row items-center justify-between" style={{ bottom: 85, elevation: 10, zIndex: 50 }}>
                     <View className="flex-1 mr-3">
                         <Typography className="text-textGray/40 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-1" numberOfLines={1}>Total Pengeluaran</Typography>
                         <Typography className="text-textMain text-lg sm:text-xl font-black" numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(summary.total_dibayar + summary.total_belum_dibayar)}</Typography>
@@ -848,7 +848,13 @@ export default function SlipGajiScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
+                    backdropComponent={(props) => (
+                        <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
+                    )}
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    // Cards/FABs use shadow (Android elevation); raise sheet above them.
+                    containerStyle={{ zIndex: 1000, elevation: 24 }}
+                    style={{ zIndex: 1000, elevation: 24 }}
                     topInset={insets.top}
                     onClose={() => setSelectedSlip(null)}
                 >

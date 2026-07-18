@@ -141,9 +141,8 @@ export default function KasbonScreen() {
         });
         setDisbursements([{ id: Date.now() + Math.random(), metode: 'tunai', nominal: '' }]);
         setIsSplitDisbursement(false);
-        if (Platform.OS === 'web') {
-            setActiveSheet('create');
-        } else {
+        setActiveSheet('create');
+        if (Platform.OS !== 'web') {
             createSheetRef.current?.expand();
         }
     };
@@ -678,14 +677,16 @@ export default function KasbonScreen() {
                 />
             )}
 
-            {/* Redesigned FAB */}
-            <Pressable
-                onPress={openAddForm}
-                style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
-                className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
-            >
-                <Plus size={32} color="white" strokeWidth={2.5} />
-            </Pressable>
+            {/* FAB hidden while sheet open so elevation cannot cover the form */}
+            {activeSheet === 'none' && (
+                <Pressable
+                    onPress={openAddForm}
+                    style={{ bottom: 100, right: 24, elevation: 5, zIndex: 50 }}
+                    className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
+                >
+                    <Plus size={32} color="white" strokeWidth={2.5} />
+                </Pressable>
+            )}
 
             {/* Bottom Sheet UI */}
             {Platform.OS === 'web' ? (
@@ -725,7 +726,11 @@ export default function KasbonScreen() {
                         keyboardBehavior="interactive"
                         keyboardBlurBehavior="restore"
                         android_keyboardInputMode="adjustResize"
+                        backdropComponent={renderBackdrop}
                         backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        // List cards use shadow (Android elevation); raise sheet above them.
+                        containerStyle={{ zIndex: 1000, elevation: 24 }}
+                        style={{ zIndex: 1000, elevation: 24 }}
                         topInset={insets.top}
                         onClose={() => setActiveSheet('none')}
                     >
@@ -748,7 +753,10 @@ export default function KasbonScreen() {
                         keyboardBehavior="interactive"
                         keyboardBlurBehavior="restore"
                         android_keyboardInputMode="adjustResize"
+                        backdropComponent={renderBackdrop}
                         backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        containerStyle={{ zIndex: 1000, elevation: 24 }}
+                        style={{ zIndex: 1000, elevation: 24 }}
                         topInset={insets.top}
                         onClose={() => setActiveSheet('none')}
                     >
