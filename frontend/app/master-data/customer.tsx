@@ -30,6 +30,8 @@ import { getErrorMessage } from '../../utils/error';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useUIStore } from '../../store/useUIStore';
 import { onlineManager } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 const TYPE_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -38,6 +40,7 @@ const TYPE_FILTERS = [
 ];
 
 export default function CustomerScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter(); const [searchQuery, setSearchQuery] = useState('');
     const [selectedFilter, setSelectedFilter] = useState<string>('all');
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -685,12 +688,21 @@ export default function CustomerScreen() {
                     index={-1}
                     snapPoints={snapPoints}
                     enablePanDownToClose
+                    enableContentPanningGesture
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
                     backgroundStyle={{ borderRadius: 32, backgroundColor: 'white' }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48 }}
+                    topInset={insets.top}
                     onChange={(index) => setSheetVisible(index !== -1)}
                     onClose={() => setSheetVisible(false)}
                 >
-                    <BottomSheetScrollView>
+                    <BottomSheetScrollView
+                        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 48 }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                    >
                         {renderSheetContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>
@@ -699,7 +711,7 @@ export default function CustomerScreen() {
             {/* Floating Action Button */}
             <Pressable
                 onPress={openAddForm}
-                style={{ position: 'absolute', right: 24, bottom: 100, elevation: 5, zIndex: 999, width: 64, height: 64 }}
+                style={{ position: 'absolute', right: 24, bottom: getCustomTabBarBottomPadding(insets.bottom, 16), elevation: 12, zIndex: 999, width: 64, height: 64 }}
                 className="bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8"
             >
                 <Plus size={32} color="white" />

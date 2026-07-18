@@ -23,6 +23,8 @@ import {
 import { formatNumber, parseNumber } from '../../utils/format';
 import { onlineManager } from '@tanstack/react-query';
 import { appAlert } from '../../utils/appAlert';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 interface JasaServisForm {
     id?: number;
@@ -40,6 +42,7 @@ const INITIAL_FORM: JasaServisForm = {
 };
 
 export default function JasaServisScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     // Search & Filter
     const [searchQuery, setSearchQuery] = useState('');
@@ -348,7 +351,7 @@ export default function JasaServisScreen() {
                     {/* Floating Action Button */}
                     <Pressable
                         onPress={() => handleOpenSheet()}
-                        style={{ position: 'absolute', right: 24, bottom: 100, elevation: 5, zIndex: 999, width: 64, height: 64 }}
+                        style={{ position: 'absolute', right: 24, bottom: getCustomTabBarBottomPadding(insets.bottom, 16), elevation: 12, zIndex: 999, width: 64, height: 64 }}
                         className="bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8"
                     >
                         <Plus size={32} color="white" />
@@ -391,13 +394,22 @@ export default function JasaServisScreen() {
                     index={-1}
                     snapPoints={snapPoints}
                     enablePanDownToClose
+                    enableContentPanningGesture
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    topInset={insets.top}
                     onChange={(index) => setSheetVisible(index !== -1)}
                     onClose={() => setSheetVisible(false)}
                 >
-                    <BottomSheetScrollView>
+                    <BottomSheetScrollView
+                        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 48 }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                    >
                         {renderFormContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>

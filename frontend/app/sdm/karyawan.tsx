@@ -32,6 +32,7 @@ import { getErrorMessage } from '../../utils/error';
 import { onlineManager } from '@tanstack/react-query';
 import { useCreateKaryawan, useUpdateKaryawan } from '../../hooks/useSDM';
 import { Header } from '../../components/ui/Header';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 const STATUS_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -451,7 +452,11 @@ export default function KaryawanScreen() {
                     );
                 }}
                 keyExtractor={(item: Karyawan) => item.id.toString()}
-                contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
+                contentContainerStyle={{
+                    paddingHorizontal: 24,
+                    paddingTop: 32,
+                    paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 96),
+                }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 ListEmptyComponent={
                     <View className="items-center py-20">
@@ -463,11 +468,19 @@ export default function KaryawanScreen() {
                 }
             />
 
-            {/* Redesigned FAB */}
+            {/* FAB sits above CustomTabBar (base 80 + safe-area + gap) */}
             <Pressable
                 onPress={openAddForm}
-                
-                className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8 border border-white/20"
+                style={{
+                    position: 'absolute',
+                    right: 24,
+                    bottom: getCustomTabBarBottomPadding(insets.bottom, 16),
+                    width: 64,
+                    height: 64,
+                    zIndex: 50,
+                    elevation: 12,
+                }}
+                className="bg-primary rounded-[24px] items-center justify-center shadow-2xl border border-white/20"
             >
                 <Plus size={32} color="white" strokeWidth={2.5} />
             </Pressable>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ActivityIndicator, Text, ScrollView, Platform, StyleSheet, KeyboardAvoidingView, Pressable, TouchableOpacity } from 'react-native';
+import { View, ActivityIndicator, Text, ScrollView, Platform, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
 import { Typography } from '../ui/Typography';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
@@ -1146,29 +1146,27 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         );
     }
 
+    // Keyboard handled by parent BottomSheet (keyboardBehavior="interactive").
+    // Do not wrap BottomSheetScrollView in KeyboardAvoidingView — it blocks scroll.
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.flex1}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-        >
-            <View style={styles.mobileContainer}>
-                <BottomSheetScrollView
-                    style={styles.flex1}
-                    showsVerticalScrollIndicator={true}
-                    bounces={true}
-                >
-                    {renderFormContent()}
-                </BottomSheetScrollView>
-                <AlertDialog
-                    visible={dialogConfig.visible}
-                    title={dialogConfig.title}
-                    message={dialogConfig.message}
-                    variant={dialogConfig.variant}
-                    onClose={() => setDialogConfig(p => ({ ...p, visible: false }))}
-                />
-            </View>
-        </KeyboardAvoidingView>
+        <View style={styles.mobileContainer}>
+            <BottomSheetScrollView
+                style={styles.flex1}
+                contentContainerStyle={{ paddingBottom: 48 }}
+                showsVerticalScrollIndicator
+                bounces
+                keyboardShouldPersistTaps="handled"
+            >
+                {renderFormContent()}
+            </BottomSheetScrollView>
+            <AlertDialog
+                visible={dialogConfig.visible}
+                title={dialogConfig.title}
+                message={dialogConfig.message}
+                variant={dialogConfig.variant}
+                onClose={() => setDialogConfig(p => ({ ...p, visible: false }))}
+            />
+        </View>
     );
 };
 

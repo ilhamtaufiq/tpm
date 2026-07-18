@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -61,6 +62,7 @@ const JENIS_LABEL: Record<KasBankJenis, string> = {
 };
 
 export default function MutasiKasScreen() {
+    const insets = useSafeAreaInsets();
     const { action, jenis } = useLocalSearchParams<{ 
         action?: string, 
         jenis?: string,
@@ -693,12 +695,12 @@ export default function MutasiKasScreen() {
                 }
             />
 
-            {/* Premium FAB */}
+            {/* Premium FAB — above CustomTabBar */}
             <Pressable
                 onPress={() => handleOpenSheet('transfer')}
                 style={({ pressed }) => ({
                     position: 'absolute',
-                    bottom: 40,
+                    bottom: getCustomTabBarBottomPadding(insets.bottom, 16),
                     right: 24,
                     width: 64,
                     height: 64,
@@ -710,7 +712,8 @@ export default function MutasiKasScreen() {
                     shadowOffset: { width: 0, height: 10 },
                     shadowOpacity: 0.5,
                     shadowRadius: 20,
-                    elevation: 10,
+                    elevation: 12,
+                    zIndex: 50,
                     borderWidth: 4,
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                     opacity: pressed ? 0.8 : 1
@@ -738,13 +741,20 @@ export default function MutasiKasScreen() {
                     index={-1}
                     snapPoints={snapPoints}
                     enablePanDownToClose
+                    enableContentPanningGesture
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >
-                    <BottomSheetScrollView>
+                    <BottomSheetScrollView
+                        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 48 }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                    >
                         {renderSheetContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>

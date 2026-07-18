@@ -702,10 +702,19 @@ export default function PencairanInvestorScreen() {
                     index={-1}
                     snapPoints={paymentSnapPoints}
                     enablePanDownToClose
+                    enableContentPanningGesture
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >
-                    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>
+                    <BottomSheetScrollView
+                        contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 48) }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                    >
                         {renderProcessDisbursementContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>

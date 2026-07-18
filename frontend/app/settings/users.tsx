@@ -39,6 +39,7 @@ import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom
 import { useUIStore } from '../../store/useUIStore';
 import { Header } from '../../components/ui/Header';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ROLE_OPTIONS = [
     { label: 'Admin', value: 'ADMIN', color: '#EF4444', icon: Shield },
@@ -55,6 +56,7 @@ const ROLE_OPTIONS = [
 const UsersIcon = ({ size, color }: { size: number, color: string }) => <UserPlus size={size} color={color} />;
 
 export default function UserManagementScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const { user: currentUser, startImpersonation } = useAuthStore();
     const [searchQuery, setSearchQuery] = useState('');
@@ -588,12 +590,23 @@ export default function UserManagementScreen() {
                     index={-1}
                     snapPoints={snapPoints}
                     enablePanDownToClose
+                    enableContentPanningGesture
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48 }}
+                    topInset={insets.top}
                     onChange={(index) => setSheetVisible(index !== -1)}
                     onClose={() => setSheetVisible(false)}
                 >
-                    <BottomSheetScrollView>{renderSheetContent()}</BottomSheetScrollView>
+                    <BottomSheetScrollView
+                        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 48 }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                    >
+                        {renderSheetContent()}
+                    </BottomSheetScrollView>
                 </BottomSheet>
             )}
 

@@ -27,6 +27,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { formatCurrency } from '../../utils/format';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const KATEGORI_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -39,6 +40,7 @@ const KATEGORI_FILTERS = [
 ];
 
 export default function AssetScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFilter, setSelectedFilter] = useState<string>('all');
@@ -514,8 +516,26 @@ export default function AssetScreen() {
                     </View>
                 </Modal>
             ) : (
-                <BottomSheet ref={bottomSheetRef} index={-1} snapPoints={snapPoints} enablePanDownToClose backgroundStyle={{ borderRadius: 32 }} onClose={() => setSheetVisible(false)}>
-                    <BottomSheetScrollView>{renderSheetContent()}</BottomSheetScrollView>
+                <BottomSheet
+                    ref={bottomSheetRef}
+                    index={-1}
+                    snapPoints={snapPoints}
+                    enablePanDownToClose
+                    enableContentPanningGesture
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
+                    backgroundStyle={{ borderRadius: 32 }}
+                    topInset={insets.top}
+                    onClose={() => setSheetVisible(false)}
+                >
+                    <BottomSheetScrollView
+                        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 48 }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                    >
+                        {renderSheetContent()}
+                    </BottomSheetScrollView>
                 </BottomSheet>
             )}
 

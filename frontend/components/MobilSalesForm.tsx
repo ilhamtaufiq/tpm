@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TextInput, ActivityIndicator, Platform, StyleSheet, KeyboardAvoidingView, Pressable } from 'react-native';
+import { View, ScrollView, TextInput, ActivityIndicator, Platform, StyleSheet, Pressable } from 'react-native';
 // import { Pressable } from '@gorhom/bottom-sheet'; // Reverted for web compatibility
 import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
@@ -581,33 +581,31 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
         );
     }
 
+    // Keyboard handled by parent BottomSheet (keyboardBehavior="interactive").
+    // Do not wrap BottomSheetScrollView in KeyboardAvoidingView — it blocks scroll.
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.flex1}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-        >
-            <View style={styles.mobileContainer}>
-                <View style={styles.header}>
-                    <Typography variant="h3" weight="bold">Konfirmasi Penjualan</Typography>
-                    <Typography variant="caption" className="text-gray-400">Pencatatan transaksi penjualan unit mobil</Typography>
-                </View>
-                <BottomSheetScrollView
-                    style={styles.flex1}
-                    showsVerticalScrollIndicator={true}
-                    bounces={true}
-                >
-                    {renderFormContent()}
-                </BottomSheetScrollView>
-                <AlertDialog
-                    visible={dialogConfig.visible}
-                    title={dialogConfig.title}
-                    message={dialogConfig.message}
-                    variant={dialogConfig.variant}
-                    onClose={() => setDialogConfig((prev: any) => ({ ...prev, visible: false }))}
-                />
+        <View style={styles.mobileContainer}>
+            <View style={styles.header}>
+                <Typography variant="h3" weight="bold">Konfirmasi Penjualan</Typography>
+                <Typography variant="caption" className="text-gray-400">Pencatatan transaksi penjualan unit mobil</Typography>
             </View>
-        </KeyboardAvoidingView>
+            <BottomSheetScrollView
+                style={styles.flex1}
+                contentContainerStyle={{ paddingBottom: 48 }}
+                showsVerticalScrollIndicator
+                bounces
+                keyboardShouldPersistTaps="handled"
+            >
+                {renderFormContent()}
+            </BottomSheetScrollView>
+            <AlertDialog
+                visible={dialogConfig.visible}
+                title={dialogConfig.title}
+                message={dialogConfig.message}
+                variant={dialogConfig.variant}
+                onClose={() => setDialogConfig((prev: any) => ({ ...prev, visible: false }))}
+            />
+        </View>
     );
 };
 

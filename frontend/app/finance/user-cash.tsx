@@ -308,11 +308,20 @@ export default function UserCashManagementScreen() {
                 index={-1}
                 snapPoints={snapPoints}
                 enablePanDownToClose
+                enableContentPanningGesture
+                keyboardBehavior="interactive"
+                keyboardBlurBehavior="restore"
+                android_keyboardInputMode="adjustResize"
                 backdropComponent={renderBackdrop}
                 handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                topInset={insets.top}
                 onClose={() => setForm(null)}
             >
-                <BottomSheetScrollView contentContainerStyle={{ padding: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>
+                <BottomSheetScrollView
+                    contentContainerStyle={{ padding: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 48) }}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator
+                >
                     {form && (
                         <>
                             <Typography variant="h3" weight="bold" className="mb-1">

@@ -159,18 +159,25 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
             index={index}
             snapPoints={snapPoints}
             enablePanDownToClose
+            enableContentPanningGesture
+            keyboardBehavior="interactive"
+            keyboardBlurBehavior="restore"
+            android_keyboardInputMode="adjustResize"
             backdropComponent={renderBackdrop}
             backgroundStyle={{ borderRadius }}
             handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 40 }}
+            topInset={insets.top}
             onChange={handleSheetChange}
         >
             {scrollable ? (
                 <BottomSheetScrollView
                     contentContainerStyle={{
                         paddingHorizontal,
-                        paddingBottom: insets.bottom + 24,
+                        paddingBottom: insets.bottom + 48,
                         paddingTop: 12,
                     }}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator
                 >
                     {children}
                 </BottomSheetScrollView>

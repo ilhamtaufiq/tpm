@@ -944,14 +944,21 @@ export default function PiutangUsahaScreen() {
                     index={-1}
                     snapPoints={createSnapPoints}
                     enablePanDownToClose
+                    enableContentPanningGesture
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >
-                    <BottomSheetScrollView contentContainerStyle={{ padding: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>
+                    <BottomSheetScrollView
+                        contentContainerStyle={{ padding: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 48) }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                    >
                         {renderCreateContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>
@@ -982,14 +989,21 @@ export default function PiutangUsahaScreen() {
                     index={-1}
                     snapPoints={detailSnapPoints}
                     enablePanDownToClose
+                    enableContentPanningGesture
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >
-                    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>
+                    <BottomSheetScrollView
+                        contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 48) }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                    >
                         {renderDetailContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>

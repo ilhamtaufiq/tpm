@@ -470,12 +470,18 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             index={visible ? 0 : -1}
             snapPoints={snapPoints}
             enablePanDownToClose
+            enableContentPanningGesture
             keyboardBehavior="interactive"
             keyboardBlurBehavior="restore"
+            android_keyboardInputMode="adjustResize"
             onClose={onClose}
             backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
         >
-            <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+            <BottomSheetScrollView
+                showsVerticalScrollIndicator
+                contentContainerStyle={{ paddingBottom: 48 }}
+                keyboardShouldPersistTaps="handled"
+            >
                 {renderContent()}
             </BottomSheetScrollView>
         </BottomSheet>

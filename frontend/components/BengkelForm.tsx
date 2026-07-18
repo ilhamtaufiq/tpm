@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, Platform, Dimensions, StyleSheet, KeyboardAvoidingView, TextInput, FlatList, SectionList, TouchableOpacity, Pressable, GestureResponderEvent, Modal } from 'react-native';
+import { View, ScrollView, Platform, Dimensions, StyleSheet, TextInput, FlatList, SectionList, TouchableOpacity, Pressable, GestureResponderEvent, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
@@ -1772,48 +1772,42 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
         );
     }
 
-    // Mobile version with BottomSheetScrollView
+    // Mobile: keyboard handled by parent BottomSheet (keyboardBehavior="interactive").
+    // Do not wrap BottomSheetScrollView in KeyboardAvoidingView — it blocks scroll.
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={{ flex: 1 }}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-        >
-            <View style={styles.mobileContainer}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <Typography variant="h3" weight="bold">{initialData ? 'Edit Antrian' : 'Buat Antrian Bengkel'}</Typography>
-                    <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
-                </View>
-
-                {/* Scrollable Content for BottomSheet (using specialised scroll view for native mobile) */}
-                <BottomSheetScrollView
-                    style={styles.mobileScrollView}
-                    contentContainerStyle={styles.mobileScrollContent}
-                    showsVerticalScrollIndicator={true}
-                    bounces={true}
-                >
-                    {renderFormContent()}
-                </BottomSheetScrollView>
-                {renderSelectionSheet()}
-                <BarcodeScannerModal
-                    visible={isScannerOpen}
-                    onClose={() => {
-                        setIsScannerOpen(false);
-                    }}
-                    onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)}
-                    scanLog={scanLog}
-                    continuous={scannerMode === 'sparepart'}
-                />
-                <AlertDialog
-                    visible={dialogConfig.visible}
-                    title={dialogConfig.title}
-                    message={dialogConfig.message}
-                    variant={dialogConfig.variant}
-                    onClose={() => setDialogConfig(p => ({ ...p, visible: false }))}
-                />
+        <View style={styles.mobileContainer}>
+            <View style={styles.header}>
+                <Typography variant="h3" weight="bold">{initialData ? 'Edit Antrian' : 'Buat Antrian Bengkel'}</Typography>
+                <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
             </View>
-        </KeyboardAvoidingView>
+
+            <BottomSheetScrollView
+                style={styles.mobileScrollView}
+                contentContainerStyle={styles.mobileScrollContent}
+                showsVerticalScrollIndicator
+                bounces
+                keyboardShouldPersistTaps="handled"
+            >
+                {renderFormContent()}
+            </BottomSheetScrollView>
+            {renderSelectionSheet()}
+            <BarcodeScannerModal
+                visible={isScannerOpen}
+                onClose={() => {
+                    setIsScannerOpen(false);
+                }}
+                onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)}
+                scanLog={scanLog}
+                continuous={scannerMode === 'sparepart'}
+            />
+            <AlertDialog
+                visible={dialogConfig.visible}
+                title={dialogConfig.title}
+                message={dialogConfig.message}
+                variant={dialogConfig.variant}
+                onClose={() => setDialogConfig(p => ({ ...p, visible: false }))}
+            />
+        </View>
     );
 };
 

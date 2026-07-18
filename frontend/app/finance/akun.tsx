@@ -667,13 +667,22 @@ export default function AkunKeuanganScreen() {
                     index={-1}
                     snapPoints={adjustSnapPoints}
                     enablePanDownToClose
+                    enableContentPanningGesture
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    topInset={insets.top}
                     onClose={() => {
                         setIsAdjustModalVisible(false);
                         setIsSheetOpen(false);
                     }}
                 >
-                    <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+                    <BottomSheetScrollView
+                        showsVerticalScrollIndicator
+                        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 48 }}
+                        keyboardShouldPersistTaps="handled"
+                    >
                         <View className="px-6 py-2">
                             <Typography variant="h2" weight="bold" className="mb-6">Penyesuaian Saldo</Typography>
                             {renderAdjustContent()}

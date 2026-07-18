@@ -856,25 +856,47 @@ export default function HutangUsahaScreen() {
                         ref={detailSheetRef}
                         snapPoints={detailSnapPoints}
                         enablePanDownToClose
+                        enableContentPanningGesture
+                        keyboardBehavior="interactive"
+                        keyboardBlurBehavior="restore"
+                        android_keyboardInputMode="adjustResize"
                         index={-1}
                         backdropComponent={renderBackdrop}
                         handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                         backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        topInset={insets.top}
                         onClose={() => setIsSheetOpen(false)}
                     >
-                        <BottomSheetScrollView contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>{renderDetailContent()}</BottomSheetScrollView>
+                        <BottomSheetScrollView
+                            contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 48) }}
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator
+                        >
+                            {renderDetailContent()}
+                        </BottomSheetScrollView>
                     </BottomSheet>
                     <BottomSheet
                         ref={createSheetRef}
                         snapPoints={createSnapPoints}
                         enablePanDownToClose
+                        enableContentPanningGesture
+                        keyboardBehavior="interactive"
+                        keyboardBlurBehavior="restore"
+                        android_keyboardInputMode="adjustResize"
                         index={-1}
                         backdropComponent={renderBackdrop}
                         handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                         backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        topInset={insets.top}
                         onClose={() => setIsSheetOpen(false)}
                     >
-                        <BottomSheetScrollView contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>{renderCreateContent()}</BottomSheetScrollView>
+                        <BottomSheetScrollView
+                            contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 48) }}
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator
+                        >
+                            {renderCreateContent()}
+                        </BottomSheetScrollView>
                     </BottomSheet>
                 </>
             )}

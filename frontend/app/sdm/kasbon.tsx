@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -36,6 +36,7 @@ const STATUS_FILTERS = [
 ];
 
 export default function KasbonScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const { user } = useAuthStore();
     const [loading, setLoading] = useState(true);
@@ -720,12 +721,20 @@ export default function KasbonScreen() {
                         index={-1}
                         snapPoints={createSnapPoints}
                         enablePanDownToClose
+                        enableContentPanningGesture
                         keyboardBehavior="interactive"
                         keyboardBlurBehavior="restore"
+                        android_keyboardInputMode="adjustResize"
                         backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        topInset={insets.top}
                         onClose={() => setActiveSheet('none')}
                     >
-                        <BottomSheetScrollView className="px-8">
+                        <BottomSheetScrollView
+                            className="px-8"
+                            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 48 }}
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator
+                        >
                             {renderCreateForm()}
                         </BottomSheetScrollView>
                     </BottomSheet>
@@ -735,12 +744,19 @@ export default function KasbonScreen() {
                         index={-1}
                         snapPoints={detailSnapPoints}
                         enablePanDownToClose
+                        enableContentPanningGesture
                         keyboardBehavior="interactive"
                         keyboardBlurBehavior="restore"
+                        android_keyboardInputMode="adjustResize"
                         backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        topInset={insets.top}
                         onClose={() => setActiveSheet('none')}
                     >
-                        <BottomSheetScrollView>
+                        <BottomSheetScrollView
+                            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 48 }}
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator
+                        >
                             {renderDetailContent()}
                         </BottomSheetScrollView>
                     </BottomSheet>

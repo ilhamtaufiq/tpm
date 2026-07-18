@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Modal, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -68,6 +68,7 @@ const getDayName = (dateString: string): string => {
 };
 
 export default function SlipGajiScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const now = new Date();
     const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
@@ -843,10 +844,20 @@ export default function SlipGajiScreen() {
                     index={-1}
                     snapPoints={snapPoints}
                     enablePanDownToClose
+                    enableContentPanningGesture
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    topInset={insets.top}
                     onClose={() => setSelectedSlip(null)}
                 >
-                    <BottomSheetScrollView className="px-10">
+                    <BottomSheetScrollView
+                        className="px-10"
+                        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 48 }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                    >
                         {selectedSlip && renderDetailContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>
