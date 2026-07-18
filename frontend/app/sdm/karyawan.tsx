@@ -146,8 +146,8 @@ export default function KaryawanScreen() {
     };
 
     const openSheet = useCallback((preferMaxHeight = false) => {
+        setIsSheetOpen(true);
         if (Platform.OS === 'web') {
-            setIsSheetOpen(true);
             return;
         }
         // Form needs more vertical space; detail can open at the mid snap.
@@ -468,22 +468,24 @@ export default function KaryawanScreen() {
                 }
             />
 
-            {/* FAB sits above CustomTabBar (base 80 + safe-area + gap) */}
-            <Pressable
-                onPress={openAddForm}
-                style={{
-                    position: 'absolute',
-                    right: 24,
-                    bottom: getCustomTabBarBottomPadding(insets.bottom, 16),
-                    width: 64,
-                    height: 64,
-                    zIndex: 50,
-                    elevation: 12,
-                }}
-                className="bg-primary rounded-[24px] items-center justify-center shadow-2xl border border-white/20"
-            >
-                <Plus size={32} color="white" strokeWidth={2.5} />
-            </Pressable>
+            {/* FAB sits above CustomTabBar (base 80 + safe-area + gap). Hidden while sheet open so elevation can't cover the sheet. */}
+            {!isSheetOpen && (
+                <Pressable
+                    onPress={openAddForm}
+                    style={{
+                        position: 'absolute',
+                        right: 24,
+                        bottom: getCustomTabBarBottomPadding(insets.bottom, 16),
+                        width: 64,
+                        height: 64,
+                        zIndex: 50,
+                        elevation: 12,
+                    }}
+                    className="bg-primary rounded-[24px] items-center justify-center shadow-2xl border border-white/20"
+                >
+                    <Plus size={32} color="white" strokeWidth={2.5} />
+                </Pressable>
+            )}
 
             {/* UI - Platform Specific Bottom Sheets */}
             {Platform.OS === 'web' ? (
@@ -521,6 +523,10 @@ export default function KaryawanScreen() {
                     android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    // Cards/filter use shadow (Android elevation). Without high elevation here,
+                    // list items paint above the in-tree BottomSheet and block the form.
+                    containerStyle={{ zIndex: 1000, elevation: 24 }}
+                    style={{ zIndex: 1000, elevation: 24 }}
                     topInset={insets.top}
                     onClose={() => setIsSheetOpen(false)}
                 >
