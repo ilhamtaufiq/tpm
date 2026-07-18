@@ -559,8 +559,8 @@ export default function KasbonScreen() {
                 </View>
             </Header>
 
-            {/* Filter & Search Navigator Overlay */}
-            <View className="px-6 -mt-8">
+            {/* Filter & Search — pull up to sit tighter under header stats */}
+            <View className="px-6 -mt-14 z-10">
                 <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
                         {STATUS_FILTERS.map((filter) => (
@@ -665,7 +665,7 @@ export default function KasbonScreen() {
                         );
                     }}
                     keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 200 }}
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 200 }}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                     ListEmptyComponent={
                         <View className="items-center py-20">

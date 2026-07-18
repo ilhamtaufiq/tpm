@@ -53,15 +53,12 @@ export default function SDMScreen() {
 
             <ScrollView
                 className="flex-1 px-6"
-                contentContainerStyle={{ paddingBottom: 100, paddingTop: 32 }}
+                contentContainerStyle={{ paddingBottom: 100, paddingTop: 16 }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
-                {/* Visual Break / Spacer */}
-                <View className="h-6" />
-
                 {/* Premium Circular Quick Actions */}
-                <Typography variant="h3" weight="bold" className="text-textMain mb-6 tracking-tight">Navigasi Cepat</Typography>
+                <Typography variant="h3" weight="bold" className="text-textMain mb-5 tracking-tight">Navigasi Cepat</Typography>
                 <View className="flex-row flex-wrap justify-between mb-10">
                     {QUICK_ACTIONS.filter(action => {
                         const role = user?.role;

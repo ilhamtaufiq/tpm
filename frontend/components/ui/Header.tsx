@@ -126,7 +126,7 @@ export const Header = ({
     return (
         <>
         <View 
-            className="bg-white pb-4 border-b border-gray-100 px-6 relative overflow-hidden"
+            className={`bg-white border-b border-gray-100 px-6 relative overflow-hidden ${children ? 'pb-2' : 'pb-4'}`}
             style={{ paddingTop: Math.max(insets.top, 16) + 8 }}
         >
             {/* Header Content */}
@@ -275,7 +275,7 @@ export const Header = ({
                     </View>
                 )}
 
-                {children && <View className="mt-4">{children}</View>}
+                {children && <View className="mt-3 mb-1">{children}</View>}
             </View>
 
             {/* Search Modal */}

@@ -627,12 +627,12 @@ export default function SlipGajiScreen() {
 
             <ScrollView 
                 className="flex-1"
-                contentContainerStyle={{ paddingTop: 24, paddingBottom: 100 }}
+                contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
                 {/* Range Selection Card - Unified Periode */}
-                <View className="mx-6 mb-6">
-                    <Card className="p-6 rounded-[32px] shadow-xl border border-gray-100 mb-4 bg-white">
+                <View className="mx-6 mb-4">
+                    <Card className="p-5 rounded-[28px] shadow-xl border border-gray-100 mb-3 bg-white">
                         <Typography className="text-textGray/40 text-[10px] font-black uppercase tracking-[2px] mb-4 text-center">Periode Laporan & Slip</Typography>
                         
                         <View className="flex-row items-center justify-between pb-4 border-b border-gray-50">

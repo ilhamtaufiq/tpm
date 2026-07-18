@@ -373,8 +373,8 @@ export default function KaryawanScreen() {
                 </View>
             </Header>
 
-            {/* Filter & Search Navigator Overlay */}
-            <View className="px-6 -mt-8 z-10">
+            {/* Filter & Search — pull up to sit tighter under header stats */}
+            <View className="px-6 -mt-14 z-10">
                 <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
                         {STATUS_FILTERS.map((filter) => (
@@ -454,7 +454,7 @@ export default function KaryawanScreen() {
                 keyExtractor={(item: Karyawan) => item.id.toString()}
                 contentContainerStyle={{
                     paddingHorizontal: 24,
-                    paddingTop: 32,
+                    paddingTop: 16,
                     paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 96),
                 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}

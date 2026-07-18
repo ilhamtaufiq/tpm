@@ -314,7 +314,7 @@ export default function AbsensiScreen() {
                 )}
             </Header>
 
-            <View className="flex-1 -mt-8 z-10 px-6">
+            <View className="flex-1 -mt-14 z-10 px-6">
                 {!selectedKaryawan ? (
                     <FlatList
                         data={filteredKaryawan}
