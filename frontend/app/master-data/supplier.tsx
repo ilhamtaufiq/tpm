@@ -25,13 +25,16 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useRouter } from 'expo-router';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../services/offlineQueue';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 export default function SupplierScreen() {
     const insets = useSafeAreaInsets();
-    const router = useRouter(); const [searchQuery, setSearchQuery] = useState('');
+    const router = useRouter();
+    const queryClient = useQueryClient();
+    const [searchQuery, setSearchQuery] = useState('');
     const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'form'>('detail');
     const [refreshing, setRefreshing] = useState(false);
@@ -151,23 +154,30 @@ export default function SupplierScreen() {
         }
 
         try {
-            if (!onlineManager.isOnline()) {
-                if (selectedSupplier) {
-                    updateMutation.mutate({ id: selectedSupplier.id, data: formData });
-                } else {
-                    createMutation.mutate(formData);
-                }
-                setDialogConfig({ visible: true, title: 'Offline Mode', message: 'Data supplier telah disimpan di antrean offline.', variant: 'info' });
-                handleCloseSheet();
-                return;
-            }
-
-            if (selectedSupplier) {
-                await updateMutation.mutateAsync({ id: selectedSupplier.id, data: formData });
-                setDialogConfig({ visible: true, title: 'Sukses', message: 'Supplier berhasil diupdate', variant: 'success' });
+            const result = await offlineAwareWrite(queryClient, {
+                type: selectedSupplier ? 'master.updateSupplier' : 'master.createSupplier',
+                payload: selectedSupplier ? { id: selectedSupplier.id, data: formData } : formData,
+                label: selectedSupplier ? 'Update supplier' : 'Supplier baru',
+                description: formData.nama,
+                onlineFn: () =>
+                    selectedSupplier
+                        ? updateMutation.mutateAsync({ id: selectedSupplier.id, data: formData })
+                        : createMutation.mutateAsync(formData),
+            });
+            if (result.mode === 'offline') {
+                setDialogConfig({
+                    visible: true,
+                    title: 'Offline Mode',
+                    message: 'Data supplier tersimpan di antrean offline (perangkat).',
+                    variant: 'info',
+                });
             } else {
-                await createMutation.mutateAsync(formData);
-                setDialogConfig({ visible: true, title: 'Sukses', message: 'Supplier baru berhasil ditambahkan', variant: 'success' });
+                setDialogConfig({
+                    visible: true,
+                    title: 'Sukses',
+                    message: selectedSupplier ? 'Supplier berhasil diupdate' : 'Supplier baru berhasil ditambahkan',
+                    variant: 'success',
+                });
             }
             handleCloseSheet();
         } catch (error) {
@@ -187,15 +197,22 @@ export default function SupplierScreen() {
             type: 'confirm',
             onConfirm: async () => {
                 try {
-                    if (!onlineManager.isOnline()) {
-                        deleteMutation.mutate(selectedSupplier.id);
-                        setDialogConfig({ visible: true, title: 'Offline Mode', message: 'Supplier telah dijadwalkan untuk dihapus saat online.', variant: 'info' });
-                        handleCloseSheet();
-                        return;
-                    }
-
-                    await deleteMutation.mutateAsync(selectedSupplier.id);
-                    setDialogConfig({ visible: true, title: 'Sukses', message: 'Supplier berhasil dihapus', variant: 'success' });
+                    const result = await offlineAwareWrite(queryClient, {
+                        type: 'master.deleteSupplier',
+                        payload: { id: selectedSupplier.id },
+                        label: 'Hapus supplier',
+                        description: selectedSupplier.nama,
+                        onlineFn: () => deleteMutation.mutateAsync(selectedSupplier.id),
+                    });
+                    setDialogConfig({
+                        visible: true,
+                        title: result.mode === 'offline' ? 'Offline Mode' : 'Sukses',
+                        message:
+                            result.mode === 'offline'
+                                ? 'Penghapusan supplier dijadwalkan di antrean offline (perangkat).'
+                                : 'Supplier berhasil dihapus',
+                        variant: result.mode === 'offline' ? 'info' : 'success',
+                    });
                     handleCloseSheet();
                 } catch (error) {
                     console.error('Failed to delete:', error);

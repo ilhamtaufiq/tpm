@@ -14,6 +14,7 @@ export default function SettingsLayout() {
             <Stack.Screen name="security-features" />
             <Stack.Screen name="users" />
             <Stack.Screen name="backup" />
+            <Stack.Screen name="data-import" />
         </Stack>
     );
 }

@@ -32,7 +32,7 @@ import {
     Car,
     TrendingUp,
 } from 'lucide-react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { format, subDays, addDays } from 'date-fns';
 import { BengkelPaymentModal, PaymentItem } from '../../components/BengkelPaymentModal';
 import { id as localeID } from 'date-fns/locale';
@@ -161,12 +161,7 @@ export default function QueueScreen() {
         setRefreshing(false);
     }, [refetch, refetchSummary]);
 
-    useFocusEffect(
-        useCallback(() => {
-            refetch();
-            refetchSummary();
-        }, [refetch, refetchSummary])
-    );
+    // No force-refetch on focus (menu lag). Pull-to-refresh still available.
 
     // Mobil TERJUAL dipakai untuk menampilkan status bayar lunas (bukan menyembunyikan antrian).
     const soldCars = useMemo(() => {

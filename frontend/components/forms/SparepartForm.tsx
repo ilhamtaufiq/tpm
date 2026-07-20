@@ -8,7 +8,8 @@ import { Button } from '../ui/Button';
 import { BarcodeScannerModal } from '../ui/BarcodeScannerModal';
 import { getCustomTabBarBottomPadding } from '../ui/CustomTabBar';
 import { formatNumber, parseNumber } from '../../utils/format';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite, enqueueOfflineAction } from '../../services/offlineQueue';
 import { useCreateSparePart, useUpdateSparePart, useDeleteSparePart, useUploadSparePartImage, useNextSparePartKode } from '../../hooks';
 import { FILE_URL } from '../../utils/api';
 import { useScanSound } from '../../utils/sounds';
@@ -63,6 +64,7 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
     const [scannerTarget, setScannerTarget] = useState<'kode' | 'kode_part' | 'kode_ean' | 'auto'>('auto');
 
     const insets = useSafeAreaInsets();
+    const queryClient = useQueryClient();
     const createMutation = useCreateSparePart();
     const updateMutation = useUpdateSparePart();
     const deleteMutation = useDeleteSparePart();
@@ -95,21 +97,49 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
     const handleSubmit = async () => {
         try {
             const payload = { ...form, harga_beli: parseNumber(form.harga_beli), harga_jual: parseNumber(form.harga_jual), stok: Number(form.stok), stok_minimum: Number(form.stok_minimum) };
-            if (!onlineManager.isOnline()) {
-                if (isEditing && form.id) updateMutation.mutate({ id: form.id, data: payload });
-                else createMutation.mutate(payload);
-                appAlert('Offline Mode', 'Data barang telah disimpan di antrean offline.');
-                onSuccess?.(); return;
-            }
-            let savedPart;
-            if (isEditing && form.id) savedPart = await updateMutation.mutateAsync({ id: form.id, data: payload });
-            else savedPart = await createMutation.mutateAsync(payload);
-            if (form.imageUri && (savedPart?.id || (isEditing && form.id))) {
-                const targetId = savedPart?.id || form.id;
-                const fd = new FormData();
-                if (Platform.OS === 'web') { const r = await fetch(form.imageUri); fd.append('file', await r.blob(), 'image.jpg'); }
-                else { /* @ts-ignore */ fd.append('file', { uri: form.imageUri, name: 'image.jpg', type: 'image/jpeg' } as any); }
-                await uploadImageMutation.mutateAsync({ id: targetId!, formData: fd });
+            const result = await offlineAwareWrite(queryClient, {
+                type: isEditing && form.id ? 'bengkel.updateSparePart' : 'bengkel.createSparePart',
+                payload: isEditing && form.id ? { id: form.id, data: payload } : payload,
+                label: isEditing ? 'Update sparepart' : 'Sparepart baru',
+                description: payload.nama,
+                onlineFn: async () => {
+                    let savedPart;
+                    if (isEditing && form.id) savedPart = await updateMutation.mutateAsync({ id: form.id, data: payload });
+                    else savedPart = await createMutation.mutateAsync(payload);
+                    if (form.imageUri && (savedPart?.id || (isEditing && form.id))) {
+                        const targetId = savedPart?.id || form.id;
+                        const fd = new FormData();
+                        if (Platform.OS === 'web') {
+                            const r = await fetch(form.imageUri);
+                            fd.append('file', await r.blob(), 'image.jpg');
+                        } else {
+                            // @ts-ignore
+                            fd.append('file', { uri: form.imageUri, name: 'image.jpg', type: 'image/jpeg' } as any);
+                        }
+                        await uploadImageMutation.mutateAsync({ id: targetId!, formData: fd });
+                    }
+                    return savedPart;
+                },
+            });
+            if (result.mode === 'offline') {
+                // Queue image separately if local URI (upload after create needs server id — store alongside create only when editing)
+                if (form.imageUri && isEditing && form.id && Platform.OS !== 'web') {
+                    enqueueOfflineAction(queryClient, {
+                        type: 'bengkel.uploadSparePartImage',
+                        payload: { id: form.id },
+                        label: 'Upload foto sparepart',
+                        upload: { uri: form.imageUri, name: 'image.jpg', type: 'image/jpeg' },
+                        skipOptimistic: true,
+                    });
+                }
+                appAlert(
+                    'Offline Mode',
+                    form.imageUri && !isEditing
+                        ? 'Data barang tersimpan di antrean. Foto akan diunggah setelah sync (edit ulang jika perlu).'
+                        : 'Data barang tersimpan di antrean offline (perangkat).'
+                );
+                onSuccess?.();
+                return;
             }
             onSuccess?.();
         } catch (error) {
@@ -121,7 +151,19 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
 
     const handleDelete = () => {
         if (!form.id) return;
-        const act = () => { deleteMutation.mutate(form.id!); onSuccess?.(); };
+        const act = async () => {
+            const result = await offlineAwareWrite(queryClient, {
+                type: 'bengkel.deleteSparePart',
+                payload: { id: form.id },
+                label: 'Hapus sparepart',
+                description: form.nama,
+                onlineFn: () => deleteMutation.mutateAsync(form.id!),
+            });
+            if (result.mode === 'offline') {
+                appAlert('Offline Mode', 'Penghapusan dijadwalkan di antrean offline.');
+            }
+            onSuccess?.();
+        };
         appConfirm('Hapus Barang', 'Apakah Anda yakin ingin menghapus barang ini?', act, { confirmText: 'Hapus', variant: 'warning' });
     };
 

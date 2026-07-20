@@ -11,7 +11,8 @@ import { Plus, Trash2, Truck, PlusCircle, MapPin, ArrowRight } from 'lucide-reac
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from '../ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../services/offlineQueue';
 import {
     useActiveArmada,
     useActiveSupir,
@@ -27,6 +28,7 @@ interface MuatanFormProps {
 const MAX_SUGGESTIONS = 5;
 
 export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
+    const queryClient = useQueryClient();
     const isEditMode = !!initialData;
     const [submitting, setSubmitting] = useState(false);
 
@@ -411,37 +413,29 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 persentase_tpm: 50
             };
 
-            if (!onlineManager.isOnline()) {
-                if (isEditMode) {
-                    jasaAngkutService.updateMuatan(initialData.id, payload);
-                } else {
-                    jasaAngkutService.createMuatan(payload);
-                }
-
-                setDialogConfig({
-                    visible: true,
-                    title: 'Offline Mode',
-                    message: isEditMode ? 'Update muatan telah disimpan di antrean offline.' : 'Muatan baru telah disimpan di antrean offline.',
-                    variant: 'info'
-                });
-
-                setTimeout(() => {
-                    onSuccess?.();
-                }, 1500);
-                return;
-            }
-
-            if (isEditMode) {
-                await jasaAngkutService.updateMuatan(initialData.id, payload);
-            } else {
-                await jasaAngkutService.createMuatan(payload);
-            }
+            const result = await offlineAwareWrite(queryClient, {
+                type: isEditMode ? 'jasaAngkut.updateMuatan' : 'jasaAngkut.createMuatan',
+                payload: isEditMode ? { id: initialData.id, data: payload } : payload,
+                label: isEditMode ? 'Update muatan' : 'Muatan baru',
+                description: String(payload.nopol || payload.jenis_muatan || ''),
+                onlineFn: () =>
+                    isEditMode
+                        ? jasaAngkutService.updateMuatan(initialData.id, payload)
+                        : jasaAngkutService.createMuatan(payload),
+            });
 
             setDialogConfig({
                 visible: true,
-                title: 'Sukses',
-                message: isEditMode ? 'Data muatan berhasil diperbarui' : 'Data muatan berhasil disimpan',
-                variant: 'success'
+                title: result.mode === 'offline' ? 'Offline Mode' : 'Sukses',
+                message:
+                    result.mode === 'offline'
+                        ? isEditMode
+                            ? 'Update muatan tersimpan di antrean offline (perangkat).'
+                            : 'Muatan baru tersimpan di antrean offline (perangkat).'
+                        : isEditMode
+                            ? 'Data muatan berhasil diperbarui'
+                            : 'Data muatan berhasil disimpan',
+                variant: result.mode === 'offline' ? 'info' : 'success',
             });
 
             setTimeout(() => {

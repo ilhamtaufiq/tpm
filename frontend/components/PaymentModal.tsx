@@ -1,7 +1,8 @@
 import { appAlert } from '../utils/appAlert';
 import React, { useState, useMemo, useRef } from 'react';
 import { View, Pressable, ScrollView, Platform, Modal, StyleSheet } from 'react-native';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../services/offlineQueue';
 import { Typography } from './ui/Typography';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
@@ -47,6 +48,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [paymentNote, setPaymentNote] = useState('');
     const [loading, setLoading] = useState(false);
     const [allBalances, setAllBalances] = useState<any>(null);
+    const queryClient = useQueryClient();
 
     React.useEffect(() => {
         if (visible) {
@@ -166,22 +168,26 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 payload.hutang_id = id;
             }
 
-            if (!onlineManager.isOnline()) {
-                if (type === 'piutang') {
-                    piutangMutation.mutate(payload);
-                } else {
-                    hutangMutation.mutate(payload);
-                }
-                appAlert('Offline Mode', 'Pembayaran telah disimpan di antrean offline.');
+            const result = await offlineAwareWrite(queryClient, {
+                type: type === 'piutang' ? 'finance.processPaymentSplit' : 'finance.processHutangPaymentSplit',
+                payload,
+                label: type === 'piutang' ? 'Bayar piutang' : 'Bayar hutang',
+                description: title,
+                onlineFn: async (): Promise<unknown> => {
+                    if (type === 'piutang') {
+                        return piutangMutation.mutateAsync(payload);
+                    }
+                    return hutangMutation.mutateAsync(payload);
+                },
+            });
+            if (result.mode === 'offline') {
+                appAlert(
+                    'Offline Mode',
+                    'Pembayaran tersimpan di antrean offline (perangkat). Akan dikirim saat online.'
+                );
                 onSuccess();
                 onClose();
                 return;
-            }
-
-            if (type === 'piutang') {
-                await piutangMutation.mutateAsync(payload);
-            } else {
-                await hutangMutation.mutateAsync(payload);
             }
             onSuccess();
             onClose();

@@ -60,10 +60,11 @@ export const useArmadaList = (params?: any) => {
     });
 };
 
-export const useActiveArmada = (tanggal?: string) => {
+export const useActiveArmada = (tanggal?: string, options?: { enabled?: boolean }) => {
     return useQuery({
         queryKey: ['armada_active', tanggal],
         queryFn: () => jasaAngkutService.getActiveArmada(tanggal),
+        ...options,
     });
 };
 
@@ -112,7 +113,7 @@ export const useArmadaDetail = (id: number) => {
 // =============================================
 // MUATAN
 // =============================================
-export const useMuatanList = (params?: any, options?: { refetchInterval?: number }) => {
+export const useMuatanList = (params?: any, options?: { refetchInterval?: number; enabled?: boolean }) => {
     return useQuery({
         queryKey: ['muatan', params],
         queryFn: () => jasaAngkutService.getMuatanList(params),
@@ -120,7 +121,7 @@ export const useMuatanList = (params?: any, options?: { refetchInterval?: number
     });
 };
 
-export const useMuatanSummary = (params?: any, options?: { refetchInterval?: number }) => {
+export const useMuatanSummary = (params?: any, options?: { refetchInterval?: number; enabled?: boolean }) => {
     return useQuery({
         queryKey: ['muatan_summary', params],
         queryFn: () => jasaAngkutService.getMuatanSummary(params),

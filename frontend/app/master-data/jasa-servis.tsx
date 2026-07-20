@@ -21,7 +21,8 @@ import {
     useDebounce
 } from '../../hooks';
 import { formatNumber, parseNumber } from '../../utils/format';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../services/offlineQueue';
 import { appAlert } from '../../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -44,6 +45,7 @@ const INITIAL_FORM: JasaServisForm = {
 export default function JasaServisScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const queryClient = useQueryClient();
     // Search & Filter
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearch = useDebounce(searchQuery, 500);
@@ -138,21 +140,18 @@ export default function JasaServisScreen() {
                 harga: parseNumber(form.harga),
             };
 
-            if (!onlineManager.isOnline()) {
-                if (isEditing && form.id) {
-                    updateMutation.mutate({ id: form.id, data: payload });
-                } else {
-                    createMutation.mutate(payload);
-                }
-                appAlert('Offline Mode', 'Data jasa telah disimpan di antrean offline.');
-                handleCloseSheet();
-                return;
-            }
-
-            if (isEditing && form.id) {
-                await updateMutation.mutateAsync({ id: form.id, data: payload });
-            } else {
-                await createMutation.mutateAsync(payload);
+            const result = await offlineAwareWrite(queryClient, {
+                type: isEditing && form.id ? 'master.updateJasaServis' : 'master.createJasaServis',
+                payload: isEditing && form.id ? { id: form.id, data: payload } : payload,
+                label: isEditing ? 'Update jasa servis' : 'Jasa servis baru',
+                description: payload.nama,
+                onlineFn: () =>
+                    isEditing && form.id
+                        ? updateMutation.mutateAsync({ id: form.id, data: payload })
+                        : createMutation.mutateAsync(payload),
+            });
+            if (result.mode === 'offline') {
+                appAlert('Offline Mode', 'Data jasa tersimpan di antrean offline (perangkat).');
             }
             handleCloseSheet();
         } catch (error) {
@@ -162,12 +161,25 @@ export default function JasaServisScreen() {
     };
 
     const handleDelete = (id: number) => {
-        if (!onlineManager.isOnline()) {
-            deleteMutation.mutate(id);
-            appAlert('Offline Mode', 'Jasa telah dijadwalkan untuk dihapus saat online.');
-            return;
-        }
-        deleteMutation.mutate(id);
+        void (async () => {
+            try {
+                const result = await offlineAwareWrite(queryClient, {
+                    type: 'master.deleteJasaServis',
+                    payload: { id },
+                    label: 'Hapus jasa servis',
+                    onlineFn: () => deleteMutation.mutateAsync(id),
+                });
+                if (result.mode === 'offline') {
+                    appAlert(
+                        'Offline Mode',
+                        'Penghapusan jasa dijadwalkan di antrean offline (perangkat).'
+                    );
+                }
+            } catch (error) {
+                console.error('Failed to delete service:', error);
+                appAlert('Error', 'Gagal menghapus jasa servis.');
+            }
+        })();
     };
 
     const renderBackdrop = useCallback(

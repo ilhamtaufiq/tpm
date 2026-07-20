@@ -29,7 +29,8 @@ import { sdmService, Karyawan, EmployeeStatus } from '../../services/sdm';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../services/offlineQueue';
 import { useCreateKaryawan, useUpdateKaryawan } from '../../hooks/useSDM';
 import { Header } from '../../components/ui/Header';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -53,7 +54,9 @@ const getStatusBadge = (status: EmployeeStatus) => {
 
 export default function KaryawanScreen() {
     const insets = useSafeAreaInsets();
-    const router = useRouter(); const [loading, setLoading] = useState(true);
+    const router = useRouter();
+    const queryClient = useQueryClient();
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [karyawanList, setKaryawanList] = useState<Karyawan[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -226,30 +229,35 @@ export default function KaryawanScreen() {
                 catatan: formData.catatan || undefined,
             };
 
-            if (!onlineManager.isOnline()) {
-                if (selectedKaryawan) {
-                    updateKaryawanMutation.mutate({ id: selectedKaryawan.id, data });
-                } else {
-                    createKaryawanMutation.mutate({ ...data, status: 'AKTIF' });
-                }
-                appAlert('Offline Mode', `Data ${formData.nama} telah disimpan di antrean offline.`);
-                handleCloseSheet();
-                return;
-            }
-
-            if (selectedKaryawan) {
-                await updateKaryawanMutation.mutateAsync({ id: selectedKaryawan.id, data });
-                setDialogConfig({ visible: true, title: 'Sukses', message: 'Data karyawan berhasil diupdate', variant: 'success' });
+            const createPayload = { ...data, status: 'AKTIF' };
+            const result = await offlineAwareWrite(queryClient, {
+                type: selectedKaryawan ? 'sdm.updateKaryawan' : 'sdm.createKaryawan',
+                payload: selectedKaryawan ? { id: selectedKaryawan.id, data } : createPayload,
+                label: selectedKaryawan ? 'Update karyawan' : 'Karyawan baru',
+                description: formData.nama,
+                onlineFn: () =>
+                    selectedKaryawan
+                        ? updateKaryawanMutation.mutateAsync({ id: selectedKaryawan.id, data })
+                        : createKaryawanMutation.mutateAsync(createPayload),
+            });
+            if (result.mode === 'offline') {
+                appAlert(
+                    'Offline Mode',
+                    `Data ${formData.nama} tersimpan di antrean offline (perangkat).`
+                );
             } else {
-                await createKaryawanMutation.mutateAsync({
-                    ...data,
-                    status: 'AKTIF',
+                setDialogConfig({
+                    visible: true,
+                    title: 'Sukses',
+                    message: selectedKaryawan
+                        ? 'Data karyawan berhasil diupdate'
+                        : 'Karyawan baru berhasil ditambahkan',
+                    variant: 'success',
                 });
-                setDialogConfig({ visible: true, title: 'Sukses', message: 'Karyawan baru berhasil ditambahkan', variant: 'success' });
+                loadData();
             }
 
             handleCloseSheet();
-            loadData();
         } catch (error) {
             console.error('Failed to save karyawan:', error);
             setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal menyimpan data karyawan'), variant: 'error' });

@@ -10,6 +10,8 @@ import { useUIStore } from '../../store/useUIStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 import { router, usePathname } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { prefetchMenu, pathForPrefetch } from '../../utils/prefetchMenu';
 
 export const CUSTOM_TAB_BAR_BASE_HEIGHT = 80;
 
@@ -21,12 +23,20 @@ export const getCustomTabBarBottomPadding = (bottomInset: number, extraSpacing =
     return getCustomTabBarHeight(bottomInset) + extraSpacing;
 };
 
-export const CustomTabBar = () => {
+function CustomTabBarInner() {
     const insets = useSafeAreaInsets();
     const { activeSlots: storeActiveSlots, fabSlots, pageFabSlots } = useNavigationStore();
     const { themeColors } = useUIStore();
     const pathname = usePathname();
     const [quickActionsVisible, setQuickActionsVisible] = useState(false);
+    const queryClient = useQueryClient();
+
+    const warmPath = React.useCallback(
+        (path: string) => {
+            prefetchMenu(queryClient, pathForPrefetch(path));
+        },
+        [queryClient]
+    );
 
     const user = useAuthStore(state => state.user);
     const role = user?.role;
@@ -261,6 +271,7 @@ export const CustomTabBar = () => {
                         return;
                     }
                     if (!isFocused) {
+                        warmPath(routeInfo.path);
                         router.navigate(routeInfo.path as Href);
                     }
                 };
@@ -401,6 +412,7 @@ export const CustomTabBar = () => {
                             <Pressable
                                 onPress={() => {
                                     hideQuickActions();
+                                    warmPath(subFab1.path);
                                     router.navigate(subFab1.path as any);
                                 }}
                                 className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
@@ -421,6 +433,7 @@ export const CustomTabBar = () => {
                             <Pressable
                                 onPress={() => {
                                     hideQuickActions();
+                                    warmPath(subFab2.path);
                                     router.navigate(subFab2.path as any);
                                 }}
                                 className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
@@ -442,6 +455,7 @@ export const CustomTabBar = () => {
                             <Pressable
                                 onPress={() => {
                                     hideQuickActions();
+                                    warmPath(subFab3.path);
                                     router.navigate(subFab3.path as any);
                                 }}
                                 className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
@@ -472,4 +486,7 @@ export const CustomTabBar = () => {
         )}
         </>
     );
-};
+}
+
+/** Memoized so root layout re-renders (auth/PIN segments) do not rebuild the bar tree. */
+export const CustomTabBar = React.memo(CustomTabBarInner);

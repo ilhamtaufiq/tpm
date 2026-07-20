@@ -20,6 +20,7 @@ export default function JasaAngkutLayout() {
                 headerTintColor: '#111827',
                 headerTitleStyle: { fontWeight: 'bold' },
                 contentStyle: { backgroundColor: '#F9FAFB' },
+                freezeOnBlur: true,
             }}
         >
             <Stack.Screen name="index" options={{ headerShown: false }} />

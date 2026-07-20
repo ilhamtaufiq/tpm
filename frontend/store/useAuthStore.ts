@@ -99,6 +99,16 @@ export const useAuthStore = create<AuthState>()(
         }),
         {
             name: 'auth-storage',
+            // Never persist runtime gate — restoring hasHydrated:false was stranding splash
+            partialize: (state) => ({
+                user: state.user,
+                token: state.token,
+                isAuthenticated: state.isAuthenticated,
+                isImpersonating: state.isImpersonating,
+                impersonatorUser: state.impersonatorUser,
+                originalUser: state.originalUser,
+                originalToken: state.originalToken,
+            }),
             storage: createJSONStorage(() => {
                 if (Platform.OS === 'web') {
                     return {
@@ -153,7 +163,12 @@ export const useAuthStore = create<AuthState>()(
                 } else {
                     console.log('[Auth Store] Hydration complete:', state?.isAuthenticated ? 'Authenticated' : 'Not authenticated');
                 }
-                state?.setHasHydrated(true);
+                // Always clear gate even if state object missing after error
+                if (state) {
+                    state.setHasHydrated(true);
+                } else {
+                    useAuthStore.getState().setHasHydrated(true);
+                }
             },
         }
     )

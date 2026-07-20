@@ -184,7 +184,10 @@ export const useInventorySummary = (options?: any) => {
     });
 };
 
-export const usePenjualanSummary = (params?: any, options?: { refetchInterval?: number }) => {
+export const usePenjualanSummary = (
+    params?: any,
+    options?: { refetchInterval?: number; enabled?: boolean }
+) => {
     return useQuery<PenjualanSummary>({
         queryKey: ['penjualan_mobil_summary', params],
         queryFn: () => mobilService.getPenjualanSummary(params),

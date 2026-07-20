@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Share, StatusBar, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Barcode as BarcodeIcon, Calendar, Car, Check, CheckCircle2, ChevronLeft, ClipboardList, Info, Package, Percent, Plus, Printer, Search, Share2, Truck, User, Wallet, Wrench, X } from 'lucide-react-native';
 
 import { Typography } from '../../../components/ui/Typography';
@@ -9,6 +10,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
+import { offlineAwareWrite, enqueueOfflineAction } from '../../../services/offlineQueue';
 import { useCreateTransaksiBengkel, useSparePartsList, useTransaksiBengkelDetail, useTransaksiBengkelList, useUpdateTransaksiBengkel, useUpdateTransaksiBengkelPayment } from '../../../hooks/useBengkel';
 import { useDebounce } from '../../../hooks';
 import { useJasaList } from '../../../hooks/useJasaServis';
@@ -50,6 +52,7 @@ const isValidDateString = (value: string) => {
 
 export default function BengkelTransaksiScreen() {
     const insets = useSafeAreaInsets();
+    const queryClient = useQueryClient();
     const { action, mode, transactionId } = useLocalSearchParams<{ action?: string; mode?: string; transactionId?: string }>();
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const [partSearch, setPartSearch] = useState('');
@@ -849,32 +852,86 @@ export default function BengkelTransaksiScreen() {
             };
             let transaction: any;
             if (transactionToUpdateId) {
-                transaction = await updateMutation.mutateAsync({ id: transactionToUpdateId, data: payload });
-                if (shouldPay && kategori === 'umum') {
-                    const incrementalPayment = paymentMode === 'SPLIT' ? splitTotal : receivedAmount;
-                    if (incrementalPayment <= 0 && !willBeLunas) {
-                        // No new cash and still not lunas — bill update only.
-                    } else if (incrementalPayment > 0) {
-                        const splitPayments = paymentMode === 'SPLIT'
-                            ? [
-                                ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
-                                ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
-                            ]
-                            : undefined;
-                        transaction = await updatePaymentMutation.mutateAsync({
-                            id: transactionToUpdateId,
-                            data: {
-                                jumlah_bayar: incrementalPayment,
-                                metode_bayar: paymentMode,
-                                payments: splitPayments,
-                                // Backend also auto-SELESAI when LUNAS; send explicitly for clarity.
-                                status_pengerjaan: willBeLunas ? 'SELESAI' : undefined,
-                            },
+                const incrementalPayment =
+                    shouldPay && kategori === 'umum'
+                        ? paymentMode === 'SPLIT'
+                            ? splitTotal
+                            : receivedAmount
+                        : 0;
+                const splitPayments =
+                    paymentMode === 'SPLIT'
+                        ? [
+                            ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
+                            ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
+                        ]
+                        : undefined;
+                const paymentData =
+                    shouldPay && kategori === 'umum' && incrementalPayment > 0
+                        ? {
+                            jumlah_bayar: incrementalPayment,
+                            metode_bayar: paymentMode,
+                            payments: splitPayments,
+                            // Backend also auto-SELESAI when LUNAS; send explicitly for clarity.
+                            status_pengerjaan: willBeLunas ? 'SELESAI' : undefined,
+                        }
+                        : null;
+
+                const result = await offlineAwareWrite(queryClient, {
+                    type: 'bengkel.updateTransaksi',
+                    payload: { id: transactionToUpdateId, data: payload },
+                    label: 'Update transaksi bengkel',
+                    description: String(payload.nama_customer || payload.nomor_plat || transactionToUpdateId),
+                    onlineFn: async () => {
+                        let tx = await updateMutation.mutateAsync({ id: transactionToUpdateId, data: payload });
+                        if (paymentData) {
+                            tx = await updatePaymentMutation.mutateAsync({
+                                id: transactionToUpdateId,
+                                data: paymentData,
+                            });
+                        }
+                        return tx;
+                    },
+                });
+
+                if (result.mode === 'offline') {
+                    // onlineFn was skipped — also durable-queue payment if needed
+                    if (paymentData) {
+                        enqueueOfflineAction(queryClient, {
+                            type: 'bengkel.updateTransaksiPayment',
+                            payload: { id: transactionToUpdateId, data: paymentData },
+                            label: 'Bayar transaksi bengkel',
+                            description: String(payload.nama_customer || payload.nomor_plat || transactionToUpdateId),
                         });
                     }
+                    setConfirmSubmitOpen(false);
+                    setPaymentSheetOpen(false);
+                    showNotice(
+                        'info',
+                        'Offline Mode',
+                        'Transaksi tersimpan di antrean offline (perangkat). Akan dikirim saat online.'
+                    );
+                    return;
                 }
+                transaction = result.data;
             } else {
-                transaction = await createMutation.mutateAsync(payload);
+                const result = await offlineAwareWrite(queryClient, {
+                    type: 'bengkel.createTransaksi',
+                    payload,
+                    label: 'Transaksi bengkel baru',
+                    description: String(payload.nama_customer || payload.nomor_plat || ''),
+                    onlineFn: () => createMutation.mutateAsync(payload),
+                });
+                if (result.mode === 'offline') {
+                    setConfirmSubmitOpen(false);
+                    setPaymentSheetOpen(false);
+                    showNotice(
+                        'info',
+                        'Offline Mode',
+                        'Transaksi tersimpan di antrean offline (perangkat). Akan dikirim saat online.'
+                    );
+                    return;
+                }
+                transaction = result.data;
             }
             setCreatedTransaction(transaction);
             setReceiptActionMessage('');

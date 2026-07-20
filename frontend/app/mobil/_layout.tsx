@@ -13,7 +13,7 @@ export default function MobilLayout() {
     }
 
     return (
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack screenOptions={{ headerShown: false, freezeOnBlur: true }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="details" />
         </Stack>

@@ -484,6 +484,20 @@ export default function ProfileScreen() {
 
                         <Pressable
                             className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-4"
+                            onPress={() => router.push('/settings/data-import')}
+                        >
+                            <View className="w-12 h-12 bg-emerald-50 rounded-[24px] items-center justify-center mr-4">
+                                <Database size={24} color="#059669" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-text mb-0.5">Import Data (Excel)</Typography>
+                                <Typography variant="caption" className="text-text/40">Template multi-sheet · master & saldo opening</Typography>
+                            </View>
+                            <ChevronRight size={20} color={themeColors.textGray} />
+                        </Pressable>
+
+                        <Pressable
+                            className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-4"
                             onPress={() => router.push('/settings/trash')}
                         >
                             <View className="w-12 h-12 bg-red-50 rounded-[24px] items-center justify-center mr-4">

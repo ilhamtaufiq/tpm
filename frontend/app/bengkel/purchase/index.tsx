@@ -27,7 +27,7 @@ import {
     Calendar,
     User
 } from 'lucide-react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { usePembelianPartsList } from '../../../hooks/useBengkel';
@@ -47,11 +47,7 @@ export default function PurchaseIndexScreen() {
         limit: 100
     });
 
-    useFocusEffect(
-        useCallback(() => {
-            refetch();
-        }, [refetch])
-    );
+    // No force-refetch on focus (menu lag). Pull-to-refresh still available.
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);

@@ -41,7 +41,8 @@ import {
     useSparePartStockValue,
     useLowStockParts
 } from '../../hooks';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../services/offlineQueue';
 import { appAlert, appConfirm } from '../../utils/appAlert';
 import api, { FILE_URL } from '../../utils/api';
 import { bengkelService } from '../../services/bengkel';
@@ -58,6 +59,7 @@ import { isAlwaysReadyStock } from '../../utils/sparepartStock';
 
 export default function SparePartMasterScreen() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     // Search & Filter
     const [searchQuery, setSearchQuery] = useState('');
     const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -146,12 +148,25 @@ export default function SparePartMasterScreen() {
 
     const handleDelete = (id: number) => {
         const confirmDelete = () => {
-            if (!onlineManager.isOnline()) {
-                deleteMutation.mutate(id);
-                appAlert('Offline Mode', 'Barang telah dijadwalkan untuk dihapus saat online.');
-                return;
-            }
-            deleteMutation.mutate(id);
+            void (async () => {
+                try {
+                    const result = await offlineAwareWrite(queryClient, {
+                        type: 'bengkel.deleteSparePart',
+                        payload: { id },
+                        label: 'Hapus sparepart',
+                        onlineFn: () => deleteMutation.mutateAsync(id),
+                    });
+                    if (result.mode === 'offline') {
+                        appAlert(
+                            'Offline Mode',
+                            'Penghapusan barang dijadwalkan di antrean offline (perangkat).'
+                        );
+                    }
+                } catch (error) {
+                    console.error('Failed to delete sparepart:', error);
+                    appAlert('Error', 'Gagal menghapus barang.');
+                }
+            })();
         };
 
         appConfirm(
@@ -207,8 +222,17 @@ export default function SparePartMasterScreen() {
 
             const file = result.assets[0];
             const formData = new FormData();
-            const mimeType = file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-            const fileName = file.name || 'import_sparepart.xlsx';
+            // Android DocumentPicker sometimes returns empty/octet-stream mime — force xlsx/xls
+            const lowerName = (file.name || '').toLowerCase();
+            const mimeType =
+                file.mimeType && file.mimeType !== 'application/octet-stream'
+                    ? file.mimeType
+                    : lowerName.endsWith('.xls')
+                        ? 'application/vnd.ms-excel'
+                        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            // Sanitize name — spaces/special chars can break Android multipart boundary handling
+            const rawName = file.name || 'import_sparepart.xlsx';
+            const fileName = rawName.replace(/[^\w.\-()+\s]/g, '_').trim() || 'import_sparepart.xlsx';
 
             if (Platform.OS === 'web') {
                 const webFile = (file as { file?: File }).file;
@@ -219,7 +243,9 @@ export default function SparePartMasterScreen() {
                     formData.append('file', blob, fileName);
                 }
             } else {
-                // @ts-ignore — React Native FormData file upload
+                // copyToCacheDirectory: true → file:// cache path (required on Android for upload)
+                // Keep file:// on Android; strip only on iOS (project-wide upload pattern)
+                // @ts-ignore — React Native FormData file upload shape
                 formData.append('file', {
                     uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
                     name: fileName,
@@ -253,7 +279,17 @@ export default function SparePartMasterScreen() {
             setImportStep('done');
         } catch (error: any) {
             clearImportTimers();
-            const errorMsg = error?.response?.data?.detail || error?.message || 'Terjadi kesalahan saat mengimpor data.';
+            let errorMsg = error?.response?.data?.detail || error?.message || 'Terjadi kesalahan saat mengimpor data.';
+            // Axios "Network Error" = no HTTP response (often multipart misconfig / offline / SSL)
+            if (
+                !error?.response &&
+                (error?.message === 'Network Error' || error?.code === 'ERR_NETWORK')
+            ) {
+                errorMsg =
+                    'Koneksi gagal saat upload file. Pastikan internet stabil, file Excel valid (.xlsx), lalu coba lagi.';
+            } else if (error?.code === 'ECONNABORTED') {
+                errorMsg = 'Import timeout — file terlalu besar atau server lambat. Coba lagi.';
+            }
             setImportError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
             setImportStep('error');
             setIsImportProgressVisible(true);

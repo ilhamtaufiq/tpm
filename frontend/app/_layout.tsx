@@ -9,6 +9,11 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect, useState } from 'react';
 import * as Updates from 'expo-updates';
 import { View, Text, ActivityIndicator, AppState, AppStateStatus, Platform, Pressable } from 'react-native';
+import {
+    PERSIST_QUERY_ROOTS,
+    startOfflineSyncWorker,
+} from '../services/offlineQueue';
+import { OfflineQueueSheet } from '../components/OfflineQueueSheet';
 
 // Hermes has no Node Buffer — thermal print (EPToolkit) and some utils need it.
 const __g = globalThis as typeof globalThis & { Buffer?: typeof Buffer };
@@ -43,7 +48,8 @@ import { ReceiptHtmlCaptureHost } from '../components/print/ReceiptHtmlCaptureHo
 import { preloadHtml2CanvasScript } from '../utils/html2canvasBundle';
 
 
-// Configure online manager to listen to NetInfo
+// Online manager — use isConnected only for gate (isInternetReachable is slow/null on boot
+// and was marking the app offline at startup on some devices).
 onlineManager.setEventListener((setOnline) => {
     return NetInfo.addEventListener((state) => {
         setOnline(!!state.isConnected);
@@ -68,24 +74,31 @@ if (
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            // "Near Real-time": Data is considered fresh for only 10 seconds.
-            // This ensures data stays synced across multiple devices/users with minimal delay.
-            staleTime: 1000 * 10, 
+            // Avoid network storm when switching menus: cache is "fresh" for 60s.
+            // Realtime WS + pull-to-refresh still update sooner when needed.
+            staleTime: 1000 * 60,
             // 24 hours until garbage collected from storage
             gcTime: 1000 * 60 * 60 * 24,
-            // Re-sync data automatically when user returns to the app (foregrounding).
+            // Only refetch focused queries if data is actually stale
             refetchOnWindowFocus: true,
             refetchOnReconnect: true,
+            refetchOnMount: true,
+            networkMode: 'offlineFirst',
             // Standard retry logic
             retry: (failureCount, error: any) => {
                 if (error?.message?.includes('network')) return false;
                 return failureCount < 2;
             },
         },
+        mutations: {
+            // Paused mutations are a fallback; durable queue is source of truth for offline writes
+            networkMode: 'online',
+            retry: 0,
+        },
     },
 });
 
-// Configure offline persistence
+// Configure offline persistence (read cache only — writes use durable offlineQueue store)
 const asyncStoragePersister = createAsyncStoragePersister({
     storage: AsyncStorage,
     key: 'TPM_OFFLINE_CACHE',
@@ -95,7 +108,16 @@ const asyncStoragePersister = createAsyncStoragePersister({
 persistQueryClient({
     queryClient,
     persister: asyncStoragePersister,
-    maxAge: 1000 * 60 * 60 * 24, // 24 hours
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days for master/operational data
+    dehydrateOptions: {
+        shouldDehydrateQuery: (query) => {
+            const root = query.queryKey?.[0];
+            if (typeof root !== 'string') return false;
+            // Skip error / empty states
+            if (query.state.status !== 'success') return false;
+            return PERSIST_QUERY_ROOTS.has(root);
+        },
+    },
 });
 
 // Keep the splash screen visible while we fetch resources
@@ -143,6 +165,15 @@ function RootLayoutContent() {
     useEffect(() => {
         if (Platform.OS === 'android') {
             preloadHtml2CanvasScript();
+        }
+    }, []);
+
+    // Start offline worker after first paint — never block splash module init
+    useEffect(() => {
+        try {
+            startOfflineSyncWorker(queryClient);
+        } catch (e) {
+            console.warn('[LAYOUT] Offline sync worker failed to start', e);
         }
     }, []);
 
@@ -201,11 +232,20 @@ function RootLayoutContent() {
 
         if (loaded || error) {
             console.log('LAYOUT: Hiding splash screen');
-            SplashScreen.hideAsync();
-            setTimeout(() => {
-                setIsReady(true);
-            }, 500);
+            SplashScreen.hideAsync().catch(() => {});
+            // Shorter delay — 500ms felt like a hang after OTA
+            const t = setTimeout(() => setIsReady(true), 150);
+            return () => clearTimeout(t);
         }
+
+        // Fonts must not block forever (OTA / font download edge cases)
+        const fontFailsafe = setTimeout(() => {
+            console.warn('[LAYOUT] Font load timeout — continuing without waiting');
+            SplashScreen.hideAsync().catch(() => {});
+            setIsReady(true);
+        }, 4000);
+
+        return () => clearTimeout(fontFailsafe);
     }, [loaded, error]);
 
     useEffect(() => {
@@ -218,7 +258,7 @@ function RootLayoutContent() {
                 console.warn('[LAYOUT] Auth hydration timeout — continuing startup');
                 useAuthStore.getState().setHasHydrated(true);
             }
-        }, 5000);
+        }, 2500);
 
         return () => clearTimeout(timeout);
     }, [hasHydrated]);
@@ -370,9 +410,18 @@ function RootLayoutContent() {
         <>
             {Platform.OS === 'android' ? <ReceiptHtmlCaptureHost /> : null}
             <ConnectivityBanner />
+            <OfflineQueueSheet />
             <ErrorBoundary>
                 <BottomSheetModalProvider>
-                    <Stack screenOptions={{ headerShown: false }}>
+                    <Stack
+                        screenOptions={{
+                            headerShown: false,
+                            // Keep previously visited menu screens mounted but frozen —
+                            // critical for CustomTabBar stack routes (bengkel/mobil/angkut).
+                            // Avoid exotic animation options — some OTA/native stacks hang on them.
+                            freezeOnBlur: true,
+                        }}
+                    >
                         <Stack.Screen name="index" options={{ headerShown: false }} />
                         <Stack.Screen name="landing" options={{ headerShown: false }} />
                         <Stack.Screen name="(auth)" options={{ headerShown: false }} />

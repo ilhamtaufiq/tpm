@@ -2,7 +2,7 @@ import { appAlert } from '../../utils/appAlert';
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Modal, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import {
     TrendingUp, BarChart3, ArrowUpRight, ArrowDownLeft, Download, X, Truck,
 } from 'lucide-react-native';
@@ -75,11 +75,7 @@ export default function LabaRugiScreen() {
     const { data, isLoading, refetch: fetchData } = useLabaRugiReport(reportParams);
     const reportData = data as LabaRugiReport | undefined;
 
-    useFocusEffect(
-        useCallback(() => {
-            fetchData();
-        }, [fetchData])
-    );
+    // No force-refetch on focus — report uses 30s staleTime + pull/export paths
 
     const handleBack = useCallback(() => {
         if (navigation.canGoBack()) {

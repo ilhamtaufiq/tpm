@@ -20,7 +20,8 @@ import {
 } from 'lucide-react-native';
 import { useRouter, router, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../services/offlineQueue';
 import { keuanganService, Piutang, PiutangSummary, PiutangStatus, PembayaranPiutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -112,6 +113,7 @@ export default function PiutangUsahaScreen() {
     const { data: mobilData } = useMobilList();
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePiutangSummary({ unit: unitFilter as any });
     const paymentMutation = useProcessPaymentSplit();
+    const queryClient = useQueryClient();
     const createMutation = useCreatePiutang();
 
     const createSheetRef = useRef<BottomSheet>(null);
@@ -325,34 +327,31 @@ export default function PiutangUsahaScreen() {
                 }];
             }
 
-            if (!onlineManager.isOnline()) {
-                createMutation.mutate(payload);
-                if (Platform.OS === 'web') {
-                    setCreateVisible(false);
-                    setIsSheetOpen(false);
-                } else {
-                    createSheetRef.current?.close();
-                    setIsSheetOpen(false);
-                }
-
-                setTimeout(() => {
-                    showAlert('Offline Mode', 'Piutang telah disimpan di antrean offline.', 'info');
-                }, 400);
-                return;
-            }
-
-            await createMutation.mutateAsync(payload);
+            const result = await offlineAwareWrite(queryClient, {
+                type: 'finance.createPiutang',
+                payload,
+                label: 'Buat piutang',
+                description: String(payload.nama_debitur || ''),
+                onlineFn: () => createMutation.mutateAsync(payload),
+            });
             if (Platform.OS === 'web') {
                 setCreateVisible(false);
                 setIsSheetOpen(false);
-            }
-            else {
+            } else {
                 createSheetRef.current?.close();
                 setIsSheetOpen(false);
             }
 
             setTimeout(() => {
-                showAlert('Sukses', 'Piutang berhasil dibuat', 'success');
+                if (result.mode === 'offline') {
+                    showAlert(
+                        'Offline Mode',
+                        'Piutang tersimpan di antrean offline (perangkat). Akan dikirim saat online.',
+                        'info'
+                    );
+                } else {
+                    showAlert('Sukses', 'Piutang berhasil dibuat', 'success');
+                }
             }, 400);
         } catch (error: any) {
             const errorMessage = error?.response?.data?.detail || error?.detail || error?.message || 'Terjadi kesalahan saat membuat piutang';

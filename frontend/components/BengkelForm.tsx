@@ -16,7 +16,8 @@ import { useMuatanList } from '../hooks/useJasaAngkut';
 import { useKasBankBalances } from '../hooks/useKeuangan';
 import { useMobilList } from '../hooks/useMobil';
 import { useDebounce } from '../hooks/useDebounce';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../services/offlineQueue';
 import { MasterDataSelector } from './ui/MasterDataSelector';
 import { ArmadaSelector } from './ui/ArmadaSelector';
 import { Customer, Vehicle } from '../services/masterData';
@@ -94,6 +95,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
         limit: 5000,
         search: selectionSheetQuery || undefined,
     });
+    const queryClient = useQueryClient();
     const createTransaksiMutation = useCreateTransaksiBengkel();
     const updateTransaksiMutation = useUpdateTransaksiBengkel();
 
@@ -649,28 +651,28 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
         };
 
         try {
-            if (!onlineManager.isOnline()) {
-                if (initialData) {
-                    updateTransaksiMutation.mutate({ id: initialData.id, data: payload });
-                } else {
-                    createTransaksiMutation.mutate(payload);
-                }
+            const result = await offlineAwareWrite(queryClient, {
+                type: initialData ? 'bengkel.updateTransaksi' : 'bengkel.createTransaksi',
+                payload: initialData ? { id: initialData.id, data: payload } : payload,
+                label: initialData ? 'Update transaksi bengkel' : 'Transaksi bengkel baru',
+                description: payload.plat_nomor || payload.customer_nama,
+                onlineFn: () =>
+                    initialData
+                        ? updateTransaksiMutation.mutateAsync({ id: initialData.id, data: payload })
+                        : createTransaksiMutation.mutateAsync(payload),
+            });
+            if (result.mode === 'offline') {
                 setDialogConfig({
                     visible: true,
                     title: 'Offline Mode',
-                    message: 'Transaksi telah disimpan di antrean offline dan akan disinkronisasi otomatis saat internet tersedia.',
-                    variant: 'info'
+                    message:
+                        'Transaksi tersimpan di antrean offline (perangkat). Akan dikirim otomatis saat online.',
+                    variant: 'info',
                 });
                 setTimeout(() => {
                     onSuccess();
-                }, 2000);
+                }, 1500);
                 return;
-            }
-
-            if (initialData) {
-                await updateTransaksiMutation.mutateAsync({ id: initialData.id, data: payload });
-            } else {
-                await createTransaksiMutation.mutateAsync(payload);
             }
             setDialogConfig({
                 visible: true,

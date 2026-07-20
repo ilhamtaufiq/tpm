@@ -28,7 +28,8 @@ import {
 import { useRouter } from 'expo-router';
 import { usePengeluaranList, useCreatePengeluaran, usePengeluaranSummary } from '../../../hooks/useBengkel';
 import { Header } from '../../../components/ui/Header';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../../services/offlineQueue';
 import { formatNumber, parseNumber, formatCurrency, formatDate } from '../../../utils/format';
 import { ArmadaSelector } from '../../../components/ui/ArmadaSelector';
 import { MobilSelector } from '../../../components/ui/MobilSelector';
@@ -74,6 +75,7 @@ export default function ExpensesScreen() {
     // API Hooks
     const { data: expensesData, isLoading, refetch } = usePengeluaranList();
     const { data: summaryData } = usePengeluaranSummary();
+    const queryClient = useQueryClient();
     const createExpenseMutation = useCreatePengeluaran();
 
     const expenses = expensesData?.data || [];
@@ -138,14 +140,20 @@ export default function ExpensesScreen() {
         }
 
         try {
-            if (!onlineManager.isOnline()) {
-                createExpenseMutation.mutate(payload);
-                setShowForm(false);
-                setJumlah('');
-                setDeskripsi('');
-                setKategori('BIAYA_OPERASIONAL');
-                setBisnisKategori('umum');
-                setKasJenis(null);
+            const result = await offlineAwareWrite(queryClient, {
+                type: 'bengkel.createPengeluaran',
+                payload,
+                label: 'Pengeluaran',
+                description: String(payload.deskripsi || ''),
+                onlineFn: () => createExpenseMutation.mutateAsync(payload),
+            });
+            setShowForm(false);
+            setJumlah('');
+            setDeskripsi('');
+            setKategori('BIAYA_OPERASIONAL');
+            setBisnisKategori('umum');
+            setKasJenis(null);
+            if (result.mode === 'offline') {
                 setSelectedMuatan(null);
                 setSelectedMobil(null);
                 setSelectedArmada(null);
@@ -156,17 +164,13 @@ export default function ExpensesScreen() {
                     { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
                 ]);
                 setAllowNegative(false);
-                appAlert('Offline Mode', 'Pengeluaran telah disimpan dalam antrean offline.');
+                appAlert(
+                    'Offline Mode',
+                    'Pengeluaran tersimpan di antrean offline (perangkat). Akan dikirim saat online.'
+                );
                 return;
             }
-
-            await createExpenseMutation.mutateAsync(payload);
-            setShowForm(false);
-            setJumlah('');
-            setDeskripsi('');
-            setKategori('BIAYA_OPERASIONAL');
-            setBisnisKategori('umum');
-            setKasJenis(null);
+            // continue online reset below (selected refs already need reset)
             setSelectedMuatan(null);
             setSelectedMobil(null);
             setSelectedArmada(null);

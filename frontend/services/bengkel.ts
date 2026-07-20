@@ -170,8 +170,13 @@ export const bengkelService = {
     },
 
     importSpareParts: async (formData: FormData) => {
+        // Must set multipart header — same as avatar/media/backup uploads.
+        // Without it, Android RN axios often fails with "Network Error".
         const response = await api.post('/spare-parts/import', formData, {
-            timeout: 60000 // 60 seconds for import
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            timeout: 120000, // large Excel can take a while
         });
         return response.data;
     },
@@ -182,7 +187,11 @@ export const bengkelService = {
     },
 
     uploadSparePartImage: async (id: number, formData: FormData) => {
-        const response = await api.post(`/spare-parts/${id}/image`, formData);
+        const response = await api.post(`/spare-parts/${id}/image`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response.data;
     },
 

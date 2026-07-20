@@ -11,10 +11,12 @@ import { Card } from '../../../components/ui/Card';
 import { useCreateArmada, useUpdateArmada, useDeleteArmada, useArmadaList } from '../../../hooks/useJasaAngkut';
 import { jasaAngkutService } from '../../../services/jasaAngkut';
 import { getErrorMessage } from '../../../utils/error';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../../services/offlineQueue';
 
 export default function ArmadaFormScreen() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { id } = useLocalSearchParams<{ id: string }>();
     const isEdit = !!id;
 
@@ -70,21 +72,21 @@ export default function ArmadaFormScreen() {
         try {
             setSubmitting(true);
 
-            if (!onlineManager.isOnline()) {
-                if (isEdit) {
-                    updateArmada.mutate({ id: parseInt(id), data: formData });
-                } else {
-                    createArmada.mutate(formData);
-                }
-                appAlert('Offline Mode', 'Data armada telah disimpan di antrean offline.');
-                router.back();
-                return;
-            }
-
-            if (isEdit) {
-                await updateArmada.mutateAsync({ id: parseInt(id), data: formData });
-            } else {
-                await createArmada.mutateAsync(formData);
+            const result = await offlineAwareWrite(queryClient, {
+                type: isEdit ? 'jasaAngkut.updateArmada' : 'jasaAngkut.createArmada',
+                payload: isEdit ? { id: parseInt(id), data: formData } : formData,
+                label: isEdit ? 'Update armada' : 'Armada baru',
+                description: formData.nopol || formData.nama,
+                onlineFn: () =>
+                    isEdit
+                        ? updateArmada.mutateAsync({ id: parseInt(id), data: formData })
+                        : createArmada.mutateAsync(formData),
+            });
+            if (result.mode === 'offline') {
+                appAlert(
+                    'Offline Mode',
+                    'Data armada tersimpan di antrean offline (perangkat).'
+                );
             }
             router.back();
         } catch (error) {
@@ -102,14 +104,19 @@ export default function ArmadaFormScreen() {
                 try {
                     setSubmitting(true);
 
-                    if (!onlineManager.isOnline()) {
-                        deleteArmada.mutate(parseInt(id));
-                        appAlert('Offline Mode', 'Data armada telah dijadwalkan untuk dihapus saat online.');
-                        router.back();
-                        return;
+                    const result = await offlineAwareWrite(queryClient, {
+                        type: 'jasaAngkut.deleteArmada',
+                        payload: { id: parseInt(id) },
+                        label: 'Hapus armada',
+                        description: formData.nopol || formData.nama,
+                        onlineFn: () => deleteArmada.mutateAsync(parseInt(id)),
+                    });
+                    if (result.mode === 'offline') {
+                        appAlert(
+                            'Offline Mode',
+                            'Penghapusan armada dijadwalkan di antrean offline (perangkat).'
+                        );
                     }
-
-                    await deleteArmada.mutateAsync(parseInt(id));
                     router.back();
                 } catch (error) {
                     appAlert('Error', getErrorMessage(error, 'Gagal menghapus armada'));

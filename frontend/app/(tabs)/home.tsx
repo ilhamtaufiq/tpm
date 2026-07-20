@@ -28,6 +28,7 @@ export default function HomeScreen() {
             if (!user) return;
 
             // Role Guard: Redirect specific roles away from Home
+            // (no invalidate on focus — was causing lag every time user opened Home)
             if (user.role === 'BENGKEL') {
                 router.replace('/bengkel');
                 return;
@@ -40,9 +41,7 @@ export default function HomeScreen() {
                 router.replace('/mobil');
                 return;
             }
-
-            queryClient.invalidateQueries({ queryKey: ['home'] });
-        }, [queryClient, user, router])
+        }, [user, router])
     );
 
     const handleRefresh = async () => {

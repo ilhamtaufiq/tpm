@@ -141,15 +141,23 @@ Notifikasi real-time dikirim dari backend via WebSocket (`backend/app/realtime.p
 - Perubahan status pembayaran
 - Update stok sparepart
 
-### Offline Cache (TanStack Query Persist)
-Frontend menggunakan `@tanstack/react-query-persist-client` dengan `AsyncStorage` sebagai backend penyimpanan offline:
+### Offline Cache (TanStack Query Persist) — baca
+Frontend menggunakan `@tanstack/react-query-persist-client` dengan `AsyncStorage` (`TPM_OFFLINE_CACHE`):
 - **Stale time**: 10 detik (near real-time).
-- **GC time**: 24 jam.
-- **Retry**: 2 kali (kecuali network error).
+- **GC time**: 24 jam; **maxAge persist**: 7 hari.
+- **Filter dehydrate**: hanya query operasional (master data, transaksi, saldo, dsb.) — laporan berat tidak di-persist.
+- **networkMode queries**: `offlineFirst`.
 - Data di-refetch otomatis saat koneksi kembali (`refetchOnReconnect`).
 
+### Offline Write Queue (durable) — tulis
+Write offline **bukan** paused mutation in-memory. Sumber kebenaran: Zustand + AsyncStorage (`TPM_OFFLINE_WRITE_QUEUE_V1`) di `frontend/services/offlineQueue/`.
+- Enqueue lewat `offlineAwareWrite` / `enqueueOfflineAction` (client_request_id + Idempotency-Key / `X-Client-Request-Id`).
+- Sync worker flush FIFO saat online / foreground; retry bounded; 4xx → failed permanen sampai user retry/hapus.
+- Optimistic patch list (`_pendingSync`) + toast hasil sync.
+- UI: `ConnectivityBanner` (jumlah antrean / gagal) + `OfflineQueueSheet` (list, retry, hapus).
+
 ### Connectivity Banner
-`ConnectivityBanner` (frontend) menampilkan indikator online/offline di atas konten ketika koneksi terputus.
+`ConnectivityBanner` menampilkan mode offline dan/atau jumlah antrean menunggu sync; tap membuka detail antrean.
 
 ---
 

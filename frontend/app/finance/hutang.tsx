@@ -20,7 +20,8 @@ import {
 } from 'lucide-react-native';
 import { useRouter, router, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../services/offlineQueue';
 import { keuanganService, Hutang, HutangSummary, HutangStatus, PembayaranHutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -110,6 +111,7 @@ export default function HutangUsahaScreen() {
     const { data: mobilData } = useMobilList();
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = useHutangSummary({ unit: unitFilter as any });
     const paymentMutation = useProcessHutangPaymentSplit();
+    const queryClient = useQueryClient();
     const createMutation = useCreateHutang();
 
     const detailSheetRef = useRef<BottomSheet>(null);
@@ -306,29 +308,23 @@ export default function HutangUsahaScreen() {
                 }];
             }
 
-            if (!onlineManager.isOnline()) {
-                createMutation.mutate(payload);
-                showAlert('Offline Mode', 'Hutang telah disimpan di antrean offline.', 'info');
-                // Reset state
-                setCreateName('');
-                setCreateAmount('');
-                setCreateNote('');
-                setCreateMethod(undefined);
-                setIsCreateSplitPayment(false);
-                setCreatePayments([{ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]);
-
-                if (Platform.OS === 'web') {
-                    setCreateVisible(false);
-                    setIsSheetOpen(false);
-                } else {
-                    createSheetRef.current?.close();
-                    setIsSheetOpen(false);
-                }
-                return;
+            const result = await offlineAwareWrite(queryClient, {
+                type: 'finance.createHutang',
+                payload,
+                label: 'Buat hutang',
+                description: String(payload.nama_kreditur || ''),
+                onlineFn: () => createMutation.mutateAsync(payload),
+            });
+            if (result.mode === 'offline') {
+                showAlert(
+                    'Offline Mode',
+                    'Hutang tersimpan di antrean offline (perangkat). Akan dikirim saat online.',
+                    'info'
+                );
+            } else {
+                showAlert('Sukses', 'Hutang berhasil dibuat', 'success');
             }
-
-            await createMutation.mutateAsync(payload);
-            showAlert('Sukses', 'Hutang berhasil dibuat', 'success');
+            // Reset state (shared online/offline)
 
             // Reset state
             setCreateName('');

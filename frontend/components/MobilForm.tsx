@@ -10,7 +10,8 @@ import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
 import { formatNumber, parseNumber } from '../utils/format';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite, isAppOnline } from '../services/offlineQueue';
 import { useKasBankBalances } from '../hooks/useKeuangan';
 
 interface MobilFormProps {
@@ -23,6 +24,7 @@ import { Badge } from './ui/Badge';
 
 export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
     const isEdit = !!initialData;
+    const queryClient = useQueryClient();
     const createMutation = useCreateMobil();
     const updateMutation = useUpdateMobil();
 
@@ -79,7 +81,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
     const checkBalance = (sumber: string, amount: number) => {
         // VERSI 5.0 - THE TRUTH
-        if (!onlineManager.isOnline()) return true; 
+        if (!isAppOnline()) return true; 
         if (!walletBalances) return true;
 
         let kasJenis = '';
@@ -254,31 +256,35 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             }
         };
 
-        if (!onlineManager.isOnline()) {
-            if (isEdit) {
-                updateMutation.mutate({ id: initialData.id, data: payload });
-            } else {
-                createMutation.mutate(payload);
+        void (async () => {
+            try {
+                const result = await offlineAwareWrite(queryClient, {
+                    type: isEdit ? 'mobil.update' : 'mobil.create',
+                    payload: isEdit ? { id: initialData.id, data: payload } : payload,
+                    label: isEdit ? 'Update mobil' : 'Mobil baru',
+                    description: String(payload.plat_nomor || ''),
+                    onlineFn: () =>
+                        isEdit
+                            ? updateMutation.mutateAsync({ id: initialData.id, data: payload })
+                            : createMutation.mutateAsync(payload),
+                });
+                if (result.mode === 'offline') {
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Offline Mode',
+                        message: isEdit
+                            ? 'Update data mobil tersimpan di antrean offline (perangkat).'
+                            : 'Mobil baru tersimpan di antrean offline (perangkat).',
+                        variant: 'info',
+                    });
+                    setTimeout(() => onSuccess?.(), 1500);
+                    return;
+                }
+                mutateOptions.onSuccess();
+            } catch (err: any) {
+                mutateOptions.onError(err);
             }
-
-            setDialogConfig({
-                visible: true,
-                title: 'Offline Mode',
-                message: isEdit ? 'Update data mobil telah disimpan di antrean offline.' : 'Mobil baru telah disimpan di antrean offline.',
-                variant: 'info'
-            });
-
-            setTimeout(() => {
-                onSuccess?.();
-            }, 1500);
-            return;
-        }
-
-        if (isEdit) {
-            updateMutation.mutate({ id: initialData.id, data: payload }, mutateOptions);
-        } else {
-            createMutation.mutate(payload, mutateOptions);
-        }
+        })();
     };
 
     const renderFormContent = () => (

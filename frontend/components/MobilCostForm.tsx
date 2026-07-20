@@ -10,7 +10,8 @@ import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useAddBiaya, useDeleteBiaya, useMobilDetail } from '../hooks/useMobil';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../services/offlineQueue';
 
 // Import Icons properly
 import {
@@ -35,6 +36,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     const activeUnit = detailUnit || unit;
 
     // Mutations
+    const queryClient = useQueryClient();
     const addBiayaMutation = useAddBiaya();
     const deleteBiayaMutation = useDeleteBiaya();
 
@@ -146,44 +148,38 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
             }
         };
 
-        if (!onlineManager.isOnline()) {
-            addBiayaMutation.mutate(payload);
-            setNewLainnya({ kategori: '', deskripsi: '', jumlah: '', metode_bayar: '' });
-            setPayments([]);
-            setIsSplitPayment(false);
-            setDialogConfig({
-                visible: true,
-                title: 'Offline Mode',
-                message: 'Biaya telah disimpan di antrean offline.',
-                variant: 'info',
-                type: 'alert'
-            });
-            return;
-        }
-
-        addBiayaMutation.mutate(payload, {
-            onSuccess: () => {
+        void (async () => {
+            try {
+                const result = await offlineAwareWrite(queryClient, {
+                    type: 'mobil.addBiaya',
+                    payload,
+                    label: 'Biaya mobil',
+                    description: String(payload.data?.deskripsi || payload.data?.kategori || ''),
+                    onlineFn: () => addBiayaMutation.mutateAsync(payload as any),
+                });
                 setNewLainnya({ kategori: '', deskripsi: '', jumlah: '', metode_bayar: '' });
                 setPayments([]);
                 setIsSplitPayment(false);
                 setDialogConfig({
                     visible: true,
-                    title: 'Sukses',
-                    message: 'Biaya berhasil ditambahkan',
-                    variant: 'success',
-                    type: 'alert'
+                    title: result.mode === 'offline' ? 'Offline Mode' : 'Sukses',
+                    message:
+                        result.mode === 'offline'
+                            ? 'Biaya tersimpan di antrean offline (perangkat).'
+                            : 'Biaya berhasil ditambahkan',
+                    variant: result.mode === 'offline' ? 'info' : 'success',
+                    type: 'alert',
                 });
-            },
-            onError: (err: any) => {
+            } catch (err: any) {
                 setDialogConfig({
                     visible: true,
                     title: 'Gagal',
                     message: getErrorMessage(err, 'Gagal menambahkan biaya'),
                     variant: 'error',
-                    type: 'alert'
+                    type: 'alert',
                 });
             }
-        });
+        })();
     };
 
     const handleDeleteBiaya = (biayaId: number) => {
@@ -197,20 +193,36 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
             onConfirm: () => {
                 setDialogConfig((prev: any) => ({ ...prev, loading: true }));
 
-                if (!onlineManager.isOnline()) {
-                    deleteBiayaMutation.mutate({ id: activeUnit.id, biayaId });
-                    setDialogConfig({ visible: true, title: 'Offline Mode', message: 'Biaya telah dijadwalkan untuk dihapus saat online.', variant: 'info', type: 'alert', loading: false });
-                    return;
-                }
-
-                deleteBiayaMutation.mutate({ id: activeUnit.id, biayaId }, {
-                    onSuccess: () => {
-                        setDialogConfig({ visible: true, title: 'Sukses', message: 'Biaya berhasil dihapus', variant: 'success', type: 'alert', loading: false });
-                    },
-                    onError: (err: any) => {
-                        setDialogConfig({ visible: true, title: 'Gagal', message: getErrorMessage(err, 'Gagal menghapus biaya'), variant: 'error', type: 'alert', loading: false });
+                void (async () => {
+                    try {
+                        const result = await offlineAwareWrite(queryClient, {
+                            type: 'mobil.deleteBiaya',
+                            payload: { id: activeUnit.id, biayaId },
+                            label: 'Hapus biaya mobil',
+                            onlineFn: () => deleteBiayaMutation.mutateAsync({ id: activeUnit.id, biayaId }),
+                        });
+                        setDialogConfig({
+                            visible: true,
+                            title: result.mode === 'offline' ? 'Offline Mode' : 'Sukses',
+                            message:
+                                result.mode === 'offline'
+                                    ? 'Penghapusan biaya dijadwalkan di antrean offline.'
+                                    : 'Biaya berhasil dihapus',
+                            variant: result.mode === 'offline' ? 'info' : 'success',
+                            type: 'alert',
+                            loading: false,
+                        });
+                    } catch (err: any) {
+                        setDialogConfig({
+                            visible: true,
+                            title: 'Gagal',
+                            message: getErrorMessage(err, 'Gagal menghapus biaya'),
+                            variant: 'error',
+                            type: 'alert',
+                            loading: false,
+                        });
                     }
-                });
+                })();
             }
         });
     };

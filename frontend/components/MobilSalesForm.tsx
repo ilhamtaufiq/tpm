@@ -11,7 +11,8 @@ import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../services/offlineQueue';
 
 interface MobilSalesFormProps {
     unit: any;
@@ -19,6 +20,7 @@ interface MobilSalesFormProps {
 }
 
 export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
+    const queryClient = useQueryClient();
     const { data: detailUnit, isLoading: isDetailLoading } = useMobilDetail(unit?.id);
     const activeUnit = detailUnit || unit;
 
@@ -200,42 +202,45 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     })),
             };
 
-            if (!onlineManager.isOnline()) {
-                mutate(payload);
-                setDialogConfig({
-                    visible: true,
-                    title: 'Offline Mode',
-                    message: 'Transaksi penjualan telah disimpan di antrean offline.',
-                    variant: 'info'
-                });
-                setTimeout(() => {
-                    onSuccess?.();
-                }, 1500);
-                return;
-            }
-
-            mutate(payload, {
-                onSuccess: () => {
+            void (async () => {
+                try {
+                    const result = await offlineAwareWrite(queryClient, {
+                        type: 'mobil.createPenjualan',
+                        payload,
+                        label: 'Penjualan mobil',
+                        description: String(payload.nama_pembeli || unit?.nomor_plat || ''),
+                        onlineFn: () =>
+                            new Promise((resolve, reject) => {
+                                mutate(payload, { onSuccess: resolve, onError: reject });
+                            }),
+                    });
+                    if (result.mode === 'offline') {
+                        setDialogConfig({
+                            visible: true,
+                            title: 'Offline Mode',
+                            message: 'Transaksi penjualan tersimpan di antrean offline (perangkat).',
+                            variant: 'info',
+                        });
+                        setTimeout(() => onSuccess?.(), 1500);
+                        return;
+                    }
                     setDialogConfig({
                         visible: true,
                         title: 'Sukses',
                         message: 'Penjualan berhasil dicatat',
-                        variant: 'success'
+                        variant: 'success',
                     });
-                    setTimeout(() => {
-                        onSuccess?.();
-                    }, 1500);
-                },
-                onError: (err: any) => {
-                    console.error("Mutation Error:", err);
+                    setTimeout(() => onSuccess?.(), 1500);
+                } catch (err: any) {
+                    console.error('Mutation Error:', err);
                     setDialogConfig({
                         visible: true,
                         title: 'Eror Pencatatan',
                         message: getErrorMessage(err, 'Gagal menyimpan transaksi'),
-                        variant: 'error'
+                        variant: 'error',
                     });
                 }
-            });
+            })();
         } catch (error) {
             console.error("Submit Error:", error);
             setDialogConfig({

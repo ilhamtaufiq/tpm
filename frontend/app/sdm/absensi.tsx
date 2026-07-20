@@ -18,7 +18,8 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { Input } from '../../components/ui/Input';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../services/offlineQueue';
 import { Header } from '../../components/ui/Header';
 
 const STATUS_META: Record<AttendanceStatus, { label: string; color: string; bg: string; text: string }> = {
@@ -33,6 +34,7 @@ const STATUS_META: Record<AttendanceStatus, { label: string; color: string; bg: 
 
 export default function AbsensiScreen() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedKaryawan, setSelectedKaryawan] = useState<Karyawan | null>(null);
@@ -221,27 +223,30 @@ export default function AbsensiScreen() {
                 jam_keluar: info.jam_keluar
             }));
 
-            if (!onlineManager.isOnline()) {
-                bulkClockInMutation.mutate({
-                    karyawanId: selectedKaryawan.id,
-                    dates: attendanceRecords
-                });
-                appAlert('Offline Mode', `Data absensi ${selectedKaryawan.nama} telah disimpan di antrean offline.`);
-                setSelectedKaryawan(null);
-                setSelectedDates({});
-                return;
-            }
-
-            await bulkClockInMutation.mutateAsync({
+            const payload = {
                 karyawanId: selectedKaryawan.id,
-                dates: attendanceRecords
+                dates: attendanceRecords,
+            };
+            const result = await offlineAwareWrite(queryClient, {
+                type: 'sdm.bulkClockIn',
+                payload,
+                label: 'Absensi bulk',
+                description: selectedKaryawan.nama,
+                onlineFn: () => bulkClockInMutation.mutateAsync(payload),
             });
-            setDialogConfig({
-                visible: true,
-                title: 'Sukses',
-                message: `Berhasil mencatat absensi untuk ${attendanceRecords.length} hari`,
-                variant: 'success'
-            });
+            if (result.mode === 'offline') {
+                appAlert(
+                    'Offline Mode',
+                    `Data absensi ${selectedKaryawan.nama} tersimpan di antrean offline (perangkat).`
+                );
+            } else {
+                setDialogConfig({
+                    visible: true,
+                    title: 'Sukses',
+                    message: `Berhasil mencatat absensi untuk ${attendanceRecords.length} hari`,
+                    variant: 'success'
+                });
+            }
             setSelectedKaryawan(null);
             setSelectedDates({});
         } catch (error: any) {

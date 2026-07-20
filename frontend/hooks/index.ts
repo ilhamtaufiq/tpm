@@ -1,5 +1,6 @@
 export * from './useBengkel';
 export * from './useDebounce';
+export * from './useDeferredReady';
 export * from './useJasaAngkut';
 export * from './useKeuangan';
 export * from './useMaintenance';

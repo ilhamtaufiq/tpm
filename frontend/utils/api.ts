@@ -53,23 +53,33 @@ api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const monitoringConfig = config as MonitoringConfig;
         const token = useAuthStore.getState().token;
-        
+
         if (token && monitoringConfig.headers) {
             monitoringConfig.headers.Authorization = `Bearer ${token}`;
         }
-        
+
+        // Idempotency: forward client_request_id from JSON body as headers
+        const data = monitoringConfig.data;
+        if (data && typeof data === 'object' && !Array.isArray(data) && data.client_request_id) {
+            const crid = String(data.client_request_id);
+            if (monitoringConfig.headers) {
+                monitoringConfig.headers['X-Client-Request-Id'] = crid;
+                monitoringConfig.headers['Idempotency-Key'] = crid;
+            }
+        }
+
         // Monitoring start
         monitoringConfig._startTime = Date.now();
         const id = Math.random().toString(36).substring(7);
         monitoringConfig._monitorId = id;
-        
+
         useMonitorStore.getState().logRequest({
             id: id,
             method: monitoringConfig.method?.toUpperCase() || 'GET',
             url: monitoringConfig.url || '/',
             timestamp: Date.now(),
         });
-        
+
         return config;
     },
     (error) => {

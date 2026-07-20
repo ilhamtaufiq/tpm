@@ -4,13 +4,13 @@ import { ActivityItem, KasBankListResponse, keuanganService } from '../services/
 // =============================================
 // KAS & BANK
 // =============================================
-export const useKasBankBalances = (options?: { refetchInterval?: number }) => {
+export const useKasBankBalances = (options?: { refetchInterval?: number; enabled?: boolean }) => {
     return useQuery({
         queryKey: ['kas_bank_balances'],
         queryFn: () => keuanganService.getKasBankBalances(),
-        staleTime: 0,
-        refetchOnMount: 'always',
-        refetchOnReconnect: true, 
+        // Fresh enough for wallet UI; mutations + WS invalidate sooner when needed
+        staleTime: 1000 * 30,
+        refetchOnReconnect: true,
         ...options
     });
 };
@@ -55,10 +55,11 @@ export const useCreateTransaction = () => {
 // =============================================
 // PIUTANG
 // =============================================
-export const usePiutangList = (params?: any) => {
+export const usePiutangList = (params?: any, options?: { enabled?: boolean; refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['piutang_list', params],
         queryFn: () => keuanganService.getPiutangList(params),
+        ...options,
     });
 };
 
@@ -119,10 +120,11 @@ export const useCreatePiutang = () => {
 // =============================================
 // HUTANG
 // =============================================
-export const useHutangList = (params?: any) => {
+export const useHutangList = (params?: any, options?: { enabled?: boolean; refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['hutang_list', params],
         queryFn: () => keuanganService.getHutangList(params),
+        ...options,
     });
 };
 
@@ -194,8 +196,7 @@ export const useRecentActivity = (
     return useQuery<ActivityItem[]>({
         queryKey: ['recent_activity', limit],
         queryFn: () => keuanganService.getRecentActivity(limit),
-        staleTime: 0,
-        refetchOnMount: 'always',
+        staleTime: 1000 * 30,
         refetchOnReconnect: true,
         ...options
     });
@@ -219,8 +220,7 @@ export const useCapitalReport = (params?: any, options?: { refetchInterval?: num
     return useQuery({
         queryKey: ['capital_report', params],
         queryFn: () => keuanganService.getModalReport(params),
-        staleTime: 0,
-        refetchOnMount: 'always',
+        staleTime: 1000 * 30,
         refetchOnReconnect: true,
         ...options
     });
@@ -230,8 +230,7 @@ export const useLabaRugiReport = (params?: any, options?: { refetchInterval?: nu
     return useQuery({
         queryKey: ['laba_rugi_report', params],
         queryFn: () => keuanganService.getLabaRugiReport(params),
-        staleTime: 0,
-        refetchOnMount: 'always',
+        staleTime: 1000 * 30,
         refetchOnReconnect: true,
         ...options
     });
@@ -241,8 +240,7 @@ export const useNeracaReport = (params?: any, options?: { refetchInterval?: numb
     return useQuery({
         queryKey: ['neraca_report', params],
         queryFn: () => keuanganService.getNeracaReport(params),
-        staleTime: 0,
-        refetchOnMount: 'always',
+        staleTime: 1000 * 30,
         refetchOnReconnect: true,
         ...options
     });
@@ -252,8 +250,7 @@ export const useValidateReports = (params?: any, options?: { refetchInterval?: n
     return useQuery({
         queryKey: ['validate_reports', params],
         queryFn: () => keuanganService.validateReports(params),
-        staleTime: 0,
-        refetchOnMount: 'always',
+        staleTime: 1000 * 30,
         refetchOnReconnect: true,
         enabled: false, // Only run on-demand
         ...options

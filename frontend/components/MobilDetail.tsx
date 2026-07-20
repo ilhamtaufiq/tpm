@@ -34,7 +34,8 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
 import { useMobilDetail, useUploadMedia, useDeleteMedia, usePenjualanMobilList, usePayPenjualanMobil, useCancelBookingMobil } from '../hooks/useMobil';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../services/offlineQueue';
 import { useHutangList } from '../hooks/useKeuangan';
 import { FILE_URL } from '../utils/api';
 import {
@@ -57,6 +58,7 @@ interface MobilDetailProps {
 }
 
 export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: MobilDetailProps) => {
+    const queryClient = useQueryClient();
     const { data: unit, isLoading: isRefetching } = useMobilDetail(initialUnit?.id);
     const uploadMediaAction = useUploadMedia();
     const deleteMediaAction = useDeleteMedia();
@@ -143,14 +145,24 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                 type: asset.type === 'video' ? 'video/mp4' : 'image/jpeg',
                 blob: (asset as any).file, // On web, the actual File/Blob object is here
             }));
+            // Serializable refs only for durable queue (no blob)
+            const serializableFiles = files.map(({ uri, name, type }) => ({ uri, name, type }));
 
             try {
-                if (!onlineManager.isOnline()) {
-                    uploadMediaAction.mutate({ id: activeUnit.id, files });
-                    appAlert('Offline Mode', 'Media akan diunggah saat koneksi tersedia.');
+                const writeResult = await offlineAwareWrite(queryClient, {
+                    type: 'mobil.uploadMedia',
+                    payload: { id: activeUnit.id, files: serializableFiles },
+                    label: 'Upload media mobil',
+                    description: `${serializableFiles.length} file`,
+                    onlineFn: () => uploadMediaAction.mutateAsync({ id: activeUnit.id, files }),
+                });
+                if (writeResult.mode === 'offline') {
+                    appAlert(
+                        'Offline Mode',
+                        'Media tersimpan di antrean offline (perangkat). Akan diunggah saat online.'
+                    );
                     return;
                 }
-                await uploadMediaAction.mutateAsync({ id: activeUnit.id, files });
                 appAlert('Berhasil', 'Media berhasil diunggah');
             } catch (error) {
                 console.error('Upload error:', error);
@@ -229,21 +241,24 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
     const confirmDeleteMedia = async () => {
         if (!deleteDialog.mediaId) return;
+        const mediaId = deleteDialog.mediaId;
 
         try {
-            if (!onlineManager.isOnline()) {
-                deleteMediaAction.mutate({
-                    id: activeUnit.id,
-                    mediaId: deleteDialog.mediaId
-                });
-                appAlert('Offline Mode', 'Penghapusan media telah dijadwalkan.');
+            const writeResult = await offlineAwareWrite(queryClient, {
+                type: 'mobil.deleteMedia',
+                payload: { id: activeUnit.id, mediaId },
+                label: 'Hapus media mobil',
+                onlineFn: () => deleteMediaAction.mutateAsync({ id: activeUnit.id, mediaId }),
+            });
+
+            if (writeResult.mode === 'offline') {
+                appAlert(
+                    'Offline Mode',
+                    'Penghapusan media dijadwalkan di antrean offline (perangkat).'
+                );
                 setDeleteDialog({ visible: false, mediaId: null });
                 return;
             }
-            await deleteMediaAction.mutateAsync({
-                id: activeUnit.id,
-                mediaId: deleteDialog.mediaId
-            });
 
             // Reset index if we deleted the last item
             if (activeIndex >= (activeUnit.media?.length || 0) - 1) {

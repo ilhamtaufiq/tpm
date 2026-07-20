@@ -25,7 +25,8 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { BottomSheetContainer, CenterModalContainer, BoundedSheetScrollView } from '../../../components/ui/BottomSheetContainer';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../../services/offlineQueue';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { useCreatePembelianParts, useSparePartsList, useUpdatePembelianParts } from '../../../hooks/useBengkel';
 import { formatNumber, parseNumber, formatCurrency } from '../../../utils/format';
@@ -54,6 +55,7 @@ export default function PurchaseScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{ id?: string }>();
     const insets = useSafeAreaInsets();
+    const queryClient = useQueryClient();
     const editId = params.id ? Number(params.id) : null;
     const isEditMode = Number.isFinite(editId) && !!editId;
 
@@ -382,23 +384,30 @@ export default function PurchaseScreen() {
             }))
         };
 
-        const isOnline = onlineManager.isOnline();
-
-        if (!isOnline) {
-            createPembelianMutation.mutate(payload);
-            showNotice('success', 'Mode Offline', 'Transaksi telah disimpan di antrian.');
-            handleBack();
-            return;
-        }
-
         try {
             setConfirmSubmitOpen(false);
             setPaymentSheetOpen(false);
-            if (isEditMode && editId) {
-                await updatePembelianMutation.mutateAsync({ id: editId, data: payload });
-            } else {
-                const result = await createPembelianMutation.mutateAsync(payload);
-                setCreatedTransaction(result);
+            const result = await offlineAwareWrite(queryClient, {
+                type: isEditMode && editId ? 'bengkel.updatePembelian' : 'bengkel.createPembelian',
+                payload: isEditMode && editId ? { id: editId, data: payload } : payload,
+                label: isEditMode ? 'Update pembelian' : 'Pembelian sparepart',
+                description: String(payload.nomor_faktur || selectedSupplier?.nama || ''),
+                onlineFn: () =>
+                    isEditMode && editId
+                        ? updatePembelianMutation.mutateAsync({ id: editId, data: payload })
+                        : createPembelianMutation.mutateAsync(payload),
+            });
+            if (result.mode === 'offline') {
+                showNotice(
+                    'info',
+                    'Offline Mode',
+                    'Transaksi tersimpan di antrean offline (perangkat). Akan dikirim saat online.'
+                );
+                handleBack();
+                return;
+            }
+            if (!isEditMode) {
+                setCreatedTransaction(result.data);
             }
             setSuccessModalOpen(true);
         } catch (error: any) {

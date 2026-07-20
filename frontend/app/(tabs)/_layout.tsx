@@ -12,7 +12,9 @@ export default function TabsLayout() {
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarStyle: { display: 'none' }
+                tabBarStyle: { display: 'none' },
+                freezeOnBlur: true,
+                lazy: true,
             }}
         >
             <Tabs.Screen

@@ -26,7 +26,8 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { onlineManager } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { offlineAwareWrite } from '../../services/offlineQueue';
 import { KasBankTransaction, KasBankAllBalances, KasBankJenis } from '../../services/keuangan';
 import { User } from '../../services/auth';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
@@ -118,6 +119,7 @@ export default function MutasiKasScreen() {
         jenis: effectiveFilter === 'all' ? undefined : effectiveFilter,
     });
     const { data: balances, isLoading: isLoadingBalances, refetch: refetchBalances } = useKasBankBalances();
+    const queryClient = useQueryClient();
     const transferMutation = useTransfer();
     const createTxMutation = useCreateTransaction();
 
@@ -225,45 +227,33 @@ export default function MutasiKasScreen() {
     const handleTransfer = async () => {
         if (!transferForm.nominal || !transferForm.keterangan) return;
         try {
-            if (!onlineManager.isOnline()) {
-                transferMutation.mutate({
-                    dari: transferForm.dari,
-                    ke: transferForm.ke,
-                    nominal: parseNumber(transferForm.nominal),
-                    tanggal: new Date().toISOString().split('T')[0],
-                    keterangan: transferForm.keterangan,
-                });
-                handleCloseSheet();
-                setTransferForm({ dari: 'KAS_UTAMA', ke: 'BANK_UTAMA', nominal: '', keterangan: '', allow_negative: false });
-                setTimeout(() => {
-                    setDialogConfig({
-                        visible: true,
-                        title: "Offline Mode",
-                        message: "Transfer telah disimpan di antrean offline.",
-                        variant: 'info',
-                        type: 'alert'
-                    });
-                }, 400);
-                return;
-            }
-
-            await transferMutation.mutateAsync({
+            const payload = {
                 dari: transferForm.dari,
                 ke: transferForm.ke,
                 nominal: parseNumber(transferForm.nominal),
                 tanggal: new Date().toISOString().split('T')[0],
                 keterangan: transferForm.keterangan,
                 allow_negative: transferForm.allow_negative,
+            };
+            const result = await offlineAwareWrite(queryClient, {
+                type: 'finance.transfer',
+                payload,
+                label: 'Transfer kas',
+                description: `${payload.dari} → ${payload.ke}`,
+                onlineFn: () => transferMutation.mutateAsync(payload),
             });
             handleCloseSheet();
             setTransferForm({ dari: 'KAS_UTAMA', ke: 'BANK_UTAMA', nominal: '', keterangan: '', allow_negative: false });
             setTimeout(() => {
                 setDialogConfig({
                     visible: true,
-                    title: "Sukses",
-                    message: "Transfer berhasil dilakukan",
-                    variant: 'success',
-                    type: 'alert'
+                    title: result.mode === 'offline' ? 'Offline Mode' : 'Sukses',
+                    message:
+                        result.mode === 'offline'
+                            ? 'Transfer tersimpan di antrean offline (perangkat). Akan dikirim saat online.'
+                            : 'Transfer berhasil dilakukan',
+                    variant: result.mode === 'offline' ? 'info' : 'success',
+                    type: 'alert',
                 });
             }, 400);
         } catch (error) {
@@ -281,46 +271,33 @@ export default function MutasiKasScreen() {
     const handleCreateModal = async () => {
         if (!modalForm.nominal || !modalForm.keterangan) return;
         try {
-            if (!onlineManager.isOnline()) {
-                createTxMutation.mutate({
-                    tanggal: new Date().toISOString().split('T')[0],
-                    jenis: modalForm.jenis,
-                    tipe: 'MASUK',
-                    nominal: parseNumber(modalForm.nominal),
-                    sumber: 'modal',
-                    keterangan: modalForm.keterangan,
-                });
-                handleCloseSheet();
-                setModalForm({ jenis: 'KAS_UTAMA', nominal: '', keterangan: 'Setoran Modal' });
-                setTimeout(() => {
-                    setDialogConfig({
-                        visible: true,
-                        title: "Offline Mode",
-                        message: "Setoran modal telah disimpan di antrean offline.",
-                        variant: 'info',
-                        type: 'alert'
-                    });
-                }, 400);
-                return;
-            }
-
-            await createTxMutation.mutateAsync({
+            const modalPayloadBase = {
                 tanggal: new Date().toISOString().split('T')[0],
                 jenis: modalForm.jenis,
-                tipe: 'MASUK',
+                tipe: 'MASUK' as const,
                 nominal: parseNumber(modalForm.nominal),
                 sumber: 'modal',
                 keterangan: modalForm.keterangan,
+            };
+            const result = await offlineAwareWrite(queryClient, {
+                type: 'finance.createTransaction',
+                payload: modalPayloadBase,
+                label: 'Setoran modal',
+                description: modalForm.keterangan,
+                onlineFn: () => createTxMutation.mutateAsync(modalPayloadBase),
             });
             handleCloseSheet();
             setModalForm({ jenis: 'KAS_UTAMA', nominal: '', keterangan: 'Setoran Modal' });
             setTimeout(() => {
                 setDialogConfig({
                     visible: true,
-                    title: "Sukses",
-                    message: "Setoran modal berhasil disimpan",
-                    variant: 'success',
-                    type: 'alert'
+                    title: result.mode === 'offline' ? 'Offline Mode' : 'Sukses',
+                    message:
+                        result.mode === 'offline'
+                            ? 'Setoran modal tersimpan di antrean offline (perangkat).'
+                            : 'Setoran modal berhasil disimpan',
+                    variant: result.mode === 'offline' ? 'info' : 'success',
+                    type: 'alert',
                 });
             }, 400);
         } catch (error) {
