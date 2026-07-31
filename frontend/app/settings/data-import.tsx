@@ -23,8 +23,10 @@ import { Badge } from '../../components/ui/Badge';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useUIStore } from '../../store/useUIStore';
-import { dataImportService, ImportResult } from '../../services/dataImport';
+import { dataImportService, ImportResult, BASE_URL } from '../../services/dataImport';
 import { downloadXlsxBlob } from '../../utils/downloadXlsx';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { getErrorMessage } from '../../utils/error';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -80,9 +82,31 @@ export default function DataImportScreen() {
     const handleDownloadTemplate = async () => {
         try {
             setBusy('template');
-            const data = await dataImportService.downloadTemplate();
             const filename = `TPM_IMPORT_TEMPLATE_${new Date().toISOString().slice(0, 10)}.xlsx`;
-            await downloadXlsxBlob(data as any, filename);
+
+            if (Platform.OS === 'web') {
+                const data = await dataImportService.downloadTemplate();
+                await downloadXlsxBlob(data as any, filename);
+            } else {
+                const token = useAuthStore.getState().token;
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const downloadUrl = `${BASE_URL}/data-import/template`;
+                const fileUri = `${FileSystem.documentDirectory}${filename}`;
+
+                const result = await FileSystem.downloadAsync(downloadUrl, fileUri, {
+                    headers,
+                });
+
+                if (result.status === 200 && await Sharing.isAvailableAsync()) {
+                    await Sharing.shareAsync(result.uri, {
+                        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        dialogTitle: filename,
+                        UTI: 'com.microsoft.excel.xls',
+                    });
+                } else if (result.status !== 200) {
+                    throw new Error('Gagal mengunduh file dari server (HTTP ' + result.status + ')');
+                }
+            }
             show('Berhasil', 'Template Excel berhasil diunduh.', 'success');
         } catch (e) {
             show('Gagal', getErrorMessage(e, 'Gagal unduh template'), 'error');

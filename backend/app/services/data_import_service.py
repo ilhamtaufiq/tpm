@@ -227,14 +227,31 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
     "spare_parts": [
         {
             "kode": "SPR-001",
-            "nama": "Oli Mesin 1L",
-            "kode_part": "OLI-001",
+            "nama": "Oli mesin meditran s 10L",
+            "kode_part": "",
             "kategori": "Oli",
-            "satuan": "pcs",
-            "stok": 50,
-            "stok_minimum": 5,
-            "harga_beli": 35000,
-            "harga_jual": 45000,
+            "merek": "",
+            "satuan": "Liter",
+            "stok": 1,
+            "stok_minimum": 0,
+            "harga_beli": 508600,
+            "harga_jual": 560000,
+            "lokasi_rak": "",
+            "catatan": ""
+        },
+        {
+            "kode": "SPR-002",
+            "nama": "Lem threbond",
+            "kode_part": "",
+            "kategori": "",
+            "merek": "",
+            "satuan": "Pcs",
+            "stok": 5,
+            "stok_minimum": 0,
+            "harga_beli": 23500,
+            "harga_jual": 32500,
+            "lokasi_rak": "",
+            "catatan": ""
         }
     ],
     "jasa_servis": [
@@ -253,43 +270,123 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
     ],
     "kas_opening": [
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": "2026-07-25",
             "jenis_kas": "KAS_UTAMA",
-            "nominal": 10000000,
+            "nominal": 324000,
             "keterangan": "Saldo awal kas utama",
+            "catatan": ""
         },
         {
-            "tanggal": date.today().isoformat(),
-            "jenis_kas": "KAS_UNIT_BENGKEL",
-            "nominal": 2000000,
-            "keterangan": "Saldo awal laci bengkel",
-        },
-    ],
-    "asset": [
-        {
-            "tanggal": date.today().isoformat(),
-            "nama asset": "Laptop Asus",
-            "nominal": 8000000,
-            "kategori": "ELECTRONIC",
-            "catatan": "Aset kantor",
+            "tanggal": "2026-07-26",
+            "jenis_kas": "BANK_UTAMA",
+            "nominal": 20000000,
+            "keterangan": "Saldo awal bank utama",
+            "catatan": ""
         }
     ],
+    "asset": [],
     "hutang_opening": [
         {
-            "tanggal": date.today().isoformat(),
-            "nama_kreditur": "Supplier X",
-            "nominal": 1500000,
+            "tanggal": "2026-07-28",
+            "nama_kreditur": "Pribadi Motor",
+            "nominal": 5000000,
             "unit": "BENGKEL",
-            "catatan": "Sisa hutang pembelian part",
+            "telepon": "",
+            "alamat": "",
+            "tanggal_jatuh_tempo": "",
+            "catatan": "Sisa hutang pembelian part"
+        },
+        {
+            "tanggal": "2026-07-28",
+            "nama_kreditur": "Pak Dendi",
+            "nominal": 1000000,
+            "unit": "JUAL_BELI_MOBIL",
+            "telepon": "",
+            "alamat": "",
+            "tanggal_jatuh_tempo": "",
+            "catatan": "Dp pembelian mobil"
+        },
+        {
+            "tanggal": "2026-07-29",
+            "nama_kreditur": "A Sandi",
+            "nominal": 200000,
+            "unit": "LAINNYA",
+            "telepon": "",
+            "alamat": "",
+            "tanggal_jatuh_tempo": "",
+            "catatan": "Biaya lembur yang masih harus di bayar"
+        },
+        {
+            "tanggal": "2026-07-30",
+            "nama_kreditur": "Haji Ujang",
+            "nominal": 1000000,
+            "unit": "INVESTOR",
+            "telepon": "",
+            "alamat": "",
+            "tanggal_jatuh_tempo": "",
+            "catatan": "Investor jb mobil"
         }
     ],
     "piutang_opening": [
         {
-            "tanggal": date.today().isoformat(),
-            "nama_debitur": "Pelanggan Y",
-            "nominal": 750000,
+            "tanggal": "2026-07-28",
+            "nama_debitur": "Akas alam",
+            "nominal": 100000,
             "unit": "BENGKEL",
-            "catatan": "Sisa piutang servis",
+            "telepon": "",
+            "alamat": "",
+            "tanggal_jatuh_tempo": "",
+            "catatan": "Sisa piutang servis"
+        },
+        {
+            "tanggal": "2026-07-29",
+            "nama_debitur": "Mang Usa",
+            "nominal": 1000000,
+            "unit": "JASA ANGKUT",
+            "telepon": "",
+            "alamat": "",
+            "tanggal_jatuh_tempo": "",
+            "catatan": "Pinjam modal uang jalan"
+        },
+        {
+            "tanggal": "2026-07-30",
+            "nama_debitur": "Pak Falah",
+            "nominal": 5000000,
+            "unit": "JUAL_BELI_MOBIL",
+            "telepon": "",
+            "alamat": "",
+            "tanggal_jatuh_tempo": "",
+            "catatan": "Sisa piutang jb mobil"
+        },
+        {
+            "tanggal": "2026-07-31",
+            "nama_debitur": "Mang Kakan",
+            "nominal": 200000,
+            "unit": "KARYAWAN",
+            "telepon": "",
+            "alamat": "",
+            "tanggal_jatuh_tempo": "",
+            "catatan": "Kasbon"
+        },
+        {
+            "tanggal": "2026-07-31",
+            "nama_debitur": "Bapak warung",
+            "nominal": 100000,
+            "unit": "LAINNYA",
+            "telepon": "",
+            "alamat": "",
+            "tanggal_jatuh_tempo": "",
+            "catatan": "Pinjaman"
+        },
+        {
+            "tanggal": "2026-08-01",
+            "nama_debitur": "Jua beli mobil",
+            "nominal": 1000000,
+            "unit": "PART_JB_MOBIL",
+            "telepon": "",
+            "alamat": "",
+            "tanggal_jatuh_tempo": "",
+            "catatan": "Pengambilan part bak kayu 2012 PA"
         }
     ],
     "armada": [
@@ -307,16 +404,43 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
     "mobil": [
         {
             "kode": "MBL-001",
-            "merek": "Toyota",
-            "model": "Avanza",
-            "tahun": 2018,
-            "warna": "Hitam",
-            "nomor_plat": "F 9999 AA",
-            "harga_beli": 120000000,
-            "harga_jual": 135000000,
-            "tanggal_masuk": date.today().isoformat(),
+            "merek": "Mitsubishi",
+            "model": "Bak Kayu",
+            "tahun": 2012,
+            "warna": "Kuning",
+            "nomor_plat": "F 9999 PA",
+            "nomor_mesin": "MHMFE19461DHKQW",
+            "nomor_rangka": "4D34897401924",
+            "harga_beli": 1000000,
+            "harga_jual": 5000000,
+            "tanggal_masuk": "2026-07-28",
             "status": "TERSEDIA",
             "tipe_kepemilikan": "TPM",
+            "nama_investor": "H Ujang",
+            "nominal_investor": 1000000,
+            "biaya_ops": 500000,
+            "biaya_ops_ket": "pajak",
+            "biaya_part_service": 1000000,
+        },
+        {
+            "kode": "",
+            "merek": "",
+            "model": "",
+            "tahun": "",
+            "warna": "",
+            "nomor_plat": "",
+            "nomor_mesin": "",
+            "nomor_rangka": "",
+            "harga_beli": "",
+            "harga_jual": "",
+            "tanggal_masuk": "",
+            "status": "",
+            "tipe_kepemilikan": "",
+            "nama_investor": "",
+            "nominal_investor": "",
+            "biaya_ops": 200000,
+            "biaya_ops_ket": "bop, fee beli",
+            "biaya_part_service": "",
         }
     ],
 }
@@ -343,8 +467,9 @@ INSTRUCTIONS = [
     "- jenis_kas valid: KAS_UTAMA, BANK_UTAMA, KAS_UNIT_BENGKEL,",
     "  KAS_UNIT_JASA_ANGKUT, KAS_UNIT_MOBIL, CASH, BANK_BCA, dll.",
     "- unit hutang/piutang: BENGKEL | JASA_ANGKUT | JUAL_BELI_MOBIL | LAINNYA",
-    "- tanggal format: YYYY-MM-DD",
+    "- tanggal format: YYYY-MM-DD (Wajib di-format Text atau ketik manual dengan strip '-', jangan pakai format tanggal Excel number).",
     "- Jangan ubah nama sheet.",
+    "- Sheet 'neraca' disediakan sebagai lembar bantu hitung posisi keuangan agar balance sebelum data dimasukkan.",
     "",
     "ADMIN ONLY. Backup database sebelum commit production.",
 ]
@@ -477,6 +602,105 @@ class DataImportService:
                 for c_i, (header, key, _r) in enumerate(fields, start=1):
                     cell = ws.cell(r_i, c_i, example.get(key))
                     cell.fill = example_fill
+
+        # Tambahkan sheet neraca sebagai lembar bantu/penjelasan balans
+        ws_n = wb.create_sheet("neraca")
+        ws_n.column_dimensions["A"].width = 32
+        ws_n.column_dimensions["B"].width = 16
+        ws_n.column_dimensions["C"].width = 16
+        ws_n.column_dimensions["D"].width = 32
+        ws_n.column_dimensions["E"].width = 16
+        ws_n.column_dimensions["F"].width = 16
+
+        ws_n["A1"] = "NERACA"
+        ws_n["A1"].font = Font(bold=True, size=14)
+        ws_n["A2"] = "TIGA PUTRA MOTOR"
+        ws_n["A2"].font = Font(bold=True)
+        ws_n["A3"] = "PER, PERIODE BERJALAN (DUMMY REFERENCE)"
+        ws_n["A3"].font = Font(italic=True)
+
+        ws_n["A5"] = "AKTIVA"
+        ws_n["A5"].font = Font(bold=True, color="1E3A8A")
+        ws_n["D5"] = "PASSIVA"
+        ws_n["D5"].font = Font(bold=True, color="1E3A8A")
+
+        ws_n["A6"] = "KAS TUNAI (CASH)"
+        ws_n["C6"] = 324000
+        ws_n["D6"] = "HUTANG :"
+        ws_n["D6"].font = Font(bold=True)
+
+        ws_n["A7"] = "BANK BCA"
+        ws_n["C7"] = 20000000
+        ws_n["D7"] = "HUTANG USAHA BENGKEL"
+        ws_n["E7"] = 5000000
+
+        ws_n["A8"] = "ASET :"
+        ws_n["A8"].font = Font(bold=True)
+        ws_n["D8"] = "HUTANG USAHA JB MOBIL"
+        ws_n["E8"] = 1000000
+
+        ws_n["A9"] = "TAB"
+        ws_n["B9"] = 0
+        ws_n["D9"] = "HUTANG LAINNYA"
+        ws_n["E9"] = 200000
+
+        ws_n["A10"] = "HANDPHONE KANTOR"
+        ws_n["B10"] = 0
+        ws_n["D10"] = "HUTANG INVESTOR"
+        ws_n["E10"] = 1000000
+
+        ws_n["A11"] = "TOTAL ASET"
+        ws_n["A11"].font = Font(bold=True)
+        ws_n["C11"] = 0
+        ws_n["D11"] = "TOTAL HUTANG"
+        ws_n["D11"].font = Font(bold=True)
+        ws_n["F11"] = 7200000
+        ws_n["F11"].font = Font(bold=True)
+
+        ws_n["A12"] = "PIUTANG USAHA BENGKEL"
+        ws_n["C12"] = 100000
+        ws_n["D12"] = "MODAL AKHIR, PER 31/7/2026"
+        ws_n["D12"].font = Font(bold=True)
+        ws_n["F12"] = 22150100
+        ws_n["F12"].font = Font(bold=True)
+
+        ws_n["A13"] = "PIUTANG USAHA JASA ANGKUT"
+        ws_n["C13"] = 1000000
+        ws_n["A14"] = "PIUTANG USAHA JB MOBIL"
+        ws_n["C14"] = 5000000
+        ws_n["A15"] = "PIUTANG KARYAWAN"
+        ws_n["C15"] = 200000
+        ws_n["A16"] = "PIUTANG LAINNYA"
+        ws_n["C16"] = 100000
+        ws_n["A17"] = "PIUTANG PART JB MOBIL"
+        ws_n["C17"] = 1000000
+
+        ws_n["A18"] = "PERSEDIAAN :"
+        ws_n["A18"].font = Font(bold=True)
+
+        ws_n["A19"] = "SPARE PART"
+        ws_n["B19"] = 626100
+        ws_n["A20"] = "KENDARAAN-USAHA JB MOBIL"
+        ws_n["B20"].value = 1000000
+
+        ws_n["A21"] = "TOTAL PERSEDIAAN"
+        ws_n["A21"].font = Font(bold=True)
+        ws_n["C21"] = 1626100
+        ws_n["C21"].font = Font(bold=True)
+
+        ws_n["A22"] = "TOTAL AKTIVA"
+        ws_n["A22"].font = Font(bold=True)
+        ws_n["C22"] = 29350100
+        ws_n["C22"].font = Font(bold=True)
+        ws_n["D22"] = "TOTAL PASSIVA"
+        ws_n["D22"].font = Font(bold=True)
+        ws_n["F22"] = 29350100
+        ws_n["F22"].font = Font(bold=True)
+
+        ws_n["A24"] = "SELISIH NERACA :"
+        ws_n["A24"].font = Font(bold=True, color="047857")
+        ws_n["E24"] = 0
+        ws_n["E24"].font = Font(bold=True, color="047857")
 
         buf = io.BytesIO()
         wb.save(buf)
@@ -1343,6 +1567,16 @@ class DataImportService:
                         },
                     )
                 self.db.commit()
+                # Post-import synchronization to stabilize Neraca and avoid temporary imbalances
+                try:
+                    from app.services.reports.neraca_service import NeracaService
+                    ns = NeracaService(self.db)
+                    ns.sync_internal_transactions(user_id=user_id)
+                    ns.sync_ja_muatan_finance()
+                    ns.sync_ja_internal_bengkel_finance()
+                    ns.sync_mobil_internal_bengkel_finance()
+                except Exception as e:
+                    pass # non-blocking sync failure
         except HTTPException:
             self.db.rollback()
             raise

@@ -243,9 +243,9 @@ class NeracaService(BaseReportService):
         ).scalar() or 0)
         
         # Non-cash capital = (current assets + sold assets) - recorded cash purchases - recorded hutang purchases
-        # Note: We EXCLUDE Kasbon and Piutang Lainnya from discovery because they are typically funded from company cash or revenue, not injected capital.
-        # We also EXCLUDE unit-specific piutang (Bengkel, JA, Mobil) as they are from operational revenue.
-        piutang_discovery = 0
+        # For opening balance imports, piutang represents assets funded by owner capital.
+        # Include total_piutang so the balance sheet identity holds.
+        piutang_discovery = total_piutang
         total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep) + modal_aset_tetap + piutang_discovery
         total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang + hutang_internal
         modal_non_kas = max(0, total_non_kas_assets_historis - total_purchase_recorded)

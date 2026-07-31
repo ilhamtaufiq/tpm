@@ -293,8 +293,9 @@ class ModalService(BaseReportService):
         modal_aset_tetap_delta = max(0, modal_aset_tetap_end - modal_aset_tetap_start)
         modal_stok_part_delta = max(0, modal_stok_part_end - modal_stok_part_start)
         modal_stok_mobil_delta = max(0, modal_stok_mobil_end - modal_stok_mobil_start)
+        modal_piutang_delta = max(0, float(data["raw_summaries"]["piutang"].get("total", 0)) - start_piutang)
 
-        total_non_kas = modal_aset_tetap_delta + modal_stok_part_delta
+        total_non_kas = modal_aset_tetap_delta + modal_stok_part_delta + modal_piutang_delta
         
         # Period Profit = Accrual Profit (All units)
         period_profit = laba_bersih_unit
@@ -641,7 +642,8 @@ class ModalService(BaseReportService):
                     "total": total_non_kas + modal_stok_mobil_delta_external,
                     "aset_tetap": modal_aset_tetap_delta,
                     "stok_part": modal_stok_part_delta,
-                    "stok_mobil": modal_stok_mobil_delta_external
+                    "stok_mobil": modal_stok_mobil_delta_external,
+                    "piutang": modal_piutang_delta
                 },
                 "laba_kotor": {
                     "total": laba_kotor,
