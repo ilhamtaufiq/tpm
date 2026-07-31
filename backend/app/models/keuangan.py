@@ -48,7 +48,7 @@ class PiutangUsaha(Base, TimestampMixin):
         default=PiutangSource.BENGKEL,
     )
     referensi_id: Mapped[Optional[int]] = mapped_column(nullable=True)  # ID of source transaction
-    nomor_referensi: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    nomor_referensi: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     unit: Mapped[Optional[KasBankSource]] = mapped_column(SQLEnum(KasBankSource), nullable=True)
     is_internal: Mapped[bool] = mapped_column(default=False)
 
@@ -164,7 +164,7 @@ class HutangUsaha(Base, TimestampMixin):
         default=HutangSource.PEMBELIAN_PART,
     )
     referensi_id: Mapped[Optional[int]] = mapped_column(nullable=True)
-    nomor_referensi: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    nomor_referensi: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     unit: Mapped[Optional[KasBankSource]] = mapped_column(SQLEnum(KasBankSource), nullable=True)
     is_internal: Mapped[bool] = mapped_column(default=False)
 
@@ -290,7 +290,7 @@ class KasBank(Base, TimestampMixin):
         default=KasBankSource.LAINNYA,
     )
     referensi_id: Mapped[Optional[int]] = mapped_column(nullable=True)
-    nomor_referensi: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    nomor_referensi: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     # Balance tracking
     saldo_sebelum: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)

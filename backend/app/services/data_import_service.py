@@ -29,7 +29,7 @@ from app.models.customer import Customer
 from app.models.supplier import Supplier
 from app.models.bengkel import SparePart, JasaServis
 from app.models.karyawan import Karyawan
-from app.models.keuangan import KasBank, HutangUsaha, PiutangUsaha
+from app.models.keuangan import KasBank, HutangUsaha, PiutangUsaha, Aset
 from app.models.jasa_angkut import ArmadaJasaAngkut, Supir
 from app.models.mobil import Mobil
 from app.utils.constants import (
@@ -45,6 +45,8 @@ from app.utils.constants import (
     PaymentStatus,
     PiutangSource,
     PiutangStatus,
+    AssetCategory,
+    AssetStatus,
     TRANSACTION_PREFIXES,
 )
 
@@ -56,6 +58,7 @@ SHEET_ORDER = [
     "jasa_servis",
     "karyawan",
     "kas_opening",
+    "asset",
     "hutang_opening",
     "piutang_opening",
     "armada",
@@ -129,6 +132,14 @@ SHEET_HEADERS: Dict[str, List[Tuple[str, str, bool]]] = {
         ("keterangan", "keterangan", False),
         ("catatan", "catatan", False),
     ],
+    "asset": [
+        ("kode", "kode", False),
+        ("tanggal", "tanggal", False),
+        ("nama asset", "nama", True),
+        ("nominal", "harga_beli", True),
+        ("kategori", "kategori", False),
+        ("catatan", "catatan", False),
+    ],
     "hutang_opening": [
         ("tanggal", "tanggal", True),
         ("nama_kreditur", "nama_kreditur", True),
@@ -175,12 +186,18 @@ SHEET_HEADERS: Dict[str, List[Tuple[str, str, bool]]] = {
         ("tahun", "tahun", True),
         ("warna", "warna", True),
         ("nomor_plat", "nomor_plat", True),
+        ("no mesin", "nomor_mesin", False),
+        ("no rangka", "nomor_rangka", False),
         ("harga_beli", "harga_beli", True),
         ("harga_jual", "harga_jual", False),
         ("tanggal_masuk", "tanggal_masuk", False),
         ("status", "status", False),
         ("tipe_kepemilikan", "tipe_kepemilikan", False),
         ("nama_investor", "nama_investor", False),
+        ("nominal investasi", "nominal_investor", False),
+        ("biaya pengeluaran/ operasional", "biaya_ops", False),
+        ("keterangan biaya pengeluaran/ operasional", "biaya_ops_ket", False),
+        ("biaya part dan service", "biaya_part_service", False),
         ("transmisi", "transmisi", False),
         ("bahan_bakar", "bahan_bakar", False),
         ("kilometer", "kilometer", False),
@@ -247,6 +264,15 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
             "nominal": 2000000,
             "keterangan": "Saldo awal laci bengkel",
         },
+    ],
+    "asset": [
+        {
+            "tanggal": date.today().isoformat(),
+            "nama asset": "Laptop Asus",
+            "nominal": 8000000,
+            "kategori": "ELECTRONIC",
+            "catatan": "Aset kantor",
+        }
     ],
     "hutang_opening": [
         {
@@ -375,7 +401,7 @@ class DataImportService:
         last = (
             self.db.query(model)
             .filter(col.like(like))
-            .order_by(model.id.desc())
+            .order_by(col.desc())
             .first()
         )
         n = 1
@@ -518,6 +544,17 @@ class DataImportService:
                 nom = self._dec(row.get("nominal"))
                 if nom <= 0:
                     return f"Baris {r}: nominal harus > 0"
+            elif sheet == "asset":
+                self._date(row.get("tanggal"), date.today())
+                nom = self._dec(row.get("harga_beli"))
+                if nom <= 0:
+                    return f"Baris {r}: nominal harus > 0"
+                kat = (self._cell(row.get("kategori")) or "LAINNYA").upper().replace(" ", "_")
+                # alias user-friendly names → enum values
+                KAT_ALIASES = {"ELEKTRONIK": "ELECTRONIC"}
+                kat = KAT_ALIASES.get(kat, kat)
+                if kat not in {e.value for e in AssetCategory}:
+                    return f"Baris {r}: kategori tidak valid ({kat})"
             elif sheet in ("hutang_opening", "piutang_opening"):
                 self._date(row.get("tanggal"))
                 nom = self._dec(row.get("nominal"))
@@ -525,11 +562,13 @@ class DataImportService:
                     return f"Baris {r}: nominal harus > 0"
                 unit = (self._cell(row.get("unit")) or "BENGKEL").upper().replace(" ", "_")
                 # map aliases
-                if unit == "MOBIL":
-                    unit = "JUAL_BELI_MOBIL"
-                if unit not in {e.value for e in KasBankSource} and unit != "BENGKEL":
-                    # BENGKEL is valid KasBankSource
-                    pass
+                UNIT_ALIASES = {
+                    "MOBIL": "JUAL_BELI_MOBIL",
+                    "INVESTOR": "MODAL",
+                    "KARYAWAN": "KASBON",
+                    "PART_JB_MOBIL": "PEMBELIAN_PART",
+                }
+                unit = UNIT_ALIASES.get(unit, unit)
                 if unit not in {e.value for e in KasBankSource}:
                     return f"Baris {r}: unit tidak valid ({unit})"
             elif sheet == "armada":
@@ -850,6 +889,90 @@ class DataImportService:
             res["created"] += 1
         return res
 
+    def _apply_aset(self, rows: List[Dict[str, Any]], dry: bool) -> Dict[str, Any]:
+        res = {"created": 0, "updated": 0, "skipped": 0, "errors": []}
+        for row in rows:
+            err = self._validate_row("asset", row)
+            if err:
+                res["errors"].append(err)
+                continue
+            try:
+                tgl = self._date(row.get("tanggal"), date.today())
+                nama = self._cell(row["nama"])
+                hb = self._dec(row.get("harga_beli"))
+                kat_s = (self._cell(row.get("kategori")) or "LAINNYA").upper().replace(" ", "_")
+                KAT_ALIASES = {"ELEKTRONIK": "ELECTRONIC"}
+                kat_s = KAT_ALIASES.get(kat_s, kat_s)
+                kat = AssetCategory(kat_s)
+            except Exception as e:
+                res["errors"].append(f"Baris {row['_row']}: {e}")
+                continue
+            existing = None
+            kode = self._cell(row.get("kode"))
+            if kode:
+                existing = self.db.query(Aset).filter(Aset.kode == kode).first()
+            if not existing:
+                existing = self.db.query(Aset).filter(Aset.nama == nama).first()
+            if dry:
+                res["updated" if existing else "created"] += 1
+                continue
+            if existing:
+                existing.tanggal_beli = tgl
+                existing.harga_beli = hb
+                existing.kategori = kat
+                existing.catatan = self._cell(row.get("catatan"))
+                res["updated"] += 1
+            else:
+                if not kode:
+                    # Cari kode unik yang belum ada di database
+                    date_str = datetime.now().strftime("%y%m")
+                    like = f"AST{date_str}%"
+                    last = (
+                        self.db.query(Aset)
+                        .filter(Aset.kode.like(like))
+                        .order_by(Aset.kode.desc())
+                        .first()
+                    )
+                    n = 1
+                    if last:
+                        try:
+                            n = int(str(last.kode)[-4:]) + 1
+                        except Exception:
+                            n = 1
+                    # Double check loop biar aman dari tabrakan
+                    while True:
+                        kode = f"AST{date_str}{n:04d}"
+                        if not self.db.query(Aset).filter(Aset.kode == kode).first():
+                            break
+                        n += 1
+
+                self.db.add(
+                    Aset(
+                        kode=kode,
+                        nama=nama,
+                        tanggal_beli=tgl,
+                        harga_beli=hb,
+                        kategori=kat,
+                        umur_ekonomis=4,
+                        nilai_residu=Decimal("0"),
+                        status=AssetStatus.AKTIF,
+                        catatan=self._cell(row.get("catatan")),
+                    )
+                )
+                self.db.flush()
+                res["created"] += 1
+        return res
+
+    def _map_unit_alias(self, unit_str: str) -> str:
+        """Map user-friendly unit names to valid KasBankSource enum values."""
+        UNIT_ALIASES = {
+            "MOBIL": "JUAL_BELI_MOBIL",
+            "INVESTOR": "MODAL",
+            "KARYAWAN": "KASBON",
+            "PART_JB_MOBIL": "PEMBELIAN_PART",
+        }
+        return UNIT_ALIASES.get(unit_str, unit_str)
+
     def _apply_hutang_opening(
         self, rows: List[Dict[str, Any]], dry: bool, batch_id: str, user_id: Optional[int]
     ) -> Dict[str, Any]:
@@ -864,8 +987,7 @@ class DataImportService:
                 nama = self._cell(row["nama_kreditur"])
                 nominal = self._dec(row.get("nominal"))
                 unit_s = (self._cell(row.get("unit")) or "BENGKEL").upper().replace(" ", "_")
-                if unit_s == "MOBIL":
-                    unit_s = "JUAL_BELI_MOBIL"
+                unit_s = self._map_unit_alias(unit_s)
                 unit = KasBankSource(unit_s)
                 jth = None
                 if row.get("tanggal_jatuh_tempo") not in (None, ""):
@@ -873,7 +995,9 @@ class DataImportService:
             except Exception as e:
                 res["errors"].append(f"Baris {row['_row']}: {e}")
                 continue
-            ref = f"IMP-{batch_id}-HTG-{row['_row']}-{re.sub(r'[^A-Z0-9]', '', nama.upper())[:20]}"
+            ref = f"IMP-{batch_id}-HTG-{row['_row']}-{re.sub(r'[^A-Z0-9]', '', nama.upper())[:10]}"
+            # Pastikan panjang referensi maksimum 50 karakter
+            ref = ref[:50]
             existing = (
                 self.db.query(HutangUsaha)
                 .filter(HutangUsaha.nomor_referensi == ref)
@@ -923,8 +1047,7 @@ class DataImportService:
                 nama = self._cell(row["nama_debitur"])
                 nominal = self._dec(row.get("nominal"))
                 unit_s = (self._cell(row.get("unit")) or "BENGKEL").upper().replace(" ", "_")
-                if unit_s == "MOBIL":
-                    unit_s = "JUAL_BELI_MOBIL"
+                unit_s = self._map_unit_alias(unit_s)
                 unit = KasBankSource(unit_s)
                 jth = None
                 if row.get("tanggal_jatuh_tempo") not in (None, ""):
@@ -932,7 +1055,9 @@ class DataImportService:
             except Exception as e:
                 res["errors"].append(f"Baris {row['_row']}: {e}")
                 continue
-            ref = f"IMP-{batch_id}-PTG-{row['_row']}-{re.sub(r'[^A-Z0-9]', '', nama.upper())[:20]}"
+            ref = f"IMP-{batch_id}-PTG-{row['_row']}-{re.sub(r'[^A-Z0-9]', '', nama.upper())[:10]}"
+            # Pastikan panjang referensi maksimum 50 karakter
+            ref = ref[:50]
             existing = (
                 self.db.query(PiutangUsaha)
                 .filter(PiutangUsaha.nomor_referensi == ref)
@@ -1060,6 +1185,11 @@ class DataImportService:
     ) -> Dict[str, Any]:
         res = {"created": 0, "updated": 0, "skipped": 0, "errors": []}
         for row in rows:
+            # Skip continuation/biaya rows (all required fields empty)
+            required_keys = ["merek", "model", "tahun", "warna", "nomor_plat", "harga_beli"]
+            if all(row.get(k) in (None, "") for k in required_keys):
+                res["skipped"] += 1
+                continue
             err = self._validate_row("mobil", row)
             if err:
                 res["errors"].append(err)
@@ -1076,6 +1206,24 @@ class DataImportService:
                 st = CarStatus((self._cell(row.get("status")) or "TERSEDIA").upper())
                 own = OwnershipType((self._cell(row.get("tipe_kepemilikan")) or "TPM").upper())
                 kode = self._cell(row.get("kode"))
+                no_mesin = self._cell(row.get("nomor_mesin"))
+                no_rangka = self._cell(row.get("nomor_rangka"))
+                ni = self._dec(row.get("nominal_investor"), "0") if row.get("nominal_investor") not in (None, "") else Decimal("0")
+                pi = self._dec(row.get("persentase_investor"), "0") if row.get("persentase_investor") not in (None, "") else Decimal("0")
+                # Collect biaya notes into catatan (full biaya mgmt via dedicated form)
+                biaya_parts = []
+                if row.get("biaya_ops"):
+                    bp = str(row["biaya_ops"]).strip()
+                    if bp:
+                        biaya_parts.append(f"ops:{bp}")
+                if row.get("biaya_ops_ket"):
+                    bpk = str(row["biaya_ops_ket"]).strip()
+                    if bpk:
+                        biaya_parts.append(f"keterangan:{bpk}")
+                if row.get("biaya_part_service"):
+                    bps = str(row["biaya_part_service"]).strip()
+                    if bps:
+                        biaya_parts.append(f"part_service:{bps}")
             except Exception as e:
                 res["errors"].append(f"Baris {row['_row']}: {e}")
                 continue
@@ -1094,16 +1242,29 @@ class DataImportService:
                 existing.status = st
                 existing.tipe_kepemilikan = own
                 existing.nama_investor = self._cell(row.get("nama_investor"))
+                existing.nomor_mesin = no_mesin
+                existing.nomor_rangka = no_rangka
+                if ni > 0:
+                    existing.nominal_investor = ni
+                if pi > 0:
+                    existing.persentase_investor = pi
                 existing.transmisi = self._cell(row.get("transmisi"))
                 existing.bahan_bakar = self._cell(row.get("bahan_bakar"))
                 if row.get("kilometer") not in (None, ""):
                     existing.kilometer = self._int(row.get("kilometer"), 0)
-                existing.catatan = self._cell(row.get("catatan"))
+                # Append biaya info to catatan
+                base_catatan = self._cell(row.get("catatan")) or ""
+                if biaya_parts:
+                    base_catatan = (base_catatan + " | " if base_catatan else "") + "; ".join(biaya_parts)
+                existing.catatan = base_catatan if base_catatan else None
                 res["updated"] += 1
             else:
                 if not kode:
                     kode = self._next_kode("MBL", Mobil)
                 token = uuid.uuid4().hex
+                base_catatan = self._cell(row.get("catatan")) or ""
+                if biaya_parts:
+                    base_catatan = (base_catatan + " | " if base_catatan else "") + "; ".join(biaya_parts)
                 self.db.add(
                     Mobil(
                         kode=kode,
@@ -1119,12 +1280,16 @@ class DataImportService:
                         tanggal_masuk=tgl,
                         tipe_kepemilikan=own,
                         nama_investor=self._cell(row.get("nama_investor")),
+                        nomor_mesin=no_mesin,
+                        nomor_rangka=no_rangka,
+                        nominal_investor=ni,
+                        persentase_investor=pi,
                         transmisi=self._cell(row.get("transmisi")),
                         bahan_bakar=self._cell(row.get("bahan_bakar")),
                         kilometer=self._int(row.get("kilometer"), 0) if row.get("kilometer") not in (None, "") else None,
                         status_bayar_beli=PaymentStatus.LUNAS,
                         metode_bayar_beli=PaymentMethod.TUNAI,
-                        catatan=self._cell(row.get("catatan")),
+                        catatan=base_catatan if base_catatan else None,
                         created_by=user_id,
                     )
                 )
@@ -1132,7 +1297,7 @@ class DataImportService:
         return res
 
     def _run(self, file_content: bytes, dry: bool, user_id: Optional[int], batch_id: Optional[str] = None) -> Dict[str, Any]:
-        batch_id = batch_id or uuid.uuid4().hex[:12]
+        batch_id = batch_id or uuid.uuid4().hex[:8]
         parsed = self._parse_workbook(file_content)
         results: Dict[str, Any] = {
             "batch_id": batch_id,
@@ -1147,6 +1312,7 @@ class DataImportService:
             "jasa_servis": lambda rows: self._apply_jasa_servis(rows, dry),
             "karyawan": lambda rows: self._apply_karyawan(rows, dry),
             "kas_opening": lambda rows: self._apply_kas_opening(rows, dry, batch_id, user_id),
+            "asset": lambda rows: self._apply_aset(rows, dry),
             "hutang_opening": lambda rows: self._apply_hutang_opening(rows, dry, batch_id, user_id),
             "piutang_opening": lambda rows: self._apply_piutang_opening(rows, dry, batch_id, user_id),
             "armada": lambda rows: self._apply_armada(rows, dry),
