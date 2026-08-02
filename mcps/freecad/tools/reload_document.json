@@ -1,0 +1,17 @@
+{
+  "name": "reload_document",
+  "description": "Close and re-open a document to pick up external file changes.\n\nUse this AFTER the document's .FCStd file has been modified by\nsomething outside of FreeCAD's GUI process — for example, a\nheadless `freecadcmd` script that edited and saved the file. The\nopen GUI document is otherwise unaware of on-disk changes; this\ntool closes the stale in-memory copy and reopens the file from\ndisk so the GUI shows current geometry.\n\nArgs:\n    doc_name: The name of the open document to reload. Must match\n        the name shown by ``list_documents``.\n\nReturns:\n    A message confirming the document was reloaded, or describing\n    the failure (document not loaded, no associated file, etc).\n\nExamples:\n    ```json\n    {\n        \"doc_name\": \"chassis\"\n    }\n    ```\n",
+  "inputSchema": {
+    "properties": {
+      "doc_name": {
+        "title": "Doc Name",
+        "type": "string"
+      }
+    },
+    "required": [
+      "doc_name"
+    ],
+    "title": "reload_documentArguments",
+    "type": "object"
+  }
+}

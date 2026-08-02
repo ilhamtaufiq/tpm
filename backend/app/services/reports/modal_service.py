@@ -100,36 +100,18 @@ class ModalService(BaseReportService):
                 PengeluaranBengkel.tanggal <= d
             ).scalar() or 0)
 
-        # Snapshot Start (Yesterday) - Capitalized Value (Equity component)
-        p_aset_start = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.tipe == KasBankType.KELUAR,
-            KasBank.sumber == KasBankSource.ASET,
-            KasBank.referensi_id.is_not(None),
-            KasBank.tanggal <= yesterday
-        ).scalar() or 0)
-        modal_aset_tetap_start = max(0, start_aset_tetap - p_aset_start)
+        # Snapshot Start (Yesterday) - Physical Net Worth (Modal Awal)
+        # BUG FIX: DO NOT subtract p_aset_start or p_mobil_start here! 
+        # Modal Awal is a snapshot of position. 
+        # If cash was spent to buy a car in the past, start_cash is already lower, 
+        # and start_stok_mobil is higher. They balance out.
+        # Subtracting p_mobil_start again would double-deduct the cost.
+        modal_aset_tetap_start = start_aset_tetap
+        modal_stok_part_start = start_stok_part + get_akumulasi_hpp_parts(yesterday)
+        modal_stok_mobil_start = start_stok_mobil + get_akumulasi_hpp_mobil(yesterday) + get_akumulasi_hpp_mobil_prep(yesterday)
 
-        p_part_start = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
-            PembelianSparePart.tanggal <= yesterday
-        ).scalar() or 0)
-        modal_stok_part_start = max(0, (start_stok_part + get_akumulasi_hpp_parts(yesterday)) - p_part_start)
-
-        p_mobil_start = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.tipe == KasBankType.KELUAR,
-            KasBank.sumber.in_([KasBankSource.PEMBELIAN_MOBIL, KasBankSource.JUAL_BELI_MOBIL]),
-            ~KasBank.keterangan.ilike("Transfer %"),
-            ~KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
-            KasBank.tanggal <= yesterday
-        ).scalar() or 0)
-        h_mobil_start = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
-            HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
-            HutangUsaha.tanggal <= yesterday
-        ).scalar() or 0)
-        modal_stok_mobil_start = max(0, (start_stok_mobil + get_akumulasi_hpp_mobil(yesterday) + get_akumulasi_hpp_mobil_prep(yesterday)) - (p_mobil_start + h_mobil_start))
-
-        # TOTAL OPENING EQUITY = (Cash + Capitalized Stock/Assets) - Liabilities
-        # We use modal_stok_* instead of raw start_stok_* to ignore stock bought with cash/debt.
-        modal_awal_theoretical = (start_cash + modal_stok_part_start + modal_stok_mobil_start + start_aset_tetap + start_piutang) - start_hutang
+        # TOTAL OPENING EQUITY = (Cash + Inventory/Assets) - Liabilities
+        modal_awal_theoretical = (start_cash + modal_stok_part_start + modal_stok_mobil_start + modal_aset_tetap_start + start_piutang) - start_hutang
 
         # Modal Masuk (Setoran Baru in this period)
         setoran_modal = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -236,58 +218,14 @@ class ModalService(BaseReportService):
             ).scalar() or 0)
             
         # Snapshot Start (Yesterday)
-        p_aset_start = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.tipe == KasBankType.KELUAR, 
-            KasBank.sumber == KasBankSource.ASET, 
-            KasBank.referensi_id.is_not(None),
-            KasBank.tanggal <= yesterday
-        ).scalar() or 0)
-        modal_aset_tetap_start = max(0, start_aset_tetap - p_aset_start)
-
-        p_part_start = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
-            PembelianSparePart.tanggal <= yesterday
-        ).scalar() or 0)
-        modal_stok_part_start = max(0, (start_stok_part + get_akumulasi_hpp_parts(yesterday)) - p_part_start)
-
-        p_mobil_start = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.tipe == KasBankType.KELUAR, 
-            KasBank.sumber.in_([KasBankSource.PEMBELIAN_MOBIL, KasBankSource.JUAL_BELI_MOBIL]),
-            ~KasBank.keterangan.ilike("Transfer %"),
-            ~KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
-            KasBank.tanggal <= yesterday
-        ).scalar() or 0)
-        h_mobil_start = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
-            HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
-            HutangUsaha.tanggal <= yesterday
-        ).scalar() or 0)
-        modal_stok_mobil_start = max(0, (start_stok_mobil + get_akumulasi_hpp_mobil(yesterday) + get_akumulasi_hpp_mobil_prep(yesterday)) - (p_mobil_start + h_mobil_start))
+        modal_aset_tetap_start = start_aset_tetap
+        modal_stok_part_start = start_stok_part + get_akumulasi_hpp_parts(yesterday)
+        modal_stok_mobil_start = start_stok_mobil + get_akumulasi_hpp_mobil(yesterday) + get_akumulasi_hpp_mobil_prep(yesterday)
 
         # Snapshot End (Today)
-        p_aset_end = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.tipe == KasBankType.KELUAR, 
-            KasBank.sumber == KasBankSource.ASET, 
-            KasBank.referensi_id.is_not(None),
-            KasBank.tanggal <= tanggal_sampai
-        ).scalar() or 0)
-        modal_aset_tetap_end = max(0, aset_tetap - p_aset_end)
-
-        p_part_end = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
-            PembelianSparePart.tanggal <= tanggal_sampai
-        ).scalar() or 0)
-        modal_stok_part_end = max(0, (persediaan_part + get_akumulasi_hpp_parts(tanggal_sampai)) - p_part_end)
-
-        p_mobil_end = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.tipe == KasBankType.KELUAR, 
-            KasBank.sumber.in_([KasBankSource.PEMBELIAN_MOBIL, KasBankSource.JUAL_BELI_MOBIL]),
-            ~KasBank.keterangan.ilike("Transfer %"),
-            ~KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
-            KasBank.tanggal <= tanggal_sampai
-        ).scalar() or 0)
-        h_mobil_end = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
-            HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
-            HutangUsaha.tanggal <= tanggal_sampai
-        ).scalar() or 0)
-        modal_stok_mobil_end = max(0, (persediaan_mobil + get_akumulasi_hpp_mobil(tanggal_sampai) + get_akumulasi_hpp_mobil_prep(tanggal_sampai)) - (p_mobil_end + h_mobil_end))
+        modal_aset_tetap_end = aset_tetap
+        modal_stok_part_end = persediaan_part + get_akumulasi_hpp_parts(tanggal_sampai)
+        modal_stok_mobil_end = persediaan_mobil + get_akumulasi_hpp_mobil(tanggal_sampai) + get_akumulasi_hpp_mobil_prep(tanggal_sampai)
 
         # The Change (Penambahan) is the increase during the period
         modal_aset_tetap_delta = max(0, modal_aset_tetap_end - modal_aset_tetap_start)
@@ -602,7 +540,9 @@ class ModalService(BaseReportService):
         # hutang_total already includes customer_dp + net_booking_piutang (piutang_booking).
         # Do not add piutang_booking again — that double-counts booking liability and
         # depresses modal_aktual by exactly the DP/sisa-booking amount (see NeracaService).
-        kewajiban_usaha = hutang_usaha_total - hutang_investor_total
+        # Investor funding is a liability (not owner capital), so it stays in kewajiban_usaha
+        # to keep Perubahan Modal aligned with Neraca (both report owner equity).
+        kewajiban_usaha = hutang_usaha_total
 
         piutang_internal = float(data["raw_summaries"]["piutang"]["breakdown"].get("internal", 0))
         hutang_internal = float(data["raw_summaries"]["hutang"]["breakdown"].get("internal", 0))
@@ -613,16 +553,68 @@ class ModalService(BaseReportService):
         # Use the ACTUAL snapshot as the authoritative modal_akhir
         modal_akhir = modal_aktual
         
+        # Calculate opening import values in this period as non-cash setoran modal delta
+        # Kasbon (unit=KASBON) is funded from modal cash already recorded as setoran_modal,
+        # so it must NOT be double-counted as non-cash modal.
+        piutang_import = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
+            PiutangUsaha.nomor_referensi.like("IMP-%"),
+            PiutangUsaha.tanggal >= tanggal_dari,
+            PiutangUsaha.tanggal <= tanggal_sampai,
+            PiutangUsaha.unit != KasBankSource.KASBON
+        ).scalar() or 0)
+
+        hutang_import = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
+            HutangUsaha.nomor_referensi.like("IMP-%"),
+            HutangUsaha.tanggal >= tanggal_dari,
+            HutangUsaha.tanggal <= tanggal_sampai,
+            HutangUsaha.sumber != HutangSource.PEMBELIAN_MOBIL
+        ).scalar() or 0)
+
+        mobil_import = 0
+        opening_cars = self.db.query(Mobil).filter(
+            Mobil.tanggal_masuk >= tanggal_dari,
+            Mobil.tanggal_masuk <= tanggal_sampai,
+            Mobil.deleted_at.is_(None)
+        ).all()
+        for mc in opening_cars:
+            has_cash_out = self.db.query(KasBank).filter(
+                KasBank.tipe == KasBankType.KELUAR,
+                KasBank.sumber == KasBankSource.PEMBELIAN_MOBIL,
+                KasBank.keterangan.ilike(f"%{mc.nomor_plat}%")
+            ).first()
+            if not has_cash_out:
+                # For investor-owned cars, only the owner's portion (harga_beli - nominal_investor)
+                # is non-cash owner capital; the investor portion is a liability, not owner equity.
+                investor_portion = float(mc.nominal_investor or 0) if mc.tipe_kepemilikan == OwnershipType.INVESTOR else 0
+                mobil_import += max(0, float(mc.harga_beli) - investor_portion)
+
+        setoran_non_kas_import = max(0, (mobil_import + piutang_import) - hutang_import)
+
+        # Opening-balance fixed assets (imported without KasBank ASET KELUAR)
+        # are non-cash capital injected by the owner.  Add them to setoran non-kas.
+        from app.models.keuangan import Aset
+        aset_import = 0.0
+        opening_assets = self.db.query(Aset).filter(
+            Aset.tanggal_beli >= tanggal_dari,
+            Aset.tanggal_beli <= tanggal_sampai,
+            Aset.status == AssetStatus.AKTIF,
+        ).all()
+        for a in opening_assets:
+            has_cash_out = self.db.query(KasBank).filter(
+                KasBank.tipe == KasBankType.KELUAR,
+                KasBank.sumber == KasBankSource.ASET,
+                KasBank.referensi_id == a.id,
+            ).first()
+            if not has_cash_out:
+                aset_import += float(a.harga_beli)
+        setoran_non_kas_import += aset_import
+
         # Clean expected theoretical ending modal based on classical accounting formula.
-        # Internal workshop value on unsold car stock is already represented by
-        # Bengkel profit under the current unit-profit policy, so do not add it
-        # again as non-cash capital.
-        modal_stok_mobil_delta_external = max(0, modal_stok_mobil_delta - workshop_bills_unsold)
+        # Theoretical Ending Modal = Modal Awal + Setoran Kas + Setoran Non-Kas Import + Laba Bersih + Laba Investor - Prive
         raw_theoretical = (
             modal_awal_theoretical + 
             setoran_modal + 
-            investor_capital_baru +
-            (total_non_kas + modal_stok_mobil_delta_external) + 
+            setoran_non_kas_import +
             period_profit_sot +
             laba_investor_periode -
             (prive + pengembalian_modal + pembayaran_investor)
@@ -632,6 +624,7 @@ class ModalService(BaseReportService):
         # Do NOT apply penyesuaian to total_penambahan or total_pengurangan.
         # This keeps the transaction flows pure and exposes the true discrepancy.
         selisih = penyesuaian
+        modal_stok_mobil_delta_external = max(0, modal_stok_mobil_delta - workshop_bills_unsold)
 
         return {
             "periode": data["periode"],
@@ -639,7 +632,7 @@ class ModalService(BaseReportService):
             "penambahan": {
                 "setoran_modal": setoran_modal,
                 "modal_non_kas": {
-                    "total": total_non_kas + modal_stok_mobil_delta_external,
+                    "total": setoran_non_kas_import,
                     "aset_tetap": modal_aset_tetap_delta,
                     "stok_part": modal_stok_part_delta,
                     "stok_mobil": modal_stok_mobil_delta_external,

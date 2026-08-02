@@ -1,0 +1,17 @@
+{
+  "name": "insert_part_from_library",
+  "description": "Insert a part from the parts library addon.\n\nArgs:\n    relative_path: The relative path of the part to insert.\n\nReturns:\n    A message indicating the success or failure of the part insertion and a screenshot of the object.\n",
+  "inputSchema": {
+    "properties": {
+      "relative_path": {
+        "title": "Relative Path",
+        "type": "string"
+      }
+    },
+    "required": [
+      "relative_path"
+    ],
+    "title": "insert_part_from_libraryArguments",
+    "type": "object"
+  }
+}

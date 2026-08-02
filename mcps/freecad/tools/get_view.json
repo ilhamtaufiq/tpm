@@ -1,0 +1,64 @@
+{
+  "name": "get_view",
+  "description": "Get a screenshot of the active view.\n\nArgs:\n    view_name: The name of the view to get the screenshot of.\n    The following views are available:\n    - \"Isometric\"\n    - \"Front\"\n    - \"Top\"\n    - \"Right\"\n    - \"Back\"\n    - \"Left\"\n    - \"Bottom\"\n    - \"Dimetric\"\n    - \"Trimetric\"\n    width: The width of the screenshot in pixels. If not specified, uses the viewport width.\n    height: The height of the screenshot in pixels. If not specified, uses the viewport height.\n    focus_object: The name of the object to focus on. If not specified, fits all objects in the view.\n\nReturns:\n    A screenshot of the active view.\n",
+  "inputSchema": {
+    "properties": {
+      "view_name": {
+        "enum": [
+          "Isometric",
+          "Front",
+          "Top",
+          "Right",
+          "Back",
+          "Left",
+          "Bottom",
+          "Dimetric",
+          "Trimetric"
+        ],
+        "title": "View Name",
+        "type": "string"
+      },
+      "width": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Width"
+      },
+      "height": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Height"
+      },
+      "focus_object": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Focus Object"
+      }
+    },
+    "required": [
+      "view_name"
+    ],
+    "title": "get_viewArguments",
+    "type": "object"
+  }
+}

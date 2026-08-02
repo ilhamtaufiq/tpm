@@ -1,0 +1,17 @@
+{
+  "name": "execute_code_async",
+  "description": "Execute Python code in FreeCAD without waiting for completion.\n\nUse this ONLY for long-running background computations that do NOT touch the\nFreeCAD GUI or mutate the FreeCAD document tree directly.\n\nThis tool runs the submitted code in a background thread and returns\nimmediately. Because it does not run on FreeCAD's main GUI thread, the code\nmust NOT call FreeCADGui APIs, manipulate the active view or selection, create\nor edit document objects, change object properties, call doc.recompute(), or\nsave documents.\n\nFor code that touches FreeCAD documents, document objects, FreeCADGui, the\nactive view, selection, recompute, or save operations, use execute_code instead.\nexecute_code runs on the FreeCAD GUI thread and is the safe default for normal\nFreeCAD automation.\n\nUse execute_code_async only for background-safe work such as long-running\npure OCCT geometry calculations (e.g. fuse/cut/loft on already-fetched shapes)\nor other CPU-bound computations that do not interact with the document or GUI.\n\nTypical usage pattern:\n1. Fetch shapes into local variables first (via execute_code on the GUI thread).\n2. Store intermediate results in a module-level Python variable (not in the\n   FreeCAD document) so execute_code can read them later.\n3. Run the heavy computation via execute_code_async.\n4. After the expected computation time has elapsed, apply results to the\n   document via execute_code (which runs on the GUI thread).\n\nArgs:\n    code: Background-safe Python code to execute.\n\nReturns:\n    A message confirming that background execution has started.\n",
+  "inputSchema": {
+    "properties": {
+      "code": {
+        "title": "Code",
+        "type": "string"
+      }
+    },
+    "required": [
+      "code"
+    ],
+    "title": "execute_code_asyncArguments",
+    "type": "object"
+  }
+}

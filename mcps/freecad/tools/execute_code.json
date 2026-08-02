@@ -1,0 +1,17 @@
+{
+  "name": "execute_code",
+  "description": "Execute arbitrary Python code in FreeCAD.\n\nArgs:\n    code: The Python code to execute.\n\nReturns:\n    A message indicating the success or failure of the code execution, the output of the code execution, and a screenshot of the object.\n",
+  "inputSchema": {
+    "properties": {
+      "code": {
+        "title": "Code",
+        "type": "string"
+      }
+    },
+    "required": [
+      "code"
+    ],
+    "title": "execute_codeArguments",
+    "type": "object"
+  }
+}

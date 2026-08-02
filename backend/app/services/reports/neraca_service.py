@@ -35,6 +35,7 @@ class NeracaService(BaseReportService):
         self.sync_ja_muatan_finance()
         self.sync_ja_internal_bengkel_finance()
         self.sync_mobil_internal_bengkel_finance()
+        self.sync_kasbon_opening_kas_entries()
         
         # 1. ASSETS
         
@@ -131,7 +132,7 @@ class NeracaService(BaseReportService):
         piutang_mobil = max(0, piutang_mobil - booking_receivable)
         piutang_booking = 0
         total_assets = total_cash + total_piutang + total_stock_mobil + total_stock_parts + total_fixed_assets
-        
+
         # Internal payables are only kept for trace/debug. Consolidated neraca
         # must not count company-to-company unit payables as external liabilities.
         hutang_internal = raw_hutang.get("breakdown", {}).get("internal", 0)
@@ -243,12 +244,41 @@ class NeracaService(BaseReportService):
         ).scalar() or 0)
         
         # Non-cash capital = (current assets + sold assets) - recorded cash purchases - recorded hutang purchases
-        # For opening balance imports, piutang represents assets funded by owner capital.
-        # Include total_piutang so the balance sheet identity holds.
-        piutang_discovery = total_piutang
+        # Opening-balance piutang/hutang imported via data-import (IMP-*) that have no matching
+        # KasBank entries represent cash/obligations already present at system start.  Piutang
+        # funded from modal must be added to non-cash capital; hutang funded from assets must be
+        # subtracted (it is not owner capital).
+        piutang_discovery = 0.0
+        from app.models.keuangan import PembayaranPiutang
+        piutang_imp = self.db.query(PiutangUsaha).filter(
+            PiutangUsaha.nomor_referensi.like("IMP-%"),
+            PiutangUsaha.tanggal <= as_of_date,
+            PiutangUsaha.status != PiutangStatus.BATAL,
+            PiutangUsaha.is_internal != True,
+        ).all()
+        for pp in piutang_imp:
+            has_kb = self.db.query(KasBank.id).filter(
+                KasBank.tipe == KasBankType.KELUAR,
+                KasBank.referensi_id == pp.id,
+                KasBank.nomor_referensi == pp.nomor_piutang,
+            ).first()
+            has_pembayaran = self.db.query(PembayaranPiutang.id).filter(
+                PembayaranPiutang.piutang_id == pp.id
+            ).first()
+            if not has_kb and not has_pembayaran:
+                piutang_discovery += float(pp.sisa_piutang)
+        # Hutang opening-balance (IMP-*) funded assets, so it is not owner capital.
+        hutang_import = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
+            HutangUsaha.nomor_referensi.like("IMP-%"),
+            HutangUsaha.tanggal <= as_of_date,
+            HutangUsaha.status != HutangStatus.BATAL,
+            HutangUsaha.is_internal != True,
+        ).scalar() or 0)
         total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep) + modal_aset_tetap + piutang_discovery
         total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang + hutang_internal
-        modal_non_kas = max(0, total_non_kas_assets_historis - total_purchase_recorded)
+        # Hutang opening-balance (IMP-*) and investor funding funded assets, so they
+        # are NOT owner capital and must be subtracted from non-cash capital.
+        modal_non_kas = max(0, total_non_kas_assets_historis - total_purchase_recorded - hutang_import - hutang_investor)
         
         # Combined setoran modal = kas setoran + non-kas (auto-balanced)
         setoran_modal = setoran_modal_kas + modal_non_kas
@@ -939,3 +969,97 @@ class NeracaService(BaseReportService):
                 "status": "error",
                 "message": f"Database error detail: {str(e)}"
             }
+
+    def sync_kasbon_opening_kas_entries(self, user_id: Optional[int] = None) -> Dict[str, Any]:
+        """Create missing KasBank KELUAR entries for opening-balance kasbon.
+
+        Opening-balance kasbon imported via data-import has a PiutangUsaha record
+        but no corresponding KasBank KELUAR.  Without the cash-out entry the
+        balance sheet stays out of balance by the kasbon amount.
+
+        This sync scans for kasbon piutang that has no KasBank KELUAR referencing
+        it and creates one so the double-entry equation stays intact.
+        """
+        from app.models.keuangan import PembayaranPiutang
+        from app.services.kas_bank_integration import create_kas_entry
+        created = 0
+        try:
+            kasbon_entries = self.db.query(PiutangUsaha).filter(
+                PiutangUsaha.tanggal <= date.today(),
+                PiutangUsaha.status != PiutangStatus.BATAL,
+                PiutangUsaha.is_internal != True,
+            ).all()
+
+            # Map unit to KasBankJenis for the cash wallet
+            unit_to_jenis = {
+                KasBankSource.BENGKEL: KasBankJenis.KAS_UNIT_BENGKEL,
+                KasBankSource.JASA_ANGKUT: KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+                KasBankSource.JUAL_BELI_MOBIL: KasBankJenis.KAS_UNIT_MOBIL,
+                KasBankSource.KASBON: KasBankJenis.KAS_UTAMA,
+                KasBankSource.LAINNYA: KasBankJenis.KAS_UTAMA,
+                KasBankSource.PEMBELIAN_PART: KasBankJenis.KAS_UNIT_BENGKEL,
+                KasBankSource.HUTANG: KasBankJenis.KAS_UTAMA,
+                KasBankSource.MODAL: KasBankJenis.KAS_UTAMA,
+                KasBankSource.PRIVE: KasBankJenis.KAS_UTAMA,
+                KasBankSource.ASET: KasBankJenis.KAS_UTAMA,
+                KasBankSource.PIUTANG: KasBankJenis.KAS_UTAMA,
+                KasBankSource.PENGELUARAN: KasBankJenis.KAS_UTAMA,
+                KasBankSource.GAJI: KasBankJenis.KAS_UTAMA,
+                KasBankSource.PEMBELIAN_MOBIL: KasBankJenis.KAS_UNIT_MOBIL,
+            }
+
+            for p in kasbon_entries:
+                # Only process entries that look like kasbon (unit=KASBON or catatan mentions kasbon)
+                # External piutang (imported without KasBank KELUAR) are funded from external sources
+                # and should NOT create KasBank entries.
+                is_kasbon = (
+                    p.unit == KasBankSource.KASBON
+                    or (p.catatan and "kasbon" in str(p.catatan).lower())
+                )
+                if not is_kasbon:
+                    continue
+                # Check if a KasBank KELUAR already exists for this piutang
+                kb = self.db.query(KasBank).filter(
+                    KasBank.tipe == KasBankType.KELUAR,
+                    KasBank.referensi_id == p.id,
+                    KasBank.nomor_referensi == p.nomor_piutang,
+                ).first()
+                if kb:
+                    continue
+
+                # Check if any PembayaranPiutang exists (which would have created KasBank)
+                pb = self.db.query(PembayaranPiutang).filter(
+                    PembayaranPiutang.piutang_id == p.id
+                ).first()
+                if pb:
+                    continue
+
+                # Determine the cash wallet for this kasbon
+                kas_jenis = unit_to_jenis.get(p.unit, KasBankJenis.KAS_UTAMA)
+
+                # Create KasBank KELUAR entry to represent the cash given
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=p.tanggal,
+                    tipe=KasBankType.KELUAR,
+                    nominal=float(p.sisa_piutang),
+                    sumber=p.unit or KasBankSource.BENGKEL,
+                    metode_bayar="TUNAI",
+                    referensi_id=p.id,
+                    nomor_referensi=p.nomor_piutang,
+                    keterangan=f"Penerimaan Kasbon ke {p.nama_debitur} ({p.nomor_piutang})",
+                    user_id=user_id,
+                    kas_jenis=kas_jenis,
+                )
+                created += 1
+
+            if created:
+                self.db.commit()
+
+            return {
+                "status": "success",
+                "created_kas_entries": created,
+            }
+        except Exception as e:
+            self.db.rollback()
+            return {"status": "error", "message": str(e)}

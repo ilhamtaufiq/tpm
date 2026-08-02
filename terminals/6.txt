@@ -1,0 +1,22 @@
+---
+pid: 21108
+cwd: "C:\laragon\www\tpm"
+command: "cd C:\\laragon\\www\\tpm\\frontend; npm install jpeg-js@^0.4.4 --save 2>&1 | Select-Object -Last 15"
+started_at: 2026-07-06T16:04:42.725Z
+running_for_ms: 11680004 
+---
+
+added 1 package, and audited 1118 packages in 18s
+
+131 packages are looking for funding
+  run `npm fund` for details
+
+41 vulnerabilities (1 low, 22 moderate, 17 high, 1 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.

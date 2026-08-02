@@ -1,0 +1,22 @@
+{
+  "name": "get_object",
+  "description": "Get an object from a document.\nYou can use this tool to get the properties of an object to see what you can check or edit.\n\nArgs:\n    doc_name: The name of the document to get the object from.\n    obj_name: The name of the object to get.\n\nReturns:\n    The object and a screenshot of the object.\n",
+  "inputSchema": {
+    "properties": {
+      "doc_name": {
+        "title": "Doc Name",
+        "type": "string"
+      },
+      "obj_name": {
+        "title": "Obj Name",
+        "type": "string"
+      }
+    },
+    "required": [
+      "doc_name",
+      "obj_name"
+    ],
+    "title": "get_objectArguments",
+    "type": "object"
+  }
+}

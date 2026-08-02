@@ -2,6 +2,20 @@
   "version": 1,
   "events": [
     {
+      "id": "evt-1785645933107-ab6a1f34",
+      "trigger": "feature_success",
+      "timestamp": "2026-08-02T04:45:33.107Z",
+      "featureName": "cek fitur import data",
+      "featureId": "feature-1785645867052-w6pbdhf6dnp"
+    },
+    {
+      "id": "evt-1785645867774-5ed50339",
+      "trigger": "feature_created",
+      "timestamp": "2026-08-02T04:44:27.774Z",
+      "featureName": "cek fitur import data",
+      "featureId": "feature-1785645867052-w6pbdhf6dnp"
+    },
+    {
       "id": "evt-1782032729930-947efddb",
       "trigger": "feature_success",
       "timestamp": "2026-06-21T09:05:29.930Z",

@@ -1,0 +1,9 @@
+---
+pid: 41080
+cwd: "C:\laragon\www\tpm"
+command: "cd C:\\laragon\\www\\tpm\\frontend; npx tsc --noEmit 2>&1 | Select-Object -First 40"
+started_at: 2026-07-06T15:59:07.042Z
+running_for_ms: 12015013 
+---
+components/ui/AlertDialog.tsx(121,29): error TS2322: Type '{ backgroundColor: "#023C69" | "#10B981" | "#E11D48" | "#F59E0B"; } | null' is not assignable to type 'ViewStyle'.
+  Type 'null' is not assignable to type 'ViewStyle'.

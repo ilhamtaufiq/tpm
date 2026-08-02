@@ -1,0 +1,32 @@
+---
+pid: 4420
+cwd: "C:\laragon\www\tpm\frontend"
+command: "cd C:\\laragon\\www\\tpm\\frontend; npx expo install expo-screen-orientation"
+started_at: 2026-07-07T02:36:46.542Z
+running_for_ms: 27675010 
+---
+› Installing 1 SDK 52.0.0 compatible native module using npm
+> npm install
+
+> tpm-app@1.0.22 postinstall
+> patch-package
+
+patch-package 8.0.1
+Applying patches...
+react-native-css-interop@0.2.1 ✔
+react-native-thermal-receipt-printer@1.2.0-rc.2 ✔
+
+added 1 package, and audited 1119 packages in 15s
+
+131 packages are looking for funding
+  run `npm fund` for details
+
+41 vulnerabilities (1 low, 22 moderate, 17 high, 1 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.

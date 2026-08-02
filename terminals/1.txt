@@ -1,0 +1,7 @@
+---
+pid: 24036
+cwd: "C:\laragon\www\tpm"
+command: "cd C:\\laragon\\www\\tpm\\frontend; npx tsc --noEmit 2>&1 | Select-String -Pattern \"AlertDialog|Button\\.tsx|transaksi\\\\index|bengkel\\\\index\" | Select-Object -First 15"
+started_at: 2026-07-06T01:38:20.783Z
+running_for_ms: 950006   
+---

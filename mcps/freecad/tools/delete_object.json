@@ -1,0 +1,22 @@
+{
+  "name": "delete_object",
+  "description": "Delete an object in FreeCAD.\n\nArgs:\n    doc_name: The name of the document to delete the object from.\n    obj_name: The name of the object to delete.\n\nReturns:\n    A message indicating the success or failure of the object deletion and a screenshot of the object.\n",
+  "inputSchema": {
+    "properties": {
+      "doc_name": {
+        "title": "Doc Name",
+        "type": "string"
+      },
+      "obj_name": {
+        "title": "Obj Name",
+        "type": "string"
+      }
+    },
+    "required": [
+      "doc_name",
+      "obj_name"
+    ],
+    "title": "delete_objectArguments",
+    "type": "object"
+  }
+}

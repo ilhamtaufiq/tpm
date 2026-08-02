@@ -339,6 +339,7 @@ class PengeluaranBengkel(Base, TimestampMixin):
         String(50),
         default=ExpenseCategory.BIAYA_OPERASIONAL.value,
     )
+    nomor_referensi: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     deskripsi: Mapped[str] = mapped_column(String(255))
     jumlah: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     metode_bayar: Mapped[PaymentMethod] = mapped_column(

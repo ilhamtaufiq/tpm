@@ -1,0 +1,27 @@
+{
+  "name": "run_fem_analysis",
+  "description": "Run the CalculiX solver on an existing Fem::FemAnalysis container and return summary results.\n\nPrerequisites in the document:\n- A Part-derived solid (e.g. Part::Box, PartDesign::Body) acting as the geometry.\n- A Fem::AnalysisPython container created via `create_object`.\n- A Fem::MaterialCommon assigned to the geometry, added to the analysis.\n- A Fem::FemMeshGmsh referencing the geometry, added to the analysis (the\n  mesh is generated automatically when created via `create_object`).\n- At least one Fem::ConstraintFixed and one Fem::ConstraintForce (or\n  ConstraintPressure) bound to faces of the geometry, added to the analysis.\n\nA SolverCcxTools is auto-created if the analysis has none.\n\nThe solver runs synchronously on the FreeCAD GUI thread and blocks all\nother RPC calls for its duration; do not fan out parallel requests.\n\nReturns max von Mises stress (MPa), max/min displacement (mm), node count,\nand the working directory CalculiX wrote to. On failure, returns the\nprerequisite-check or solver error along with the working directory for\ntriage.\n\nArgs:\n    doc_name: Name of the FreeCAD document.\n    analysis_name: Name of the Fem::AnalysisPython object.\n    timeout: Seconds to wait for the solver (default 600).\n",
+  "inputSchema": {
+    "properties": {
+      "doc_name": {
+        "title": "Doc Name",
+        "type": "string"
+      },
+      "analysis_name": {
+        "title": "Analysis Name",
+        "type": "string"
+      },
+      "timeout": {
+        "default": 600,
+        "title": "Timeout",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "doc_name",
+      "analysis_name"
+    ],
+    "title": "run_fem_analysisArguments",
+    "type": "object"
+  }
+}

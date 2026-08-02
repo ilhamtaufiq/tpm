@@ -590,6 +590,7 @@ class BaseReportService:
             HutangUsaha.tanggal <= tanggal_sampai,
             HutangUsaha.status != HutangStatus.BATAL,
             HutangUsaha.is_internal != True,
+            ~HutangUsaha.nomor_referensi.ilike("IMP-%"), # Exclude imported opening debt from P&L expense
             ~self.db.query(KasBank.id).filter(
                 KasBank.tipe == KasBankType.MASUK,
                 KasBank.referensi_id == HutangUsaha.id,

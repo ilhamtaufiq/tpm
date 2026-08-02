@@ -244,8 +244,8 @@ export default function DataImportScreen() {
                                 Import master + opening balance
                             </Typography>
                             <Typography className="text-amber-800/80 text-xs mt-1 leading-5">
-                                Bukan full histori transaksi. Isi template multi-sheet, Preview
-                                dulu, lalu Commit. Backup DB sebelum production. Idempotent per
+                                Import master + opening balance semua modul. Isi template multi-sheet, Preview
+                                dulu, lalu Commit. Backup DB sebelum production. Kas/bank opening mencakup KAS_UTAMA, BANK_UTAMA, KAS_UNIT_BENGKEL, KAS_UNIT_JASA_ANGKUT, KAS_UNIT_MOBIL. Idempotent per
                                 batch untuk kas/hutang/piutang opening.
                             </Typography>
                         </View>
@@ -361,8 +361,7 @@ export default function DataImportScreen() {
                     {commitResult?.ok ? (
                         <View className="mt-3 p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
                             <Typography className="text-emerald-800 text-xs font-bold">
-                                Import selesai. Cek menu master, inventori, dompet, hutang &
-                                piutang.
+                                Import selesai. Cek menu master, inventori, dompet, hutang, piutang & akun keuangan.
                             </Typography>
                         </View>
                     ) : null}

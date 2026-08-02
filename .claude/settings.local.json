@@ -29,7 +29,12 @@
       "PowerShell(taskkill *)",
       "Bash(chmod +x *)",
       "Bash(echo \"DONE: $?\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(git add *)",
+      "Bash(ECC_GATEGUARD=off git checkout --theirs backend/app/services/data_import_service.py)",
+      "Bash(ECC_GATEGUARD=off git checkout --theirs backend/app/services/reports/neraca_service.py)",
+      "Bash(git rebase *)",
+      "Bash(git stash *)"
     ]
   }
 }

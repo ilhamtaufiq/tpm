@@ -1,0 +1,17 @@
+{
+  "name": "create_document",
+  "description": "Create a new document in FreeCAD.\n\nArgs:\n    name: The name of the document to create.\n\nReturns:\n    A message indicating the success or failure of the document creation.\n\nExamples:\n    If you want to create a document named \"MyDocument\", you can use the following data.\n    ```json\n    {\n        \"name\": \"MyDocument\"\n    }\n    ```\n",
+  "inputSchema": {
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string"
+      }
+    },
+    "required": [
+      "name"
+    ],
+    "title": "create_documentArguments",
+    "type": "object"
+  }
+}

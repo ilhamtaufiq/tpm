@@ -1,0 +1,7 @@
+---
+pid: 24052
+cwd: "C:\laragon\www\tpm"
+command: "cd C:\\laragon\\www\\tpm\\frontend; npx tsc --noEmit 2>&1 | Select-Object -First 40"
+started_at: 2026-07-06T06:10:08.557Z
+running_for_ms: 47355007 
+---

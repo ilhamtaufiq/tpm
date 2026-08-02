@@ -1,0 +1,29 @@
+---
+pid: 3472
+cwd: "C:\laragon\www\tpm\frontend"
+command: "Set-Location C:\\laragon\\www\\tpm
+$fe = Get-ChildItem -Path frontend -Recurse -Include *.tsx,*.ts -File | Where-Object { $_.FullName -notmatch 'node_modules|\\.expo|dist|build' }
+$feLines = 0; foreach($f in $fe){ $feLines += (Get-Content $f.FullName -ErrorAction SilentlyContinue | Measure-Object -Line).Lines }
+$be = Get-ChildItem -Path backend -Recurse -Include *.py -File | Where-Object { $_.FullName -notmatch 'venv|__pycache__' }
+$beLines = 0; foreach($f in $be){ $beLines += (Get-Content $f.FullName -ErrorAction SilentlyContinue | Measure-Object -Line).Lines }
+$comp = Get-ChildItem -Path frontend\\components -Recurse -Include *.tsx,*.ts -File -ErrorAction SilentlyContinue
+$compLines = 0; foreach($f in $comp){ $compLines += (Get-Content $f.FullName -ErrorAction SilentlyContinue | Measure-Object -Line).Lines }
+$svc = Get-ChildItem -Path backend\\app\\services -Recurse -Include *.py -File -ErrorAction SilentlyContinue
+$svcLines = 0; foreach($f in $svc){ $svcLines += (Get-Content $f.FullName -ErrorAction SilentlyContinue | Measure-Object -Line).Lines }
+$models = Get-ChildItem -Path backend\\app\\models -Recurse -Include *.py -File -ErrorAction SilentlyContinue
+$modelLines = 0; foreach($f in $models){ $modelLines += (Get-Content $f.FullName -ErrorAction SilentlyContinue | Measure-Object -Line).Lines }
+Write-Output \"FE files: $($fe.Count) lines: $feLines\"
+Write-Output \"BE files: $($be.Count) lines: $beLines\"
+Write-Output \"Components lines: $compLines\"
+Write-Output \"Services lines: $svcLines\"
+Write-Output \"Models lines: $modelLines\"
+Write-Output \"TOTAL: $($feLines + $beLines)\""
+started_at: 2026-07-07T10:27:05.406Z
+running_for_ms: 19520014 
+---
+FE files: 248 lines: 61648
+BE files: 309 lines: 34202
+Components lines: 15448
+Services lines: 16120
+Models lines: 1557
+TOTAL: 95850

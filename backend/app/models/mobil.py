@@ -70,6 +70,10 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
         default=0,
     )
 
+    # Biaya (imported from Excel sheet)
+    biaya_operasional: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    biaya_part_service: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+
     # Status
     status: Mapped[CarStatus] = mapped_column(
         SQLEnum(CarStatus),

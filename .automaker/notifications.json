@@ -418,6 +418,17 @@
       "dismissed": false,
       "featureId": "feature-1782032113159-alp858uh3h",
       "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "9167f01f-af62-40a4-aa4c-9719f88d23f3",
+      "type": "feature_waiting_approval",
+      "title": "cek fitur import data",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-08-02T04:45:33.108Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1785645867052-w6pbdhf6dnp",
+      "projectPath": "C:\\laragon\\www\\tpm"
     }
   ]
 }

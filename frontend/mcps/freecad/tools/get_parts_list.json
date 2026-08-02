@@ -1,0 +1,9 @@
+{
+  "name": "get_parts_list",
+  "description": "Get the list of parts in the parts library addon.\n    ",
+  "inputSchema": {
+    "properties": {},
+    "title": "get_parts_listArguments",
+    "type": "object"
+  }
+}

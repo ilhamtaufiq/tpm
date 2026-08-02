@@ -1,0 +1,11 @@
+---
+pid: 42868
+cwd: "C:\laragon\www\tpm"
+command: "cd C:\\laragon\\www\\tpm\\frontend; npx tsc --noEmit 2>&1 | Select-String -Pattern \"ReceiptHtmlCaptureHost|printBleReceipt|html2canvasBundle|receiptHtmlRaster\""
+started_at: 2026-07-06T08:14:25.868Z
+running_for_ms: 39900008 
+---
+
+components/print/ReceiptHtmlCaptureHost.tsx(112,27): error TS2304: Cannot find name 'raster'.
+
+

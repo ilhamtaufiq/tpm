@@ -67,7 +67,9 @@ def test_modal_snapshot_does_not_double_count_booking_liability():
     modal = read("backend/app/services/reports/modal_service.py")
     neraca = read("backend/app/services/reports/neraca_service.py")
 
-    assert "kewajiban_usaha = hutang_usaha_total - hutang_investor_total" in modal
+    # Investor funding is treated as a liability (not owner capital) so that
+    # Perubahan Modal stays aligned with Neraca (both report owner equity).
+    assert "kewajiban_usaha = hutang_usaha_total" in modal
     assert "+ piutang_booking" not in modal.split("kewajiban_usaha")[1].split("modal_aktual")[0]
     assert "piutang_booking = 0" in neraca
     assert "uang_muka_penjualan" in neraca

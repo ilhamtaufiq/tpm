@@ -1,0 +1,17 @@
+{
+  "name": "get_objects",
+  "description": "Get all objects in a document.\nYou can use this tool to get the objects in a document to see what you can check or edit.\n\nArgs:\n    doc_name: The name of the document to get the objects from.\n\nReturns:\n    A list of objects in the document and a screenshot of the document.\n",
+  "inputSchema": {
+    "properties": {
+      "doc_name": {
+        "title": "Doc Name",
+        "type": "string"
+      }
+    },
+    "required": [
+      "doc_name"
+    ],
+    "title": "get_objectsArguments",
+    "type": "object"
+  }
+}

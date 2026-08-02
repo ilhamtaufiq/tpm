@@ -1,0 +1,28 @@
+{
+  "name": "edit_object",
+  "description": "Edit an object in FreeCAD.\nThis tool is used when the `create_object` tool cannot handle the object creation.\n\nArgs:\n    doc_name: The name of the document to edit the object in.\n    obj_name: The name of the object to edit.\n    obj_properties: The properties of the object to edit.\n\nReturns:\n    A message indicating the success or failure of the object editing and a screenshot of the object.\n",
+  "inputSchema": {
+    "properties": {
+      "doc_name": {
+        "title": "Doc Name",
+        "type": "string"
+      },
+      "obj_name": {
+        "title": "Obj Name",
+        "type": "string"
+      },
+      "obj_properties": {
+        "additionalProperties": true,
+        "title": "Obj Properties",
+        "type": "object"
+      }
+    },
+    "required": [
+      "doc_name",
+      "obj_name",
+      "obj_properties"
+    ],
+    "title": "edit_objectArguments",
+    "type": "object"
+  }
+}
