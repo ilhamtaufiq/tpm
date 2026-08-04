@@ -345,18 +345,18 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                     <Typography weight="bold" className="ml-2 text-primary">KEPEMILIKAN & HARGA</Typography>
                 </View>
 
-                {!isEdit && (
-                    <View className="space-y-6">
-                        {/* Harga & Status Row */}
-                        <View className="flex-row space-x-3">
-                            <Input
-                                label="Harga Beli Unit (Rp)"
-                                placeholder="0"
-                                containerClassName="flex-[1.5]"
-                                keyboardType="numeric"
-                                value={hargaBeli}
-                                onChangeText={(v) => setHargaBeli(formatNumber(v))}
-                            />
+                <View className="space-y-6">
+                    {/* Harga & Status Row */}
+                    <View className="flex-row space-x-3">
+                        <Input
+                            label="Harga Beli Unit (Rp)"
+                            placeholder="0"
+                            containerClassName="flex-[1.5]"
+                            keyboardType="numeric"
+                            value={hargaBeli}
+                            onChangeText={(v) => setHargaBeli(formatNumber(v))}
+                        />
+                        {!isEdit && (
                             <View className="flex-1">
                                 <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-tight">Status Bayar</Typography>
                                 <View className="flex-row bg-gray-100 rounded-2xl p-1 border border-gray-200/50 space-x-1">
@@ -376,9 +376,10 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                     ))}
                                 </View>
                             </View>
-                        </View>
+                        )}
+                    </View>
 
-                        {/* Payment Method & Optional DP Row */}
+                        {!isEdit && (
                         <View className="mt-4">
                             <View className="flex-row space-x-3 items-end">
                                 {statusBayar !== 'LUNAS' && (
@@ -534,8 +535,8 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                 </View>
                             )}
                         </View>
+                        )}
                     </View>
-                )}
 
                 <View className="mt-4">
                     <Typography weight="bold" className="text-primary mb-4">DATA INVESTOR (OPSIONAL)</Typography>
