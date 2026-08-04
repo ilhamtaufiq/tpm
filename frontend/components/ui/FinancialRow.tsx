@@ -43,17 +43,19 @@ export const FinancialRow = React.memo(({
     }
 
     return (
-        <View className={`flex-row justify-between items-center py-1.5 w-full ${indent ? 'pl-4' : ''} ${className || ''}`}>
-            <Typography
-                variant={small ? 'caption' : 'body2'}
-                className={`${isDark ? 'text-white/70' : small ? 'text-slate-500' : 'text-slate-600'} flex-1 pr-2`}
-            >
-                {label}
-            </Typography>
+        <View className={`flex-row items-center py-1.5 w-full ${indent ? 'pl-4' : ''} ${className || ''}`}>
+            <View className="flex-1 pr-2">
+                <Typography
+                    variant={small ? 'caption' : 'body2'}
+                    className={`${isDark ? 'text-white/70' : small ? 'text-slate-500' : 'text-slate-600'}`}
+                >
+                    {label}
+                </Typography>
+            </View>
             <Typography
                 variant={large ? 'h3' : small ? 'body2' : 'body1'}
                 weight={bold ? 'bold' : 'semibold'}
-                className={`${textClass} text-right flex-shrink-0`}
+                className={`${textClass} flex-shrink-0`}
             >
                 {displayValue}
             </Typography>

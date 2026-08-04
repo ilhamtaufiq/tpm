@@ -356,6 +356,93 @@ export default function DataImportScreen() {
                                     ) : null}
                                 </View>
                             ))}
+                            {preview.unknown_sheets?.length ? (
+                                <Card className="mt-3 p-3 border-amber-200 bg-amber-50">
+                                    <View className="flex-row items-start">
+                                        <AlertTriangle size={14} color="#B45309" />
+                                        <Typography className="ml-2 text-xs text-amber-800 mt-0.5">
+                                            Sheet tidak dikenali: {preview.unknown_sheets.join(', ')}
+                                        </Typography>
+                                    </View>
+                                </Card>
+                            ) : null}
+                            {preview.neraca_verification ? (
+                                <Card className="mt-3 p-3 border-gray-200 bg-white">
+                                    <View className="flex-row items-center justify-between mb-2">
+                                        <View className="flex-row items-center">
+                                            {preview.neraca_verification.is_balanced ? (
+                                                <CheckCircle2 size={16} color="#059669" />
+                                            ) : (
+                                                <AlertTriangle size={16} color="#DC2626" />
+                                            )}
+                                            <Typography weight="bold" className="ml-2 text-sm text-gray-800">
+                                                Verifikasi Neraca
+                                            </Typography>
+                                        </View>
+                                        <Badge
+                                            label={preview.neraca_verification.is_balanced ? 'SEIMBANG' : 'SELISIH'}
+                                            variant={preview.neraca_verification.is_balanced ? 'success' : 'error'}
+                                        />
+                                    </View>
+                                    <View className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                                        <View className="flex-row justify-between items-center py-1">
+                                            <Typography className="text-[11px] text-gray-500">Kas</Typography>
+                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                                {preview.neraca_verification.computed.total_kas?.toLocaleString('id-ID') ?? '-'}
+                                            </Typography>
+                                        </View>
+                                        <View className="flex-row justify-between items-center py-1">
+                                            <Typography className="text-[11px] text-gray-500">Piutang</Typography>
+                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                                {preview.neraca_verification.computed.total_piutang?.toLocaleString('id-ID') ?? '-'}
+                                            </Typography>
+                                        </View>
+                                        <View className="flex-row justify-between items-center py-1">
+                                            <Typography className="text-[11px] text-gray-500">Aset Tetap</Typography>
+                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                                {preview.neraca_verification.computed.total_aset_tetap?.toLocaleString('id-ID') ?? '-'}
+                                            </Typography>
+                                        </View>
+                                        <View className="flex-row justify-between items-center py-1">
+                                            <Typography className="text-[11px] text-gray-500">Mobil</Typography>
+                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                                {preview.neraca_verification.computed.total_mobil?.toLocaleString('id-ID') ?? '-'}
+                                            </Typography>
+                                        </View>
+                                        <View className="h-[1px] bg-gray-200 my-1.5" />
+                                        <View className="flex-row justify-between items-center py-1">
+                                            <Typography className="text-[11px] text-gray-800 font-bold">Aktiva</Typography>
+                                            <Typography className="text-[11px] text-gray-900 font-bold">
+                                                {preview.neraca_verification.computed.total_aktiva?.toLocaleString('id-ID') ?? '-'}
+                                            </Typography>
+                                        </View>
+                                        <View className="h-[1px] bg-gray-200 my-1.5" />
+                                        <View className="flex-row justify-between items-center py-1">
+                                            <Typography className="text-[11px] text-gray-500">Hutang</Typography>
+                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                                {preview.neraca_verification.computed.total_hutang?.toLocaleString('id-ID') ?? '-'}
+                                            </Typography>
+                                        </View>
+                                        <View className="flex-row justify-between items-center py-1">
+                                            <Typography className="text-[11px] text-gray-500">Hutang Part</Typography>
+                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                                {preview.neraca_verification.computed.hutang_part?.toLocaleString('id-ID') ?? '-'}
+                                            </Typography>
+                                        </View>
+                                        <View className="flex-row justify-between items-center py-1">
+                                            <Typography className="text-[11px] text-gray-500">Hutang Mobil</Typography>
+                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                                {preview.neraca_verification.computed.hutang_mobil?.toLocaleString('id-ID') ?? '-'}
+                                            </Typography>
+                                        </View>
+                                    </View>
+                                    {preview.neraca_verification.warnings?.map((w, i) => (
+                                        <Typography key={i} className="text-[11px] text-rose-600 mt-0.5">
+                                            • {w}
+                                        </Typography>
+                                    ))}
+                                </Card>
+                            ) : null}
                         </View>
                     ) : null}
                     {commitResult?.ok ? (

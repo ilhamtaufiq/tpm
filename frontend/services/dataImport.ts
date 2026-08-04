@@ -10,11 +10,20 @@ export type ImportSheetResult = {
     errors: string[];
 };
 
+export type NeracaVerification = {
+    computed: Record<string, number>;
+    expected: Record<string, number | null>;
+    is_balanced: boolean;
+    warnings: string[];
+};
+
 export type ImportResult = {
     batch_id: string;
     dry_run: boolean;
     ok: boolean;
     sheets: Record<string, ImportSheetResult>;
+    neraca_verification?: NeracaVerification;
+    unknown_sheets?: string[];
 };
 
 async function authHeaders(): Promise<Record<string, string>> {

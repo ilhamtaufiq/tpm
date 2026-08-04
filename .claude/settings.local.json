@@ -34,7 +34,8 @@
       "Bash(ECC_GATEGUARD=off git checkout --theirs backend/app/services/data_import_service.py)",
       "Bash(ECC_GATEGUARD=off git checkout --theirs backend/app/services/reports/neraca_service.py)",
       "Bash(git rebase *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(node -e \"require\\('@babel/parser'\\).parse\\(require\\('fs'\\).readFileSync\\('app/settings/data-import.tsx','utf8'\\), {sourceType:'module',plugins:['typescript','jsx']}\\); console.log\\('TSX SYNTAX OK'\\)\")"
     ]
   }
 }

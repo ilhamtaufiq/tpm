@@ -64,6 +64,7 @@ SHEET_ORDER = [
     "armada",
     "supir",
     "mobil",
+    "neraca_check",
 ]
 
 # Header definitions: (excel_header, field_key, required)
@@ -202,6 +203,56 @@ SHEET_HEADERS: Dict[str, List[Tuple[str, str, bool]]] = {
         ("bahan_bakar", "bahan_bakar", False),
         ("kilometer", "kilometer", False),
         ("catatan", "catatan", False),
+    ],
+    "neraca_check": [
+        # === AKTIVA LANCAR: Kas & Bank ===
+        ("kas_tunai", "kas_tunai", False),
+        ("kas_bank", "kas_bank", False),
+        ("unit_cash", "unit_cash", False),
+        ("total_kas_bank", "total_kas_bank", False),
+        # === AKTIVA LANCAR: Piutang Usaha ===
+        ("piutang_lainnya", "piutang_lainnya", False),
+        ("piutang_karyawan", "piutang_karyawan", False),
+        ("piutang_usaha", "piutang_usaha", False),
+        ("piutang_mobil", "piutang_mobil", False),
+        ("piutang_jasa_angkut", "piutang_jasa_angkut", False),
+        ("total_piutang", "total_piutang", False),
+        # === AKTIVA LANCAR: Persediaan & Stok ===
+        ("persediaan_sparepart", "persediaan_sparepart", False),
+        ("stok_mobil", "stok_mobil", False),
+        ("stok_mobil_detail_harga_beli", "stok_mobil_detail_harga_beli", False),
+        ("stok_mobil_detail_biaya_persiapan", "stok_mobil_detail_biaya_persiapan", False),
+        ("stok_mobil_detail_perbaikan_external", "stok_mobil_detail_perbaikan_external", False),
+        ("stok_mobil_detail_perbaikan_internal", "stok_mobil_detail_perbaikan_internal", False),
+        ("total_aktiva_lancar", "total_aktiva_lancar", False),
+        # === AKTIVA TETAP: Daftar Aset Aktif ===
+        ("detail_aset_kode", "detail_aset_kode", False),
+        ("detail_aset_nama", "detail_aset_nama", False),
+        ("detail_aset_harga_beli", "detail_aset_harga_beli", False),
+        ("total_aset_tetap", "total_aset_tetap", False),
+        ("total_aktiva", "total_aktiva", False),
+        # === PASIVA: Modal ===
+        ("setoran_modal", "setoran_modal", False),
+        ("setoran_modal_kas", "setoran_modal_kas", False),
+        ("modal_non_kas", "modal_non_kas", False),
+        ("modal_persediaan", "modal_persediaan", False),
+        ("modal_stok_mobil", "modal_stok_mobil", False),
+        ("modal_aset_tetap", "modal_aset_tetap", False),
+        ("laba_ditahan", "laba_ditahan", False),
+        ("prive", "prive", False),
+        ("total_modal", "total_modal", False),
+        # === PASIVA: Hutang ===
+        ("hutang_part", "hutang_part", False),
+        ("hutang_mobil", "hutang_mobil", False),
+        ("hutang_investor", "hutang_investor", False),
+        ("hutang_lainnya", "hutang_lainnya", False),
+        ("hutang_jasa_angkut", "hutang_jasa_angkut", False),
+        ("uang_muka_penjualan", "uang_muka_penjualan", False),
+        ("piutang_booking", "piutang_booking", False),
+        ("total_hutang", "total_hutang", False),
+        # === BALANCE CHECK ===
+        ("total_pasiva", "total_pasiva", False),
+        ("selisih", "selisih", False),
     ],
 }
 
@@ -476,6 +527,58 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
             "catatan": "Perbaikan di bengkel: ganti oli, filter, dan servis AC sebelum dijual",
         },
     ],
+    "neraca_check": [
+        {
+            # AKTIVA LANCAR - Kas & Bank
+            "kas_tunai": 50000000,
+            "kas_bank": 10000000,
+            "kas_unit_bengkel": 2500000,
+            "kas_unit_jasa_angkut": 1500000,
+            "kas_unit_mobil": 2500000,
+            "total_kas_bank": 66500000,
+            # AKTIVA LANCAR - Piutang
+            "piutang_lainnya": 5000000,
+            "piutang_karyawan": 3000000,
+            "piutang_usaha": 8000000,
+            "piutang_mobil": 5000000,
+            "piutang_jasa_angkut": 5250000,
+            "total_piutang": 26250000,
+            # AKTIVA LANCAR - Persediaan & Stok
+            "persediaan_sparepart": 75000000,
+            "stok_mobil": 150000000,
+            "stok_mobil_harga_beli": 130000000,
+            "stok_mobil_biaya_persiapan": 10000000,
+            "stok_mobil_perbaikan_external": 5000000,
+            "stok_mobil_perbaikan_internal": 5000000,
+            "total_aktiva_lancar": 317750000,
+            # AKTIVA TETAP
+            "total_aset_tetap": 100000000,
+            "aset_detail_kode": "ASET-001",
+            "aset_detail_nama": "Kompressor",
+            "aset_detail_harga_beli": 100000000,
+            "total_aktiva": 417750000,
+            # HUTANG
+            "hutang_part": 15000000,
+            "hutang_mobil": 20000000,
+            "hutang_investor": 10000000,
+            "hutang_lainnya": 10000000,
+            "hutang_jasa_angkut": 5000000,
+            "uang_muka_penjualan": 0,
+            "piutang_booking": 0,
+            "total_hutang": 60000000,
+            # MODAL
+            "setoran_modal_kas": 200000000,
+            "setoran_modal_non_kas": 87750000,
+            "setoran_modal_total": 287750000,
+            "laba_ditahan": 0,
+            "prive": 0,
+            "total_modal": 287750000,
+            # TOTAL PASIVA & BALANCE CHECK
+            "total_pasiva": 347750000,
+            "selisih": 70000000,
+            "catatan": "Verifikasi neraca opening balance - sesuaikan dengan kondisi nyata",
+        },
+    ],
 }
 
 INSTRUCTIONS = [
@@ -484,12 +587,14 @@ INSTRUCTIONS = [
     "CARA PAKAI:",
     "1. Isi sheet data (customers, suppliers, spare_parts, ...).",
     "2. Baris contoh (warna kuning) boleh dihapus / diganti / ditambah.",
-    "3. Upload di Settings > Import Data > Preview (dry-run).",
-    "4. Perbaiki error yang muncul, lalu Commit.",
+    "3. Isi sheet neraca_check sebagai referensi verifikasi (opsional).",
+    "4. Upload di Settings > Import Data > Preview (dry-run).",
+    "5. Periksa hasil preview: cek error + cross-check neraca_check.",
+    "6. Perbaiki error yang muncul, lalu Commit.",
     "",
     "URUTAN IMPOR (otomatis):",
     "customers > suppliers > spare_parts > jasa_servis > karyawan >",
-    "kas_opening > hutang_opening > piutang_opening > armada > supir > mobil",
+    "kas_opening > hutang_opening > piutang_opening > armada > supir > mobil > neraca_check",
     "",
     "ATURAN PENTING:",
     "- MVP = master + stok + opening finance (bukan full histori transaksi).",
@@ -531,6 +636,28 @@ INSTRUCTIONS = [
     "  Total Pasiva = Hutang + Modal (Setoran Kas + Non-Kas)",
     "Backend otomatis menyeimbangkan modal non-kas dari aset opening yang",
     "diimport tanpa entry kas (piutang/hutang/aset tetap).",
+    "",
+    "SHEET NERACA_CHECK (opsional):",
+    "Isi sheet ini sebagai referensi verifikasi setelah import. Struktur mengikuti neraca.tsx.",
+    "",
+    "Kolom yang tersedia:",
+    "  AKTIVA LANCAR: kas_tunai, kas_bank, kas_unit_bengkel, kas_unit_jasa_angkut,",
+    "    kas_unit_mobil, total_kas_bank,",
+    "    piutang_lainnya, piutang_karyawan, piutang_usaha, piutang_mobil,",
+    "    piutang_jasa_angkut, total_piutang,",
+    "    persediaan_sparepart, stok_mobil (+ breakdown: harga_beli, biaya_persiapan,",
+    "    perbaikan_external, perbaikan_internal), total_aktiva_lancar",
+    "  AKTIVA TETAP: total_aset_tetap, aset_detail_kode/nama/harga_beli",
+    "  HUTANG: hutang_part, hutang_mobil, hutang_investor, hutang_lainnya,",
+    "    hutang_jasa_angkut, uang_muka_penjualan, piutang_booking, total_hutang",
+    "  MODAL: setoran_modal_kas, setoran_modal_non_kas, setoran_modal_total,",
+    "    laba_ditahan, prive, total_modal",
+    "  BALANCE CHECK: total_pasiva, selisih",
+    "",
+    "Backend otomatis menghitung (auto-sum) dari sheet kas_opening, piutang_opening,",
+    "hutang_opening, asset, mobil. Nilai di neraca_check digunakan sebagai ekspektasi",
+    "untuk cross-check. Jika ada selisih > Rp 100, muncul warning di preview.",
+    "Sheet ini TIDAK insert data ke database, hanya untuk verifikasi.",
     "",
     "ADMIN ONLY. Backup database sebelum commit production.",
 ]
@@ -634,6 +761,85 @@ class DataImportService:
     def _empty_row(self, row) -> bool:
         return not any(c is not None and str(c).strip() != "" for c in row)
 
+    # ------------------------------------------------ neraca formula helper
+    @staticmethod
+    def _write_neraca_formulas(ws, fields):
+        """Write Excel formulas in row 2 of neraca_check sheet for auto-sum.
+        
+        Structure matches neraca.tsx exactly.
+        Column layout of source sheets:
+          kas_opening:    A=tanggal, B=jenis_kas, C=nominal, D=keterangan, E=catatan
+          piutang_opening: A=tanggal, B=nama_debitur, C=nominal, D=unit, E=telepon...
+          hutang_opening:  A=tanggal, B=nama_kreditur, C=nominal, D=unit, E=telepon...
+          asset:           A=kode, B=tanggal, C=nama, D=nominal(harga_beli), E=kategori
+          mobil:           A=kode, B=merek, C=model, D=tahun, E=warna, F=plat, G=mesin, H=raga, I=harga_beli
+        """
+        field_col = {}
+        for col, (header, key, _r) in enumerate(fields, start=1):
+            field_col[key] = col
+
+        def _set_formula(header_text, formula):
+            col = field_col.get(header_text)
+            if col:
+                ws.cell(2, col, formula)
+                ws.cell(2, col).fill = PatternFill("solid", fgColor="D1FAE5")
+                ws.cell(2, col).number_format = '#,##0'
+
+        # === Kas & Bank ===
+        _set_formula('kas_tunai', '=SUMIF(kas_opening!B:B,"KAS_UTAMA",kas_opening!C:C)+SUMIF(kas_opening!B:B,"CASH",kas_opening!C:C)')
+        _set_formula('kas_bank', '=SUMIF(kas_opening!B:B,"BANK_UTAMA",kas_opening!C:C)')
+        _set_formula('unit_cash', '=SUMIF(kas_opening!B:B,"KAS_UNIT_BENGKEL",kas_opening!C:C)+SUMIF(kas_opening!B:B,"KAS_UNIT_JASA_ANGKUT",kas_opening!C:C)+SUMIF(kas_opening!B:B,"KAS_UNIT_MOBIL",kas_opening!C:C)')
+        _set_formula('total_kas_bank', '=A2+B2+C2')
+
+        # === Piutang Usaha ===
+        _set_formula('piutang_lainnya', '=SUMIF(piutang_opening!D:D,"LAINNYA",piutang_opening!C:C)')
+        _set_formula('piutang_karyawan', '=SUMIF(piutang_opening!D:D,"KASBON",piutang_opening!C:C)')
+        _set_formula('piutang_usaha', '=SUMIF(piutang_opening!D:D,"BENGKEL",piutang_opening!C:C)')
+        _set_formula('piutang_mobil', '=SUMIF(piutang_opening!D:D,"JUAL_BELI_MOBIL",piutang_opening!C:C)')
+        _set_formula('piutang_jasa_angkut', '=SUMIF(piutang_opening!D:D,"JASA_ANGKUT",piutang_opening!C:C)')
+        _set_formula('total_piutang', '=F2+G2+H2+I2+J2')
+
+        # === Persediaan & Stok ===
+        _set_formula('persediaan_sparepart', '0')
+        _set_formula('stok_mobil', '0')
+        _set_formula('stok_mobil_detail_harga_beli', '0')
+        _set_formula('stok_mobil_detail_biaya_persiapan', '0')
+        _set_formula('stok_mobil_detail_perbaikan_external', '0')
+        _set_formula('stok_mobil_detail_perbaikan_internal', '0')
+        _set_formula('total_aktiva_lancar', '=E2+J2+K2+L2')
+
+        # === Aktiva Tetap ===
+        _set_formula('detail_aset_kode', '')
+        _set_formula('detail_aset_nama', '')
+        _set_formula('detail_aset_harga_beli', '')
+        _set_formula('total_aset_tetap', '=SUM(asset!D:D)')
+        _set_formula('total_aktiva', '=P2+Q2')
+
+        # === Modal ===
+        _set_formula('setoran_modal', '0')
+        _set_formula('setoran_modal_kas', '0')
+        _set_formula('modal_non_kas', '0')
+        _set_formula('modal_persediaan', '0')
+        _set_formula('modal_stok_mobil', '0')
+        _set_formula('modal_aset_tetap', '0')
+        _set_formula('laba_ditahan', '0')
+        _set_formula('prive', '0')
+        _set_formula('total_modal', 'U2')
+
+        # === Hutang ===
+        _set_formula('hutang_part', '=SUMIF(hutang_opening!D:D,"BENGKEL",hutang_opening!C:C)')
+        _set_formula('hutang_mobil', '=SUMIF(hutang_opening!D:D,"JUAL_BELI_MOBIL",hutang_opening!C:C)')
+        _set_formula('hutang_investor', '=SUMIF(hutang_opening!D:D,"INVESTOR",hutang_opening!C:C)')
+        _set_formula('hutang_lainnya', '=SUMIF(hutang_opening!D:D,"LAINNYA",hutang_opening!C:C)')
+        _set_formula('hutang_jasa_angkut', '=SUMIF(hutang_opening!D:D,"JASA_ANGKUT",hutang_opening!C:C)')
+        _set_formula('uang_muka_penjualan', '0')
+        _set_formula('piutang_booking', '0')
+        _set_formula('total_hutang', '=V2+W2+X2+Y2+Z2+AA2+AB2')
+
+        # === Balance Check ===
+        _set_formula('total_pasiva', '=AB2+U2')
+        _set_formula('selisih', '=Q2-AC2')
+
     # ----------------------------------------------------------- template
     def generate_template(self) -> io.BytesIO:
         wb = openpyxl.Workbook()
@@ -663,6 +869,9 @@ class DataImportService:
                 for c_i, (header, key, _r) in enumerate(fields, start=1):
                     cell = ws.cell(r_i, c_i, example.get(key))
                     cell.fill = example_fill
+            # neraca_check: overwrite example row with Excel auto-sum formulas
+            if sheet_name == "neraca_check":
+                DataImportService._write_neraca_formulas(ws, fields)
 
         buf = io.BytesIO()
         wb.save(buf)
@@ -670,7 +879,7 @@ class DataImportService:
         return buf
 
     # ----------------------------------------------------------- parse workbook
-    def _parse_workbook(self, file_content: bytes) -> Dict[str, List[Dict[str, Any]]]:
+    def _parse_workbook(self, file_content: bytes) -> Tuple[Dict[str, List[Dict[str, Any]]], List[str]]:
         try:
             wb = openpyxl.load_workbook(io.BytesIO(file_content), data_only=True)
         except Exception as e:
@@ -679,28 +888,32 @@ class DataImportService:
                 detail=f"Gagal membaca Excel: {e}",
             )
         parsed: Dict[str, List[Dict[str, Any]]] = {}
-        for name in SHEET_ORDER:
-            if name == "_INSTRUKSI" or name not in wb.sheetnames:
+        known_sheets = {s for s in SHEET_ORDER if s != "_INSTRUKSI"}
+        unknown_sheets: List[str] = []
+        for sheet_name in wb.sheetnames:
+            if sheet_name not in known_sheets:
+                unknown_sheets.append(sheet_name)
                 continue
-            sheet = wb[name]
-            fields = SHEET_HEADERS[name]
+            sheet = wb[sheet_name]
+            fields = SHEET_HEADERS[sheet_name]
             header_map = self._map_header(sheet)
             # require at least required headers
             missing_headers = [h for h, k, req in fields if req and h.lower() not in header_map]
             if missing_headers:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Sheet '{name}' kurang kolom: {', '.join(missing_headers)}",
+                    detail=f"Sheet '{sheet_name}' kurang kolom: {', '.join(missing_headers)}",
                 )
             rows: List[Dict[str, Any]] = []
-            for row_idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+            start_row = 3 if sheet_name == "neraca_check" else 2
+            for row_idx, row in enumerate(sheet.iter_rows(min_row=start_row, values_only=True), start=start_row):
                 if self._empty_row(row):
                     continue
                 d = self._row_dict(row, header_map, fields)
                 d["_row"] = row_idx
                 rows.append(d)
-            parsed[name] = rows
-        return parsed
+            parsed[sheet_name] = rows
+        return parsed, unknown_sheets
 
     # ----------------------------------------------------------- validate row
     def _validate_row(self, sheet: str, row: Dict[str, Any]) -> Optional[str]:
@@ -1484,12 +1697,13 @@ class DataImportService:
 
     def _run(self, file_content: bytes, dry: bool, user_id: Optional[int], batch_id: Optional[str] = None) -> Dict[str, Any]:
         batch_id = batch_id or uuid.uuid4().hex[:8]
-        parsed = self._parse_workbook(file_content)
+        parsed, unknown_sheets = self._parse_workbook(file_content)
         results: Dict[str, Any] = {
             "batch_id": batch_id,
             "dry_run": dry,
             "sheets": {},
             "ok": True,
+            "unknown_sheets": unknown_sheets,
         }
         apply_map = {
             "customers": lambda rows: self._apply_customers(rows, dry),
@@ -1510,6 +1724,12 @@ class DataImportService:
                 if sheet == "_INSTRUKSI" or sheet not in parsed:
                     continue
                 rows = parsed[sheet]
+                if sheet == "neraca_check":
+                    # Read-only: store parsed rows for later verification
+                    # Row 1 = headers, Row 2 = Excel formulas (auto-sum, skipped in parse)
+                    # Row 3+ = user manual input
+                    results["sheets"][sheet] = {"rows": len(rows), "data": rows, "errors": []}
+                    continue
                 sheet_res = apply_map[sheet](rows)
                 sheet_res["rows"] = len(rows)
                 results["sheets"][sheet] = sheet_res
@@ -1535,7 +1755,243 @@ class DataImportService:
         except Exception as e:
             self.db.rollback()
             raise HTTPException(status_code=400, detail=f"Import gagal: {e}")
+
+        # Post-import neraca verification
+        results["neraca_verification"] = self._verify_neraca(parsed, results)
         return results
+
+    def _verify_neraca(self, parsed: Dict[str, List[Dict[str, Any]]], results: Dict[str, Any]) -> Dict[str, Any]:
+        """Cross-check imported data against neraca_check sheet expectations.
+        
+        Auto-sums values from other sheets (kas_opening, piutang_opening, hutang_opening, asset, mobil)
+        and compares against user-provided expected values in neraca_check sheet.
+        Matches the logic from frontend neraca.tsx for verification.
+        """
+        warnings: List[str] = []
+        threshold = Decimal("100")
+
+        def _sum_all_rows(sheet_name: str, field: str) -> Decimal:
+            sheet_data = results["sheets"].get(sheet_name, {})
+            rows = sheet_data.get("data", [])
+            if not rows:
+                rows = parsed.get(sheet_name, [])
+            total = Decimal("0")
+            for row in rows:
+                try:
+                    total += self._dec(row.get(field, "0"))
+                except Exception:
+                    continue
+            return total
+
+        # Auto-sum from imported sheets (same as neraca.tsx logic)
+        total_kas = _sum_all_rows("kas_opening", "nominal")
+        total_piutang = _sum_all_rows("piutang_opening", "nominal")
+        total_hutang = _sum_all_rows("hutang_opening", "nominal")
+        total_aset = _sum_all_rows("asset", "harga_beli")
+        total_mobil = _sum_all_rows("mobil", "harga_beli")
+
+        # Break down kas by jenis_kas column (matching neraca.tsx breakdown)
+        kas_tunai = Decimal("0")
+        kas_bank = Decimal("0")
+        kas_unit_bengkel = Decimal("0")
+        kas_unit_ja = Decimal("0")
+        kas_unit_mobil = Decimal("0")
+        
+        kas_rows = parsed.get("kas_opening", [])
+        for row in kas_rows:
+            try:
+                jenis = str(row.get("jenis_kas", "")).strip().upper()
+                nominal = self._dec(row.get("nominal", "0"))
+                if jenis in ("KAS_UTAMA", "CASH"):
+                    kas_tunai += nominal
+                elif jenis == "BANK_UTAMA":
+                    kas_bank += nominal
+                elif jenis == "KAS_UNIT_BENGKEL":
+                    kas_unit_bengkel += nominal
+                elif jenis == "KAS_UNIT_JASA_ANGKUT":
+                    kas_unit_ja += nominal
+                elif jenis == "KAS_UNIT_MOBIL":
+                    kas_unit_mobil += nominal
+            except Exception:
+                continue
+
+        total_kas_computed = kas_tunai + kas_bank + kas_unit_bengkel + kas_unit_ja + kas_unit_mobil
+
+        # Break down piutang by jenis_piutang (matching neraca.tsx breakdown)
+        piutang_karyawan = Decimal("0")
+        piutang_usaha = Decimal("0")
+        piutang_mobil = Decimal("0")
+        piutang_ja = Decimal("0")
+        piutang_lainnya = Decimal("0")
+        
+        piutang_rows = parsed.get("piutang_opening", [])
+        for row in piutang_rows:
+            try:
+                jenis = str(row.get("jenis_piutang", "")).strip().upper()
+                nominal = self._dec(row.get("nominal", "0"))
+                if jenis == "KASBON":
+                    piutang_karyawan += nominal
+                elif jenis == "BENGKEL":
+                    piutang_usaha += nominal
+                elif jenis == "JUAL_BELI_MOBIL":
+                    piutang_mobil += nominal
+                elif jenis == "JASA_ANGKUT":
+                    piutang_ja += nominal
+                else:
+                    piutang_lainnya += nominal
+            except Exception:
+                continue
+
+        total_piutang_computed = piutang_karyawan + piutang_usaha + piutang_mobil + piutang_ja + piutang_lainnya
+
+        # Break down hutang by jenis_hutang (matching neraca.tsx breakdown)
+        hutang_part = Decimal("0")
+        hutang_mobil = Decimal("0")
+        hutang_investor = Decimal("0")
+        hutang_lainnya = Decimal("0")
+        hutang_ja = Decimal("0")
+        
+        hutang_rows = parsed.get("hutang_opening", [])
+        for row in hutang_rows:
+            try:
+                jenis = str(row.get("jenis_hutang", "")).strip().upper()
+                nominal = self._dec(row.get("nominal", "0"))
+                if jenis == "BENGKEL":
+                    hutang_part += nominal
+                elif jenis == "JUAL_BELI_MOBIL":
+                    hutang_mobil += nominal
+                elif jenis == "INVESTOR":
+                    hutang_investor += nominal
+                elif jenis == "JASA_ANGKUT":
+                    hutang_ja += nominal
+                else:
+                    hutang_lainnya += nominal
+            except Exception:
+                continue
+
+        total_hutang_computed = hutang_part + hutang_mobil + hutang_investor + hutang_lainnya + hutang_ja
+
+        # Get expected values from neraca_check sheet
+        neraca_rows = parsed.get("neraca_check", [])
+        expected: Dict[str, Optional[Decimal]] = {}
+        for row in neraca_rows:
+            expected["kas_tunai"] = self._dec(row.get("kas_tunai"), "0")
+            expected["kas_bank"] = self._dec(row.get("kas_bank"), "0")
+            expected["unit_cash"] = self._dec(row.get("unit_cash"), "0")
+            expected["total_kas_bank"] = self._dec(row.get("total_kas_bank"), "0")
+            expected["piutang_lainnya"] = self._dec(row.get("piutang_lainnya"), "0")
+            expected["piutang_karyawan"] = self._dec(row.get("piutang_karyawan"), "0")
+            expected["piutang_usaha"] = self._dec(row.get("piutang_usaha"), "0")
+            expected["piutang_mobil"] = self._dec(row.get("piutang_mobil"), "0")
+            expected["piutang_jasa_angkut"] = self._dec(row.get("piutang_jasa_angkut"), "0")
+            expected["total_piutang"] = self._dec(row.get("total_piutang"), "0")
+            expected["persediaan_sparepart"] = self._dec(row.get("persediaan_sparepart"), "0")
+            expected["stok_mobil"] = self._dec(row.get("stok_mobil"), "0")
+            expected["stok_mobil_detail_harga_beli"] = self._dec(row.get("stok_mobil_detail_harga_beli"), "0")
+            expected["stok_mobil_detail_biaya_persiapan"] = self._dec(row.get("stok_mobil_detail_biaya_persiapan"), "0")
+            expected["stok_mobil_detail_perbaikan_external"] = self._dec(row.get("stok_mobil_detail_perbaikan_external"), "0")
+            expected["stok_mobil_detail_perbaikan_internal"] = self._dec(row.get("stok_mobil_detail_perbaikan_internal"), "0")
+            expected["total_aset_tetap"] = self._dec(row.get("total_aset_tetap"), "0")
+            expected["setoran_modal"] = self._dec(row.get("setoran_modal"), "0")
+            expected["setoran_modal_kas"] = self._dec(row.get("setoran_modal_kas"), "0")
+            expected["modal_non_kas"] = self._dec(row.get("modal_non_kas"), "0")
+            expected["modal_persediaan"] = self._dec(row.get("modal_persediaan"), "0")
+            expected["modal_stok_mobil"] = self._dec(row.get("modal_stok_mobil"), "0")
+            expected["modal_aset_tetap"] = self._dec(row.get("modal_aset_tetap"), "0")
+            expected["laba_ditahan"] = self._dec(row.get("laba_ditahan"), "0")
+            expected["prive"] = self._dec(row.get("prive"), "0")
+            expected["total_hutang"] = self._dec(row.get("total_hutang"), "0")
+            expected["hutang_part"] = self._dec(row.get("hutang_part"), "0")
+            expected["hutang_mobil"] = self._dec(row.get("hutang_mobil"), "0")
+            expected["hutang_investor"] = self._dec(row.get("hutang_investor"), "0")
+            expected["hutang_lainnya"] = self._dec(row.get("hutang_lainnya"), "0")
+            expected["hutang_jasa_angkut"] = self._dec(row.get("hutang_jasa_angkut"), "0")
+
+        # Recomputed values (auto-sum from imported sheets)
+        computed_total_aktiva = total_kas_computed + total_piutang_computed + total_aset + total_mobil
+
+        computed: Dict[str, Any] = {
+            "kas_tunai": float(kas_tunai),
+            "kas_bank": float(kas_bank),
+            "unit_cash": float(kas_unit_bengkel + kas_unit_ja + kas_unit_mobil),
+            "total_kas": float(total_kas_computed),
+            "piutang_karyawan": float(piutang_karyawan),
+            "piutang_usaha": float(piutang_usaha),
+            "piutang_mobil": float(piutang_mobil),
+            "piutang_jasa_angkut": float(piutang_ja),
+            "piutang_lainnya": float(piutang_lainnya),
+            "total_piutang": float(total_piutang_computed),
+            "total_aset_tetap": float(total_aset),
+            "total_mobil": float(total_mobil),
+            "hutang_part": float(hutang_part),
+            "hutang_mobil": float(hutang_mobil),
+            "hutang_investor": float(hutang_investor),
+            "hutang_lainnya": float(hutang_lainnya),
+            "hutang_jasa_angkut": float(hutang_ja),
+            "total_hutang": float(total_hutang_computed),
+            "total_aktiva": float(computed_total_aktiva),
+        }
+
+        # Calculate expected totals if user provided component values
+        if expected.get("total_aset_tetap") and expected["total_aset_tetap"] > 0:
+            expected_total_aktiva = (
+                expected.get("total_kas_bank", Decimal("0"))
+                + expected.get("total_piutang", Decimal("0"))
+                + expected.get("persediaan_sparepart", Decimal("0"))
+                + expected.get("stok_mobil", Decimal("0"))
+                + expected["total_aset_tetap"]
+            )
+        else:
+            expected_total_aktiva = expected.get("total_aktiva", Decimal("0"))
+
+        # Calculate expected pasiva (matching neraca.tsx: total_pasiva = total_hutang + total_modal)
+        expected_total_modal = expected.get("setoran_modal", Decimal("0"))
+        if expected_total_modal == 0:
+            expected_total_modal = (
+                expected.get("setoran_modal_kas", Decimal("0"))
+                + expected.get("modal_non_kas", Decimal("0"))
+                + expected.get("laba_ditahan", Decimal("0"))
+                - expected.get("prive", Decimal("0"))
+            )
+        expected_total_pasiva = expected.get("total_hutang", Decimal("0")) + expected_total_modal
+
+        # Compare each expected value against computed
+        check_fields = [
+            ("total_kas", expected.get("total_kas_bank"), computed["total_kas"]),
+            ("total_piutang", expected.get("total_piutang"), computed["total_piutang"]),
+            ("total_hutang", expected.get("total_hutang"), computed["total_hutang"]),
+            ("total_aset_tetap", expected.get("total_aset_tetap"), computed["total_aset_tetap"]),
+        ]
+
+        for label, exp_val, comp_val in check_fields:
+            if exp_val and exp_val > 0:
+                diff = abs(exp_val - Decimal(str(comp_val)))
+                if diff > threshold:
+                    warnings.append(
+                        f"{label}: auto-sum {comp_val:,.0f} vs expected {exp_val:,.0f} (selisih {diff:,.0f})"
+                    )
+
+        # Balance check: compare total_aktiva vs total_pasiva
+        if expected_total_aktiva and expected_total_aktiva > 0:
+            selisih = computed_total_aktiva - expected_total_aktiva
+            if abs(selisih) > threshold:
+                warnings.append(
+                    f"Total Aktiva: computed {computed_total_aktiva:,.0f} vs expected {expected_total_aktiva:,.0f} (selisih {selisih:,.0f})"
+                )
+
+        if expected_total_pasiva and expected_total_pasiva > 0:
+            selisih = abs(computed_total_aktiva - expected_total_pasiva)
+            if selisih > threshold:
+                warnings.append(
+                    f"Neraca tidak seimbang: Aktiva {computed_total_aktiva:,.0f} vs Pasiva {expected_total_pasiva:,.0f} (selisih {selisih:,.0f})"
+                )
+
+        return {
+            "computed": computed,
+            "expected": {k: float(v) if v else None for k, v in expected.items()},
+            "is_balanced": len(warnings) == 0,
+            "warnings": warnings,
+        }
 
     def preview(self, file_content: bytes, user_id: Optional[int] = None) -> Dict[str, Any]:
         return self._run(file_content, dry=True, user_id=user_id)
