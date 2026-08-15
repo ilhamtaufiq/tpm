@@ -11,6 +11,7 @@ from app.models.bengkel import (
     PembelianSparePart,
     DetailPembelianSparePart,
     SparePart,
+    SparePartRevaluation,
 )
 from app.models.supplier import Supplier
 from app.schemas.bengkel import PembelianSparePartCreate
@@ -214,6 +215,21 @@ class PembelianPartService:
 
         for item in data.detail:
             spare_part = spare_parts_map[item.spare_part_id]
+            # Capture revaluation of existing stock when harga_beli changes.
+            if (
+                not is_always_ready_stock(spare_part.stok)
+                and spare_part.stok > 0
+                and spare_part.harga_beli != item.harga_satuan
+            ):
+                self.db.add(SparePartRevaluation(
+                    spare_part_id=spare_part.id,
+                    pembelian_id=pembelian.id,
+                    tanggal=data.tanggal,
+                    qty_at_reval=spare_part.stok,
+                    harga_lama=spare_part.harga_beli,
+                    harga_baru=item.harga_satuan,
+                    amount=(item.harga_satuan - spare_part.harga_beli) * spare_part.stok,
+                ))
             if not is_always_ready_stock(spare_part.stok):
                 spare_part.stok += item.qty
             spare_part.harga_beli = item.harga_satuan
@@ -374,6 +390,9 @@ class PembelianPartService:
 
         for detail in list(pembelian.detail):
             self.db.delete(detail)
+        self.db.query(SparePartRevaluation).filter(
+            SparePartRevaluation.pembelian_id == pembelian.id
+        ).delete(synchronize_session=False)
         self.db.flush()
 
         self._apply_purchase_mutations(pembelian, data, spare_parts_map, user_id)
@@ -550,6 +569,11 @@ class PembelianPartService:
                 spare_part.stok -= detail.qty
                 if spare_part.stok < 0:
                     spare_part.stok = 0
+
+        # Delete revaluation records for this purchase
+        self.db.query(SparePartRevaluation).filter(
+            SparePartRevaluation.pembelian_id == pembelian.id
+        ).delete(synchronize_session=False)
 
         # Delete purchase (cascade will delete details)
         self.db.delete(pembelian)

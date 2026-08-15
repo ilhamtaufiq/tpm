@@ -159,9 +159,13 @@ class NeracaService(BaseReportService):
         
         # Net Consolidated Profit for the company (now includes gaji deduction from base.py)
         retained_earnings = float(hist.get("retained_earnings", 0))
-        
+
         # Laba bersih (after prive) for cross-validation with Laba Rugi
         laba_bersih = float(hist.get("laba_bersih", retained_earnings - prive_total))
+
+        # Revaluation reserve (cumulative unrealized gain from spare part
+        # harga_beli changes). Shown as a separate equity line below laba ditahan.
+        reval_reserve = float(hist.get("revaluation", {}).get("reserve", 0))
         
         # Modal Setoran Kas (Total cash inflow from MODAL source)
         setoran_modal_kas = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -288,7 +292,7 @@ class NeracaService(BaseReportService):
         # Formula: Setoran Modal (Kas + Non-Kas) + Laba Ditahan - Prive
         # This MUST match (Assets - Liabilities) if accounting is correct
         # ═══════════════════════════════════════════════════════════════
-        equity_from_components = setoran_modal + retained_earnings - prive_total
+        equity_from_components = setoran_modal + retained_earnings + reval_reserve - prive_total
         
         # IDENTITY-BASED EQUITY: From balance sheet identity
         equity_from_identity = total_assets - total_liabilities
@@ -397,6 +401,7 @@ class NeracaService(BaseReportService):
                 "modal_non_kas": modal_non_kas,
                 "setoran_modal": setoran_modal,
                 "laba_ditahan": retained_earnings,
+                "penyesuaian_harga_beli_sparepart": reval_reserve,
                 "prive": prive_total,
                 "modal_persediaan": modal_persediaan,
                 "modal_stok_mobil": modal_stok_mobil,

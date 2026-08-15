@@ -55,6 +55,9 @@ class SparePart(Base, TimestampMixin, SoftDeleteMixin):
         back_populates="spare_part",
         lazy="dynamic",
     )
+    revaluations: Mapped[List["SparePartRevaluation"]] = relationship(
+        back_populates="spare_part",
+    )
 
     @property
     def is_low_stock(self) -> bool:
@@ -286,6 +289,56 @@ class DetailTransaksiSpareParts(Base):
     def spare_part_nama(self) -> str:
         """Get spare part name."""
         return self.spare_part.nama if self.spare_part else ""
+
+
+class SparePartRevaluation(Base, TimestampMixin):
+    """Revaluation event when a spare part's harga_beli changes on existing stock.
+
+    amount = (harga_baru - harga_lama) * qty_at_reval. Unrealized gain held as
+    equity reserve until the revalued stock is sold (released).
+    """
+
+    __tablename__ = "spare_part_revaluation"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    spare_part_id: Mapped[int] = mapped_column(ForeignKey("spare_parts.id"), index=True)
+    pembelian_id: Mapped[int] = mapped_column(
+        ForeignKey("pembelian_spare_parts.id"), index=True
+    )
+    tanggal: Mapped[date] = mapped_column(Date, index=True)
+    qty_at_reval: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    harga_lama: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    harga_baru: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+
+    # Relationships
+    spare_part: Mapped["SparePart"] = relationship(back_populates="revaluations")
+    releases: Mapped[List["SparePartRevaluationRelease"]] = relationship(
+        back_populates="revaluation",
+        cascade="all, delete-orphan",
+    )
+
+
+class SparePartRevaluationRelease(Base, TimestampMixin):
+    """Realization of a revaluation reserve when revalued stock is sold."""
+
+    __tablename__ = "spare_part_revaluation_release"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    revaluation_id: Mapped[int] = mapped_column(
+        ForeignKey("spare_part_revaluation.id", ondelete="CASCADE"), index=True
+    )
+    transaksi_id: Mapped[int] = mapped_column(
+        ForeignKey("transaksi_penjualan_bengkel.id", ondelete="CASCADE"), index=True
+    )
+    tanggal: Mapped[date] = mapped_column(Date, index=True)
+    qty: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+
+    # Relationships
+    revaluation: Mapped["SparePartRevaluation"] = relationship(
+        back_populates="releases"
+    )
 
 
 class DetailTransaksiServices(Base):

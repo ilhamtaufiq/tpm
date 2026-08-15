@@ -42,6 +42,7 @@ export interface NeracaModal {
     modal_stok_mobil: number;
     modal_aset_tetap: number;
     laba_ditahan: number;
+    penyesuaian_harga_beli_sparepart?: number;
     prive: number;
     total_modal: number;
     selisih_modal?: number;
@@ -115,6 +116,7 @@ export interface LabaRugiUnit {
     revenue: number;
     hpp: number;
     laba_kotor: number;
+    laba_penyesuaian_harga_beli?: number;
     beban_operasional: number;
     beban_gaji?: number;
     beban_lembur?: number;
@@ -164,6 +166,7 @@ export interface CapitalReport {
     modal_awal: number;
     penambahan?: {
         setoran_modal: number;
+        penyesuaian_harga_beli_sparepart?: number;
         investor_funding?: number;
         modal_non_kas?: {
             total: number;

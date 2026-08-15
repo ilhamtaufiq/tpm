@@ -113,6 +113,7 @@ export default function LaporanPerubahanModalScreen() {
         const r = report;
         const modalAwal = r.modal_awal || 0;
         const setoranKas = r.penambahan?.setoran_modal || 0;
+        const penyesuaianHargaBeli = r.penambahan?.penyesuaian_harga_beli_sparepart || 0;
         const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
         const investorFunding = r.penambahan?.investor_funding || 0;
         const labaBersih = r.info?.laba_bersih || 0;
@@ -136,6 +137,7 @@ export default function LaporanPerubahanModalScreen() {
         return {
             modalAwal,
             setoranKas,
+            penyesuaianHargaBeli,
             modalNonKas,
             investorFunding,
             labaBersih,
@@ -293,6 +295,9 @@ export default function LaporanPerubahanModalScreen() {
                             <Typography variant="body1" weight="bold" className="text-slate-900 mb-5">Rincian Perubahan Ekuitas</Typography>
 
                             <FinancialRow label="Modal Awal" value={equity.modalAwal} bold color="text-slate-900" />
+                            {equity.penyesuaianHargaBeli !== 0 && (
+                                <FinancialRow label="Penyesuaian Harga Beli Spare Part" value={equity.penyesuaianHargaBeli} color="text-slate-700" />
+                            )}
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest">Penambahan</Typography>

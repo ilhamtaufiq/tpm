@@ -100,8 +100,14 @@ class ModalService(BaseReportService):
                 PengeluaranBengkel.tanggal <= d
             ).scalar() or 0)
 
+        # Revaluation reserve net change this period (unrealized gain from
+        # spare part harga_beli changes, minus amounts realized on sales).
+        # modal_awal already snapshots stock at current price, so this line
+        # absorbs the period's revaluation delta that previously fell into `selisih`.
+        reval_periode = float(data.get("revaluation", {}).get("periode", 0))
+
         # Snapshot Start (Yesterday) - Physical Net Worth (Modal Awal)
-        # BUG FIX: DO NOT subtract p_aset_start or p_mobil_start here! 
+        # BUG FIX: DO NOT subtract p_aset_start or p_mobil_start here!
         # Modal Awal is a snapshot of position. 
         # If cash was spent to buy a car in the past, start_cash is already lower, 
         # and start_stok_mobil is higher. They balance out.
@@ -631,6 +637,7 @@ class ModalService(BaseReportService):
             "modal_awal": modal_awal_theoretical,
             "penambahan": {
                 "setoran_modal": setoran_modal,
+                "penyesuaian_harga_beli_sparepart": reval_periode,
                 "modal_non_kas": {
                     "total": setoran_non_kas_import,
                     "aset_tetap": modal_aset_tetap_delta,

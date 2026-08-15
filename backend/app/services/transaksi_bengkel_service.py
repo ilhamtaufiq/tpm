@@ -12,6 +12,8 @@ from app.models.bengkel import (
     DetailTransaksiSpareParts,
     DetailTransaksiServices,
     SparePart,
+    SparePartRevaluation,
+    SparePartRevaluationRelease,
 )
 from app.models.customer import Customer
 from app.models.keuangan import PiutangUsaha, HutangUsaha, KasBank, PembayaranPiutang
@@ -45,6 +47,45 @@ class TransaksiBengkelService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _release_revaluation(
+        self,
+        spare_part_id: int,
+        qty: Decimal,
+        tanggal: date,
+        transaksi_id: int,
+    ) -> None:
+        """Realize revaluation reserve for sold stock (FIFO over revaluation events).
+
+        amount released = unreleased amount * qty / remaining qty, capped at qty.
+        """
+        remaining = qty
+        revaluations = (
+            self.db.query(SparePartRevaluation)
+            .filter(SparePartRevaluation.spare_part_id == spare_part_id)
+            .order_by(SparePartRevaluation.tanggal.asc(), SparePartRevaluation.id.asc())
+            .all()
+        )
+        for rev in revaluations:
+            if remaining <= 0:
+                break
+            released_qty = sum(
+                (r.qty for r in rev.releases), Decimal("0")
+            )
+            unreleased_qty = rev.qty_at_reval - released_qty
+            if unreleased_qty <= 0:
+                continue
+            take = min(remaining, unreleased_qty)
+            # Proportional release of the reserve amount on the sold portion
+            release_amount = (rev.amount / rev.qty_at_reval) * take
+            self.db.add(SparePartRevaluationRelease(
+                revaluation_id=rev.id,
+                transaksi_id=transaksi_id,
+                tanggal=tanggal,
+                qty=take,
+                amount=release_amount,
+            ))
+            remaining -= take
 
     @classmethod
     def _is_internal_kategori(cls, kategori: Optional[str]) -> bool:
@@ -457,11 +498,15 @@ class TransaksiBengkelService:
         )
 
         self.db.add(transaksi)
+        self.db.flush()
 
         # Reduce spare part stock
         for item in data.detail_parts:
             sp = spare_parts_map[item.spare_part_id]
             if not is_always_ready_stock(sp.stok):
+                self._release_revaluation(
+                    sp.id, item.qty, transaksi_tanggal, transaksi.id
+                )
                 sp.stok -= item.qty
 
         # Create piutang if not fully paid (external) or internal unit transfer
@@ -780,6 +825,11 @@ class TransaksiBengkelService:
             if sp and not is_always_ready_stock(sp.stok):
                 sp.stok += detail.qty
 
+        # 1b. Remove old revaluation releases for this transaction
+        self.db.query(SparePartRevaluationRelease).filter(
+            SparePartRevaluationRelease.transaksi_id == transaksi_id
+        ).delete(synchronize_session=False)
+
         # 2. Delete old details
         self.db.query(DetailTransaksiSpareParts).filter(DetailTransaksiSpareParts.transaksi_id == transaksi_id).delete(synchronize_session=False)
         self.db.query(DetailTransaksiServices).filter(DetailTransaksiServices.transaksi_id == transaksi_id).delete(synchronize_session=False)
@@ -902,6 +952,9 @@ class TransaksiBengkelService:
         for item in data.detail_parts:
             sp = spare_parts_map[item.spare_part_id]
             if not is_always_ready_stock(sp.stok):
+                self._release_revaluation(
+                    sp.id, item.qty, transaksi.tanggal, transaksi.id
+                )
                 sp.stok -= item.qty
 
         # Create piutang only if none exists (first time CICILAN after update)
@@ -1611,6 +1664,11 @@ class TransaksiBengkelService:
                 )
                 if spare_part and not is_always_ready_stock(spare_part.stok):
                     spare_part.stok += detail.qty
+
+            # 1b. Remove revaluation releases realized by this transaction
+            self.db.query(SparePartRevaluationRelease).filter(
+                SparePartRevaluationRelease.transaksi_id == transaksi_id
+            ).delete(synchronize_session=False)
 
             # 2. Void related Piutang (external + internal unit transfers)
             piutang_rows = (

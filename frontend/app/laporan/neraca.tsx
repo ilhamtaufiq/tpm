@@ -327,6 +327,12 @@ export default function NeracaScreen() {
                         <FinancialRow label="2. Laba Ditahan" value={totalLabaAdj} bold large color="text-violet-700" />
                     </View>
 
+                    {m.penyesuaian_harga_beli_sparepart !== 0 && (
+                        <View className="mb-4 w-full">
+                            <FinancialRow label="Penyesuaian Harga Beli Spare Part" value={m.penyesuaian_harga_beli_sparepart} bold large color="text-violet-700" />
+                        </View>
+                    )}
+
                     <View className="mb-4 w-full">
                         <FinancialRow label="3. Prive (Pengambilan Pemilik)" value={m.prive} isNegative bold large />
                     </View>

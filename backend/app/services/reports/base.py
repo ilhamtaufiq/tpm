@@ -15,12 +15,14 @@ from app.services.slip_gaji_service import SlipGajiService
 from app.services.kas_bank_service import KasBankService
 
 from app.models.bengkel import (
-    TransaksiPenjualanBengkel, 
-    PengeluaranBengkel, 
-    SparePart, 
-    DetailPembelianSparePart, 
-    PembelianSparePart, 
-    DetailTransaksiSpareParts
+    TransaksiPenjualanBengkel,
+    PengeluaranBengkel,
+    SparePart,
+    DetailPembelianSparePart,
+    PembelianSparePart,
+    DetailTransaksiSpareParts,
+    SparePartRevaluation,
+    SparePartRevaluationRelease,
 )
 from app.models.mobil import Mobil, TransaksiPenjualanMobil, InvestorDisbursementDetail
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutPartService, ArmadaJasaAngkut, JasaAngkutBiayaLainnya
@@ -990,7 +992,27 @@ class BaseReportService:
             - gaji_pokok
             - gaji_lembur
         )
-        
+
+        # Revaluation reserve for spare part harga_beli changes.
+        # reserve = unrealized (cumulative revaluation - released)
+        # released_periode = realized in this period (adds to profit since COGS
+        # already uses the revalued harga_beli).
+        total_reval = float(self.db.query(func.sum(SparePartRevaluation.amount)).scalar() or 0)
+        total_released = float(self.db.query(func.sum(SparePartRevaluationRelease.amount)).scalar() or 0)
+        reval_reserve = total_reval - total_released
+        reval_release_periode = float(self.db.query(func.sum(SparePartRevaluationRelease.amount)).filter(
+            SparePartRevaluationRelease.tanggal >= tanggal_dari,
+            SparePartRevaluationRelease.tanggal <= tanggal_sampai,
+        ).scalar() or 0)
+        reval_periode = float(self.db.query(func.sum(SparePartRevaluation.amount)).filter(
+            SparePartRevaluation.tanggal >= tanggal_dari,
+            SparePartRevaluation.tanggal <= tanggal_sampai,
+        ).scalar() or 0) - reval_release_periode
+
+        # COGS already uses revalued harga_beli at sale time; releasing the
+        # reserve into profit restores the true (historical-cost) profit.
+        retained_earnings += reval_release_periode
+
         # laba_bersih = retained_earnings - prive (matches Laba Rugi final line)
         laba_bersih = retained_earnings - prive_total
 
@@ -1007,6 +1029,11 @@ class BaseReportService:
             "internal_jbm_unrealized_revenue": internal_jbm_unrealized_revenue,
             "ja_double_exp_adjustment": ja_double_exp,
             "opening_balance": saldo_awal,
+            "revaluation": {
+                "reserve": reval_reserve,
+                "periode": reval_periode,
+                "released_periode": reval_release_periode,
+            },
             "revenue": {
                 "bengkel": float(bengkel_summary["total_penjualan"]),
                 "mobil": float(mobil_summary["total_penjualan"]),
