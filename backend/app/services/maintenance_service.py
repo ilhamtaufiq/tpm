@@ -6,7 +6,9 @@ from app.models.bengkel import (
     PembelianSparePart,
     DetailPembelianSparePart,
     PengeluaranBengkel,
-    SparePart
+    SparePart,
+    SparePartRevaluation,
+    SparePartRevaluationRelease,
 )
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang, KasBank, HutangUsaha, PembayaranHutang
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
@@ -54,6 +56,9 @@ class MaintenanceService:
             self.db.query(MobilPartService).delete()
             self.db.query(MobilMedia).delete()
             self.db.query(Absensi).delete()
+            # Revaluation children reference pembelian & transaksi — delete first.
+            self.db.query(SparePartRevaluationRelease).delete()
+            self.db.query(SparePartRevaluation).delete()
             
             # 2. Main Transaction Tables
             print("RESET: Deleting main transactions (Bengkel, Mobil, Jasa Angkut)...")
