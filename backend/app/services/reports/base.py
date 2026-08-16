@@ -422,7 +422,14 @@ class BaseReportService:
             TransaksiPenjualanBengkel.tanggal > tanggal_sampai
         ).scalar() or 0)
         
-        part_stock = current_stock_val - purchases_after + usage_after
+        # Revaluation reserve for spare part harga_beli changes (unrealized).
+        # Stock is valued at historical cost, so subtract the unrealized reserve
+        # from the latest-price stock value: historical = latest − unrealized.
+        total_reval = float(self.db.query(func.sum(SparePartRevaluation.amount)).scalar() or 0)
+        total_released = float(self.db.query(func.sum(SparePartRevaluationRelease.amount)).scalar() or 0)
+        reval_reserve = total_reval - total_released
+
+        part_stock = max(0, current_stock_val - purchases_after + usage_after - reval_reserve)
         # Car Stock (Available as of date: masuk <= sampai AND (keluar is null OR keluar > sampai))
         # Total Capitalized Value = Purchase Price + Prep + Repairs for unsold cars
         car_stock = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
@@ -994,12 +1001,9 @@ class BaseReportService:
         )
 
         # Revaluation reserve for spare part harga_beli changes.
-        # reserve = unrealized (cumulative revaluation - released)
+        # reval_reserve (unrealized) is computed above for historical-cost stock.
         # released_periode = realized in this period (adds to profit since COGS
         # already uses the revalued harga_beli).
-        total_reval = float(self.db.query(func.sum(SparePartRevaluation.amount)).scalar() or 0)
-        total_released = float(self.db.query(func.sum(SparePartRevaluationRelease.amount)).scalar() or 0)
-        reval_reserve = total_reval - total_released
         reval_release_periode = float(self.db.query(func.sum(SparePartRevaluationRelease.amount)).filter(
             SparePartRevaluationRelease.tanggal >= tanggal_dari,
             SparePartRevaluationRelease.tanggal <= tanggal_sampai,

@@ -195,9 +195,6 @@ export default function LabaRugiScreen() {
 
                 <View className="bg-blue-50/50 w-full p-4 rounded-xl border border-blue-100/60 mb-5">
                     <FinancialRow label="Laba Kotor Bengkel" value={bengkelData.laba_kotor} bold large color="text-blue-800" />
-                    {bengkelData.laba_penyesuaian_harga_beli !== 0 && (
-                        <FinancialRow label="Laba Penyesuaian Harga Beli Spare Part" value={bengkelData.laba_penyesuaian_harga_beli} color="text-blue-700" />
-                    )}
                 </View>
 
                 <View className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 w-full mb-4">

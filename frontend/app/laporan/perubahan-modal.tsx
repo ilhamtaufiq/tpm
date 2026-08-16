@@ -296,7 +296,7 @@ export default function LaporanPerubahanModalScreen() {
 
                             <FinancialRow label="Modal Awal" value={equity.modalAwal} bold color="text-slate-900" />
                             {equity.penyesuaianHargaBeli !== 0 && (
-                                <FinancialRow label="Penyesuaian Harga Beli Spare Part" value={equity.penyesuaianHargaBeli} color="text-slate-700" />
+                                <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={equity.penyesuaianHargaBeli} color="text-slate-700" />
                             )}
 
                             <View className="mt-4 pt-4 border-t border-slate-50">

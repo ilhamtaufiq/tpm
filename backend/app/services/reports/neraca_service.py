@@ -292,7 +292,11 @@ class NeracaService(BaseReportService):
         # Formula: Setoran Modal (Kas + Non-Kas) + Laba Ditahan - Prive
         # This MUST match (Assets - Liabilities) if accounting is correct
         # ═══════════════════════════════════════════════════════════════
-        equity_from_components = setoran_modal + retained_earnings + reval_reserve - prive_total
+        # reval_reserve is NOT added here: stock is already valued at
+        # historical cost (see base.py part_stock), so the unrealized
+        # revaluation reserve would double-count. It is shown separately
+        # as an informational memo line, not part of equity total.
+        equity_from_components = setoran_modal + retained_earnings - prive_total
         
         # IDENTITY-BASED EQUITY: From balance sheet identity
         equity_from_identity = total_assets - total_liabilities
