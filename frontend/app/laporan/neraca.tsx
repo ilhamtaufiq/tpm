@@ -327,12 +327,10 @@ export default function NeracaScreen() {
                         <FinancialRow label="2. Laba Ditahan" value={totalLabaAdj} bold large color="text-violet-700" />
                     </View>
 
-                    {m.penyesuaian_harga_beli_sparepart !== 0 && (
-                        <View className="mb-4 w-full">
-                            <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={m.penyesuaian_harga_beli_sparepart} bold large color="text-violet-700" />
-                            <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">Informasi saja — stok sudah dinilai historical cost, tidak menambah/mengurangi total modal.</Typography>
-                        </View>
-                    )}
+                    <View className="mb-4 w-full">
+                        <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={m.penyesuaian_harga_beli_sparepart} bold large color="text-violet-700" />
+                        <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">Informasi saja — stok sudah dinilai historical cost, tidak menambah/mengurangi total modal.</Typography>
+                    </View>
 
                     <View className="mb-4 w-full">
                         <FinancialRow label="3. Prive (Pengambilan Pemilik)" value={m.prive} isNegative bold large />

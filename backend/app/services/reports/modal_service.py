@@ -104,7 +104,9 @@ class ModalService(BaseReportService):
         # spare part harga_beli changes, minus amounts realized on sales).
         # modal_awal already snapshots stock at current price, so this line
         # absorbs the period's revaluation delta that previously fell into `selisih`.
-        reval_periode = float(data.get("revaluation", {}).get("periode", 0))
+        # Memo: CUMULATIVE revaluation (all reval events, not minus releases).
+        # Always shown, never drops to zero on sale — informational only.
+        reval_reserve = float(data.get("revaluation", {}).get("cumulative", 0))
 
         # Snapshot Start (Yesterday) - Physical Net Worth (Modal Awal)
         # BUG FIX: DO NOT subtract p_aset_start or p_mobil_start here!
@@ -637,7 +639,7 @@ class ModalService(BaseReportService):
             "modal_awal": modal_awal_theoretical,
             "penambahan": {
                 "setoran_modal": setoran_modal,
-                "penyesuaian_harga_beli_sparepart": reval_periode,
+                "penyesuaian_harga_beli_sparepart": reval_reserve,
                 "modal_non_kas": {
                     "total": setoran_non_kas_import,
                     "aset_tetap": modal_aset_tetap_delta,

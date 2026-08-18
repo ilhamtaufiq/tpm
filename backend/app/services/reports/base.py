@@ -1013,9 +1013,9 @@ class BaseReportService:
             SparePartRevaluation.tanggal <= tanggal_sampai,
         ).scalar() or 0) - reval_release_periode
 
-        # COGS already uses revalued harga_beli at sale time; releasing the
-        # reserve into profit restores the true (historical-cost) profit.
-        retained_earnings += reval_release_periode
+        # Revaluation release is MEMO ONLY — it does NOT adjust profit.
+        # COGS uses the latest harga_beli at sale time; the reval reserve is
+        # informational only and never flows into retained earnings.
 
         # laba_bersih = retained_earnings - prive (matches Laba Rugi final line)
         laba_bersih = retained_earnings - prive_total
@@ -1037,6 +1037,7 @@ class BaseReportService:
                 "reserve": reval_reserve,
                 "periode": reval_periode,
                 "released_periode": reval_release_periode,
+                "cumulative": total_reval,
             },
             "revenue": {
                 "bengkel": float(bengkel_summary["total_penjualan"]),

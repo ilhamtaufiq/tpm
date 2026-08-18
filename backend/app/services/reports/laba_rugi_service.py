@@ -31,11 +31,11 @@ class LabaRugiService(BaseReportService):
         b_gaji = b["gaji"]
         b_lembur = b.get("lembur", 0)
         b_ops = b["total_expenses"] # Wallet-based
-        # Revaluation reserve realized this period (COGS already uses revalued
-        # harga_beli, so this restores true historical-cost profit).
+        # Revaluation reserve realized this period — MEMO ONLY, does not adjust
+        # profit (COGS already uses the latest harga_beli).
         b_penyesuaian_harga_beli = float(data.get("revaluation", {}).get("released_periode", 0))
         # Unit specific pure profit
-        b_laba_bersih = b_laba_kotor + b_penyesuaian_harga_beli - b_gaji - b_lembur - b_ops
+        b_laba_bersih = b_laba_kotor - b_gaji - b_lembur - b_ops
 
         # 2. JASA ANGKUT
         # revenue_tpm = share TPM NET setelah biaya operasional muatan dipotong dari tagihan

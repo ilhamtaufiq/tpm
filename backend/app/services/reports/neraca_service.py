@@ -163,9 +163,9 @@ class NeracaService(BaseReportService):
         # Laba bersih (after prive) for cross-validation with Laba Rugi
         laba_bersih = float(hist.get("laba_bersih", retained_earnings - prive_total))
 
-        # Revaluation reserve (cumulative unrealized gain from spare part
-        # harga_beli changes). Shown as a separate equity line below laba ditahan.
-        reval_reserve = float(hist.get("revaluation", {}).get("reserve", 0))
+        # Revaluation (cumulative all events, informational memo — not equity).
+        # Shown as a separate memo line below laba ditahan; never drops to zero.
+        reval_reserve = float(hist.get("revaluation", {}).get("cumulative", 0))
         
         # Modal Setoran Kas (Total cash inflow from MODAL source)
         setoran_modal_kas = float(self.db.query(func.sum(KasBank.nominal)).filter(

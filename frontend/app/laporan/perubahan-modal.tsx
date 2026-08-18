@@ -295,9 +295,7 @@ export default function LaporanPerubahanModalScreen() {
                             <Typography variant="body1" weight="bold" className="text-slate-900 mb-5">Rincian Perubahan Ekuitas</Typography>
 
                             <FinancialRow label="Modal Awal" value={equity.modalAwal} bold color="text-slate-900" />
-                            {equity.penyesuaianHargaBeli !== 0 && (
-                                <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={equity.penyesuaianHargaBeli} color="text-slate-700" />
-                            )}
+                            <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={equity.penyesuaianHargaBeli} color="text-slate-700" />
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest">Penambahan</Typography>

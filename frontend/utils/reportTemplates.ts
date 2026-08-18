@@ -115,7 +115,7 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 <tr class="section-title"><td colspan="2">II. EKUITAS (MODAL)</td></tr>
                 <tr><td>Setoran Modal Pemilik</td><td class="amount">${formatCurrency(data.modal.setoran_modal)}</td></tr>
                 <tr><td>Laba Ditahan (Retained Earnings)</td><td class="amount">${formatCurrency(data.modal.laba_ditahan)}</td></tr>
-                ${(data.modal.penyesuaian_harga_beli_sparepart || 0) !== 0 ? `<tr><td>Penyesuaian Harga Beli Spare Part</td><td class="amount">${formatCurrency(data.modal.penyesuaian_harga_beli_sparepart)}</td></tr>` : ''}
+                <tr><td>Penyesuaian Harga Beli Spare Part (Memo)</td><td class="amount">${formatCurrency(data.modal.penyesuaian_harga_beli_sparepart)}</td></tr>
                 <tr><td>Prive (Pengambilan Pemilik)</td><td class="amount negative">(${formatCurrency(data.modal.prive)})</td></tr>
                 <tr class="total-row"><td>TOTAL EKUITAS</td><td class="amount">${formatCurrency(data.modal.total_modal)}</td></tr>
                 <tr class="grand-total" style="background-color: #4338ca;"><td>TOTAL PASIVA</td><td class="amount">${formatCurrency(data.total_pasiva)}</td></tr>
@@ -273,11 +273,10 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Saldo Modal Awal</td>
                     <td class="amount">${formatCurrency(modalAwal)}</td>
                 </tr>
-                ${penyesuaianHargaBeli !== 0 ? `
                 <tr>
-                    <td>Penyesuaian Harga Beli Spare Part</td>
+                    <td>Penyesuaian Harga Beli Spare Part (Memo)</td>
                     <td class="amount">${formatCurrency(penyesuaianHargaBeli)}</td>
-                </tr>` : ''}
+                </tr>
 
                 <tr class="section-title"><td colspan="2">B. PENAMBAHAN EKUITAS</td></tr>
                 ${setoranKas > 0 ? `
