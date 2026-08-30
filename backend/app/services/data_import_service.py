@@ -1469,11 +1469,18 @@ class DataImportService:
                 res["created"] += 1
                 continue
             nomor = self._gen_nomor("piutang", PiutangUsaha, "nomor_piutang")
-            sumber = PiutangSource.BENGKEL
+            # Route imported piutang to its neraca line by unit, matching the
+            # template's neraca_check mapping (KASBON/LAINNYA stay separate).
             if unit == KasBankSource.JASA_ANGKUT:
                 sumber = PiutangSource.JASA_ANGKUT
             elif unit == KasBankSource.JUAL_BELI_MOBIL:
                 sumber = PiutangSource.JUAL_BELI_MOBIL
+            elif unit == KasBankSource.KASBON:
+                sumber = PiutangSource.KASBON_KARYAWAN
+            elif unit == KasBankSource.BENGKEL:
+                sumber = PiutangSource.BENGKEL
+            else:
+                sumber = PiutangSource.LAINNYA
             self.db.add(
                 PiutangUsaha(
                     nomor_piutang=nomor,

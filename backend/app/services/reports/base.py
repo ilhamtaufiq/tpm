@@ -562,10 +562,14 @@ class BaseReportService:
 
         hutang_part = get_debt_balance_by_unit([HutangSource.PEMBELIAN_PART])
         hutang_mobil = get_debt_balance_by_unit([HutangSource.PEMBELIAN_MOBIL, HutangSource.JUAL_BELI_MOBIL])
-        # Manual unit debts use HutangSource.LAINNYA for all business units.
-        # Keep them together in "Hutang Lainnya / Manual Unit" instead of
-        # splitting Jasa Angkut manual debts into a separate liability line.
-        hutang_ja = 0
+        # Imported manual debts (sumber=LAINNYA) are routed to their unit's
+        # neraca line by the `unit` column, matching the template's neraca_check.
+        manual_bengkel = get_debt_balance_by_unit([HutangSource.LAINNYA], unit=KasBankSource.BENGKEL)
+        manual_ja = get_debt_balance_by_unit([HutangSource.LAINNYA], unit=KasBankSource.JASA_ANGKUT)
+        manual_mobil = get_debt_balance_by_unit([HutangSource.LAINNYA], unit=KasBankSource.JUAL_BELI_MOBIL)
+        hutang_part += manual_bengkel
+        hutang_mobil += manual_mobil
+        hutang_ja = manual_ja
         
         # Hutang Investor (Unpaid capital + profit share)
         # 1. Capital from cars not yet sold (or sold after period end)
@@ -592,7 +596,9 @@ class BaseReportService:
         
         hutang_investor = unsold_investor_capital + max(0, investor_debt - investor_paid)
 
-        hutang_lainnya = get_debt_balance_by_unit([HutangSource.LAINNYA])
+        # LAINNYA manual debts minus the unit-routed buckets above; only debts
+        # with no mapped unit (or unit=LAINNYA) remain as "Hutang Lainnya".
+        hutang_lainnya = get_debt_balance_by_unit([HutangSource.LAINNYA]) - manual_bengkel - manual_ja - manual_mobil
         manual_hutang_non_pinjaman = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
             HutangUsaha.sumber == HutangSource.LAINNYA,
             HutangUsaha.tanggal >= tanggal_dari,
