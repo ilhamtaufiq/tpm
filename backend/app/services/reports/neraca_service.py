@@ -280,13 +280,14 @@ class NeracaService(BaseReportService):
         ).scalar() or 0)
         total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep) + modal_aset_tetap + piutang_discovery
         total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang + hutang_internal
-        # Hutang opening-balance (IMP-*) and investor funding funded assets, so they
-        # are NOT owner capital and must be subtracted from non-cash capital.
-        modal_non_kas = max(0, total_non_kas_assets_historis - total_purchase_recorded - hutang_import - hutang_investor)
         
         # Combined setoran modal = kas setoran + non-kas (auto-balanced)
-        setoran_modal = setoran_modal_kas + modal_non_kas
-        
+        # modal_non_kas is the IDENTITY PLUG: setoran_modal - setoran_modal_kas.
+        # Client concept: Modal = Total Aktiva - Total Hutang, so non-kas absorbs
+        # piutang-hutang discovery; detail breakdown stays as info lines so the
+        # headline always equals persediaan + stok mobil + aset tetap + (piutang - hutang).
+        modal_discovery_info = total_non_kas_assets_historis - total_purchase_recorded - hutang_import - hutang_investor
+
         # ═══════════════════════════════════════════════════════════════
         # BOTTOM-UP EQUITY: Compute from components
         # Formula: Setoran Modal (Kas + Non-Kas) + Laba Ditahan - Prive
@@ -296,10 +297,15 @@ class NeracaService(BaseReportService):
         # historical cost (see base.py part_stock), so the unrealized
         # revaluation reserve would double-count. It is shown separately
         # as an informational memo line, not part of equity total.
-        equity_from_components = setoran_modal + retained_earnings - prive_total
-        
+
         # IDENTITY-BASED EQUITY: From balance sheet identity
         equity_from_identity = total_assets - total_liabilities
+
+        # Konsep saldo awal (client): Modal = Total Aktiva - Total Hutang
+        setoran_modal = max(0, equity_from_identity - retained_earnings + prive_total)
+        modal_non_kas = setoran_modal - setoran_modal_kas
+
+        equity_from_components = setoran_modal + retained_earnings - prive_total
         
         # The REAL selisih: difference between bottom-up and identity approaches
         # If accounting is perfect, this should be 0
@@ -403,6 +409,14 @@ class NeracaService(BaseReportService):
             "modal": {
                 "setoran_modal_kas": setoran_modal_kas,
                 "modal_non_kas": modal_non_kas,
+                "modal_non_kas_detail": {
+                    "persediaan": modal_persediaan,
+                    "stok_mobil": modal_stok_mobil,
+                    "aset_tetap": modal_aset_tetap,
+                    "piutang_discovery": piutang_discovery,
+                    "hutang_import": -(hutang_import + hutang_investor),
+                    "discovery_info": modal_discovery_info,
+                },
                 "setoran_modal": setoran_modal,
                 "laba_ditahan": retained_earnings,
                 "penyesuaian_harga_beli_sparepart": reval_reserve,
@@ -1021,6 +1035,10 @@ class NeracaService(BaseReportService):
                 # Only process entries that look like kasbon (unit=KASBON or catatan mentions kasbon)
                 # External piutang (imported without KasBank KELUAR) are funded from external sources
                 # and should NOT create KasBank entries.
+                # Opening-balance (IMP-*) kasbon is also skipped: the kas_opening sheet already
+                # records cash at its post-kasbon position, so a KELUAR here would double-spend.
+                if p.nomor_referensi and p.nomor_referensi.startswith("IMP-"):
+                    continue
                 is_kasbon = (
                     p.unit == KasBankSource.KASBON
                     or (p.catatan and "kasbon" in str(p.catatan).lower())

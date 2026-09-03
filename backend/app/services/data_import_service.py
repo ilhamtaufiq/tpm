@@ -797,7 +797,7 @@ class DataImportService:
         _set_formula('piutang_usaha', '=SUMIF(piutang_opening!D:D,"BENGKEL",piutang_opening!C:C)')
         _set_formula('piutang_mobil', '=SUMIF(piutang_opening!D:D,"JUAL_BELI_MOBIL",piutang_opening!C:C)')
         _set_formula('piutang_jasa_angkut', '=SUMIF(piutang_opening!D:D,"JASA_ANGKUT",piutang_opening!C:C)')
-        _set_formula('total_piutang', '=F2+G2+H2+I2+J2')
+        _set_formula('total_piutang', '=E2+F2+G2+H2+I2')
 
         # === Persediaan & Stok ===
         _set_formula('persediaan_sparepart', '0')
@@ -806,16 +806,16 @@ class DataImportService:
         _set_formula('stok_mobil_detail_biaya_persiapan', '0')
         _set_formula('stok_mobil_detail_perbaikan_external', '0')
         _set_formula('stok_mobil_detail_perbaikan_internal', '0')
-        _set_formula('total_aktiva_lancar', '=E2+J2+K2+L2')
+        _set_formula('total_aktiva_lancar', '=D2+J2+K2+L2')
 
         # === Aktiva Tetap ===
         _set_formula('detail_aset_kode', '')
         _set_formula('detail_aset_nama', '')
         _set_formula('detail_aset_harga_beli', '')
         _set_formula('total_aset_tetap', '=SUM(asset!D:D)')
-        _set_formula('total_aktiva', '=P2+Q2')
+        _set_formula('total_aktiva', '=Q2+U2')
 
-        # === Modal ===
+        # === Modal (konsep saldo awal: Modal = Total Aktiva - Total Hutang) ===
         _set_formula('setoran_modal', '0')
         _set_formula('setoran_modal_kas', '0')
         _set_formula('modal_non_kas', '0')
@@ -824,7 +824,7 @@ class DataImportService:
         _set_formula('modal_aset_tetap', '0')
         _set_formula('laba_ditahan', '0')
         _set_formula('prive', '0')
-        _set_formula('total_modal', 'U2')
+        _set_formula('total_modal', '=V2-AM2')
 
         # === Hutang ===
         _set_formula('hutang_part', '=SUMIF(hutang_opening!D:D,"BENGKEL",hutang_opening!C:C)')
@@ -834,11 +834,11 @@ class DataImportService:
         _set_formula('hutang_jasa_angkut', '=SUMIF(hutang_opening!D:D,"JASA_ANGKUT",hutang_opening!C:C)')
         _set_formula('uang_muka_penjualan', '0')
         _set_formula('piutang_booking', '0')
-        _set_formula('total_hutang', '=V2+W2+X2+Y2+Z2+AA2+AB2')
+        _set_formula('total_hutang', '=AF2+AG2+AH2+AI2+AJ2+AK2+AL2')
 
         # === Balance Check ===
-        _set_formula('total_pasiva', '=AB2+U2')
-        _set_formula('selisih', '=Q2-AC2')
+        _set_formula('total_pasiva', '=AM2+AE2')
+        _set_formula('selisih', '=V2-AN2')
 
     # ----------------------------------------------------------- template
     def generate_template(self) -> io.BytesIO:
@@ -1834,7 +1834,7 @@ class DataImportService:
         piutang_rows = parsed.get("piutang_opening", [])
         for row in piutang_rows:
             try:
-                jenis = str(row.get("jenis_piutang", "")).strip().upper()
+                jenis = str(row.get("unit", "")).strip().upper()
                 nominal = self._dec(row.get("nominal", "0"))
                 if jenis == "KASBON":
                     piutang_karyawan += nominal
@@ -1861,7 +1861,7 @@ class DataImportService:
         hutang_rows = parsed.get("hutang_opening", [])
         for row in hutang_rows:
             try:
-                jenis = str(row.get("jenis_hutang", "")).strip().upper()
+                jenis = str(row.get("unit", "")).strip().upper()
                 nominal = self._dec(row.get("nominal", "0"))
                 if jenis == "BENGKEL":
                     hutang_part += nominal
@@ -1951,16 +1951,20 @@ class DataImportService:
         else:
             expected_total_aktiva = expected.get("total_aktiva", Decimal("0"))
 
-        # Calculate expected pasiva (matching neraca.tsx: total_pasiva = total_hutang + total_modal)
-        expected_total_modal = expected.get("setoran_modal", Decimal("0"))
-        if expected_total_modal == 0:
-            expected_total_modal = (
-                expected.get("setoran_modal_kas", Decimal("0"))
-                + expected.get("modal_non_kas", Decimal("0"))
-                + expected.get("laba_ditahan", Decimal("0"))
-                - expected.get("prive", Decimal("0"))
-            )
-        expected_total_pasiva = expected.get("total_hutang", Decimal("0")) + expected_total_modal
+        # Konsep saldo awal: Modal = Total Aktiva - Total Hutang (modal sebagai plug)
+        expected_total_hutang_exp = expected.get("total_hutang", Decimal("0"))
+        if expected_total_aktiva > 0 and expected_total_hutang_exp > 0:
+            expected_total_modal = expected_total_aktiva - expected_total_hutang_exp
+        else:
+            expected_total_modal = expected.get("setoran_modal", Decimal("0"))
+            if expected_total_modal == 0:
+                expected_total_modal = (
+                    expected.get("setoran_modal_kas", Decimal("0"))
+                    + expected.get("modal_non_kas", Decimal("0"))
+                    + expected.get("laba_ditahan", Decimal("0"))
+                    - expected.get("prive", Decimal("0"))
+                )
+        expected_total_pasiva = expected_total_hutang_exp + expected_total_modal
 
         # Compare each expected value against computed
         check_fields = [
