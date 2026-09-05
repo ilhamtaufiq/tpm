@@ -28,6 +28,7 @@ import { getErrorMessage } from '../../utils/error';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { formatCurrency } from '../../utils/format';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 const KATEGORI_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -538,6 +539,15 @@ export default function AssetScreen() {
                     </BottomSheetScrollView>
                 </BottomSheet>
             )}
+
+            {/* Floating Action Button */}
+            <Pressable
+                onPress={openAddForm}
+                style={{ position: 'absolute', right: 24, bottom: getCustomTabBarBottomPadding(insets.bottom, 16), elevation: 12, zIndex: 999, width: 64, height: 64 }}
+                className="bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8"
+            >
+                <Plus size={32} color="white" />
+            </Pressable>
 
             <AlertDialog visible={dialogConfig.visible} title={dialogConfig.title} message={dialogConfig.message} variant={dialogConfig.variant} type={dialogConfig.type} onConfirm={dialogConfig.onConfirm} onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))} />
         </View>

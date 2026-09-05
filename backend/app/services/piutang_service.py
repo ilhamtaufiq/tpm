@@ -159,9 +159,11 @@ class PiutangService:
                 piutang.nomor_referensi = nomor_kasbon
                 piutang.catatan = f"{piutang.catatan or ''} (Kasbon #{nomor_kasbon})".strip()
 
+        # Single transaction: flush only. Commit happens once at the end so a
+        # failed kas entry (e.g. insufficient balance) rolls back the piutang
+        # too instead of leaving a phantom receivable in reports.
         self.db.add(piutang)
-        self.db.commit()
-        self.db.refresh(piutang)
+        self.db.flush()
 
         # If manual piutang creation involves cash outflow (e.g. lending money)
         if data.payments:
@@ -246,7 +248,8 @@ class PiutangService:
                 user_id=user_id,
             )
 
-
+        self.db.commit()
+        self.db.refresh(piutang)
 
         return piutang
 

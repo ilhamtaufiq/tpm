@@ -41,7 +41,8 @@ import {
     CircleDollarSign,
     Boxes,
     ShoppingCart,
-    History
+    History,
+    CreditCard
 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -1466,7 +1467,7 @@ export default function BengkelScreen() {
                                         setWalletView('expense');
                                         setExpenseNote('');
                                         setDebiturName('');
-                                        setExpensePaymentMethod('TUNAI');
+                                        setExpensePaymentMethod('KAS_UNIT_BENGKEL');
                                     }
                                 },
                                 {
@@ -1666,6 +1667,41 @@ export default function BengkelScreen() {
                             />
                         </View>
 
+                        {expenseMode === 'PIUTANG' && (
+                            <View>
+                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana / Potong Dari</Typography>
+                                <View className="flex-row -m-1">
+                                    {[
+                                        { id: 'KAS_UNIT_BENGKEL', label: 'Dompet', saldo: balances?.kas_unit_bengkel?.saldo || 0, icon: Wallet, color: '#D97706' },
+                                        { id: 'KAS_UTAMA', label: 'Cash', saldo: balances?.kas_utama?.saldo || 0, icon: Banknote, color: '#059669' },
+                                        { id: 'BANK_UTAMA', label: 'BCA', saldo: balances?.bank_utama?.saldo || 0, icon: CreditCard, color: '#2563EB' }
+                                    ].map((opt) => {
+                                        const OptIcon = opt.icon;
+                                        const active = expensePaymentMethod === opt.id;
+                                        return (
+                                            <View key={opt.id} className="w-1/3 p-1">
+                                                <Pressable
+                                                    onPress={() => setExpensePaymentMethod(opt.id)}
+                                                    className={`p-3 rounded-2xl border items-center justify-center ${active
+                                                        ? 'bg-amber-600 border-amber-600 shadow-sm'
+                                                        : 'bg-white border-gray-100'
+                                                        }`}
+                                                >
+                                                    <OptIcon size={20} color={active ? 'white' : opt.color} />
+                                                    <Typography weight="bold" className={`text-[9px] uppercase tracking-wider mt-1.5 ${active ? 'text-white' : 'text-textGray'}`}>
+                                                        {opt.label}
+                                                    </Typography>
+                                                    <Typography className={`text-[8px] font-bold mt-0.5 ${active ? 'text-white/80' : 'text-textGray/50'}`} numberOfLines={1}>
+                                                        {formatCurrency(opt.saldo)}
+                                                    </Typography>
+                                                </Pressable>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+                        )}
+
                         {expenseMode === 'SETORAN' && (
                             <View>
                                 <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Tujuan Transfer / Mutasi</Typography>
@@ -1749,12 +1785,12 @@ export default function BengkelScreen() {
                                             nama_debitur: debiturName,
                                             referensi_id: expensePiutangType === 'KASBON' ? selectedKaryawan?.id : undefined,
                                             nominal_piutang: parseNumber(expenseAmount),
-                                            metode_pembayaran: 'TUNAI',
+                                            metode_pembayaran: expensePaymentMethod === 'BANK_UTAMA' ? 'TRANSFER' : 'TUNAI',
                                             catatan: expenseNote || `Pemberian ${expensePiutangType === 'KASBON' ? 'kasbon' : 'piutang umum'} dari Unit Bengkel`,
                                             payments: [{
-                                                metode: 'TUNAI',
+                                                metode: expensePaymentMethod === 'BANK_UTAMA' ? 'TRANSFER' : 'TUNAI',
                                                 nominal: parseNumber(expenseAmount),
-                                                kas_jenis: 'KAS_UNIT_BENGKEL',
+                                                kas_jenis: expensePaymentMethod,
                                                 catatan: `Disbursement for ${expensePiutangType}`
                                             }]
                                         });
@@ -1798,7 +1834,9 @@ export default function BengkelScreen() {
                                     refetch();
                                     refetchSummary();
                                 } catch (e: any) {
-                                    appAlert('Gagal', e?.response?.data?.detail || 'Gagal mencatat transaksi');
+                                    const msg = e?.response?.data?.detail || 'Gagal mencatat transaksi';
+                                    handleCloseWallet();
+                                    setTimeout(() => appAlert('Gagal', msg), 300);
                                 }
                             }}
                             className={`h-16 rounded-[28px] mt-2 ${expenseMode === 'KELUAR' ? 'bg-rose-600 shadow-rose-600/30' : expenseMode === 'MASUK' ? 'bg-emerald-600 shadow-emerald-600/30' : expenseMode === 'PIUTANG' ? 'bg-amber-600 shadow-amber-600/30' : 'bg-blue-600 shadow-blue-600/30'} shadow-xl`}
