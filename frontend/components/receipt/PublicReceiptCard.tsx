@@ -30,7 +30,8 @@ export interface PublicReceiptData {
     total: number;
     paid?: number;
     remaining?: number;
-    paymentMethod?: string;
+    paymentMethod?: string | null;
+    paymentMethods?: { metode: string; nominal: number }[];
     notes?: string;
     companyName?: string;
     companyAddress?: string;
@@ -316,7 +317,14 @@ export function PublicReceiptCard({ receipt, receiptType, shareUrl, captureMode 
                 )}
 
                 {receipt.paymentMethod ? (
-                    <Row label="Metode Bayar" value={String(receipt.paymentMethod).toUpperCase()} />
+                    <>
+                        <Row label="Metode Bayar" value={String(receipt.paymentMethod).toUpperCase()} />
+                        {(receipt.paymentMethods || []).length > 1
+                            ? receipt.paymentMethods!.map((m, i) => (
+                                <Row key={i} label={`  · ${String(m.metode).toUpperCase()}`} value={formatCurrency(m.nominal)} />
+                            ))
+                            : null}
+                    </>
                 ) : null}
 
                 <Divider />

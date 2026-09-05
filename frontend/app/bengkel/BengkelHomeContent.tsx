@@ -1423,7 +1423,7 @@ export default function BengkelScreen() {
                                         setExpenseMode('KELUAR');
                                         setWalletView('expense');
                                         setExpenseNote('');
-                                        setExpensePaymentMethod('TUNAI');
+                                        setExpensePaymentMethod('KAS_UNIT_BENGKEL');
                                     }
                                 },
                                 {
@@ -1666,7 +1666,7 @@ export default function BengkelScreen() {
                             />
                         </View>
 
-                        {expenseMode === 'PIUTANG' && (
+                        {(expenseMode === 'PIUTANG' || expenseMode === 'KELUAR') && (
                             <View>
                                 <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana / Potong Dari</Typography>
                                 <View className="flex-row -m-1">
@@ -1738,7 +1738,7 @@ export default function BengkelScreen() {
                         {expenseMode === 'KELUAR' && (
                             <View className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100 border-dashed">
                                 <Typography className="text-rose-800 text-[10px] font-bold uppercase tracking-wider mb-1 text-center">Sumber Saldo</Typography>
-                                <Typography className="text-rose-600 text-[8px] font-bold text-center">Saldo akan dipotong otomatis dari KAS UNIT BENGKEL</Typography>
+                                <Typography className="text-rose-600 text-[8px] font-bold text-center">Saldo akan dipotong dari {expensePaymentMethod === 'BANK_UTAMA' ? 'BANK UTAMA' : expensePaymentMethod === 'KAS_UTAMA' ? 'KAS UTAMA' : 'DOMPET UNIT BENGKEL'}</Typography>
                             </View>
                         )}
 
@@ -1751,7 +1751,13 @@ export default function BengkelScreen() {
                             loading={createExpenseMutation.isPending || createTransactionMutation.isPending || transferMutation.isPending || createPiutangMutation.isPending}
                             onPress={async () => {
                                 if (!expenseAmount || !expenseNote) {
-                                    appAlert('Gagal', 'Mohon isi nominal dan keterangan');
+                                    setDialogConfig({
+                                        visible: true,
+                                        title: 'Gagal',
+                                        message: 'Mohon isi nominal dan keterangan',
+                                        variant: 'error',
+                                        type: 'alert'
+                                    });
                                     return;
                                 }
 
@@ -1761,10 +1767,10 @@ export default function BengkelScreen() {
                                             tanggal: new Date().toISOString().split('T')[0],
                                             jumlah: parseNumber(expenseAmount),
                                             deskripsi: expenseNote,
-                                            metode_bayar: 'TUNAI',
+                                            metode_bayar: expensePaymentMethod === 'BANK_UTAMA' ? 'TRANSFER' : 'TUNAI',
                                             bisnis_kategori: 'bengkel',
                                             kategori: 'BIAYA_OPERASIONAL',
-                                            kas_jenis: 'KAS_UNIT_BENGKEL'
+                                            kas_jenis: expensePaymentMethod
                                         });
                                     } else if (expenseMode === 'MASUK') {
                                         // TERIMA DANA (Transfer from Main to Unit)
@@ -1835,7 +1841,13 @@ export default function BengkelScreen() {
                                 } catch (e: any) {
                                     const msg = e?.response?.data?.detail || 'Gagal mencatat transaksi';
                                     handleCloseWallet();
-                                    setTimeout(() => appAlert('Gagal', msg), 300);
+                                    setTimeout(() => setDialogConfig({
+                                        visible: true,
+                                        title: 'Gagal',
+                                        message: msg,
+                                        variant: 'error',
+                                        type: 'alert'
+                                    }), 300);
                                 }
                             }}
                             className={`h-16 rounded-[28px] mt-2 ${expenseMode === 'KELUAR' ? 'bg-rose-600 shadow-rose-600/30' : expenseMode === 'MASUK' ? 'bg-emerald-600 shadow-emerald-600/30' : expenseMode === 'PIUTANG' ? 'bg-amber-600 shadow-amber-600/30' : 'bg-blue-600 shadow-blue-600/30'} shadow-xl`}

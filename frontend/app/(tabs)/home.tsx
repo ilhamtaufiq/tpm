@@ -1,9 +1,8 @@
-import { ScrollView, StatusBar, View, RefreshControl, Image } from 'react-native';
+import { ScrollView, StatusBar, View, RefreshControl, Image, Platform } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import { WalletSection } from '../../components/WalletSection';
 import { ServiceGrid } from '../../components/ServiceGrid';
-import { StatsSlider } from '../../components/StatsSlider';
 import { TransactionList } from '../../components/TransactionList';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -67,13 +66,15 @@ export default function HomeScreen() {
                 <Header variant="home" showSearch={false} showProfile={false} />
                 <ScrollView
                     className="flex-1"
-                    contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 32) }}
+                    contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 32), alignItems: Platform.OS === 'web' ? 'center' : undefined }}
                     showsVerticalScrollIndicator={false}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={themeColors.primary} />}
                 >
-                    <WalletSection />
-                    <ServiceGrid />
-                    <TransactionList />
+                    <View className="w-full max-w-[480px]">
+                        <WalletSection />
+                        <ServiceGrid />
+                        <TransactionList />
+                    </View>
                 </ScrollView>
             </View>
         </View>

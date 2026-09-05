@@ -35,7 +35,22 @@
       "Bash(ECC_GATEGUARD=off git checkout --theirs backend/app/services/reports/neraca_service.py)",
       "Bash(git rebase *)",
       "Bash(git stash *)",
-      "Bash(node -e \"require\\('@babel/parser'\\).parse\\(require\\('fs'\\).readFileSync\\('app/settings/data-import.tsx','utf8'\\), {sourceType:'module',plugins:['typescript','jsx']}\\); console.log\\('TSX SYNTAX OK'\\)\")"
+      "Bash(node -e \"require\\('@babel/parser'\\).parse\\(require\\('fs'\\).readFileSync\\('app/settings/data-import.tsx','utf8'\\), {sourceType:'module',plugins:['typescript','jsx']}\\); console.log\\('TSX SYNTAX OK'\\)\")",
+      "Bash(git show *)",
+      "Read(//tmp/**)",
+      "Bash(git commit -m ' *)",
+      "Bash(python3 *)",
+      "Bash(where python *)",
+      "Bash(where python3 *)",
+      "Bash(C:laragonbinpythonpython-3.10python.exe *)",
+      "Bash(npx tsc *)",
+      "Bash(git commit -m 'fix: piutang source picker + single-txn commit, restore asset FAB *)",
+      "Bash(node *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(git commit -m 'fix: unit wallet history union ledger unit + central outflow *)",
+      "Bash(ECC_GATEGUARD=off ./venv/Scripts/python.exe *)",
+      "Bash(git commit -m 'fix: import neraca includes sparepart stock, modal non-kas signed *)",
+      "Bash(git commit *)"
     ]
   }
 }

@@ -598,7 +598,7 @@ export default function MobilInventoryScreen() {
                                         setExpenseMode('KELUAR');
                                         setIsRecordingExpense(true);
                                         setExpenseNote('');
-                                        setExpensePaymentMethod('TUNAI');
+                                        setExpensePaymentMethod('KAS_UNIT_MOBIL');
                                     }
                                 },
                                 {
@@ -796,7 +796,7 @@ export default function MobilInventoryScreen() {
                             />
                         </View>
 
-                        {expenseMode === 'PIUTANG' && (
+                        {(expenseMode === 'PIUTANG' || expenseMode === 'KELUAR') && (
                             <View>
                                 <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana / Potong Dari</Typography>
                                 <View className="flex-row -m-1">
@@ -869,7 +869,13 @@ export default function MobilInventoryScreen() {
                             loading={createExpenseMutation.isPending || createTransactionMutation.isPending || transferMutation.isPending || createPiutangMutation.isPending}
                             onPress={async () => {
                                 if (!expenseAmount || !expenseNote) {
-                                    appAlert('Gagal', 'Mohon isi nominal dan keterangan');
+                                    setDialogConfig({
+                                        visible: true,
+                                        title: 'Gagal',
+                                        message: 'Mohon isi nominal dan keterangan',
+                                        variant: 'error',
+                                        type: 'alert'
+                                    });
                                     return;
                                 }
 
@@ -879,10 +885,10 @@ export default function MobilInventoryScreen() {
                                             tanggal: new Date().toISOString().split('T')[0],
                                             jumlah: parseNumber(expenseAmount),
                                             deskripsi: expenseNote,
-                                            metode_bayar: 'TUNAI',
+                                            metode_bayar: expensePaymentMethod === 'BANK_UTAMA' ? 'TRANSFER' : 'TUNAI',
                                             bisnis_kategori: 'penjualan_mobil',
                                             kategori: 'BIAYA_OPERASIONAL',
-                                            kas_jenis: 'KAS_UNIT_MOBIL'
+                                            kas_jenis: expensePaymentMethod
                                         });
                                     } else if (expenseMode === 'MASUK') {
                                         await transferMutation.mutateAsync({
@@ -949,7 +955,13 @@ export default function MobilInventoryScreen() {
                                 } catch (error) {
                                     const msg = getErrorMessage(error, 'Gagal mencatat transaksi');
                                     handleCloseWallet();
-                                    setTimeout(() => appAlert('Gagal', msg), 300);
+                                    setTimeout(() => setDialogConfig({
+                                        visible: true,
+                                        title: 'Gagal',
+                                        message: msg,
+                                        variant: 'error',
+                                        type: 'alert'
+                                    }), 300);
                                 }
                             }}
                             className={`h-16 rounded-[28px] mt-2 ${expenseMode === 'KELUAR' ? 'bg-rose-600 shadow-rose-600/30' : expenseMode === 'MASUK' ? 'bg-emerald-600 shadow-emerald-600/30' : expenseMode === 'PIUTANG' ? 'bg-amber-600 shadow-amber-600/30' : 'bg-blue-600 shadow-blue-600/30'} shadow-xl`}

@@ -57,7 +57,7 @@ function buildPrintData(type: ReceiptType, id: string, receipt: PublicReceiptDat
         discount: receipt.discount || 0,
         total: receipt.total || 0,
         paid: receipt.paid,
-        paymentMethod: receipt.paymentMethod,
+        paymentMethod: Number(receipt.paid || 0) > 0 ? receipt.paymentMethod : undefined,
         notes: receipt.notes,
         showDiscount: receipt.showDiscount !== false,
         vehiclePlate: receipt.vehiclePlate,

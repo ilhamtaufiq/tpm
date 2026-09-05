@@ -57,10 +57,10 @@ async def get_receipt(
 def format_payment_method(method: str) -> str:
     """Format raw payment method string to human-readable text"""
     if not method: return "-"
-    
+
     # Handle enum-like strings (e.g. PAYMENTMETHOD.SPLIT)
     formatted = str(method).split('.')[-1].upper()
-    
+
     mapping = {
         "SPLIT": "GABUNGAN",
         "TUNAI": "TUNAI",
@@ -69,8 +69,53 @@ def format_payment_method(method: str) -> str:
         "KREDIT": "KARTU KREDIT",
         "PIUTANG": "BON / PIUTANG"
     }
-    
+
     return mapping.get(formatted, formatted)
+
+
+def resolve_payment_display(db: Session, nomor_transaksi: str, metode_bayar, paid: float, remaining: float) -> Dict[str, Any]:
+    """Resolve which payment method(s) a receipt may show.
+
+    Rules:
+    - BELUM BAYAR (paid <= 0): no method shown at all.
+    - BELUM LUNAS (remaining > 0, paid > 0): show the ACTUAL methods used so
+      far, read from KasBank MASUK entries (split-aware). Falls back to the
+      transaction's metode_bayar when no kas entries exist yet.
+    - LUNAS: show actual methods from KasBank (split-aware), fallback to
+      transaction metode_bayar.
+    """
+    from app.models.keuangan import KasBank
+    from app.utils.constants import KasBankType
+
+    paid = float(paid or 0)
+    remaining = float(remaining or 0)
+
+    methods: list = []
+    if paid > 0:
+        rows = db.query(KasBank).filter(
+            KasBank.nomor_referensi == nomor_transaksi,
+            KasBank.tipe == KasBankType.MASUK,
+        ).all()
+        seen: Dict[str, float] = {}
+        for r in rows:
+            label = format_payment_method(getattr(r.metode_bayar, "value", r.metode_bayar))
+            seen[label] = seen.get(label, 0) + float(r.nominal or 0)
+        methods = [{"metode": k, "nominal": v} for k, v in seen.items() if v > 0]
+
+    if not methods and paid > 0 and metode_bayar:
+        # Fallback: single method stored on the transaction itself
+        methods = [{"metode": format_payment_method(getattr(metode_bayar, "value", metode_bayar)), "nominal": paid}]
+
+    if paid <= 0:
+        payment_method = None
+    elif len(methods) > 1:
+        payment_method = "GABUNGAN"
+    elif methods:
+        payment_method = methods[0]["metode"]
+    else:
+        payment_method = None
+
+    return {"paymentMethod": payment_method, "paymentMethods": methods}
 
 
 def apply_branding(db: Session, receipt: Dict[str, Any]):
@@ -149,7 +194,13 @@ def get_bengkel_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
         "total": float(transaction.grand_total or 0),
         "paid": float(transaction.jumlah_bayar or 0),
         "remaining": float(transaction.grand_total or 0) - float(transaction.jumlah_bayar or 0),
-        "paymentMethod": format_payment_method(transaction.metode_bayar),
+        **resolve_payment_display(
+            db,
+            transaction.nomor_transaksi,
+            transaction.metode_bayar,
+            float(transaction.jumlah_bayar or 0),
+            float(transaction.grand_total or 0) - float(transaction.jumlah_bayar or 0),
+        ),
         "notes": transaction.catatan,
         "companyName": "Tiga Putra Motor",
         "companyAddress": "Cianjur, Jawa Barat",
@@ -215,7 +266,9 @@ def get_jasa_angkut_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
         "total": float(muatan.harga_jual or 0),
         "paid": paid_amount,
         "remaining": remaining_amount,
-        "paymentMethod": format_payment_method("TUNAI"),
+        **resolve_payment_display(
+            db, muatan.nomor_transaksi, "TUNAI", paid_amount, remaining_amount,
+        ),
         "notes": muatan.catatan,
         "companyName": "Tiga Putra Motor",
         "companyAddress": "Cianjur, Jawa Barat",
@@ -256,7 +309,13 @@ def get_mobil_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
         "total": float(mobil.harga_jual or 0),
         "paid": float((mobil.harga_jual or 0) - (transaksi.sisa_bayar or 0)),
         "remaining": float(transaksi.sisa_bayar or 0),
-        "paymentMethod": format_payment_method(transaksi.metode_bayar.value if transaksi.metode_bayar else "TUNAI"),
+        **resolve_payment_display(
+            db,
+            transaksi.nomor_transaksi,
+            transaksi.metode_bayar.value if transaksi.metode_bayar else "TUNAI",
+            float((mobil.harga_jual or 0) - (transaksi.sisa_bayar or 0)),
+            float(transaksi.sisa_bayar or 0),
+        ),
         "notes": transaksi.catatan if transaksi.catatan else (mobil.catatan or "-"),
         "companyName": "Tiga Putra Motor",
         "companyAddress": "Cianjur, Jawa Barat",
