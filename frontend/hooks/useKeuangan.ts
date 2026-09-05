@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ActivityItem, KasBankListResponse, keuanganService } from '../services/keuangan';
 
@@ -24,6 +25,37 @@ export const useKasBankList = (
         queryFn: () => keuanganService.getKasBankList(params),
         ...options,
     });
+};
+
+// Dompet unit = ledger KAS_UNIT_X + arus keluar unit dari akun pusat
+// (kasbon/piutang sumber KAS_UTAMA/BANK_UTAMA tulis jenis pusat, sumber unit).
+export const useUnitWalletHistory = (
+    jenis: string,
+    sumber: string,
+    baseParams?: any,
+    options?: { enabled?: boolean; refetchInterval?: number }
+) => {
+    const params = baseParams ?? {};
+    const ready = !!jenis && !!sumber && options?.enabled !== false;
+    const walletQuery = useKasBankList({ ...params, jenis }, { ...options, enabled: ready });
+    const centralQuery = useKasBankList(
+        { ...params, sumber, tipe: 'KELUAR' },
+        { ...options, enabled: ready }
+    );
+    const data = useMemo<KasBankListResponse | undefined>(() => {
+        const a = walletQuery.data?.data ?? [];
+        const b = (centralQuery.data?.data ?? []).filter((item: any) => item.jenis !== jenis);
+        const seen = new Set<number>();
+        const merged = [...a, ...b].filter((item: any) =>
+            item?.id == null || seen.has(item.id) ? false : (seen.add(item.id), true)
+        );
+        merged.sort((x: any, y: any) => {
+            const dx = x.tanggal < y.tanggal ? 1 : x.tanggal > y.tanggal ? -1 : (y.id ?? 0) - (x.id ?? 0);
+            return dx;
+        });
+        return { ...(walletQuery.data ?? centralQuery.data ?? {}), data: merged, total: merged.length } as KasBankListResponse;
+    }, [walletQuery.data, centralQuery.data, jenis]);
+    return { data, isLoading: walletQuery.isLoading || centralQuery.isLoading, refetch: async () => { await Promise.all([walletQuery.refetch(), centralQuery.refetch()]); } };
 };
 
 export const useTransfer = () => {

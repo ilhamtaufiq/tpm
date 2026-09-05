@@ -46,7 +46,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { format, subMonths, isValid, parse } from 'date-fns';
 import { useMobilList, useDeleteMobil, usePenjualanSummary, useInventorySummary } from '../../hooks/useMobil';
 import { FILE_URL } from '../../utils/api';
-import { useKasBankBalances, useKasBankList, useCreateTransaction, useTransfer, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
+import { useKasBankBalances, useUnitWalletHistory, useCreateTransaction, useTransfer, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 
 import { useCreatePengeluaran } from '../../hooks/useBengkel';
 import { formatCurrency, formatNumber, parseNumber, formatDate } from '../../utils/format';
@@ -159,8 +159,7 @@ export default function MobilInventoryScreen() {
     const { data: balancesData } = useKasBankBalances();
     const unitBalance = balancesData?.kas_unit_mobil?.saldo || 0;
 
-    const { data: historyData, isLoading: isHistoryLoading } = useKasBankList({
-        jenis: 'KAS_UNIT_MOBIL',
+    const { data: historyData, isLoading: isHistoryLoading } = useUnitWalletHistory('KAS_UNIT_MOBIL', 'JUAL_BELI_MOBIL', {
         limit: 20,
         sort_by: 'tanggal',
         sort_order: 'desc'

@@ -54,7 +54,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTransactions';
-import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
+import { useKasBankBalances, useCreateTransaction, useTransfer, useUnitWalletHistory, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 
 import { formatNumber, parseNumber } from '../../utils/format';
 import {
@@ -195,8 +195,7 @@ export default function JasaAngkutScreen() {
     const { data: balances } = useKasBankBalances({ enabled: dataReady });
     const unitBalance = balances?.kas_unit_jasa_angkut?.saldo || 0;
 
-    const { data: historyData, isLoading: isHistoryLoading } = useKasBankList({
-        jenis: 'KAS_UNIT_JASA_ANGKUT',
+    const { data: historyData, isLoading: isHistoryLoading } = useUnitWalletHistory('KAS_UNIT_JASA_ANGKUT', 'JASA_ANGKUT', {
         limit: 20,
         sort_by: 'tanggal',
         sort_order: 'desc',

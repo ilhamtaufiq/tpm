@@ -20,7 +20,7 @@ import {
     User
 } from 'lucide-react-native';
 import { router, Redirect, useLocalSearchParams } from 'expo-router';
-import { useKasBankList, useRecentActivity } from '../../hooks/useKeuangan';
+import { useUnitWalletHistory, useRecentActivity } from '../../hooks/useKeuangan';
 import { format, formatDistanceToNow } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { ActivityItem, KasBankTransaction } from '../../services/keuangan';
@@ -120,14 +120,17 @@ export default function HistoryTab() {
         bengkel: {
             label: 'Bengkel',
             jenis: 'KAS_UNIT_BENGKEL',
+            sumber: 'BENGKEL',
         },
         mobil: {
             label: 'Jual Beli Mobil',
             jenis: 'KAS_UNIT_MOBIL',
+            sumber: 'JUAL_BELI_MOBIL',
         },
         jasa_angkut: {
             label: 'Jasa Angkut',
             jenis: 'KAS_UNIT_JASA_ANGKUT',
+            sumber: 'JASA_ANGKUT',
         },
     } as const;
 
@@ -155,15 +158,14 @@ export default function HistoryTab() {
         data: walletHistoryData,
         isLoading: isWalletLoading,
         refetch: refetchWallet,
-    } = useKasBankList(
-        walletFilter
-            ? {
-                jenis: walletFilter.jenis,
-                limit: 100,
-                sort_by: 'tanggal',
-                sort_order: 'desc',
-            }
-            : undefined,
+    } = useUnitWalletHistory(
+        walletFilter?.jenis ?? '',
+        walletFilter?.sumber ?? '',
+        {
+            limit: 100,
+            sort_by: 'tanggal',
+            sort_order: 'desc',
+        },
         {
             enabled: !!walletFilter,
         }

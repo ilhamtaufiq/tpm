@@ -65,7 +65,7 @@ import {
     isBengkelTransactionLocked,
     isSoldJbmWorkshopItem,
 } from '../../utils/bengkelTransaction';
-import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
+import { useKasBankBalances, useCreateTransaction, useTransfer, useUnitWalletHistory, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
@@ -268,8 +268,7 @@ export default function BengkelScreen() {
     // Intentionally no force-refetch on focus: RQ cache + mutations/WS keep data
     // fresh. Pull-to-refresh still calls refetch.
 
-    const { data: historyData, isLoading: isHistoryLoading } = useKasBankList({
-        jenis: 'KAS_UNIT_BENGKEL',
+    const { data: historyData, isLoading: isHistoryLoading } = useUnitWalletHistory('KAS_UNIT_BENGKEL', 'BENGKEL', {
         limit: 20,
         sort_by: 'tanggal',
         sort_order: 'desc',
