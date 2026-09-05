@@ -303,7 +303,7 @@ export default function LaporanPerubahanModalScreen() {
                                     <FinancialRow label="Setoran Modal Kas" value={equity.setoranKas} color="text-emerald-700" />
                                 )}
                                 {equity.modalNonKas !== 0 && (
-                                    <FinancialRow label="Setoran Modal Non-Kas (net hutang import)" value={equity.modalNonKas} color={equity.modalNonKas < 0 ? "text-rose-600" : "text-emerald-700"} />
+                                    <FinancialRow label="Penyesuaian" value={equity.modalNonKas} color={equity.modalNonKas < 0 ? "text-rose-600" : "text-emerald-700"} />
                                 )}
                                 {equity.investorFunding > 0 && (
                                     <FinancialRow label="Dana Investor Mobil" value={equity.investorFunding} color="text-emerald-700" />
