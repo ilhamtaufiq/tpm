@@ -398,6 +398,12 @@ export default function DataImportScreen() {
                                             </Typography>
                                         </View>
                                         <View className="flex-row justify-between items-center py-1">
+                                            <Typography className="text-[11px] text-gray-500">Persediaan Sparepart</Typography>
+                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                                {preview.neraca_verification.computed.persediaan_sparepart?.toLocaleString('id-ID') ?? '-'}
+                                            </Typography>
+                                        </View>
+                                        <View className="flex-row justify-between items-center py-1">
                                             <Typography className="text-[11px] text-gray-500">Aset Tetap</Typography>
                                             <Typography className="text-[11px] text-gray-800 font-semibold">
                                                 {preview.neraca_verification.computed.total_aset_tetap?.toLocaleString('id-ID') ?? '-'}

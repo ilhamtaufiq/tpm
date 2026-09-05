@@ -596,7 +596,11 @@ class ModalService(BaseReportService):
                 investor_portion = float(mc.nominal_investor or 0) if mc.tipe_kepemilikan == OwnershipType.INVESTOR else 0
                 mobil_import += max(0, float(mc.harga_beli) - investor_portion)
 
-        setoran_non_kas_import = max(0, (mobil_import + piutang_import) - hutang_import)
+        # Net non-cash capital from opening import: assets/piutang add capital,
+        # hutang funds those assets so it subtracts. Must stay SIGNED (can be
+        # negative when imported hutang > imported non-cash assets); clamping
+        # to 0 hides the liability and breaks modal_teoritis vs modal_aktual.
+        setoran_non_kas_import = (mobil_import + piutang_import) - hutang_import
 
         # Opening-balance fixed assets (imported without KasBank ASET KELUAR)
         # are non-cash capital injected by the owner.  Add them to setoran non-kas.

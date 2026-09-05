@@ -800,9 +800,11 @@ class DataImportService:
         _set_formula('total_piutang', '=E2+F2+G2+H2+I2')
 
         # === Persediaan & Stok ===
-        _set_formula('persediaan_sparepart', '0')
-        _set_formula('stok_mobil', '0')
-        _set_formula('stok_mobil_detail_harga_beli', '0')
+        # spare_parts: G=stok, I=harga_beli (row 2+ to skip header text)
+        _set_formula('persediaan_sparepart', '=SUMPRODUCT(spare_parts!G2:G10000,spare_parts!I2:I10000)')
+        # mobil: I=harga_beli
+        _set_formula('stok_mobil', '=SUM(mobil!I2:I10000)')
+        _set_formula('stok_mobil_detail_harga_beli', '=SUM(mobil!I2:I10000)')
         _set_formula('stok_mobil_detail_biaya_persiapan', '0')
         _set_formula('stok_mobil_detail_perbaikan_external', '0')
         _set_formula('stok_mobil_detail_perbaikan_internal', '0')
@@ -1796,6 +1798,13 @@ class DataImportService:
         total_hutang = _sum_all_rows("hutang_opening", "nominal")
         total_aset = _sum_all_rows("asset", "harga_beli")
         total_mobil = _sum_all_rows("mobil", "harga_beli")
+        # Persediaan sparepart = sum(stok x harga_beli) per row (matches base.py part_stock)
+        total_sparepart = Decimal("0")
+        for row in parsed.get("spare_parts", []):
+            try:
+                total_sparepart += self._dec(row.get("stok", "0")) * self._dec(row.get("harga_beli", "0"))
+            except Exception:
+                continue
 
         # Break down kas by jenis_kas column (matching neraca.tsx breakdown)
         kas_tunai = Decimal("0")
@@ -1915,7 +1924,7 @@ class DataImportService:
             expected["hutang_jasa_angkut"] = self._dec(row.get("hutang_jasa_angkut"), "0")
 
         # Recomputed values (auto-sum from imported sheets)
-        computed_total_aktiva = total_kas_computed + total_piutang_computed + total_aset + total_mobil
+        computed_total_aktiva = total_kas_computed + total_piutang_computed + total_sparepart + total_aset + total_mobil
 
         computed: Dict[str, Any] = {
             "kas_tunai": float(kas_tunai),
@@ -1928,6 +1937,7 @@ class DataImportService:
             "piutang_jasa_angkut": float(piutang_ja),
             "piutang_lainnya": float(piutang_lainnya),
             "total_piutang": float(total_piutang_computed),
+            "persediaan_sparepart": float(total_sparepart),
             "total_aset_tetap": float(total_aset),
             "total_mobil": float(total_mobil),
             "hutang_part": float(hutang_part),
@@ -1972,6 +1982,8 @@ class DataImportService:
             ("total_piutang", expected.get("total_piutang"), computed["total_piutang"]),
             ("total_hutang", expected.get("total_hutang"), computed["total_hutang"]),
             ("total_aset_tetap", expected.get("total_aset_tetap"), computed["total_aset_tetap"]),
+            ("persediaan_sparepart", expected.get("persediaan_sparepart"), computed["persediaan_sparepart"]),
+            ("stok_mobil", expected.get("stok_mobil"), computed["total_mobil"]),
         ]
 
         for label, exp_val, comp_val in check_fields:
