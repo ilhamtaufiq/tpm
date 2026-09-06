@@ -220,6 +220,30 @@ class PembelianSparePartResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class RevaluationResponse(BaseModel):
+    """Satu event revaluasi harga beli + release-nya (reserve memo)."""
+
+    id: int
+    tanggal: date
+    spare_part_id: int
+    spare_part_nama: Optional[str] = None
+    pembelian_id: int
+    qty_at_reval: Decimal
+    harga_lama: Decimal
+    harga_baru: Decimal
+    amount: Decimal
+    released: Decimal = Decimal("0")
+
+    model_config = {"from_attributes": True}
+
+
+class RevaluationList(BaseModel):
+    data: List[RevaluationResponse]
+    total: int
+    total_amount: Decimal = Decimal("0")
+    total_released: Decimal = Decimal("0")
+
+
 class PembelianSparePartList(BaseModel):
     """Schema for paginated purchase list."""
     data: List[PembelianSparePartResponse]

@@ -618,6 +618,60 @@ class PembelianPartService:
             "belum_lunas_nilai": float(unpaid_value),
         }
 
+    def get_revaluations(
+        self,
+        tanggal_dari: Optional[date] = None,
+        tanggal_sampai: Optional[date] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> Dict[str, Any]:
+        """Daftar event revaluasi harga beli + release per event (drill Penyesuaian)."""
+        from app.models.bengkel import SparePartRevaluationRelease
+
+        query = self.db.query(SparePartRevaluation).options(
+            joinedload(SparePartRevaluation.spare_part)
+        )
+        if tanggal_dari:
+            query = query.filter(SparePartRevaluation.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            query = query.filter(SparePartRevaluation.tanggal <= tanggal_sampai)
+        total = query.count()
+        rows = query.order_by(SparePartRevaluation.tanggal.asc()).offset(skip).limit(limit).all()
+        ids = [r.id for r in rows]
+        rel_map: Dict[int, Decimal] = {}
+        if ids:
+            rel_rows = (
+                self.db.query(
+                    SparePartRevaluationRelease.revaluation_id,
+                    func.sum(SparePartRevaluationRelease.amount),
+                )
+                .filter(SparePartRevaluationRelease.revaluation_id.in_(ids))
+                .group_by(SparePartRevaluationRelease.revaluation_id)
+                .all()
+            )
+            rel_map = {rid: amt or Decimal("0") for rid, amt in rel_rows}
+        data = [
+            {
+                "id": r.id,
+                "tanggal": r.tanggal,
+                "spare_part_id": r.spare_part_id,
+                "spare_part_nama": r.spare_part.nama if r.spare_part else None,
+                "pembelian_id": r.pembelian_id,
+                "qty_at_reval": r.qty_at_reval,
+                "harga_lama": r.harga_lama,
+                "harga_baru": r.harga_baru,
+                "amount": r.amount,
+                "released": rel_map.get(r.id, Decimal("0")),
+            }
+            for r in rows
+        ]
+        return {
+            "data": data,
+            "total": total,
+            "total_amount": float(sum((d["amount"] for d in data), Decimal("0"))),
+            "total_released": float(sum((d["released"] for d in data), Decimal("0"))),
+        }
+
     def get_by_supplier(
         self,
         supplier_id: int,

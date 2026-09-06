@@ -570,6 +570,8 @@ class SlipGajiService:
         periode_minggu: Optional[int] = None,
         periode_tahun: Optional[int] = None,
         status: Optional[PaymentStatus] = None,
+        tanggal_dari: Optional[date] = None,
+        tanggal_sampai: Optional[date] = None,
         sort_by: str = "periode_tahun",
         sort_order: str = "desc",
     ) -> Dict[str, Any]:
@@ -589,6 +591,12 @@ class SlipGajiService:
         # Status filter
         if status:
             query = query.filter(SlipGaji.status == status)
+
+        # Pay-date range filter (drill-down gaji/lembur per periode laporan)
+        if tanggal_dari:
+            query = query.filter(SlipGaji.tanggal_bayar >= tanggal_dari)
+        if tanggal_sampai:
+            query = query.filter(SlipGaji.tanggal_bayar <= tanggal_sampai)
 
         # Count total
         total = query.count()

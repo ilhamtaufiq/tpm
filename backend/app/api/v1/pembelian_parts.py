@@ -8,6 +8,7 @@ from app.schemas.bengkel import (
     PembelianSparePartCreate,
     PembelianSparePartResponse,
     PembelianSparePartList,
+    RevaluationList,
 )
 from app.services.pembelian_part_service import PembelianPartService
 from app.utils.constants import PaymentStatus, PaymentMethod
@@ -66,6 +67,25 @@ def get_pembelian_summary(
     """Get purchase summary statistics."""
     service = PembelianPartService(db)
     return service.get_summary(tanggal_dari, tanggal_sampai)
+
+
+@router.get("/revaluasi", response_model=RevaluationList)
+def list_revaluasi(
+    db: DBSession,
+    current_user: CurrentUser,
+    tanggal_dari: Optional[date] = None,
+    tanggal_sampai: Optional[date] = None,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+):
+    """Daftar revaluasi harga beli + release (drill Penyesuaian)."""
+    service = PembelianPartService(db)
+    return service.get_revaluations(
+        tanggal_dari=tanggal_dari,
+        tanggal_sampai=tanggal_sampai,
+        skip=skip,
+        limit=limit,
+    )
 
 
 @router.get("/{pembelian_id}", response_model=PembelianSparePartResponse)

@@ -550,9 +550,11 @@ class ModalService(BaseReportService):
         # hutang_total already includes customer_dp + net_booking_piutang (piutang_booking).
         # Do not add piutang_booking again — that double-counts booking liability and
         # depresses modal_aktual by exactly the DP/sisa-booking amount (see NeracaService).
-        # Investor funding is a liability (not owner capital), so it stays in kewajiban_usaha
-        # to keep Perubahan Modal aligned with Neraca (both report owner equity).
-        kewajiban_usaha = hutang_usaha_total
+        # Investor funding is treated as capital, not external debt: modal_awal
+        # already excludes it (start_hutang = total - investor), so exclude here too.
+        # ponytail: if investor funding ever becomes real third-party debt, keep it
+        # in kewajiban_usaha AND drop laba_investor_periode from raw_theoretical.
+        kewajiban_usaha = hutang_usaha_total - hutang_investor_total
 
         piutang_internal = float(data["raw_summaries"]["piutang"]["breakdown"].get("internal", 0))
         hutang_internal = float(data["raw_summaries"]["hutang"]["breakdown"].get("internal", 0))
@@ -593,10 +595,12 @@ class ModalService(BaseReportService):
                 KasBank.keterangan.ilike(f"%{mc.nomor_plat}%")
             ).first()
             if not has_cash_out:
-                # For investor-owned cars, only the owner's portion (harga_beli - nominal_investor)
-                # is non-cash owner capital; the investor portion is a liability, not owner equity.
-                investor_portion = float(mc.nominal_investor or 0) if mc.tipe_kepemilikan == OwnershipType.INVESTOR else 0
-                mobil_import += max(0, float(mc.harga_beli) - investor_portion)
+                # Investor funding counts as capital (same treatment as kewajiban_usaha
+                # excluding hutang investor): full harga_beli is non-cash capital.
+                # ponytail: if investor funding ever becomes real third-party debt,
+                # restore the investor-portion deduction AND keep hutang investor
+                # inside kewajiban_usaha.
+                mobil_import += float(mc.harga_beli)
 
         # Net non-cash capital from opening import: assets/piutang add capital,
         # hutang funds those assets so it subtracts. Must stay SIGNED (can be

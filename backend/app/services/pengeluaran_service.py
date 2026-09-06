@@ -176,6 +176,7 @@ class PengeluaranService:
         search: Optional[str] = None,
         kategori: Optional[ExpenseCategory] = None,
         metode_bayar: Optional[PaymentMethod] = None,
+        bisnis_kategori: Optional[str] = None,
         tanggal_dari: Optional[date] = None,
         tanggal_sampai: Optional[date] = None,
         sort_by: str = "tanggal",
@@ -201,6 +202,10 @@ class PengeluaranService:
         # Payment method filter
         if metode_bayar:
             query = query.filter(PengeluaranBengkel.metode_bayar == metode_bayar)
+
+        # Business unit filter (drill-down per unit laporan)
+        if bisnis_kategori:
+            query = query.filter(func.lower(PengeluaranBengkel.bisnis_kategori) == bisnis_kategori.lower())
 
         # Date range filter
         if tanggal_dari:

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional, List
 
 from fastapi import APIRouter, Query, status, Body, HTTPException
@@ -123,6 +123,8 @@ def list_slip_gaji(
     periode_minggu: Optional[int] = None,
     periode_tahun: Optional[int] = None,
     status: Optional[PaymentStatus] = None,
+    tanggal_dari: Optional[date] = None,
+    tanggal_sampai: Optional[date] = None,
     sort_by: str = "periode",
     sort_order: str = "desc",
 ):
@@ -135,6 +137,8 @@ def list_slip_gaji(
         periode_minggu=periode_minggu,
         periode_tahun=periode_tahun,
         status=status,
+        tanggal_dari=tanggal_dari,
+        tanggal_sampai=tanggal_sampai,
         sort_by=sort_by,
         sort_order=sort_order,
     )
