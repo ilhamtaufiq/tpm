@@ -26,6 +26,7 @@ import {
     ReportDateControls,
     ReportExportSheet,
     ReportFilterType,
+    KasArusJenisBreakdown,
 } from '../../components/laporan';
 
 export default function LabaRugiScreen() {
@@ -350,6 +351,31 @@ export default function LabaRugiScreen() {
         </Card>
     );
 
+    const renderKasSection = () => {
+        const flows = (reportData as any)?.kas_per_jenis;
+        if (!flows || flows.length === 0) return null;
+        return (
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                <View className="bg-teal-600 px-5 py-4 flex-row items-center justify-between w-full">
+                    <View className="flex-row items-center">
+                        <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center mr-3 border border-white/10">
+                            <ArrowDownLeft size={18} color="white" />
+                        </View>
+                        <Typography variant="h4" weight="bold" className="text-white tracking-tight">Arus Kas per Akun</Typography>
+                    </View>
+                    <View className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
+                        <Typography weight="bold" className="text-white text-[10px] uppercase tracking-widest">Info Mutasi</Typography>
+                    </View>
+                </View>
+
+                <View className="p-5 w-full">
+                    <Typography variant="caption" className="text-slate-400 text-[10px] mb-2">Mutasi kas periode ini — bukan komponen laba.</Typography>
+                    <KasArusJenisBreakdown flows={flows} />
+                </View>
+            </Card>
+        );
+    };
+
     const renderFinalRecap = () => {
         const finalProfit = reportData?.summary?.laba_bersih || 0;
         const totalProfitBeforePrive = reportData?.summary?.laba_operasional || 0;
@@ -437,6 +463,7 @@ export default function LabaRugiScreen() {
                         {renderJasaAngkutSection()}
                         {renderMobilSection()}
                         {renderOverheadSection()}
+                        {renderKasSection()}
                         {renderFinalRecap()}
                     </>
                 )}

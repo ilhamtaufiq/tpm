@@ -37,6 +37,22 @@ const reportStyles = `
     .info-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
 `;
 
+const KAS_JENIS_LABELS: Record<string, string> = {
+    CASH: 'Kas Tunai (Lama)',
+    BANK_BCA: 'BCA (Lama)',
+    BANK_MANDIRI: 'Mandiri (Lama)',
+    BANK_BRI: 'BRI (Lama)',
+    BANK_LAINNYA: 'Bank Lainnya (Lama)',
+    KAS_UTAMA: 'Kas Kantor Utama',
+    BANK_UTAMA: 'Bank Utama (BCA)',
+    KAS_UNIT_BENGKEL: 'Bengkel (Cash)',
+    KAS_UNIT_JASA_ANGKUT: 'Jasa Angkut (Cash)',
+    KAS_UNIT_MOBIL: 'Mobil (Cash)',
+};
+
+const kasJenisLabel = (jenis: string) =>
+    KAS_JENIS_LABELS[jenis] || jenis.replace(/_/g, ' ');
+
 export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType: string) => {
     const formattedDate = format(date, filterType === 'daily' ? 'd MMMM yyyy' : (filterType === 'monthly' ? 'MMMM yyyy' : 'yyyy'), { locale: localeID });
     const stockDetails = data.aktiva_lancar.stok_mobil_detail || [];
@@ -71,6 +87,9 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 <tr class="section-title"><td colspan="2">I. AKTIVA LANCAR</td></tr>
                 <tr><td>Kas Tunai (Utama)</td><td class="amount">${formatCurrency(data.aktiva_lancar.kas_tunai)}</td></tr>
                 <tr><td>Kas Bank</td><td class="amount">${formatCurrency(data.aktiva_lancar.kas_bank)}</td></tr>
+                ${(data.aktiva_lancar.kas_jenis_details || []).filter(d => Number(d.saldo || 0) !== 0).map(d => `
+                <tr class="sub-item"><td>${kasJenisLabel(d.jenis)}</td><td class="amount">${formatCurrency(d.saldo)}</td></tr>
+                `).join('')}
                 <tr><td>Piutang Usaha (Semua Unit)</td><td class="amount">${formatCurrency(data.aktiva_lancar.total_piutang)}</td></tr>
                 ${data.cross_validation?.mismatches?.filter(m => m.piutang > 0).map(m => `
                 <tr class="sub-item">
@@ -202,6 +221,16 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
                 <tr class="total-row" style="background-color: #f0fdf4;"><td>LABA BERSIH UNIT MOBIL</td><td class="amount positive">${formatCurrency(data.units.mobil.laba_bersih)}</td></tr>
             </table>
 
+            ${((data as any).kas_per_jenis || []).filter((f: any) => Number(f.masuk || 0) !== 0 || Number(f.keluar || 0) !== 0).length > 0 ? `
+            <table>
+                <tr class="unit-header" style="background-color: #0f766e;"><td colspan="2">ARUS KAS PER AKUN (INFO MUTASI)</td></tr>
+                ${((data as any).kas_per_jenis || []).filter((f: any) => Number(f.masuk || 0) !== 0 || Number(f.keluar || 0) !== 0).map((f: any) => `
+                <tr><td>${kasJenisLabel(f.jenis)} (Net)</td><td class="amount">${formatCurrency(f.net)}</td></tr>
+                ${Number(f.masuk || 0) !== 0 ? `<tr class="sub-item"><td>Masuk</td><td class="amount">${formatCurrency(f.masuk)}</td></tr>` : ''}
+                ${Number(f.keluar || 0) !== 0 ? `<tr class="sub-item"><td>Keluar</td><td class="amount negative">(${formatCurrency(f.keluar)})</td></tr>` : ''}
+                `).join('')}
+            </table>` : ''}
+
             <div class="recap-box">
                 <div class="recap-title">REKAPITULASI FINANSIAL</div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
@@ -330,6 +359,11 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>PERUBAHAN BERSIH MODAL</td>
                     <td class="amount">${formatCurrency(perubahanBersih)}</td>
                 </tr>
+                ${(((data as any).info?.aset?.kas_jenis_details) || []).filter((d: any) => Number(d.saldo || 0) !== 0).length > 0 ? `
+                <tr class="section-title"><td colspan="2">POSISI KAS PER AKUN (INFO)</td></tr>
+                ${(((data as any).info?.aset?.kas_jenis_details) || []).filter((d: any) => Number(d.saldo || 0) !== 0).map((d: any) => `
+                <tr class="sub-item"><td>${kasJenisLabel(d.jenis)}</td><td class="amount">${formatCurrency(d.saldo)}</td></tr>
+                `).join('')}` : ''}
                 <tr class="grand-total">
                     <td>MODAL AKHIR PERIODE${!isBalanced ? ' (TEORITIS)' : ''}</td>
                     <td class="amount">${formatCurrency(expectedModalAkhir)}</td>

@@ -26,6 +26,7 @@ import {
     ReportDateControls,
     ReportExportSheet,
     ReportFilterType,
+    KasJenisBreakdown,
 } from '../../components/laporan';
 
 export default function LaporanPerubahanModalScreen() {
@@ -357,6 +358,14 @@ export default function LaporanPerubahanModalScreen() {
                                 <FinancialRow label="Modal Akhir Periode (Teoritis)" value={equity.expectedModalAkhir} bold color="text-indigo-700" />
                             </View>
                         </Card>
+
+                        {((report as any)?.info?.aset?.kas_jenis_details?.length || 0) > 0 && (
+                            <Card className="p-6 bg-white rounded-[24px] border border-slate-100 shadow-sm mt-2">
+                                <Typography variant="body1" weight="bold" className="text-slate-900 mb-1">Posisi Kas per Akun</Typography>
+                                <Typography variant="caption" className="text-slate-400 text-[10px] mb-3">Saldo akhir periode — info, bukan komponen ekuitas.</Typography>
+                                <KasJenisBreakdown details={(report as any)?.info?.aset?.kas_jenis_details} />
+                            </Card>
+                        )}
 
                         {/* KESEIMBANGAN MODAL (BALANCE CHECK) */}
                         <View className={`mt-4 rounded-[28px] overflow-hidden p-6 ${equity.isBalanced ? 'bg-indigo-600' : 'bg-amber-600'} shadow-md relative w-full`}>

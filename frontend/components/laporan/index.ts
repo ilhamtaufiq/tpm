@@ -4,3 +4,4 @@ export { ReportStatsBento } from './ReportStatsBento';
 export { ReportDateControls } from './ReportDateControls';
 export { ReportSectionHeader } from './ReportSectionHeader';
 export { ReportExportSheet } from './ReportExportSheet';
+export { KasJenisBreakdown, KasArusJenisBreakdown, kasJenisLabel } from './KasJenisBreakdown';

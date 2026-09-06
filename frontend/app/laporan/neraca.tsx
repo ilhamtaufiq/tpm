@@ -26,6 +26,7 @@ import {
     ReportDateControls,
     ReportExportSheet,
     ReportFilterType,
+    KasJenisBreakdown,
 } from '../../components/laporan';
 
 export default function NeracaScreen() {
@@ -195,6 +196,7 @@ export default function NeracaScreen() {
                                     indent
                                 />
                             ))}
+                            <KasJenisBreakdown details={al.kas_jenis_details} />
                             <View className="h-[1px] bg-slate-100 w-full my-2" />
                             <FinancialRow label="Total Kas & Bank" value={al.total_kas_bank} bold color="text-emerald-700" />
                         </View>

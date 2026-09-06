@@ -374,6 +374,10 @@ class NeracaService(BaseReportService):
                 "kas_bank": kas_bank,
                 "unit_cash": unit_cash,
                 "unit_details": unit_details,
+                "kas_jenis_details": [
+                    {"jenis": name, "saldo": float(value)}
+                    for name, value in balances.items()
+                ],
                 "total_kas_bank": total_cash,
                 "piutang_usaha": piutang_bengkel,
                 "piutang_mobil": piutang_mobil,

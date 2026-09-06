@@ -260,6 +260,7 @@ class ModalService(BaseReportService):
         # Compute actual cash at end of period (needed for Section D)
         # Compute actual cash at end of period (for Info Aset)
         end_total_cash = 0
+        kas_jenis_details = []
         for jenis in KasBankJenis:
             last_kb = self.db.query(KasBank.saldo_sesudah).filter(
                 KasBank.jenis == jenis,
@@ -267,6 +268,7 @@ class ModalService(BaseReportService):
             ).order_by(KasBank.id.desc()).first()
             val = float(last_kb[0] if last_kb else 0)
             end_total_cash += val
+            kas_jenis_details.append({"jenis": jenis.value, "saldo": val})
 
         def _piutang_saldo_source(source: PiutangSource) -> float:
             return float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
@@ -761,6 +763,7 @@ class ModalService(BaseReportService):
                 },
                 "aset": {
                     "kas_bank": end_total_cash,
+                    "kas_jenis_details": kas_jenis_details,
                     "stok_part": persediaan_part,
                     "stok_mobil": {
                         "total": persediaan_mobil,

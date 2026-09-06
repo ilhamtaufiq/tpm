@@ -1,8 +1,21 @@
+export interface KasJenisDetail {
+    jenis: string;
+    saldo: number;
+}
+
+export interface KasArusJenis {
+    jenis: string;
+    masuk: number;
+    keluar: number;
+    net: number;
+}
+
 export interface NeracaAset {
     kas_tunai: number;
     kas_bank: number;
     unit_cash: number;
     unit_details?: Record<string, number>;
+    kas_jenis_details?: KasJenisDetail[];
     total_kas_bank: number;
     piutang_lainnya: number;
     piutang_mobil: number;
@@ -129,6 +142,7 @@ export interface LabaRugiUnit {
 }
 
 export interface LabaRugiReport {
+    kas_per_jenis?: KasArusJenis[];
     summary: {
         total_revenue: number;
         total_hpp: number;
@@ -242,6 +256,7 @@ export interface CapitalReport {
         };
         aset?: {
             kas_bank: number;
+            kas_jenis_details?: KasJenisDetail[];
             stok_mobil: {
                 total: number;
                 unit_hanya?: number;

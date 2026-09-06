@@ -2,7 +2,8 @@ from datetime import date
 from typing import Dict, Any
 from sqlalchemy import func
 from app.services.reports.base import BaseReportService
-from app.utils.constants import PaymentStatus
+from app.models.keuangan import KasBank
+from app.utils.constants import KasBankJenis, KasBankType, PaymentStatus
 
 class LabaRugiService(BaseReportService):
     def get_report(self, tanggal_dari: date, tanggal_sampai: date) -> Dict[str, Any]:
@@ -91,8 +92,34 @@ class LabaRugiService(BaseReportService):
         total_laba_operasional = (b_laba_bersih + ja_laba_bersih + m_laba_bersih) - overhead_pusat
         laba_bersih_akhir = total_laba_operasional - prive
 
+        # Arus kas per jenis akun selama periode (info, bukan komponen laba).
+        kas_rows = self.db.query(
+            KasBank.jenis, KasBank.tipe, func.sum(KasBank.nominal)
+        ).filter(
+            KasBank.tanggal >= tanggal_dari,
+            KasBank.tanggal <= tanggal_sampai,
+        ).group_by(KasBank.jenis, KasBank.tipe).all()
+        kas_map: Dict[str, Dict[str, float]] = {}
+        for jenis, tipe, nominal in kas_rows:
+            key = jenis.value if isinstance(jenis, KasBankJenis) else str(jenis)
+            entry = kas_map.setdefault(key, {"masuk": 0.0, "keluar": 0.0})
+            if tipe == KasBankType.MASUK:
+                entry["masuk"] += float(nominal or 0)
+            else:
+                entry["keluar"] += float(nominal or 0)
+        kas_per_jenis = [
+            {
+                "jenis": jenis,
+                "masuk": vals["masuk"],
+                "keluar": vals["keluar"],
+                "net": vals["masuk"] - vals["keluar"],
+            }
+            for jenis, vals in sorted(kas_map.items())
+        ]
+
         return {
             "periode": data["periode"],
+            "kas_per_jenis": kas_per_jenis,
             "bengkel_details": data["raw_summaries"]["bengkel"],
             "jasa_angkut_details": data["raw_summaries"]["muatan"],
             "mobil_details": data["raw_summaries"]["mobil"],
