@@ -15,6 +15,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 log() { echo -e "${GREEN}[UPDATE]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
 if [ "$EUID" -ne 0 ]; then error "Harap jalankan sebagai root (gunakan sudo ./dashboard/update-dashboard.sh)"; fi
@@ -65,5 +66,18 @@ cp -r dist/* "$DEPLOY_DIR"/
 
 chown -R www-data:www-data "$DEPLOY_DIR"
 chmod -R 755 "$DEPLOY_DIR"
+
+# 5. Selaraskan DocumentRoot vhost dengan DEPLOY_DIR.
+# Pernah mismatch: DocumentRoot -> dist/ repo, Directory block -> DEPLOY_DIR (404).
+for CONF in /etc/apache2/sites-enabled/tpm-dashboard-le-ssl.conf /etc/apache2/sites-enabled/tpm-dashboard.conf; do
+    if [ -f "$CONF" ] && grep -qE '^[[:space:]]*DocumentRoot' "$CONF"; then
+        sed -i "s|^[[:space:]]*DocumentRoot.*|    DocumentRoot $DEPLOY_DIR|" "$CONF"
+        log "DocumentRoot diselaraskan di $CONF"
+    fi
+done
+
+if command -v apache2ctl &>/dev/null; then
+    apache2ctl configtest && systemctl reload apache2 || warn "Reload Apache gagal, cek config manual."
+fi
 
 log "Update Selesai!"
