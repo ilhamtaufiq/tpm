@@ -12,7 +12,8 @@ import { Angkut, Mobil, Sdm, Stok } from './pages/Domains';
 import type { ReactElement } from 'react';
 
 function Guard({ children }: { children: ReactElement }) {
-  const { token, user } = useAuth();
+  const { token, user, ready } = useAuth();
+  if (!ready) return null;
   if (!token || !user) return <Navigate to="/login" replace />;
   return children;
 }

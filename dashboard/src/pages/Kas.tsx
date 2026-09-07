@@ -107,7 +107,7 @@ export default function Kas() {
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Stat label="Total saldo" value={formatCurrency(totalSaldo)} icon={Banknote} tone="navy" />
-        <Stat label="Masuk periode" value={formatCurrency(masuk)} icon={Banknote} tone="ok" />
+        <Stat label="Masuk periode" value={formatCurrency(masuk)} icon={Banknote} tone="green" />
         <Stat label="Keluar periode" value={formatCurrency(keluar)} icon={Banknote} tone="red" />
         <Stat label="Net periode" value={formatCurrency(masuk - keluar)} icon={Banknote} tone="indigo" />
       </div>

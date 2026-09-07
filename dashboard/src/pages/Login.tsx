@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { AlertTriangle, Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
 import { useAuth } from '../store/auth';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, token, user } = useAuth();
   const navigate = useNavigate();
+
+  if (token && user) return <Navigate to="/" replace />;
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);

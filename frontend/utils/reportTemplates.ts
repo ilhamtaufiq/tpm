@@ -87,9 +87,6 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 <tr class="section-title"><td colspan="2">I. AKTIVA LANCAR</td></tr>
                 <tr><td>Kas Tunai (Utama)</td><td class="amount">${formatCurrency(data.aktiva_lancar.kas_tunai)}</td></tr>
                 <tr><td>Kas Bank</td><td class="amount">${formatCurrency(data.aktiva_lancar.kas_bank)}</td></tr>
-                ${(data.aktiva_lancar.kas_jenis_details || []).filter(d => Number(d.saldo || 0) !== 0).map(d => `
-                <tr class="sub-item"><td>${kasJenisLabel(d.jenis)}</td><td class="amount">${formatCurrency(d.saldo)}</td></tr>
-                `).join('')}
                 <tr><td>Piutang Usaha (Semua Unit)</td><td class="amount">${formatCurrency(data.aktiva_lancar.total_piutang)}</td></tr>
                 ${data.cross_validation?.mismatches?.filter(m => m.piutang > 0).map(m => `
                 <tr class="sub-item">

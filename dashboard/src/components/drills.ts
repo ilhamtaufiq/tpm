@@ -251,9 +251,10 @@ export const drillInvestorSaldo = (): DrillSpec => ({
       stockService.mobilList({ tipe_kepemilikan: 'INVESTOR', limit: 100 }),
       drillService.investorPending(),
     ]);
-    const rows: Record<string, unknown>[] = (units.data ?? [])
-      .filter((u) => String(u.status ?? '').toUpperCase() !== 'TERJUAL')
-      .map((u) => {
+    const list = ((units as { data?: Record<string, unknown>[] } | undefined)?.data ?? []);
+    const rows: Record<string, unknown>[] = list
+      .filter((u: Record<string, unknown>) => String(u.status ?? '').toUpperCase() !== 'TERJUAL')
+      .map((u: Record<string, unknown>) => {
         const unit = [u.merek, u.model].filter(Boolean).join(' ');
         return {
           unit: unit + (u.nomor_plat ? ` (${u.nomor_plat})` : ''),
@@ -395,3 +396,23 @@ export const drillAset = (): DrillSpec => ({
   ],
   fetch: () => drillService.aset(),
 });
+
+// Penyesuaian (modal_non_kas): komponen SETORAN dari respons laporan — tanpa fetch.
+// total = setoran_mobil + setoran_piutang − setoran_hutang + setoran_aset.
+export const drillModalNonKas = (parts: { setoran_mobil?: number; setoran_piutang?: number; setoran_hutang?: number; setoran_aset?: number }): DrillSpec => {
+  const rows = [
+    { komponen: 'Setoran mobil (non-kas)', amount: Number(parts.setoran_mobil ?? 0) },
+    { komponen: 'Piutang saldo awal (impor)', amount: Number(parts.setoran_piutang ?? 0) },
+    { komponen: 'Hutang saldo awal (impor, pengurang)', amount: -Number(parts.setoran_hutang ?? 0) },
+    { komponen: 'Setoran aset tetap', amount: Number(parts.setoran_aset ?? 0) },
+  ].filter((r) => r.amount !== 0);
+  return {
+    key: 'penyesuaian',
+    label: 'Rincian penyesuaian',
+    columns: [
+      { key: 'komponen', header: 'Komponen' },
+      rp('amount'),
+    ],
+    fetch: async () => ({ data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 }),
+  };
+};

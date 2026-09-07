@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { authService } from '../api/services';
 import { clearToken, getToken, setToken } from '../api/client';
@@ -13,6 +13,7 @@ export interface DashboardUser {
 interface AuthState {
   user: DashboardUser | null;
   token: string | null;
+  ready: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -24,6 +25,31 @@ const ALLOWED_ROLES = new Set(['ADMIN', 'MANAGER', 'OWNER']);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() => getToken());
   const [user, setUser] = useState<DashboardUser | null>(null);
+  const [ready, setReady] = useState(false);
+
+  // Token survive refresh (localStorage), user tidak — restore via /auth/me.
+  useEffect(() => {
+    if (!token) {
+      setReady(true);
+      return;
+    }
+    authService
+      .me()
+      .then((me) => {
+        const role = String(me.role ?? '').toUpperCase();
+        if (!ALLOWED_ROLES.has(role)) {
+          clearToken();
+          setTokenState(null);
+          return;
+        }
+        setUser({ id: me.id, username: me.username, role, full_name: me.full_name });
+      })
+      .catch(() => {
+        clearToken();
+        setTokenState(null);
+      })
+      .finally(() => setReady(true));
+  }, [token]);
 
   const login = useCallback(async (username: string, password: string) => {
     const res = await authService.login(username, password);
@@ -50,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const value = useMemo(() => ({ user, token, login, logout }), [user, token, login, logout]);
+  const value = useMemo(() => ({ user, token, ready, login, logout }), [user, token, ready, login, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

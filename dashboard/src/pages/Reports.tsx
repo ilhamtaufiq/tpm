@@ -9,7 +9,6 @@ import {
   Drill,
   FinancialRow,
   KasArusJenisBreakdown,
-  KasJenisBreakdown,
   PeriodControls,
   usePeriodFilter,
 } from '../components/reports';
@@ -26,6 +25,7 @@ import {
   drillKasJenis,
   drillLembur,
   drillMobilMasuk,
+  drillModalNonKas,
   drillStokMobil,
   drillMuatan,
   drillPembelianPart,
@@ -608,7 +608,22 @@ export function Modal() {
               <Drill spec={drillSetoranKas()} period={period} amountKey="nominal" total={setoranKas} />
             </>
           )}
-          {modalNonKas !== 0 && <FinancialRow label="Penyesuaian" value={modalNonKas} color={modalNonKas < 0 ? 'text-rose-600' : 'text-emerald-700'} />}
+          {modalNonKas !== 0 && (
+            <>
+              <FinancialRow label="Penyesuaian" value={modalNonKas} color={modalNonKas < 0 ? 'text-rose-600' : 'text-emerald-700'} />
+              <Drill
+                spec={drillModalNonKas({
+                  setoran_mobil: r.penambahan?.modal_non_kas?.setoran_mobil,
+                  setoran_piutang: r.penambahan?.modal_non_kas?.setoran_piutang,
+                  setoran_hutang: r.penambahan?.modal_non_kas?.setoran_hutang,
+                  setoran_aset: r.penambahan?.modal_non_kas?.setoran_aset,
+                })}
+                period={period}
+                amountKey="amount"
+                total={modalNonKas}
+              />
+            </>
+          )}
           {investorFunding > 0 && (
             <>
               <FinancialRow label="Dana Investor Mobil" value={investorFunding} color="text-emerald-700" />
@@ -797,7 +812,7 @@ export function HutangPiutang() {
           ) : (
             <DataTable
               headers={['Nomor', 'Debitur', 'Sumber', 'Status', 'Sisa']}
-              rows={(((plist.data as { data?: Json[] } | undefined)?.data ?? []) as Json[]).map((p, i) => [
+              rows={(((plist.data as { data?: Json[] } | undefined)?.data ?? []) as Json[]).map((p) => [
                 String(p.nomor_piutang ?? '-'),
                 String(p.nama_debitur ?? '-'),
                 String(p.sumber ?? '-'),
@@ -815,7 +830,7 @@ export function HutangPiutang() {
           ) : (
             <DataTable
               headers={['Nomor', 'Kreditur', 'Sumber', 'Status', 'Sisa']}
-              rows={(((hlist.data as { data?: Json[] } | undefined)?.data ?? []) as Json[]).map((h, i) => [
+              rows={(((hlist.data as { data?: Json[] } | undefined)?.data ?? []) as Json[]).map((h) => [
                 String(h.nomor_hutang ?? '-'),
                 String(h.nama_kreditur ?? '-'),
                 String(h.sumber ?? '-'),

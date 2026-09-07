@@ -335,6 +335,11 @@ class BaseReportService:
             KasBank.tanggal <= tanggal_sampai,
             ~KasBank.keterangan.ilike("%piutang%"),
             ~KasBank.keterangan.ilike("%kasbon%"),
+            # Only truly manual kas entries (no linked transaction) count here.
+            # Auto-generated entries already flow via their own ledger summaries
+            # (e.g. pengeluaran_summary) — without this, a ledger description
+            # containing "fee" (e.g. "FEE SUPIR") is double-counted.
+            KasBank.referensi_id.is_(None),
             ~KasBank.sumber.in_([KasBankSource.BENGKEL, KasBankSource.JASA_ANGKUT, KasBankSource.JUAL_BELI_MOBIL]),
             or_(
                 KasBank.keterangan.ilike("%biaya admin%"),

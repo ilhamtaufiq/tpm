@@ -655,7 +655,13 @@ class ModalService(BaseReportService):
                     "aset_tetap": modal_aset_tetap_delta,
                     "stok_part": modal_stok_part_delta,
                     "stok_mobil": modal_stok_mobil_delta_external,
-                    "piutang": modal_piutang_delta
+                    "piutang": modal_piutang_delta,
+                    # Komponen setoran import (sumber angka `total`):
+                    # total = setoran_mobil + setoran_piutang - setoran_hutang + setoran_aset.
+                    "setoran_mobil": mobil_import,
+                    "setoran_piutang": piutang_import,
+                    "setoran_hutang": hutang_import,
+                    "setoran_aset": aset_import
                 },
                 "laba_kotor": {
                     "total": laba_kotor,

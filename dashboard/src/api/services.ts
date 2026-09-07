@@ -41,6 +41,7 @@ export const financeService = {
   hutangSummary: (p?: PeriodParams) => get('/hutang/summary', p),
   kasBankBalances: () => get('/kas-bank/balances'),
   kasBankList: (params?: Record<string, unknown>) => get('/kas-bank', params),
+  kasBankDetail: (id: number) => get<Record<string, unknown>>(`/kas-bank/${id}`),
   userCashBalances: () => get<unknown[]>('/user-cash/users'),
   userCashHistory: (limit = 50) => get<unknown[]>('/user-cash/history', { limit }),
 };

@@ -154,7 +154,7 @@ export interface CapitalReport {
     setoran_modal: number;
     penyesuaian_harga_beli_sparepart?: number;
     investor_funding?: number;
-    modal_non_kas?: { total: number; aset_tetap?: number; stok_part?: number; stok_mobil?: number };
+    modal_non_kas?: { total: number; aset_tetap?: number; stok_part?: number; stok_mobil?: number; piutang?: number; setoran_mobil?: number; setoran_piutang?: number; setoran_hutang?: number; setoran_aset?: number };
   };
   pengurangan?: {
     prive: number;

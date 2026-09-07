@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Download, Search } from 'lucide-react';
 import { financeService } from '../api/services';
 import { downloadCSV } from './Domains';
 import { formatCurrency, formatDateTime } from '../utils/format';
-import { Badge, Card, DataTable, Loading, PageHeader, Stat } from '../components/ui';
+import { Badge, Card, DataTable, Loading, Modal, PageHeader, Stat } from '../components/ui';
 
 interface KasRow {
   id: number;
@@ -31,6 +32,13 @@ export default function Transaksi() {
   const [sumber, setSumber] = useState('');
   const [tipe, setTipe] = useState('');
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<KasRow | null>(null);
+  const detail = useQuery({
+    queryKey: ['kas_bank_detail', selected?.id],
+    queryFn: () => financeService.kasBankDetail(selected!.id),
+    enabled: selected !== null,
+    staleTime: 30_000,
+  });
   const q = useQuery({
     queryKey: ['kas_bank_list', sumber, tipe],
     queryFn: () =>
@@ -122,6 +130,7 @@ export default function Transaksi() {
               headers={['Waktu', 'Referensi', 'Sumber', 'Keterangan', 'Nominal']}
               empty="Tidak ada transaksi pada filter ini."
               rightAlignFrom={4}
+              onRowClick={(i) => setSelected(rows[i])}
               rows={rows.map((r) => [
                 <span key="t" className="whitespace-nowrap text-xs text-slate-400">{formatDateTime(r.tanggal)}</span>,
                 <span key="n" className="font-mono text-xs font-bold text-slate-700">{r.nomor_transaksi}</span>,
@@ -138,6 +147,40 @@ export default function Transaksi() {
           )}
         </div>
       </Card>
+      {selected && (
+        <Modal title="Detail Transaksi" sub={selected.nomor_transaksi} onClose={() => setSelected(null)}>
+          {detail.isLoading ? (
+            <Loading text="Memuat detail…" />
+          ) : detail.isError ? (
+            <p className="py-4 text-center text-sm text-rose-500">Gagal memuat detail.</p>
+          ) : (
+            (() => {
+              const d = (detail.data ?? {}) as Record<string, unknown>;
+              const val = (k: string) => d[k] ?? selected[k as keyof KasRow] ?? '-';
+              const item = (k: string, v: ReactNode) => (
+                <div key={k} className="flex items-start justify-between gap-4 border-b border-slate-50 py-2 text-sm last:border-0">
+                  <span className="shrink-0 font-bold capitalize text-slate-400">{k.replace(/_/g, ' ')}</span>
+                  <span className="text-right font-medium text-slate-700">{v}</span>
+                </div>
+              );
+              return (
+                <div>
+                  {item('tanggal', formatDateTime(String(val('tanggal'))))}
+                  {item('tipe', <Badge tone={String(val('tipe')) === 'MASUK' ? 'ok' : 'bad'}>{String(val('tipe'))}</Badge>)}
+                  {item('sumber', String(val('sumber')))}
+                  {item('jenis', String(val('jenis')))}
+                  {item('nominal', <span className="font-mono font-extrabold">{formatCurrency(Number(val('nominal')))}</span>)}
+                  {item('referensi', String(val('nomor_referensi')))}
+                  {item('saldo_sebelum', formatCurrency(Number(d.saldo_sebelum ?? 0)))}
+                  {item('saldo_sesudah', formatCurrency(Number(d.saldo_sesudah ?? 0)))}
+                  {item('keterangan', String(val('keterangan')))}
+                  {d.catatan ? item('catatan', String(d.catatan)) : null}
+                </div>
+              );
+            })()
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
