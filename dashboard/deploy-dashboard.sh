@@ -130,9 +130,13 @@ cat > "$APACHE_CONF" <<EOL
 </VirtualHost>
 EOL
 
-if ! grep -q "$DOMAIN_NAME" /etc/hosts; then
-    log "Menambahkan $DOMAIN_NAME ke /etc/hosts..."
-    echo "127.0.0.1 $DOMAIN_NAME" >> /etc/hosts
+# Hanya untuk .test (resolusi lokal). Domain publik JANGAN ditulis ke
+# /etc/hosts — menimpa DNS publik dengan 127.0.0.1 dan merusak certbot/curl.
+if [[ "$DOMAIN_NAME" == *".test" ]]; then
+    if ! grep -q "$DOMAIN_NAME" /etc/hosts; then
+        log "Menambahkan $DOMAIN_NAME ke /etc/hosts..."
+        echo "127.0.0.1 $DOMAIN_NAME" >> /etc/hosts
+    fi
 fi
 
 log "Mengaktifkan situs..."
