@@ -120,6 +120,19 @@ def get_monthly_summary(
     return service.get_monthly_summary(tahun, bulan)
 
 
+@router.get("/by-nomor/{nomor_transaksi}", response_model=KasBankResponse)
+def get_transaction_by_nomor(
+    nomor_transaksi: str,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Get transaction by nomor_transaksi (untuk fitur Lacak)."""
+    service = KasBankService(db)
+    tx = service.get_by_nomor(nomor_transaksi)
+    if not tx:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaksi tidak ditemukan")
+    return tx
+
 @router.get("/{transaction_id}", response_model=KasBankResponse)
 def get_transaction(
     transaction_id: int,

@@ -7,6 +7,7 @@ import Overview from './pages/Overview';
 import Transaksi from './pages/Transaksi';
 import { HutangPiutang, LabaRugi, Modal, Neraca } from './pages/Reports';
 import Kas from './pages/Kas';
+import Lacak from './pages/Lacak';
 import { Angkut, Mobil, Sdm, Stok } from './pages/Domains';
 
 import type { ReactElement } from 'react';
@@ -33,6 +34,7 @@ function Shell() {
       >
         <Route index element={<Overview />} />
         <Route path="transaksi" element={<Transaksi />} />
+        <Route path="lacak" element={<Lacak />} />
         <Route path="laba-rugi" element={<LabaRugi />} />
         <Route path="neraca" element={<Neraca />} />
         <Route path="modal" element={<Modal />} />

@@ -42,6 +42,11 @@ export const financeService = {
   kasBankBalances: () => get('/kas-bank/balances'),
   kasBankList: (params?: Record<string, unknown>) => get('/kas-bank', params),
   kasBankDetail: (id: number) => get<Record<string, unknown>>(`/kas-bank/${id}`),
+  kasBankByNomor: (nomor: string) => get<Record<string, unknown>>(`/kas-bank/by-nomor/${encodeURIComponent(nomor)}`),
+  piutangSearch: (search: string) => get<{ data?: Record<string, unknown>[] }>('/piutang', { search, limit: 5 }),
+  hutangSearch: (search: string) => get<{ data?: Record<string, unknown>[] }>('/hutang', { search, limit: 5 }),
+  piutangPayments: (id: number) => get<Record<string, unknown>[]>(`/piutang/${id}/payments`),
+  hutangPayments: (id: number) => get<Record<string, unknown>[]>(`/hutang/${id}/payments`),
   userCashBalances: () => get<unknown[]>('/user-cash/users'),
   userCashHistory: (limit = 50) => get<unknown[]>('/user-cash/history', { limit }),
 };

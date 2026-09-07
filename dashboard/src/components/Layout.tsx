@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  PackageSearch,
   Scale,
   TrendingUp,
   Truck,
@@ -28,6 +29,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, group: 'Utama' },
   { to: '/transaksi', label: 'Transaksi', icon: ArrowLeftRight, group: 'Utama' },
+  { to: '/lacak', label: 'Lacak Nomor', icon: PackageSearch, group: 'Utama' },
   { to: '/laba-rugi', label: 'Laba Rugi', icon: TrendingUp, group: 'Laporan' },
   { to: '/neraca', label: 'Neraca', icon: Scale, group: 'Laporan' },
   { to: '/modal', label: 'Modal', icon: Wallet, group: 'Laporan' },

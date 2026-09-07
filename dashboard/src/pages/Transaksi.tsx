@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Download, Search } from 'lucide-react';
 import { financeService } from '../api/services';
 import { downloadCSV } from './Domains';
@@ -33,6 +34,7 @@ export default function Transaksi() {
   const [tipe, setTipe] = useState('');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<KasRow | null>(null);
+  const navigate = useNavigate();
   const detail = useQuery({
     queryKey: ['kas_bank_detail', selected?.id],
     queryFn: () => financeService.kasBankDetail(selected!.id),
@@ -170,7 +172,25 @@ export default function Transaksi() {
                   {item('sumber', String(val('sumber')))}
                   {item('jenis', String(val('jenis')))}
                   {item('nominal', <span className="font-mono font-extrabold">{formatCurrency(Number(val('nominal')))}</span>)}
-                  {item('referensi', String(val('nomor_referensi')))}
+                  {(() => {
+                    const ref = String(d.nomor_referensi ?? '');
+                    return item(
+                      'referensi',
+                      /^[A-Z]{3}/.test(ref) ? (
+                        <button
+                          onClick={() => {
+                            setSelected(null);
+                            navigate(`/lacak?nomor=${encodeURIComponent(ref)}`);
+                          }}
+                          className="font-mono font-bold text-indigo-600 hover:underline"
+                        >
+                          {ref} →
+                        </button>
+                      ) : (
+                        ref || '-'
+                      ),
+                    );
+                  })()}
                   {item('saldo_sebelum', formatCurrency(Number(d.saldo_sebelum ?? 0)))}
                   {item('saldo_sesudah', formatCurrency(Number(d.saldo_sesudah ?? 0)))}
                   {item('keterangan', String(val('keterangan')))}
