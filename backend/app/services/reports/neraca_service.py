@@ -253,7 +253,6 @@ class NeracaService(BaseReportService):
         # funded from modal must be added to non-cash capital; hutang funded from assets must be
         # subtracted (it is not owner capital).
         piutang_discovery = 0.0
-        from app.models.keuangan import PembayaranPiutang
         piutang_imp = self.db.query(PiutangUsaha).filter(
             PiutangUsaha.nomor_referensi.like("IMP-%"),
             PiutangUsaha.tanggal <= as_of_date,
@@ -266,11 +265,12 @@ class NeracaService(BaseReportService):
                 KasBank.referensi_id == pp.id,
                 KasBank.nomor_referensi == pp.nomor_piutang,
             ).first()
-            has_pembayaran = self.db.query(PembayaranPiutang.id).filter(
-                PembayaranPiutang.piutang_id == pp.id
-            ).first()
-            if not has_kb and not has_pembayaran:
-                piutang_discovery += float(pp.sisa_piutang)
+            # Nominal penuh, bukan sisa: yg sudah dibayar kini ada di kas,
+            # yg belum di piutang — keduanya aktiva dari setoran awal yg sama.
+            # Skip-hanya-karena-dibayar menghapus setoran (kasus PAKSAPTONO
+            # Rp994.000 dibayar 300rb → discovery 0, selisih tepat 994rb).
+            if not has_kb:
+                piutang_discovery += float(pp.nominal_piutang)
         # Hutang opening-balance (IMP-*) funded assets, so it is not owner capital.
         hutang_import_rows = self.db.query(HutangUsaha).filter(
             HutangUsaha.nomor_referensi.like("IMP-%"),
@@ -285,11 +285,9 @@ class NeracaService(BaseReportService):
         total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep) + modal_aset_tetap + piutang_discovery
         total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang + hutang_internal
         
-        # Combined setoran modal = kas setoran + non-kas (auto-balanced)
-        # modal_non_kas is the IDENTITY PLUG: setoran_modal - setoran_modal_kas.
-        # Client concept: Modal = Total Aktiva - Total Hutang, so non-kas absorbs
-        # piutang-hutang discovery; detail breakdown stays as info lines so the
-        # headline always equals persediaan + stok mobil + aset tetap + (piutang - hutang).
+        # Memo cek silang historis: aset non-kas yg pernah ada (kini + sudah
+        # terjual) − pembelian tercatat − hutang awal − hutang investor.
+        # Basis "pernah ada" vs komposisi kini di drill; selisih dua memo wajar.
         modal_discovery_info = total_non_kas_assets_historis - total_purchase_recorded - hutang_import - hutang_investor
 
         # ═══════════════════════════════════════════════════════════════
@@ -305,9 +303,21 @@ class NeracaService(BaseReportService):
         # IDENTITY-BASED EQUITY: From balance sheet identity
         equity_from_identity = total_assets - total_liabilities
 
-        # Konsep saldo awal (client): Modal = Total Aktiva - Total Hutang
-        setoran_modal = max(0, equity_from_identity - retained_earnings + prive_total)
-        modal_non_kas = setoran_modal - setoran_modal_kas
+        # Setoran terukur bottom-up (bukan plug identitas):
+        # non-kas = aset non-kas kini + HPP barang modal yg sudah terjual
+        #           − pembelian tercatat − hutang awal/tercatat.
+        # Barang terjual ditambah kembali karena nilainya sudah keluar dari
+        # stok kini tapi dulu masuk sebagai setoran (kas/piutang/laba kini
+        # menampung nilainya). Tanpa add-back, tiap penjualan menggerus modal.
+        modal_non_kas = (
+            (modal_persediaan + akumulasi_hpp_parts)
+            + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep)
+            + modal_aset_tetap
+            + piutang_discovery
+            - total_purchase_recorded
+            - hutang_import
+        )
+        setoran_modal = setoran_modal_kas + modal_non_kas
 
         equity_from_components = setoran_modal + retained_earnings - prive_total
         

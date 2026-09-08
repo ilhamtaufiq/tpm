@@ -40,13 +40,13 @@ import {
   drillRepairMobil,
   drillPrive,
   drillSetoranKas,
+  sumBedahPlug,
 } from '../components/drills';
 import { downloadCSV } from './Domains';
 import type { CapitalReport, LabaRugiReport, NeracaReport } from '../types/reports';
 
 type Json = Record<string, unknown>;
 const num = (v: unknown) => (typeof v === 'number' ? v : parseFloat(String(v ?? '0')) || 0);
-const nonneg = (v: number) => Math.max(0, v);
 
 // ── Laba Rugi — port frontend/app/laporan/laba-rugi.tsx ─────────────────────
 export function LabaRugi() {
@@ -70,11 +70,13 @@ export function LabaRugi() {
   const md = r.mobil_details ?? {};
   const prepSold = m.beban_operasional || 0;
   const prepAll = md.total_biaya_persiapan ?? prepSold;
-  const repairSold = nonneg(m.maintenance ?? md.total_biaya_bengkel ?? md.biaya_bengkel ?? 0);
+  // Signed: koreksi/retur repair negatif harus tampil, bukan di-nol-kan.
+  const repairSold = m.maintenance ?? md.total_biaya_bengkel ?? md.biaya_bengkel ?? 0;
   const penalti = m.dana_penalti ?? m.pendapatan_lainnya ?? 0;
-  const labaKotorJA = ja.revenue - (ja.maintenance ?? 0) - ja.beban_operasional;
-  const hppMobil = m.hpp + prepSold + repairSold;
-  const labaKotorMobil = m.revenue - hppMobil;
+  // Angka backend single source of truth; fallback lokal hanya bila backend lama.
+  const labaKotorJA = ja.laba_kotor ?? ja.revenue - (ja.maintenance ?? 0) - ja.beban_operasional;
+  const hppMobil = m.hpp_total ?? m.hpp + prepSold + repairSold;
+  const labaKotorMobil = m.laba_kotor ?? m.revenue - hppMobil;
 
   const unitCard = (
     accent: string,
@@ -119,7 +121,7 @@ export function LabaRugi() {
       <PageHeader title="Laba Rugi" sub="Analisa finansial per unit bisnis" />
       <PeriodControls filterType={filterType} onType={setFilterType} label={period.label} onPrev={() => shift(-1)} onNext={() => shift(1)} />
 
-      {/* Ringkasan */}
+      {/* Ringkasan — total dari backend; fallback lokal bila backend lama */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           ['Revenue', r.summary.total_revenue ?? penjualanBengkel + ja.revenue + m.revenue, 'text-slate-900'],
@@ -248,10 +250,10 @@ export function LabaRugi() {
         </Card>
       )}
 
-      <Card title="Rekonsiliasi antar Laporan" sub="Laba & prive halaman ini = angka Neraca & Modal periode sama" icon={Scale}>
+      <Card title="Rekonsiliasi antar Laporan" sub="Samakan periode + tanggal sebelum bandingkan" icon={Scale}>
         <div className="grid gap-2 text-xs sm:grid-cols-3">
-          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Laba bersih <b className="font-mono tabular-nums">{formatCurrencyDisplay(r.summary.laba_bersih)}</b> → Laba Ditahan Neraca & Laba Periode Modal</p>
-          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Prive <b className="font-mono tabular-nums">{formatCurrencyDisplay(r.summary.prive)}</b> → pengurang Modal & Neraca</p>
+          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Laba bersih periode ini <b className="font-mono tabular-nums">{formatCurrencyDisplay(r.summary.laba_bersih)}</b> → Laba Periode di Modal; Laba Ditahan Neraca itu <b>akumulasi sejak awal sistem</b>, bukan angka periode ini</p>
+          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Prive periode ini <b className="font-mono tabular-nums">{formatCurrencyDisplay(r.summary.prive)}</b> → pengurang Modal periode; Prive Neraca itu <b>kumulatif</b></p>
           <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Arus kas per akun di bawah = mutasi periode, <b>bukan</b> komponen laba</p>
         </div>
       </Card>
@@ -322,6 +324,22 @@ export function Neraca() {
   const modalBottomUp = r.modal?.modal_komponen ?? (m.setoran_modal + m.laba_ditahan - m.prive);
   const modalIdentity = r.modal?.equity_identity ?? (r.total_aktiva - h.total_hutang);
   const selisihModal = r.modal?.selisih_modal ?? modalBottomUp - modalIdentity;
+  // Sisa komposisi non-kas = HPP terjual − pembelian tercatat (+ hutang investor).
+  // Bedah residual = Σ bedah − sisa; 0 = explained penuh.
+  const nk = m.modal_non_kas_detail;
+  const sisaKomposisi = m.modal_non_kas - (m.modal_persediaan ?? 0) - (m.modal_stok_mobil ?? 0) - (m.modal_aset_tetap ?? 0) - (nk?.piutang_discovery ?? 0) - (nk?.hutang_import ?? 0);
+  const residualBedah = sumBedahPlug({
+    hpp_parts_terjual: nk?.hpp_parts_terjual,
+    hpp_mobil_terjual: nk?.hpp_mobil_terjual,
+    hpp_mobil_prep_terjual: nk?.hpp_mobil_prep_terjual,
+    pembelian_part_kas: nk?.pembelian_part_kas,
+    pembelian_aset_kas: nk?.pembelian_aset_kas,
+    pembelian_mobil_kas: nk?.pembelian_mobil_kas,
+    pembelian_hutang: nk?.pembelian_hutang,
+    hutang_internal_tercatat: nk?.hutang_internal_tercatat,
+    hutang_import_dilunasi: nk?.hutang_import_dilunasi,
+  }) - sisaKomposisi;
+  const gapDuaMemo = (nk?.discovery_info ?? 0) - m.modal_non_kas;
 
   const sectionHead = (title: string, sub: string, total: number, tone: string, icon: ReactNode) => (
     <div className="flex items-center justify-between gap-3 border-b border-slate-50 px-5 py-4">
@@ -365,9 +383,9 @@ export function Neraca() {
 
       <Card title="Rekonsiliasi antar Laporan" sub="Cek silang per tanggal yang sama" icon={Scale}>
         <div className="grid gap-2 text-xs sm:grid-cols-3">
-          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Laba Ditahan <b className="font-mono tabular-nums">{formatCurrencyDisplay(labaAdj)}</b> = akumulasi Laba Bersih Laba Rugi − Prive</p>
-          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Total Modal <b className="font-mono tabular-nums">{formatCurrencyDisplay(m.total_modal)}</b> = Modal Akhir di Perubahan Modal</p>
-          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Prive <b className="font-mono tabular-nums">{formatCurrencyDisplay(m.prive)}</b> = angka Prive Laba Rugi periode berjalan</p>
+          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Laba Ditahan <b className="font-mono tabular-nums">{formatCurrencyDisplay(labaAdj)}</b> = akumulasi Laba Bersih Laba Rugi − Prive <b>sejak awal sistem</b> (bandingkan akumulasi, bukan satu periode)</p>
+          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Total Modal <b className="font-mono tabular-nums">{formatCurrencyDisplay(m.total_modal)}</b> vs Modal Akhir Modal periode sama: selisih wajar = <b>hutang investor</b> (Modal keluarkan investor dari kewajiban, Neraca memasukkannya)</p>
+          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Prive <b className="font-mono tabular-nums">{formatCurrencyDisplay(m.prive)}</b> = <b>kumulatif</b>; Prive Laba Rugi = periode berjalan saja</p>
         </div>
       </Card>
 
@@ -478,9 +496,10 @@ export function Neraca() {
                     />
                     {(m.modal_non_kas_detail?.discovery_info ?? 0) !== 0 && (
                       <div className="mt-1 rounded-lg bg-slate-50 px-2.5 py-2 text-[10px] leading-relaxed text-slate-500">
-                        <p>Cek silang historis (basis barang <b>pernah ada</b>): {formatCurrencyDisplay(m.modal_non_kas_detail?.discovery_info ?? 0)} = aset historis (termasuk yg sudah terjual) − pembelian tercatat − hutang awal.</p>
-                        <p>Σ komposisi kini (drill di atas): {formatCurrencyDisplay(m.modal_non_kas)} = aset <b>saat ini</b> + discovery.</p>
-                        <p>Selisih dua memo: {formatCurrencyDisplay((m.modal_non_kas_detail?.discovery_info ?? 0) - m.modal_non_kas)} — wajar beda basis. Selisih = HPP terjual − pembelian tercatat − plug, ditutup Bedah Plug di bawah (residual = selisih + hutang IMP dilunasi → 0 bila pas).</p>
+                        <p>Cek silang historis: {formatCurrencyDisplay(m.modal_non_kas_detail?.discovery_info ?? 0)} = aset non-kas yg pernah ada (stok kini + yg sudah terjual/HPP) + piutang awal − pembelian tercatat − hutang awal − hutang investor.</p>
+                        <p>Σ komposisi kini (drill di atas): {formatCurrencyDisplay(m.modal_non_kas)} = komponen aset kini + sisa di bawah.</p>
+                        <p>Selisih dua memo: {formatCurrencyDisplay(gapDuaMemo)} (= −hutang investor; Rp0 bila tak ada dana investor).</p>
+                        <p>Sisa komposisi {formatCurrencyDisplay(sisaKomposisi)} = HPP terjual − pembelian tercatat. Negatif wajar: pembelian tercatat (termasuk mobil yg masih di stok) lebih besar dari HPP yg sudah laku. {Math.abs(residualBedah) < 100 ? '✓ Bedah Plug di bawah menjelaskan penuh.' : `Δ ${formatCurrencyDisplay(residualBedah)} belum explained — perlu telusur.`}</p>
                       </div>
                     )}
                     <Drill
@@ -494,7 +513,7 @@ export function Neraca() {
                         pembelian_hutang: m.modal_non_kas_detail?.pembelian_hutang,
                         hutang_internal_tercatat: m.modal_non_kas_detail?.hutang_internal_tercatat,
                         hutang_import_dilunasi: m.modal_non_kas_detail?.hutang_import_dilunasi,
-                        sisaPlug: m.modal_non_kas - (m.modal_persediaan ?? 0) - (m.modal_stok_mobil ?? 0) - (m.modal_aset_tetap ?? 0) - (m.modal_non_kas_detail?.piutang_discovery ?? 0) - (m.modal_non_kas_detail?.hutang_import ?? 0),
+                        sisaPlug: sisaKomposisi,
                       })}
                       period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }}
                       amountKey="amount"
@@ -608,12 +627,14 @@ export function Neraca() {
             </span>
           </div>
         </div>
+        <p className="relative mt-3 text-xs leading-relaxed text-slate-400">Aktiva = Kas & Bank + Piutang + Persediaan + Stok Mobil + Aset Tetap. Pasiva = Hutang + Modal (Setoran Kas + Setoran Non-Kas + Laba Ditahan − Prive). Selisih ≠ 0 berarti ada transaksi belum tercatat / salah pos — bukan angka yg dipaksa pas.</p>
         <div className="relative mt-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
           <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Validasi Komponen Modal</p>
           <div className="flex justify-between"><span className="text-slate-300">Bottom-Up</span><b className="tabular-nums">{formatCurrencyDisplay(modalBottomUp)}</b></div>
           <div className="flex justify-between"><span className="text-slate-300">Aktiva − Hutang</span><b className="tabular-nums">{formatCurrencyDisplay(modalIdentity)}</b></div>
           <div className="flex justify-between"><span className="text-slate-300">Selisih Modal</span><b className={`tabular-nums ${Math.abs(selisihModal) < 100 ? 'text-emerald-300' : 'text-amber-300'}`}>{formatCurrencyDisplay(selisihModal)}</b></div>
         </div>
+        <p className="relative mt-3 text-xs leading-relaxed text-slate-400">Bottom-Up = Setoran + Laba Ditahan − Prive (dihitung dari komponen terukur). Aktiva − Hutang = identitas neraca. Keduanya harus sama; selisih tampil jujur di sini, tidak disembunyikan.</p>
         <div className="relative mt-3 text-center">
           <Badge tone={r.is_balanced ? 'ok' : 'warn'}>{r.is_balanced ? 'NERACA SEIMBANG' : 'TERDAPAT SELISIH'}</Badge>
         </div>
@@ -689,13 +710,14 @@ export function Modal() {
 
       <Card title="Rekonsiliasi antar Laporan" sub="Cek silang periode yang sama" icon={Scale}>
         <div className="grid gap-2 text-xs sm:grid-cols-3">
-          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Laba Bersih <b className="font-mono tabular-nums">{formatCurrencyDisplay(labaBersih)}</b> = Laba Bersih Laba Rugi</p>
-          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Modal Akhir <b className="font-mono tabular-nums">{formatCurrencyDisplay(modalAkhir)}</b> = Total Modal Neraca</p>
-          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Prive <b className="font-mono tabular-nums">{formatCurrencyDisplay(priveTotal)}</b> = angka Prive Laba Rugi</p>
+          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Laba Bersih <b className="font-mono tabular-nums">{formatCurrencyDisplay(labaBersih)}</b> = Laba Bersih Laba Rugi periode sama</p>
+          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Modal Akhir <b className="font-mono tabular-nums">{formatCurrencyDisplay(modalAkhir)}</b> vs Total Modal Neraca per akhir periode: selisih wajar = <b>hutang investor</b> (lihat catatan investor di atas)</p>
+          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Prive <b className="font-mono tabular-nums">{formatCurrencyDisplay(priveTotal)}</b> = angka Prive Laba Rugi periode sama</p>
         </div>
       </Card>
 
       <Card title="Rincian Perubahan Ekuitas">
+        <p className="mb-2 rounded-xl bg-indigo-50/70 px-3 py-2 text-[11px] leading-relaxed text-indigo-800">Rumus otoritatif: Modal Akhir = Modal Awal + Setoran Kas + Setoran Non-Kas + Laba Bersih + Laba Investor − Prive − Bayar Investor. Rincian Penambahan/Pengurangan di bawah = arus display-only, tidak harus dijumlah ke Modal Akhir.</p>
         <FinancialRow label="Modal Awal" value={modalAwal} bold />
         <Drill
           spec={drillModalAwal(period.tanggal_dari)}

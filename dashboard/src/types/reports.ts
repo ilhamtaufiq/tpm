@@ -124,6 +124,8 @@ export interface NeracaReport {
 export interface LabaRugiUnit {
   revenue: number;
   hpp: number;
+  /** Mobil: HPP penuh (harga beli + prep + repair terjual). Unit lain: = hpp. */
+  hpp_total?: number;
   laba_kotor: number;
   laba_penyesuaian_harga_beli?: number;
   beban_operasional: number;

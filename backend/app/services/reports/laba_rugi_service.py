@@ -76,6 +76,17 @@ class LabaRugiService(BaseReportService):
             + m_pendapatan_lainnya
         )
 
+        # Laba kotor per unit — single source of truth (frontend tidak hitung ulang).
+        # JA: share TPM net setelah biaya trip/maintenance. Mobil: revenue − HPP
+        # (harga beli + prep + repair unit terjual); penalti booking di luar HPP.
+        ja_laba_kotor = ja_revenue_net - ja_maintenance - ja_ops_final
+        m_hpp_total = m_hpp_unit + m_prep + m_maintenance
+        m_laba_kotor = m_revenue - m_hpp_total
+
+        total_revenue = b_revenue + ja_revenue_net + m_revenue
+        total_laba_kotor = b_laba_kotor + ja_laba_kotor + m_laba_kotor
+        total_hpp = total_revenue - total_laba_kotor
+
         # 4. SUMMARY
         overhead_pusat = b["common_expenses"]
         prive = data["prive_global"]
@@ -139,6 +150,7 @@ class LabaRugiService(BaseReportService):
                     "beban_operasional": ja_ops_final,
                     "maintenance": ja_maintenance,
                     "beban_umum": ja_overhead,
+                    "laba_kotor": ja_laba_kotor,
                     "laba_bersih": ja_laba_bersih
                 },
                 "mobil": {
@@ -146,14 +158,20 @@ class LabaRugiService(BaseReportService):
                     "pendapatan_lainnya": m_pendapatan_lainnya,
                     "dana_penalti": m_pendapatan_lainnya,
                     "hpp": m_hpp_unit,
+                    "hpp_total": m_hpp_total,
                     "beban_operasional": m_prep,
                     "maintenance": m_maintenance,
                     "beban_umum": m_overhead,
                     "sharing_investor": m_sharing,
+                    "laba_kotor": m_laba_kotor,
                     "laba_bersih": m_laba_bersih
                 }
             },
             "summary": {
+                "total_revenue": total_revenue,
+                "total_hpp": total_hpp,
+                "total_laba_kotor": total_laba_kotor,
+                "total_beban_operasional": overhead_pusat,
                 "total_beban_umum": overhead_pusat,
                 "internal_elimination": elimination,
                 "internal_profit_elimination": internal_jbm_profit,

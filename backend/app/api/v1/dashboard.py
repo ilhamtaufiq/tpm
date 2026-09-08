@@ -174,8 +174,10 @@ def get_dashboard_summary(
         "mobil": {
             "total_penjualan": float(mobil_summary["total_penjualan"]),
             "total_transaksi": mobil_summary["total_transaksi"],
-            "laba_kotor": float(mobil_summary["laba_tpm"]),
-            "laba_tpm": float(mobil_summary["laba_tpm"]),
+            # Satu sumber dgn Laba Rugi: repair internal = laba bengkel yg diakui
+            # segera, bukan HPP mobil (full-modal ada di mobil_summary mentah).
+            "laba_kotor": float(lr_report["units"]["mobil"]["laba_kotor"]),
+            "laba_tpm": float(lr_report["units"]["mobil"]["laba_kotor"]),
             "laba_bersih": float(lr_report["units"]["mobil"]["laba_bersih"]),
             "total_pengeluaran": (
                 overhead_data.get("penjualan_mobil", 0) + 

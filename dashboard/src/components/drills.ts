@@ -606,8 +606,11 @@ export const drillNeracaNonKas = (parts: { persediaan?: number; stok_mobil?: num
     { komponen: 'Aset Tetap', amount: a },
     { komponen: 'Piutang saldo awal (IMP, tanpa KasBank)', amount: pd },
     { komponen: 'Hutang saldo awal + investor (pengurang)', amount: hi },
-    // Selisih penyeimbang (balancing figure) — 3 tier label.
-    { komponen: Math.abs(plug) < 100 ? 'Selisih pembulatan' : Math.abs(plug) < 100_000 ? 'Selisih rekonsiliasi' : 'Selisih perlu telusur ⚠', amount: plug },
+    // Sisa = HPP barang modal yg sudah laku − pembelian tercatat (+ hutang
+  // investor). Negatif wajar bila pembelian tercatat (mis. mobil masih di
+  // stok) lebih besar dari HPP yg sudah terjual — rinciannya di Bedah Plug,
+  // bukan error. Selisih akuntansi nyata tampil di Validasi Komponen Modal.
+    { komponen: Math.abs(plug) < 100 ? 'Selisih pembulatan' : 'Sisa penyesuaian (rincian di Bedah Plug)', amount: plug },
   ].filter((r) => r.amount !== 0);
   return {
     key: 'modal-non-kas',

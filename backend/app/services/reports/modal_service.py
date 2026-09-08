@@ -148,32 +148,9 @@ class ModalService(BaseReportService):
         aset_tetap = float(data["assets"].get("tetap", 0))
 
         # ══════════════════════════════════════════════════════════════
-        # MODAL NON-KAS: Period Delta
-        # Because modal_awal already includes cumulative non-cash assets,
-        # we only want to add the NEW non-cash assets introduced in this period.
+        # MODAL NON-KAS: Period Delta (signed — penurunan = negatif, mis.
+        # penjualan/disposal aset; jangan clamp agar awal vs akhir rekonsiliasi)
         # ══════════════════════════════════════════════════════════════
-        def get_modal_non_kas(as_of_date: date, assets_total: float) -> float:
-            from app.models.bengkel import PembelianSparePart
-            p_part = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
-                PembelianSparePart.tanggal <= as_of_date
-            ).scalar() or 0)
-            # Strict matching: Only subtract cash payments that are explicitly linked to an asset ID
-            p_aset = float(self.db.query(func.sum(KasBank.nominal)).filter(
-                KasBank.tipe == KasBankType.KELUAR, 
-                KasBank.sumber == KasBankSource.ASET, 
-                KasBank.referensi_id.is_not(None),
-                KasBank.tanggal <= as_of_date
-            ).scalar() or 0)
-            p_mobil = float(self.db.query(func.sum(KasBank.nominal)).filter(
-                KasBank.tipe == KasBankType.KELUAR, 
-                KasBank.sumber.in_([KasBankSource.PEMBELIAN_MOBIL, KasBankSource.JUAL_BELI_MOBIL]),
-                ~KasBank.keterangan.ilike("Transfer %"),
-                ~KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
-                KasBank.tanggal <= as_of_date
-            ).scalar() or 0)
-            
-            return max(0, assets_total - (p_part + p_aset + p_mobil))
-
         from app.models.bengkel import TransaksiPenjualanBengkel, DetailTransaksiSpareParts
         
         # Helper to get accumulated HPP up to a specific date
@@ -212,11 +189,11 @@ class ModalService(BaseReportService):
         modal_stok_part_end = persediaan_part + get_akumulasi_hpp_parts(tanggal_sampai)
         modal_stok_mobil_end = persediaan_mobil + get_akumulasi_hpp_mobil(tanggal_sampai) + get_akumulasi_hpp_mobil_prep(tanggal_sampai)
 
-        # The Change (Penambahan) is the increase during the period
-        modal_aset_tetap_delta = max(0, modal_aset_tetap_end - modal_aset_tetap_start)
-        modal_stok_part_delta = max(0, modal_stok_part_end - modal_stok_part_start)
-        modal_stok_mobil_delta = max(0, modal_stok_mobil_end - modal_stok_mobil_start)
-        modal_piutang_delta = max(0, float(data["raw_summaries"]["piutang"].get("total", 0)) - start_piutang)
+        # The Change (signed: + = penambahan, − = penurunan/disposal)
+        modal_aset_tetap_delta = modal_aset_tetap_end - modal_aset_tetap_start
+        modal_stok_part_delta = modal_stok_part_end - modal_stok_part_start
+        modal_stok_mobil_delta = modal_stok_mobil_end - modal_stok_mobil_start
+        modal_piutang_delta = float(data["raw_summaries"]["piutang"].get("total", 0)) - start_piutang
 
         total_non_kas = modal_aset_tetap_delta + modal_stok_part_delta + modal_piutang_delta
         
@@ -619,7 +596,7 @@ class ModalService(BaseReportService):
         # Do NOT apply penyesuaian to total_penambahan or total_pengurangan.
         # This keeps the transaction flows pure and exposes the true discrepancy.
         selisih = penyesuaian
-        modal_stok_mobil_delta_external = max(0, modal_stok_mobil_delta - workshop_bills_unsold)
+        modal_stok_mobil_delta_external = modal_stok_mobil_delta - workshop_bills_unsold
 
         return {
             "periode": data["periode"],
@@ -674,7 +651,7 @@ class ModalService(BaseReportService):
                     "total": total_pembayaran_hutang_all,
                     "mobil": pembayaran_hutang_mobil,
                     "sparepart": pembayaran_hutang_part,
-                    "umum": max(0, total_pembayaran_hutang_all - (pembayaran_hutang_mobil + pembayaran_hutang_part))
+                    "umum": total_pembayaran_hutang_all - (pembayaran_hutang_mobil + pembayaran_hutang_part)
                 },
                 "alokasi_stok": {
                     "total": alokasi_stok_net,
