@@ -477,7 +477,11 @@ export function Neraca() {
                       total={m.modal_non_kas}
                     />
                     {(m.modal_non_kas_detail?.discovery_info ?? 0) !== 0 && (
-                      <p className="mt-1 text-[10px] text-slate-400">Cek silang historis (memo, bukan penambah): {formatCurrencyDisplay(m.modal_non_kas_detail?.discovery_info ?? 0)} = aset historis − pembelian tercatat − hutang awal.</p>
+                      <div className="mt-1 rounded-lg bg-slate-50 px-2.5 py-2 text-[10px] leading-relaxed text-slate-500">
+                        <p>Cek silang historis (basis barang <b>pernah ada</b>): {formatCurrencyDisplay(m.modal_non_kas_detail?.discovery_info ?? 0)} = aset historis (termasuk yg sudah terjual) − pembelian tercatat − hutang awal.</p>
+                        <p>Σ komposisi kini (drill di atas): {formatCurrencyDisplay(m.modal_non_kas)} = aset <b>saat ini</b> + discovery.</p>
+                        <p>Selisih dua memo: {formatCurrencyDisplay((m.modal_non_kas_detail?.discovery_info ?? 0) - m.modal_non_kas)} — wajar beda basis. Selisih = HPP terjual − pembelian tercatat − plug, ditutup Bedah Plug di bawah (residual = selisih + hutang IMP dilunasi → 0 bila pas).</p>
+                      </div>
                     )}
                     <Drill
                       spec={drillBedahPlug({
@@ -490,6 +494,7 @@ export function Neraca() {
                         pembelian_hutang: m.modal_non_kas_detail?.pembelian_hutang,
                         hutang_internal_tercatat: m.modal_non_kas_detail?.hutang_internal_tercatat,
                         hutang_import_dilunasi: m.modal_non_kas_detail?.hutang_import_dilunasi,
+                        sisaPlug: m.modal_non_kas - (m.modal_persediaan ?? 0) - (m.modal_stok_mobil ?? 0) - (m.modal_aset_tetap ?? 0) - (m.modal_non_kas_detail?.piutang_discovery ?? 0) - (m.modal_non_kas_detail?.hutang_import ?? 0),
                       })}
                       period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }}
                       amountKey="amount"

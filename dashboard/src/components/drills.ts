@@ -483,14 +483,28 @@ export const drillModalNonKas = (parts: { setoran_mobil?: number; setoran_piutan
   };
 };
 
-// Bedah sisa plug: memo barang modal yang sudah terjual (terkubur di
-// kas/piutang/laba) + pembelian tercatat. Bukan baris aditif — hideDiff,
-// karena total plug sendiri sudah dijelaskan drill di atas.
+// Bedah selisih penyeimbang: memo barang modal yang sudah terjual (terkubur
+// di kas/piutang/laba) + pembelian tercatat. Bukan baris aditif — hideDiff,
+// karena total selisih sendiri sudah dijelaskan drill di atas.
+// Σ komponen bedah selisih — dipakai label residual otomatis.
+export const sumBedahPlug = (d: {
+  hpp_parts_terjual?: number; hpp_mobil_terjual?: number; hpp_mobil_prep_terjual?: number;
+  pembelian_part_kas?: number; pembelian_aset_kas?: number; pembelian_mobil_kas?: number;
+  pembelian_hutang?: number; hutang_internal_tercatat?: number;
+  hutang_import_dilunasi?: number;
+}): number => {
+  const n = (v: number | undefined) => Number(v ?? 0);
+  return n(d.hpp_parts_terjual) + n(d.hpp_mobil_terjual) + n(d.hpp_mobil_prep_terjual)
+    - n(d.pembelian_part_kas) - n(d.pembelian_aset_kas) - n(d.pembelian_mobil_kas)
+    - n(d.pembelian_hutang) - n(d.hutang_internal_tercatat) + n(d.hutang_import_dilunasi);
+};
+
 export const drillBedahPlug = (d: {
   hpp_parts_terjual?: number; hpp_mobil_terjual?: number; hpp_mobil_prep_terjual?: number;
   pembelian_part_kas?: number; pembelian_aset_kas?: number; pembelian_mobil_kas?: number;
   pembelian_hutang?: number; hutang_internal_tercatat?: number;
   hutang_import_dilunasi?: number;
+  sisaPlug?: number;
 }): DrillSpec => {
   const n = (v: number | undefined) => Number(v ?? 0);
   const rows = [
@@ -504,9 +518,16 @@ export const drillBedahPlug = (d: {
     { komponen: 'Hutang internal tercatat (pengurang)', amount: -n(d.hutang_internal_tercatat) },
     { komponen: 'Hutang IMP dilunasi (nominal − sisa)', amount: n(d.hutang_import_dilunasi) },
   ].filter((r) => r.amount !== 0);
+  // Residual = Σ bedah − selisih. |residual| < 100 → explained penuh (✓).
+  const residual = d.sisaPlug === undefined ? undefined : sumBedahPlug(d) - Number(d.sisaPlug);
+  const label = residual === undefined
+    ? 'Bedah selisih (memo)'
+    : Math.abs(residual) < 100
+      ? `Bedah selisih ✓ explained (${formatCurrency(residual)})`
+      : `Bedah selisih Δ ${formatCurrency(residual)} belum explained`;
   return {
     key: 'bedah-plug',
-    label: 'Bedah sisa plug (memo)',
+    label,
     columns: [
       { key: 'komponen', header: 'Komponen' },
       rp('amount'),
@@ -516,7 +537,7 @@ export const drillBedahPlug = (d: {
 };
 
 // Gap piutang vs hutang internal per referensi (dari cross_validation backend).
-// Memo — internal dikonsolidasi keluar, tapi gap tak berpasangan menekan plug.
+// Memo — internal dikonsolidasi keluar, tapi gap tak berpasangan menekan selisih.
 export const drillMismatchInternal = (mismatches: Array<{ ref: string; piutang: number; hutang: number; gap: number }>): DrillSpec => {
   const rows = (mismatches ?? []).map((mm) => ({
     ref: String(mm.ref ?? '-'),
@@ -567,8 +588,8 @@ export const drillModalAwal = (tanggalDari: string): DrillSpec => {
   };
 };
 
-// Komposisi Modal Non-Kas Neraca: komponen aditif + sisa plug.
-// total = setoran_modal − setoran_modal_kas (plug identitas). discovery_info
+// Komposisi Modal Non-Kas Neraca: komponen aditif + selisih penyeimbang.
+// total = setoran_modal − setoran_modal_kas (balancing figure). discovery_info
 // backend adalah memo cek-silang, bukan baris aditif — tampilkan sebagai
 // FinancialRow memo di Reports.tsx, bukan di sini (Drill Σ harus = total).
 export const drillNeracaNonKas = (parts: { persediaan?: number; stok_mobil?: number; aset_tetap?: number; piutang_discovery?: number; hutang_import?: number; total?: number }): DrillSpec => {
@@ -585,8 +606,8 @@ export const drillNeracaNonKas = (parts: { persediaan?: number; stok_mobil?: num
     { komponen: 'Aset Tetap', amount: a },
     { komponen: 'Piutang saldo awal (IMP, tanpa KasBank)', amount: pd },
     { komponen: 'Hutang saldo awal + investor (pengurang)', amount: hi },
-    // Sisa plug identitas — flag ⚠ bila |plug| ≥ 100rb agar tak silent.
-    { komponen: Math.abs(plug) >= 100_000 ? 'Sisa penyesuaian (plug ⚠ perlu telusur)' : 'Sisa penyesuaian (plug)', amount: plug },
+    // Selisih penyeimbang (balancing figure) — 3 tier label.
+    { komponen: Math.abs(plug) < 100 ? 'Selisih pembulatan' : Math.abs(plug) < 100_000 ? 'Selisih rekonsiliasi' : 'Selisih perlu telusur ⚠', amount: plug },
   ].filter((r) => r.amount !== 0);
   return {
     key: 'modal-non-kas',
