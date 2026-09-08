@@ -10,6 +10,7 @@ import {
   Menu,
   PackageSearch,
   Scale,
+  Settings as SettingsIcon,
   TrendingUp,
   Truck,
   Users,
@@ -39,6 +40,7 @@ const NAV: NavItem[] = [
   { to: '/mobil', label: 'Mobil', icon: Car, group: 'Operasional' },
   { to: '/angkut', label: 'Angkut', icon: Truck, group: 'Operasional' },
   { to: '/sdm', label: 'SDM', icon: Users, group: 'Operasional' },
+  { to: '/pengaturan', label: 'Pengaturan', icon: SettingsIcon, group: 'Sistem' },
 ];
 
 function Sidebar({ onNav }: { onNav?: () => void }) {

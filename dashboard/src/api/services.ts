@@ -223,3 +223,91 @@ export const domainService = {
   absensiToday: (tanggal: string) => get(`/absensi/daily/${tanggal}`),
   slipGajiStatus: (params?: Record<string, unknown>) => get('/slip-gaji', params),
 };
+
+// ── Pengaturan (Admin): import data + reset database ─────────────────────────
+export interface ImportSheetResult {
+  rows: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+}
+
+export interface ImportResult {
+  batch_id: string;
+  dry_run: boolean;
+  ok: boolean;
+  sheets: Record<string, ImportSheetResult>;
+  neraca_verification?: {
+    computed: Record<string, number>;
+    expected: Record<string, number | null>;
+    is_balanced: boolean;
+    warnings: string[];
+  };
+  unknown_sheets?: string[];
+}
+
+const postMultipart = async <T>(url: string, file: File): Promise<T> => {
+  const form = new FormData();
+  form.append('file', file);
+  const { data } = await client.post(url, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 180000,
+  });
+  return data as T;
+};
+
+export const dataImportService = {
+  template: async () => {
+    const { data } = await client.get('/data-import/template', { responseType: 'blob', timeout: 60000 });
+    return data as Blob;
+  },
+  preview: (file: File) => postMultipart<ImportResult>('/data-import/preview', file),
+  commit: (file: File) => postMultipart<ImportResult>('/data-import/commit', file),
+};
+
+export const systemService = {
+  resetDatabase: () =>
+    client.post<{
+      status: string;
+      message: string;
+      truncated_tables: number;
+      deleted_users: number;
+      users: Array<{ id: number; username: string; role: string; email: string }>;
+    }>('/system/reset-database').then((r) => r.data),
+};
+
+export interface BackupFile {
+  filename: string;
+  size: number;
+  created_at: string;
+}
+
+export const backupService = {
+  list: () => get<BackupFile[]>('/backup/list'),
+  create: () => client.post<BackupFile>('/backup/create').then((r) => r.data),
+  download: async (filename: string) => {
+    const { data } = await client.get(`/backup/download/${encodeURIComponent(filename)}`, {
+      responseType: 'blob',
+      timeout: 120000,
+    });
+    const url = URL.createObjectURL(data as Blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+  remove: (filename: string) => client.delete(`/backup/${encodeURIComponent(filename)}`).then((r) => r.data),
+  restore: (filename: string, password: string) =>
+    client.post(`/backup/restore/${encodeURIComponent(filename)}`, { password }).then((r) => r.data),
+  upload: async (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    const { data } = await client.post('/backup/upload', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000,
+    });
+    return data as BackupFile;
+  },
+};

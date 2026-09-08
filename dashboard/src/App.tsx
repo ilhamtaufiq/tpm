@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Overview from './pages/Overview';
 import Transaksi from './pages/Transaksi';
 import { HutangPiutang, LabaRugi, Modal, Neraca } from './pages/Reports';
+import { Settings } from './pages/Settings';
 import Kas from './pages/Kas';
 import Lacak from './pages/Lacak';
 import { Angkut, Mobil, Sdm, Stok } from './pages/Domains';
@@ -44,6 +45,7 @@ function Shell() {
         <Route path="mobil" element={<Mobil />} />
         <Route path="angkut" element={<Angkut />} />
         <Route path="sdm" element={<Sdm />} />
+        <Route path="pengaturan" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

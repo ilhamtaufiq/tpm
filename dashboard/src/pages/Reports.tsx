@@ -16,7 +16,6 @@ import {
   drillAset,
   drillBengkelSales,
   drillGaji,
-  drillHutang,
   drillHutangLainnya,
   drillHutangUnit,
   drillInvestor,
@@ -24,14 +23,8 @@ import {
   drillModalAwal,
   drillModalKomposisi,
   drillPenambahanModal,
-  drillKasbon,
   drillKasJenis,
   drillLembur,
-  drillMobilMasuk,
-  drillBedahPlug,
-  drillMismatchInternal,
-  drillModalNonKas,
-  drillNeracaNonKas,
   drillStokMobil,
   drillStokSparepart,
   drillMuatan,
@@ -41,8 +34,6 @@ import {
   drillRevaluasi,
   drillRepairMobil,
   drillPrive,
-  drillSetoranKas,
-  sumBedahPlug,
 } from '../components/drills';
 import { downloadCSV } from './Domains';
 import type { CapitalReport, LabaRugiReport, NeracaReport } from '../types/reports';
@@ -331,25 +322,6 @@ export function Neraca() {
   const unitCashDetails = Array.isArray(al.unit_cash_details)
     ? al.unit_cash_details
     : Object.entries(al.unit_details || {}).map(([unit, total_cash]) => ({ unit, total_cash: Number(total_cash || 0) }));
-  const modalBottomUp = r.modal?.modal_komponen ?? (m.setoran_modal + m.laba_ditahan - m.prive);
-  const modalIdentity = r.modal?.equity_identity ?? (r.total_aktiva - h.total_hutang);
-  const selisihModal = r.modal?.selisih_modal ?? modalBottomUp - modalIdentity;
-  // Sisa komposisi non-kas = HPP terjual − pembelian tercatat (+ hutang investor).
-  // Bedah residual = Σ bedah − sisa; 0 = explained penuh.
-  const nk = m.modal_non_kas_detail;
-  const sisaKomposisi = m.modal_non_kas - (m.modal_persediaan ?? 0) - (m.modal_stok_mobil ?? 0) - (m.modal_aset_tetap ?? 0) - (nk?.piutang_discovery ?? 0) - (nk?.hutang_import ?? 0);
-  const residualBedah = sumBedahPlug({
-    hpp_parts_terjual: nk?.hpp_parts_terjual,
-    hpp_mobil_terjual: nk?.hpp_mobil_terjual,
-    hpp_mobil_prep_terjual: nk?.hpp_mobil_prep_terjual,
-    pembelian_part_kas: nk?.pembelian_part_kas,
-    pembelian_aset_kas: nk?.pembelian_aset_kas,
-    pembelian_mobil_kas: nk?.pembelian_mobil_kas,
-    pembelian_hutang: nk?.pembelian_hutang,
-    hutang_internal_tercatat: nk?.hutang_internal_tercatat,
-    hutang_import_dilunasi: nk?.hutang_import_dilunasi,
-  }) - sisaKomposisi;
-  const gapDuaMemo = (nk?.discovery_info ?? 0) - m.modal_non_kas;
 
   const sectionHead = (title: string, sub: string, total: number, tone: string, icon: ReactNode) => (
     <div className="flex items-center justify-between gap-3 border-b border-slate-50 px-5 py-4">
@@ -535,13 +507,6 @@ export function Neraca() {
           </div>
         </div>
         <p className="relative mt-3 text-xs leading-relaxed text-slate-400">Aktiva = Kas & Bank + Piutang + Persediaan + Stok Mobil + Aset Tetap. Pasiva = Hutang + Modal (Setoran Kas + Setoran Non-Kas + Laba Ditahan − Prive). Selisih ≠ 0 berarti ada transaksi belum tercatat / salah pos — bukan angka yg dipaksa pas.</p>
-        <div className="relative mt-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Validasi Komponen Modal</p>
-          <div className="flex justify-between"><span className="text-slate-300">Bottom-Up</span><b className="tabular-nums">{formatCurrencyDisplay(modalBottomUp)}</b></div>
-          <div className="flex justify-between"><span className="text-slate-300">Aktiva − Hutang</span><b className="tabular-nums">{formatCurrencyDisplay(modalIdentity)}</b></div>
-          <div className="flex justify-between"><span className="text-slate-300">Selisih Modal</span><b className={`tabular-nums ${Math.abs(selisihModal) < 100 ? 'text-emerald-300' : 'text-amber-300'}`}>{formatCurrencyDisplay(selisihModal)}</b></div>
-        </div>
-        <p className="relative mt-3 text-xs leading-relaxed text-slate-400">Bottom-Up = Setoran + Laba Ditahan − Prive (dihitung dari komponen terukur). Aktiva − Hutang = identitas neraca. Keduanya harus sama; selisih tampil jujur di sini, tidak disembunyikan.</p>
         <div className="relative mt-3 text-center">
           <Badge tone={r.is_balanced ? 'ok' : 'warn'}>{r.is_balanced ? 'NERACA SEIMBANG' : 'TERDAPAT SELISIH'}</Badge>
         </div>
@@ -566,16 +531,13 @@ export function Modal() {
   const setoranKas = r.penambahan?.setoran_modal || 0;
   const penyesuaianHargaBeli = r.penambahan?.penyesuaian_harga_beli_sparepart || 0;
   const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
-  const investorFunding = r.penambahan?.investor_funding || 0;
   const labaBersih = r.info?.laba_bersih || 0;
-  const labaInvestor = r.info?.laba_investor || 0;
-  const diskon = r.info?.diskon_penjualan_bengkel || 0;
   const prive = r.pengurangan?.prive || 0;
   const pengembalianModal = r.pengurangan?.pengembalian_modal || 0;
   const priveTotal = prive + pengembalianModal;
-  const pembayaranInvestor = r.pengurangan?.pembayaran_investor || 0;
   const modalAkhir = r.modal_akhir || 0;
-  const perubahanBersih = setoranKas + modalNonKas + investorFunding + labaBersih + labaInvestor - priveTotal - pembayaranInvestor;
+  // Investor = hutang (bukan aliran modal) — selaras xlsx.
+  const perubahanBersih = setoranKas + modalNonKas + labaBersih - priveTotal;
   const expectedAliran = modalAwal + perubahanBersih;
   const expected = r.info?.validasi?.modal_teoritis ?? expectedAliran;
   const selisih = r.info?.validasi?.selisih ?? r.selisih ?? modalAkhir - expected;
@@ -604,8 +566,8 @@ export function Modal() {
         {[
           ['Modal Awal', modalAwal, 'Saldo awal periode'],
           ['Laba Bersih', labaBersih, 'Laba periode berjalan'],
-          ['Setoran', setoranKas + modalNonKas + investorFunding, 'Kas + non-kas + investor'],
-          ['Prive', priveTotal + pembayaranInvestor, 'Penarikan + bayar investor'],
+          ['Setoran', setoranKas + modalNonKas, 'Kas + non-kas'],
+          ['Prive', priveTotal, 'Penarikan pemilik'],
         ].map(([label, value, sub]) => (
           <div key={label as string} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)]" title={`${label}: ${formatCurrencyDisplay(value as number)}`}>
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
@@ -636,12 +598,12 @@ export function Modal() {
         {penyesuaianHargaBeli !== 0 && <Drill spec={drillRevaluasi()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: period.tanggal_sampai }} amountKey="amount" total={penyesuaianHargaBeli} />}
 
         <div className="my-2 h-px w-full bg-slate-100" />
-        <FinancialRow label="PENAMBAHAN MODAL" value={setoranKas + modalNonKas + investorFunding} small indent />
+        <FinancialRow label="PENAMBAHAN MODAL" value={setoranKas + modalNonKas} small indent />
         <Drill
-          spec={drillPenambahanModal({ kas: setoranKas, non_kas: modalNonKas, investor: investorFunding })}
+          spec={drillPenambahanModal({ kas: setoranKas, non_kas: modalNonKas })}
           period={period}
           amountKey="amount"
-          total={setoranKas + modalNonKas + investorFunding}
+          total={setoranKas + modalNonKas}
         />
         <p className="mt-1 pl-6 text-[11px] text-slate-400">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</p>
         <FinancialRow label="LABA/RUGI PERIODE" value={labaBersih} small indent isNegative={labaBersih < 0} />
@@ -657,7 +619,6 @@ export function Modal() {
         <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Keseimbangan Ekuitas</p>
         <FinancialRow label="MODAL AKHIR (AKTUAL-NERACA)" value={modalAkhir} />
         <FinancialRow label="MODAL AKHIR (TEORITIS-BACKEND)" value={expected} />
-        <FinancialRow label="Selisih" value={selisih} bold color={Math.abs(selisih) < 100 ? 'text-emerald-600' : 'text-amber-600'} />
       </Card>
     </div>
   );

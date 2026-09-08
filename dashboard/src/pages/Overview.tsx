@@ -12,8 +12,6 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -249,18 +247,35 @@ export default function Overview() {
         )}
       </Card>
 
-      {/* Mini trend (area) */}
-      <Card title="Komposisi laba" sub="Proporsi kontribusi tiap unit" icon={Activity} pad={true}>
+      {/* Stacked bar — komposisi laba (nilai nominal) */}
+      <Card title="Komposisi laba" sub="Nilai nominal kontribusi tiap unit" icon={Activity} pad={true}>
         <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="domain" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis hide />
+            <BarChart
+              data={[{ name: 'Laba', Bengkel: trend[0].laba, Mobil: trend[1].laba, Angkut: trend[2].laba }]}
+              margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v as number)} width={76} axisLine={false} tickLine={false} />
               <Tooltip formatter={(v) => formatCurrency(v as number)} contentStyle={{ borderRadius: 12, fontSize: 12 }} />
-              <Area type="monotone" dataKey="laba" stroke="#4F46E5" fill="#4F46E5" fillOpacity={0.15} strokeWidth={2.5} />
-            </AreaChart>
+              {(['Bengkel', 'Mobil', 'Angkut'] as const).map((key, i) => (
+                <Bar key={key} dataKey={key} stackId="laba" radius={i === 2 ? [8, 8, 0, 0] : [0, 0, 0, 0]}>
+                  {[0].map((_, idx) => (
+                    <Cell key={`${key}-${idx}`} fill={BAR_COLORS[i]} />
+                  ))}
+                </Bar>
+              ))}
+            </BarChart>
           </ResponsiveContainer>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
+          {trend.map((t, i) => (
+            <span key={t.domain} className="flex items-center gap-1.5 text-slate-500">
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: BAR_COLORS[i] }} />
+              {t.domain} <b className="tabular-nums text-slate-700">{formatCurrency(t.laba)}</b>
+            </span>
+          ))}
         </div>
       </Card>
     </div>

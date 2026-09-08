@@ -35,6 +35,7 @@ from app.api.v1 import (
     realtime,
     master_data,
     data_import,
+    system,
 )
 
 
@@ -72,6 +73,7 @@ api_router.include_router(backup.router)
 api_router.include_router(trash.router, prefix="/trash", tags=["Trash"])
 api_router.include_router(master_data.router)
 api_router.include_router(data_import.router)
+api_router.include_router(system.router)
 api_router.include_router(realtime.router)
 
 
