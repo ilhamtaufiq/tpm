@@ -292,6 +292,28 @@ export const drillPembelianPart = (): DrillSpec => ({
   fetch: (p: PeriodParams) => drillService.pembelianPart(p),
 });
 
+// Stok sparepart per item (snapshot — nilai = stok × harga_beli, selaras persediaan laporan).
+export const drillStokSparepart = (): DrillSpec => ({
+  key: 'stok-sparepart',
+  label: 'Rincian stok sparepart',
+  columns: [
+    { key: 'kode', header: 'Kode' },
+    { key: 'nama', header: 'Nama' },
+    { key: 'stok', header: 'Stok', align: 'right' as const, render: (r) => String(r.stok ?? '-') },
+    { key: 'harga_beli', header: 'Harga Beli', align: 'right' as const, render: (r) => formatCurrency(r.harga_beli) },
+    { key: 'nilai', header: 'Nilai', align: 'right' as const, render: (r) => formatCurrency(r.nilai) },
+  ],
+  fetch: async () => {
+    const res = await stockService.list({ limit: 5000, sort_by: 'nama', sort_order: 'asc' });
+    const list = ((res as { data?: Record<string, unknown>[] } | undefined)?.data ?? []) as Record<string, unknown>[];
+    const rows = list
+      .filter((r) => Number(r.stok ?? 0) !== 999999)
+      .map((r) => ({ ...r, nilai: Number(r.stok ?? 0) * Number(r.harga_beli ?? 0) }))
+      .filter((r) => Number(r.nilai ?? 0) !== 0);
+    return { data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 };
+  },
+});
+
 // Gaji pokok per slip (status LUNAS, tanggal_bayar dalam periode).
 export const drillGaji = (): DrillSpec => ({
   key: 'gaji',

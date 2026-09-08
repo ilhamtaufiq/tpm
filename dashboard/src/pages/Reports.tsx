@@ -27,6 +27,7 @@ import {
   drillMobilMasuk,
   drillModalNonKas,
   drillStokMobil,
+  drillStokSparepart,
   drillMuatan,
   drillPembelianPart,
   drillPengeluaranUnit,
@@ -398,7 +399,7 @@ export function Neraca() {
             <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Persediaan & Stok</p>
             <div className="pl-3">
               <FinancialRow label="Persediaan Sparepart" value={al.persediaan_sparepart} small />
-              <Drill spec={drillPembelianPart()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="grand_total" total={al.persediaan_sparepart} />
+              <Drill spec={drillStokSparepart()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="nilai" total={al.persediaan_sparepart} />
               <FinancialRow label="Stok Mobil (Inventory)" value={stokAdj} small />
               <Drill spec={drillStokMobil()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="harga_beli" total={stokAdj} />
               {stokAdj > 0 && (
@@ -454,7 +455,7 @@ export function Neraca() {
                 {m.modal_persediaan > 0 && (
                   <>
                     <FinancialRow label="Persediaan Sparepart" value={m.modal_persediaan} small indent />
-                    <Drill spec={drillPembelianPart()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="grand_total" total={m.modal_persediaan} hideDiff />
+                    <Drill spec={drillStokSparepart()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="nilai" total={m.modal_persediaan} />
                   </>
                 )}
                 {m.modal_stok_mobil > 0 && (
