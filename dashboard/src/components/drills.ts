@@ -588,6 +588,44 @@ export const drillModalAwal = (tanggalDari: string): DrillSpec => {
   };
 };
 
+// Komposisi Modal Neraca: satu baris "Modal" di laporan, drill buka rinciannya.
+export const drillModalKomposisi = (parts: { setoran?: number; laba_ditahan?: number; prive?: number; total?: number }): DrillSpec => {
+  const n = (v: number | undefined) => Number(v ?? 0);
+  const rows = [
+    { komponen: 'Setoran Modal', amount: n(parts.setoran) },
+    { komponen: 'Laba Ditahan', amount: n(parts.laba_ditahan) },
+    { komponen: 'Prive (Pengambilan Pemilik)', amount: -n(parts.prive) },
+  ].filter((r) => r.amount !== 0);
+  return {
+    key: 'modal-komposisi',
+    label: 'Rincian modal',
+    columns: [
+      { key: 'komponen', header: 'Komponen' },
+      rp('amount'),
+    ],
+    fetch: async () => ({ data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 }),
+  };
+};
+
+// PENAMBAHAN MODAL (Perubahan Modal): kas + non-kas + dana investor.
+export const drillPenambahanModal = (parts: { kas?: number; non_kas?: number; investor?: number }): DrillSpec => {
+  const n = (v: number | undefined) => Number(v ?? 0);
+  const rows = [
+    { komponen: 'Setoran Modal Kas', amount: n(parts.kas) },
+    { komponen: 'Modal Non-Kas (aset/piutang − hutang awal)', amount: n(parts.non_kas) },
+    { komponen: 'Dana Investor Mobil', amount: n(parts.investor) },
+  ].filter((r) => r.amount !== 0);
+  return {
+    key: 'penambahan-modal',
+    label: 'Rincian penambahan modal',
+    columns: [
+      { key: 'komponen', header: 'Komponen' },
+      rp('amount'),
+    ],
+    fetch: async () => ({ data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 }),
+  };
+};
+
 // Komposisi Modal Non-Kas Neraca: komponen aditif + selisih penyeimbang.
 // total = setoran_modal − setoran_modal_kas (balancing figure). discovery_info
 // backend adalah memo cek-silang, bukan baris aditif — tampilkan sebagai

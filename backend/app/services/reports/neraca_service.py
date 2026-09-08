@@ -324,14 +324,16 @@ class NeracaService(BaseReportService):
         # The REAL selisih: difference between bottom-up and identity approaches
         # If accounting is perfect, this should be 0
         selisih_modal = equity_from_components - equity_from_identity
-        
-        # Use bottom-up equity as total_modal (transparent, not forced)
-        total_modal = equity_from_components
-        
-        # Total Pasiva uses bottom-up equity (may NOT equal total_aktiva if there's an error)
+
+        # Baris "Modal" Neraca = Aktiva − Hutang (identity, cocok Excel/SAK).
+        # Validasi Komponen Modal di bawah tetap tampil bottom-up vs identity
+        # (modal_komponen vs equity_identity) — angka real, tidak dipaksa.
+        total_modal = equity_from_identity
+
+        # Total Pasiva = Hutang + Modal (identity) → seimbang dengan Aktiva
         total_pasiva = total_liabilities + total_modal
-        
-        # Balance check: compare total aktiva vs total pasiva (bottom-up)
+
+        # Balance check: identity → 0
         report_selisih = total_assets - total_pasiva
         # ═══════════════════════════════════════════════════════════════
         # 4. INTERNAL TRACING (FIND DISCREPANCIES)
