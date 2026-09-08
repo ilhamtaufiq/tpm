@@ -63,9 +63,6 @@ export function LabaRugi() {
   // total_subtotal backend = NET (grand_total sudah dikurangi diskon).
   const penjualanKotorBengkel = bd.total_parts + bd.total_jasa;
   const penjualanBengkel = bd.total_subtotal || b.revenue;
-  const labaKotorJA = ja.revenue - (ja.maintenance ?? 0) - ja.beban_operasional;
-  const hppMobil = m.hpp + prepSold + repairSold;
-  const labaKotorMobil = m.revenue - hppMobil;
   const ja = r.units.jasa_angkut;
   const m = r.units.mobil;
   const md = r.mobil_details ?? {};
@@ -73,6 +70,9 @@ export function LabaRugi() {
   const prepAll = md.total_biaya_persiapan ?? prepSold;
   const repairSold = nonneg(m.maintenance ?? md.total_biaya_bengkel ?? md.biaya_bengkel ?? 0);
   const penalti = m.dana_penalti ?? m.pendapatan_lainnya ?? 0;
+  const labaKotorJA = ja.revenue - (ja.maintenance ?? 0) - ja.beban_operasional;
+  const hppMobil = m.hpp + prepSold + repairSold;
+  const labaKotorMobil = m.revenue - hppMobil;
 
   const unitCard = (
     accent: string,
