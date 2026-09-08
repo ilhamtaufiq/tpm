@@ -483,6 +483,60 @@ export const drillModalNonKas = (parts: { setoran_mobil?: number; setoran_piutan
   };
 };
 
+// Bedah sisa plug: memo barang modal yang sudah terjual (terkubur di
+// kas/piutang/laba) + pembelian tercatat. Bukan baris aditif — hideDiff,
+// karena total plug sendiri sudah dijelaskan drill di atas.
+export const drillBedahPlug = (d: {
+  hpp_parts_terjual?: number; hpp_mobil_terjual?: number; hpp_mobil_prep_terjual?: number;
+  pembelian_part_kas?: number; pembelian_aset_kas?: number; pembelian_mobil_kas?: number;
+  pembelian_hutang?: number; hutang_internal_tercatat?: number;
+  hutang_import_dilunasi?: number;
+}): DrillSpec => {
+  const n = (v: number | undefined) => Number(v ?? 0);
+  const rows = [
+    { komponen: 'HPP part terjual (modal yg sudah laku)', amount: n(d.hpp_parts_terjual) },
+    { komponen: 'HPP mobil terjual (harga beli unit laku)', amount: n(d.hpp_mobil_terjual) },
+    { komponen: 'Prep mobil terjual (bagian HPP)', amount: n(d.hpp_mobil_prep_terjual) },
+    { komponen: 'Pembelian part tercatat (pengurang)', amount: -n(d.pembelian_part_kas) },
+    { komponen: 'Pembelian aset tercatat (pengurang)', amount: -n(d.pembelian_aset_kas) },
+    { komponen: 'Pembelian mobil tercatat (pengurang)', amount: -n(d.pembelian_mobil_kas) },
+    { komponen: 'Pembelian via hutang tercatat (pengurang)', amount: -n(d.pembelian_hutang) },
+    { komponen: 'Hutang internal tercatat (pengurang)', amount: -n(d.hutang_internal_tercatat) },
+    { komponen: 'Hutang IMP dilunasi (nominal − sisa)', amount: n(d.hutang_import_dilunasi) },
+  ].filter((r) => r.amount !== 0);
+  return {
+    key: 'bedah-plug',
+    label: 'Bedah sisa plug (memo)',
+    columns: [
+      { key: 'komponen', header: 'Komponen' },
+      rp('amount'),
+    ],
+    fetch: async () => ({ data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 }),
+  };
+};
+
+// Gap piutang vs hutang internal per referensi (dari cross_validation backend).
+// Memo — internal dikonsolidasi keluar, tapi gap tak berpasangan menekan plug.
+export const drillMismatchInternal = (mismatches: Array<{ ref: string; piutang: number; hutang: number; gap: number }>): DrillSpec => {
+  const rows = (mismatches ?? []).map((mm) => ({
+    ref: String(mm.ref ?? '-'),
+    piutang: Number(mm.piutang ?? 0),
+    hutang: Number(mm.hutang ?? 0),
+    gap: Number(mm.gap ?? 0),
+  }));
+  return {
+    key: 'mismatch-internal',
+    label: `Gap internal (${rows.length})`,
+    columns: [
+      { key: 'ref', header: 'Referensi' },
+      rp('piutang'),
+      rp('hutang'),
+      rp('gap'),
+    ],
+    fetch: async () => ({ data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 }),
+  };
+};
+
 // Komposisi Modal Awal: snapshot Aktiva − Hutang per H−1 awal periode
 // (selaras modal_awal_theoretical modal_service: kas + stok + aset + piutang
 // − hutang non-investor). Hutang investor dikecualikan karena dihitung modal.
@@ -513,21 +567,26 @@ export const drillModalAwal = (tanggalDari: string): DrillSpec => {
   };
 };
 
-// Komposisi Modal Non-Kas Neraca: persediaan + stok mobil + aset tetap + plug.
-// total = setoran_modal − setoran_modal_kas (plug identitas), jadi baris penyesuaian
-// menutup selisih agar Σ = total.
-export const drillNeracaNonKas = (parts: { persediaan?: number; stok_mobil?: number; aset_tetap?: number; total?: number }): DrillSpec => {
+// Komposisi Modal Non-Kas Neraca: komponen aditif + sisa plug.
+// total = setoran_modal − setoran_modal_kas (plug identitas). discovery_info
+// backend adalah memo cek-silang, bukan baris aditif — tampilkan sebagai
+// FinancialRow memo di Reports.tsx, bukan di sini (Drill Σ harus = total).
+export const drillNeracaNonKas = (parts: { persediaan?: number; stok_mobil?: number; aset_tetap?: number; piutang_discovery?: number; hutang_import?: number; total?: number }): DrillSpec => {
   const p = Number(parts.persediaan ?? 0);
   const s = Number(parts.stok_mobil ?? 0);
   const a = Number(parts.aset_tetap ?? 0);
+  const pd = Number(parts.piutang_discovery ?? 0);
+  const hi = Number(parts.hutang_import ?? 0);
   const t = Number(parts.total ?? 0);
-  const plug = t - p - s - a;
+  const plug = t - p - s - a - pd - hi;
   const rows = [
     { komponen: 'Persediaan Sparepart', amount: p },
     { komponen: 'Stok Mobil (Inventory)', amount: s },
     { komponen: 'Aset Tetap', amount: a },
-    // Plug identitas — flag ⚠ bila |plug| ≥ 100rb agar tak silent.
-    { komponen: Math.abs(plug) >= 100_000 ? 'Penyesuaian (plug identitas ⚠ perlu telusur)' : 'Penyesuaian (plug identitas)', amount: plug },
+    { komponen: 'Piutang saldo awal (IMP, tanpa KasBank)', amount: pd },
+    { komponen: 'Hutang saldo awal + investor (pengurang)', amount: hi },
+    // Sisa plug identitas — flag ⚠ bila |plug| ≥ 100rb agar tak silent.
+    { komponen: Math.abs(plug) >= 100_000 ? 'Sisa penyesuaian (plug ⚠ perlu telusur)' : 'Sisa penyesuaian (plug)', amount: plug },
   ].filter((r) => r.amount !== 0);
   return {
     key: 'modal-non-kas',

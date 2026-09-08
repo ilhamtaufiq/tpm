@@ -272,12 +272,16 @@ class NeracaService(BaseReportService):
             if not has_kb and not has_pembayaran:
                 piutang_discovery += float(pp.sisa_piutang)
         # Hutang opening-balance (IMP-*) funded assets, so it is not owner capital.
-        hutang_import = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
+        hutang_import_rows = self.db.query(HutangUsaha).filter(
             HutangUsaha.nomor_referensi.like("IMP-%"),
             HutangUsaha.tanggal <= as_of_date,
             HutangUsaha.status != HutangStatus.BATAL,
             HutangUsaha.is_internal != True,
-        ).scalar() or 0)
+        ).all()
+        hutang_import = sum(float(h.nominal_hutang or 0) for h in hutang_import_rows)
+        # Memo bedah plug: discovery pakai nominal awal, laporan pakai sisa.
+        # Pelunasan parsial hutang IMP = gap nominal vs sisa.
+        hutang_import_sisa = sum(float(h.sisa_hutang or 0) for h in hutang_import_rows)
         total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep) + modal_aset_tetap + piutang_discovery
         total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang + hutang_internal
         
@@ -420,6 +424,19 @@ class NeracaService(BaseReportService):
                     "piutang_discovery": piutang_discovery,
                     "hutang_import": -(hutang_import + hutang_investor),
                     "discovery_info": modal_discovery_info,
+                    # Memo bedah sisa plug: barang modal yang sudah terjual
+                    # (terkubur di kas/piutang/laba) + pembelian tercatat.
+                    "hpp_parts_terjual": akumulasi_hpp_parts,
+                    "hpp_mobil_terjual": akumulasi_hpp_mobil,
+                    "hpp_mobil_prep_terjual": akumulasi_hpp_mobil_prep,
+                    "pembelian_part_kas": pembelian_part_kas,
+                    "pembelian_aset_kas": pembelian_aset_kas,
+                    "pembelian_mobil_kas": pembelian_mobil_kas,
+                    "pembelian_hutang": pembelian_hutang,
+                    "hutang_internal_tercatat": hutang_internal,
+                    "hutang_import_nominal": hutang_import,
+                    "hutang_import_sisa": hutang_import_sisa,
+                    "hutang_import_dilunasi": hutang_import - hutang_import_sisa,
                 },
                 "setoran_modal": setoran_modal,
                 "laba_ditahan": retained_earnings,

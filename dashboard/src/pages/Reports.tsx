@@ -26,6 +26,8 @@ import {
   drillKasJenis,
   drillLembur,
   drillMobilMasuk,
+  drillBedahPlug,
+  drillMismatchInternal,
   drillModalNonKas,
   drillNeracaNonKas,
   drillStokMobil,
@@ -469,11 +471,40 @@ export function Neraca() {
                   <>
                     <FinancialRow label="Modal Non-Kas (Aset)" value={m.modal_non_kas} small indent />
                     <Drill
-                      spec={drillNeracaNonKas({ persediaan: m.modal_persediaan, stok_mobil: m.modal_stok_mobil, aset_tetap: m.modal_aset_tetap, total: m.modal_non_kas })}
+                      spec={drillNeracaNonKas({ persediaan: m.modal_persediaan, stok_mobil: m.modal_stok_mobil, aset_tetap: m.modal_aset_tetap, piutang_discovery: m.modal_non_kas_detail?.piutang_discovery, hutang_import: m.modal_non_kas_detail?.hutang_import, total: m.modal_non_kas })}
                       period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }}
                       amountKey="amount"
                       total={m.modal_non_kas}
                     />
+                    {(m.modal_non_kas_detail?.discovery_info ?? 0) !== 0 && (
+                      <p className="mt-1 text-[10px] text-slate-400">Cek silang historis (memo, bukan penambah): {formatCurrencyDisplay(m.modal_non_kas_detail?.discovery_info ?? 0)} = aset historis − pembelian tercatat − hutang awal.</p>
+                    )}
+                    <Drill
+                      spec={drillBedahPlug({
+                        hpp_parts_terjual: m.modal_non_kas_detail?.hpp_parts_terjual,
+                        hpp_mobil_terjual: m.modal_non_kas_detail?.hpp_mobil_terjual,
+                        hpp_mobil_prep_terjual: m.modal_non_kas_detail?.hpp_mobil_prep_terjual,
+                        pembelian_part_kas: m.modal_non_kas_detail?.pembelian_part_kas,
+                        pembelian_aset_kas: m.modal_non_kas_detail?.pembelian_aset_kas,
+                        pembelian_mobil_kas: m.modal_non_kas_detail?.pembelian_mobil_kas,
+                        pembelian_hutang: m.modal_non_kas_detail?.pembelian_hutang,
+                        hutang_internal_tercatat: m.modal_non_kas_detail?.hutang_internal_tercatat,
+                        hutang_import_dilunasi: m.modal_non_kas_detail?.hutang_import_dilunasi,
+                      })}
+                      period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }}
+                      amountKey="amount"
+                      total={0}
+                      hideDiff
+                    />
+                    {(r.cross_validation?.mismatches?.length ?? 0) > 0 && (
+                      <Drill
+                        spec={drillMismatchInternal(r.cross_validation?.mismatches ?? [])}
+                        period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }}
+                        amountKey="gap"
+                        total={r.cross_validation?.selisih_internal ?? 0}
+                        hideDiff
+                      />
+                    )}
                   </>
                 )}
               </div>

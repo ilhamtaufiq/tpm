@@ -45,10 +45,31 @@ export interface NeracaAsetTetap {
   detail_aset: Array<{ kode: string; nama: string; harga_beli: number }>;
 }
 
+export interface NeracaModalNonKasDetail {
+  persediaan: number;
+  stok_mobil: number;
+  aset_tetap: number;
+  piutang_discovery: number;
+  hutang_import: number;
+  discovery_info: number;
+  hpp_parts_terjual?: number;
+  hpp_mobil_terjual?: number;
+  hpp_mobil_prep_terjual?: number;
+  pembelian_part_kas?: number;
+  pembelian_aset_kas?: number;
+  pembelian_mobil_kas?: number;
+  pembelian_hutang?: number;
+  hutang_internal_tercatat?: number;
+  hutang_import_nominal?: number;
+  hutang_import_sisa?: number;
+  hutang_import_dilunasi?: number;
+}
+
 export interface NeracaModal {
   setoran_modal: number;
   setoran_modal_kas: number;
   modal_non_kas: number;
+  modal_non_kas_detail?: NeracaModalNonKasDetail;
   modal_persediaan: number;
   modal_stok_mobil: number;
   modal_aset_tetap: number;
@@ -88,6 +109,8 @@ export interface NeracaReport {
     selisih_equity: number;
     retained_earnings: number;
     laba_bersih_from_base: number;
+    selisih_internal?: number;
+    mismatches?: Array<{ ref: string; piutang: number; hutang: number; gap: number }>;
   };
   info?: {
     units: {
