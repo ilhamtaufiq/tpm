@@ -30,7 +30,6 @@ import {
   drillStokMobil,
   drillStokSparepart,
   drillMuatan,
-  drillPembelianPart,
   drillPengeluaranUnit,
   drillPenjualanMobil,
   drillPiutang,
