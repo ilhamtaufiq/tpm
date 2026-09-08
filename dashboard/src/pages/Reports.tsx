@@ -437,7 +437,12 @@ export function Neraca() {
             <FinancialRow label="1. Setoran Modal" value={m.setoran_modal} bold large />
             {(m.setoran_modal_kas > 0 || m.modal_non_kas > 0) && (
               <div className="mt-2 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
-                {m.setoran_modal_kas > 0 && <FinancialRow label="Modal Tunai (Kas)" value={m.setoran_modal_kas} small indent />}
+                {m.setoran_modal_kas > 0 && (
+                  <>
+                    <FinancialRow label="Modal Tunai (Kas)" value={m.setoran_modal_kas} small indent />
+                    <Drill spec={drillSetoranKas()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="nominal" total={m.setoran_modal_kas} />
+                  </>
+                )}
                 {m.modal_non_kas > 0 && <FinancialRow label="Modal Non-Kas (Aset)" value={m.modal_non_kas} small indent />}
               </div>
             )}
@@ -446,9 +451,24 @@ export function Neraca() {
             <div>
               <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Detail Modal Non-Kas</p>
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                {m.modal_persediaan > 0 && <FinancialRow label="Persediaan Sparepart" value={m.modal_persediaan} small indent />}
-                {m.modal_stok_mobil > 0 && <FinancialRow label="Stok Mobil (Inventory)" value={m.modal_stok_mobil} small indent />}
-                {m.modal_aset_tetap > 0 && <FinancialRow label="Aset Tetap" value={m.modal_aset_tetap} small indent />}
+                {m.modal_persediaan > 0 && (
+                  <>
+                    <FinancialRow label="Persediaan Sparepart" value={m.modal_persediaan} small indent />
+                    <Drill spec={drillPembelianPart()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="grand_total" total={m.modal_persediaan} hideDiff />
+                  </>
+                )}
+                {m.modal_stok_mobil > 0 && (
+                  <>
+                    <FinancialRow label="Stok Mobil (Inventory)" value={m.modal_stok_mobil} small indent />
+                    <Drill spec={drillStokMobil()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="harga_beli" total={m.modal_stok_mobil} hideDiff />
+                  </>
+                )}
+                {m.modal_aset_tetap > 0 && (
+                  <>
+                    <FinancialRow label="Aset Tetap" value={m.modal_aset_tetap} small indent />
+                    <Drill spec={drillAset()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="harga_beli" total={m.modal_aset_tetap} />
+                  </>
+                )}
               </div>
             </div>
           )}
