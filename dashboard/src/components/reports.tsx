@@ -260,8 +260,10 @@ export function Drill({
     enabled: open,
     staleTime: 30_000,
   });
-  const raw = q.data as { data?: Record<string, unknown>[] } | Record<string, unknown>[] | undefined;
+  const raw = q.data as { data?: Record<string, unknown>[]; total?: number } | Record<string, unknown>[] | undefined;
   const rows = Array.isArray(raw) ? raw : (raw?.data ?? []);
+  // Backend cap per halaman = 100 baris — Σ bisa palsu bila data terpotong.
+  const capped = !Array.isArray(raw) && typeof raw?.total === 'number' ? raw.total > rows.length : rows.length >= 100;
   const { page, pages, setPage } = usePagination(rows.length);
   const visible = rows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
   const sum = rows.reduce((a, r) => a + (typeof r[amountKey] === 'number' ? (r[amountKey] as number) : parseFloat(String(r[amountKey] ?? '0')) || 0), 0);
@@ -317,9 +319,9 @@ export function Drill({
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2 text-xs">
                 <span className="text-slate-500">
-                  {rows.length} baris · Σ <b className="font-mono tabular-nums">{formatCurrency(sum)}</b>
+                  {rows.length} baris{capped ? ' (maks 100 — Σ tak lengkap)' : ''} · Σ <b className="font-mono tabular-nums">{formatCurrency(sum)}</b>
                 </span>
-                {!hideDiff && (
+                {!hideDiff && !capped && (
                   <span className={`rounded-full px-2 py-0.5 font-bold ${Math.abs(diff) < 100 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                     {Math.abs(diff) < 100 ? '✓ cocok dengan angka laporan' : `Δ ${formatCurrency(diff)} vs laporan`}
                   </span>

@@ -84,7 +84,7 @@ export function Stat({
     indigo: 'bg-indigo-500',
   }[tone];
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+    <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)]" title={`${label}: ${value}`}>
       <span className={`absolute inset-y-0 left-0 w-1 ${bar}`} />
       <div className="flex items-start justify-between gap-2 pl-2">
         <div className="min-w-0">

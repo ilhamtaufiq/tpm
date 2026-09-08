@@ -529,13 +529,23 @@ class BaseReportService:
         # inventory value conversion (Workshop bill added to Car asset value).
         # We also include internal Kasbon (Staff Advances) as they represent assets.
         
-        # Use sisa_piutang directly — authoritative balance field.
-        # Internal piutang are settled by setting sisa=0 without PembayaranPiutang records.
-        piutang_usaha = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+        # As-of balance: nominal minus payments up to cutoff. Using sisa_piutang
+        # directly is WRONG for historical snapshots — sisa is the CURRENT value,
+        # so a payment after tanggal_sampai would understate past positions
+        # (e.g. daily modal 5 Sep understated 300rb by a 6 Sep payment).
+        # Internal piutang keep sisa (settled by setting sisa=0 without records).
+        piutang_nominal = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL,
             PiutangUsaha.is_internal != True
         ).scalar() or 0)
+        piutang_paid = float(self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).filter(
+            PiutangUsaha.tanggal <= tanggal_sampai,
+            PiutangUsaha.status != PiutangStatus.BATAL,
+            PiutangUsaha.is_internal != True,
+            PembayaranPiutang.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+        piutang_usaha = piutang_nominal - piutang_paid
              # Debt Position at End date
         def get_debt_balance_by_unit(source_list: list, unit: Optional[KasBankSource] = None, include_internal: bool = False) -> float:
             nominal_q = self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
@@ -752,31 +762,42 @@ class BaseReportService:
 
         # Piutang Breakdown
         def get_piutang_balance(unit: Optional[KasBankSource] = None, source: Optional[PiutangSource] = None, include_internal: bool = False, unit_in: Optional[List[KasBankSource]] = None, exclude_sources: Optional[List[PiutangSource]] = None) -> float:
-            # Use sisa_piutang directly — this is the authoritative balance field.
-            # Internal piutang (workshop bills) are settled by setting sisa=0 directly
-            # without creating PembayaranPiutang records, so nominal-minus-payments is unreliable.
-            
-            q = self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+            # As-of balance: nominal minus payments up to cutoff. sisa_piutang is
+            # the CURRENT value — using it understates historical snapshots when
+            # a payment lands after tanggal_sampai. Internal piutang (workshop
+            # bills) are settled by setting sisa=0 directly without
+            # PembayaranPiutang records, so nominal-minus-payments only applies
+            # to the external (non-internal) filter path.
+            def _filtered(base_q):
+                if not include_internal:
+                    base_q = base_q.filter(PiutangUsaha.is_internal != True)
+                if unit:
+                    base_q = base_q.filter(PiutangUsaha.unit == unit)
+                if unit_in:
+                    base_q = base_q.filter(PiutangUsaha.unit.in_(unit_in))
+                if source:
+                    base_q = base_q.filter(PiutangUsaha.sumber == source)
+                if exclude_sources:
+                    base_q = base_q.filter(PiutangUsaha.sumber.notin_(exclude_sources))
+                return base_q
+
+            if include_internal:
+                q = _filtered(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+                    PiutangUsaha.tanggal <= tanggal_sampai,
+                    PiutangUsaha.status != PiutangStatus.BATAL
+                ))
+                return float(q.scalar() or 0)
+
+            nominal = float(_filtered(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
                 PiutangUsaha.tanggal <= tanggal_sampai,
                 PiutangUsaha.status != PiutangStatus.BATAL
-            )
-
-            if not include_internal:
-                q = q.filter(PiutangUsaha.is_internal != True)
-                
-            if unit:
-                q = q.filter(PiutangUsaha.unit == unit)
-
-            if unit_in:
-                q = q.filter(PiutangUsaha.unit.in_(unit_in))
-                
-            if source:
-                q = q.filter(PiutangUsaha.sumber == source)
-            
-            if exclude_sources:
-                q = q.filter(PiutangUsaha.sumber.notin_(exclude_sources))
-                
-            return float(q.scalar() or 0)
+            )).scalar() or 0)
+            paid = float(_filtered(self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).filter(
+                PiutangUsaha.tanggal <= tanggal_sampai,
+                PiutangUsaha.status != PiutangStatus.BATAL,
+                PembayaranPiutang.tanggal <= tanggal_sampai
+            )).scalar() or 0)
+            return nominal - paid
 
         # External-only versions for breakdown subtraction
         # We EXCLUDE Kasbon and LAINNYA from unit-specific counts because they are reported separately

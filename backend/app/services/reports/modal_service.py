@@ -72,34 +72,6 @@ class ModalService(BaseReportService):
         # We exclude investor debt from the opening equity calculation because we treat it as Capital
         start_hutang = start_hutang_total - start_hutang_investor
 
-        from app.models.bengkel import TransaksiPenjualanBengkel, DetailTransaksiSpareParts
-
-        # Helper to get accumulated HPP up to a specific date
-        def get_akumulasi_hpp_parts(d: date) -> float:
-            return float(self.db.query(func.sum(DetailTransaksiSpareParts.harga_beli * DetailTransaksiSpareParts.qty)).join(
-                TransaksiPenjualanBengkel, DetailTransaksiSpareParts.transaksi_id == TransaksiPenjualanBengkel.id
-            ).filter(
-                *workshop_finance_recognized_filters(),
-                TransaksiPenjualanBengkel.tanggal <= d
-            ).scalar() or 0)
-
-        def get_akumulasi_hpp_mobil(d: date) -> float:
-            from app.models.mobil import Mobil
-            return float(self.db.query(func.sum(Mobil.harga_beli)).filter(
-                Mobil.status == CarStatus.TERJUAL,
-                Mobil.tanggal_terjual <= d
-            ).scalar() or 0)
-
-        def get_akumulasi_hpp_mobil_prep(d: date) -> float:
-            from app.models.bengkel import PengeluaranBengkel
-            from app.models.mobil import Mobil
-            return float(self.db.query(func.sum(PengeluaranBengkel.jumlah)).join(Mobil).filter(
-                PengeluaranBengkel.bisnis_kategori.in_(["mobil", "jual_beli_mobil", "penjualan_mobil"]),
-                Mobil.status == CarStatus.TERJUAL,
-                Mobil.tanggal_terjual <= d,
-                PengeluaranBengkel.tanggal <= d
-            ).scalar() or 0)
-
         # Revaluation reserve net change this period (unrealized gain from
         # spare part harga_beli changes, minus amounts realized on sales).
         # modal_awal already snapshots stock at current price, so this line
@@ -110,13 +82,18 @@ class ModalService(BaseReportService):
 
         # Snapshot Start (Yesterday) - Physical Net Worth (Modal Awal)
         # BUG FIX: DO NOT subtract p_aset_start or p_mobil_start here!
-        # Modal Awal is a snapshot of position. 
-        # If cash was spent to buy a car in the past, start_cash is already lower, 
+        # Modal Awal is a snapshot of position.
+        # If cash was spent to buy a car in the past, start_cash is already lower,
         # and start_stok_mobil is higher. They balance out.
         # Subtracting p_mobil_start again would double-deduct the cost.
+        # BUG FIX 2026-09-08: DO NOT add accumulated HPP either. start_stok_*
+        # is already NET (remaining stock); adding HPP of SOLD goods inflates
+        # opening equity by exactly that HPP (e.g. daily filter showed selisih
+        # -2.284.594 = bengkel HPP 1-7 Sep). Historical profit already lives
+        # in cash/receivables. Pure snapshot matches Neraca total_modal.
         modal_aset_tetap_start = start_aset_tetap
-        modal_stok_part_start = start_stok_part + get_akumulasi_hpp_parts(yesterday)
-        modal_stok_mobil_start = start_stok_mobil + get_akumulasi_hpp_mobil(yesterday) + get_akumulasi_hpp_mobil_prep(yesterday)
+        modal_stok_part_start = start_stok_part
+        modal_stok_mobil_start = start_stok_mobil
 
         # TOTAL OPENING EQUITY = (Cash + Inventory/Assets) - Liabilities
         modal_awal_theoretical = (start_cash + modal_stok_part_start + modal_stok_mobil_start + modal_aset_tetap_start + start_piutang) - start_hutang

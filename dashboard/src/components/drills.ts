@@ -1,6 +1,7 @@
-import { drillService, stockService } from '../api/services';
+import { drillService, reportService, stockService } from '../api/services';
 import type { PeriodParams } from '../api/services';
 import { formatCurrency } from '../utils/format';
+import type { NeracaReport } from '../types/reports';
 import type { DrillSpec } from './reports';
 
 const rp = (key: string) => ({
@@ -59,9 +60,45 @@ export const drillBengkelSales = (): DrillSpec => ({
     { key: 'nama_customer', header: 'Customer' },
     { key: 'nomor_plat', header: 'Plat' },
     { key: 'status_bayar', header: 'Bayar' },
+    rp('total_parts'),
+    rp('total_jasa'),
+    rp('diskon'),
     rp('grand_total'),
+    rp('hpp_parts'),
   ],
   fetch: (p: PeriodParams) => drillService.bengkel(p),
+});
+
+// Perbaikan bengkel untuk unit TERJUAL periode ini (komponen workshop_bills
+// dari HPP mobil — selaras total_biaya_bengkel_sold laporan, bukan omzet servis).
+// Ledger "Perawatan Bengkel" (MobilBiayaLainnya) tak ada endpoint list,
+// jadi Σ drill ≈ workshop_bills; selisih vs angka laporan = komponen ledger.
+const INTERNAL_MOBIL_KATEGORI = new Set(['jual_beli_mobil', 'mobil', 'penjualan_mobil']);
+
+export const drillRepairMobil = (): DrillSpec => ({
+  key: 'repair-mobil',
+  label: 'Rincian perbaikan bengkel unit terjual',
+  columns: [
+    tgl(),
+    { key: 'nomor_transaksi', header: 'Nomor' },
+    { key: 'nomor_plat', header: 'Plat' },
+    { key: 'kategori', header: 'Kategori' },
+    rp('grand_total'),
+  ],
+  fetch: async (p: PeriodParams) => {
+    const [jual, bengkel] = await Promise.all([
+      drillService.penjualanMobil(p),
+      drillService.bengkel(p),
+    ]);
+    const soldIds = new Set((jual.data ?? []).map((r) => Number(r.mobil_id ?? -1)));
+    const rows = (bengkel.data ?? []).filter(
+      (r) =>
+        r.mobil_id != null &&
+        soldIds.has(Number(r.mobil_id)) &&
+        INTERNAL_MOBIL_KATEGORI.has(String(r.kategori ?? '').toLowerCase()),
+    );
+    return { data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 };
+  },
 });
 
 export const drillPengeluaran = (): DrillSpec => ({
@@ -120,6 +157,8 @@ export const drillMobilMasuk = (): DrillSpec => ({
 });
 
 // Stok unsold: unit masuk minus yang sudah TERJUAL. Selaras stok_mobil laporan.
+// amountKey 'nilai_total' (= harga_beli + total_biaya) agar Σ = angka laporan;
+// 'harga_beli' saja undercount karena stok dinilai full inventory cost.
 export const drillStokMobil = (): DrillSpec => ({
   key: 'stok-mobil',
   label: 'Rincian stok mobil',
@@ -129,13 +168,18 @@ export const drillStokMobil = (): DrillSpec => ({
     { key: 'merek', header: 'Merek' },
     { key: 'model', header: 'Model' },
     rp('harga_beli'),
+    { key: 'total_biaya', header: 'Biaya', align: 'right' as const, render: (r) => formatCurrency(r.total_biaya) },
+    { key: 'nilai_total', header: 'Nilai', align: 'right' as const, render: (r) => formatCurrency(r.nilai_total) },
   ],
   fetch: async (p: PeriodParams) => {
     const res = await drillService.mobilMasuk(p);
-    return {
-      ...res,
-      data: res.data.filter((r) => String(r.status ?? '').toUpperCase() !== 'TERJUAL'),
-    };
+    const rows = res.data
+      .filter((r) => String(r.status ?? '').toUpperCase() !== 'TERJUAL')
+      .map((r) => ({
+        ...r,
+        nilai_total: Number(r.harga_beli ?? 0) + Number(r.total_biaya ?? 0),
+      }));
+    return { ...res, data: rows };
   },
 });
 
@@ -439,6 +483,36 @@ export const drillModalNonKas = (parts: { setoran_mobil?: number; setoran_piutan
   };
 };
 
+// Komposisi Modal Awal: snapshot Aktiva − Hutang per H−1 awal periode
+// (selaras modal_awal_theoretical modal_service: kas + stok + aset + piutang
+// − hutang non-investor). Hutang investor dikecualikan karena dihitung modal.
+export const drillModalAwal = (tanggalDari: string): DrillSpec => {
+  const d = new Date(`${tanggalDari}T00:00:00`);
+  d.setDate(d.getDate() - 1);
+  const asOf = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return {
+  key: `modal-awal-${tanggalDari}`,
+  label: 'Rincian modal awal (Aktiva − Hutang)',
+  columns: [
+    { key: 'komponen', header: 'Komponen' },
+    rp('amount'),
+  ],
+  fetch: async () => {
+    const r = (await reportService.neraca(asOf)) as unknown as NeracaReport;
+    const al = r.aktiva_lancar;
+    const rows = [
+      { komponen: 'Kas & Bank', amount: Number(al.total_kas_bank ?? 0) },
+      { komponen: 'Piutang', amount: Number(al.total_piutang ?? 0) },
+      { komponen: 'Persediaan Sparepart', amount: Number(al.persediaan_sparepart ?? 0) },
+      { komponen: 'Stok Mobil', amount: Number(al.stok_mobil ?? 0) },
+      { komponen: 'Aktiva Tetap', amount: Number(r.aktiva_tetap?.total_aktiva_tetap ?? 0) },
+      { komponen: 'Hutang non-investor (pengurang)', amount: -(Number(r.hutang?.total_hutang ?? 0) - Number(r.hutang?.hutang_investor ?? 0)) },
+    ].filter((x) => x.amount !== 0);
+    return { data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 };
+  },
+  };
+};
+
 // Komposisi Modal Non-Kas Neraca: persediaan + stok mobil + aset tetap + plug.
 // total = setoran_modal − setoran_modal_kas (plug identitas), jadi baris penyesuaian
 // menutup selisih agar Σ = total.
@@ -447,11 +521,13 @@ export const drillNeracaNonKas = (parts: { persediaan?: number; stok_mobil?: num
   const s = Number(parts.stok_mobil ?? 0);
   const a = Number(parts.aset_tetap ?? 0);
   const t = Number(parts.total ?? 0);
+  const plug = t - p - s - a;
   const rows = [
     { komponen: 'Persediaan Sparepart', amount: p },
     { komponen: 'Stok Mobil (Inventory)', amount: s },
     { komponen: 'Aset Tetap', amount: a },
-    { komponen: 'Penyesuaian (plug identitas)', amount: t - p - s - a },
+    // Plug identitas — flag ⚠ bila |plug| ≥ 100rb agar tak silent.
+    { komponen: Math.abs(plug) >= 100_000 ? 'Penyesuaian (plug identitas ⚠ perlu telusur)' : 'Penyesuaian (plug identitas)', amount: plug },
   ].filter((r) => r.amount !== 0);
   return {
     key: 'modal-non-kas',
