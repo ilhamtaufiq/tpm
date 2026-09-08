@@ -438,3 +438,28 @@ export const drillModalNonKas = (parts: { setoran_mobil?: number; setoran_piutan
     fetch: async () => ({ data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 }),
   };
 };
+
+// Komposisi Modal Non-Kas Neraca: persediaan + stok mobil + aset tetap + plug.
+// total = setoran_modal − setoran_modal_kas (plug identitas), jadi baris penyesuaian
+// menutup selisih agar Σ = total.
+export const drillNeracaNonKas = (parts: { persediaan?: number; stok_mobil?: number; aset_tetap?: number; total?: number }): DrillSpec => {
+  const p = Number(parts.persediaan ?? 0);
+  const s = Number(parts.stok_mobil ?? 0);
+  const a = Number(parts.aset_tetap ?? 0);
+  const t = Number(parts.total ?? 0);
+  const rows = [
+    { komponen: 'Persediaan Sparepart', amount: p },
+    { komponen: 'Stok Mobil (Inventory)', amount: s },
+    { komponen: 'Aset Tetap', amount: a },
+    { komponen: 'Penyesuaian (plug identitas)', amount: t - p - s - a },
+  ].filter((r) => r.amount !== 0);
+  return {
+    key: 'modal-non-kas',
+    label: 'Rincian modal non-kas',
+    columns: [
+      { key: 'komponen', header: 'Komponen' },
+      rp('amount'),
+    ],
+    fetch: async () => ({ data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 }),
+  };
+};

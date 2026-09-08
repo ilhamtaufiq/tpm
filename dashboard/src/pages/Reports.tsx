@@ -26,6 +26,7 @@ import {
   drillLembur,
   drillMobilMasuk,
   drillModalNonKas,
+  drillNeracaNonKas,
   drillStokMobil,
   drillStokSparepart,
   drillMuatan,
@@ -444,7 +445,17 @@ export function Neraca() {
                     <Drill spec={drillSetoranKas()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="nominal" total={m.setoran_modal_kas} />
                   </>
                 )}
-                {m.modal_non_kas > 0 && <FinancialRow label="Modal Non-Kas (Aset)" value={m.modal_non_kas} small indent />}
+                {m.modal_non_kas > 0 && (
+                  <>
+                    <FinancialRow label="Modal Non-Kas (Aset)" value={m.modal_non_kas} small indent />
+                    <Drill
+                      spec={drillNeracaNonKas({ persediaan: m.modal_persediaan, stok_mobil: m.modal_stok_mobil, aset_tetap: m.modal_aset_tetap, total: m.modal_non_kas })}
+                      period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }}
+                      amountKey="amount"
+                      total={m.modal_non_kas}
+                    />
+                  </>
+                )}
               </div>
             )}
           </div>
