@@ -352,16 +352,16 @@ export function Settings() {
       <Card title="Backup & Restore" sub="Amankan data transaksi & file" icon={FileArchive}>
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-3">
-            {[
+            {([
               ['BACKUPS', String(backups.length), FileArchive, '#F59E0B'],
               ['STORAGE', formatSize(backups.reduce((a, b) => a + (b.size || 0), 0)), HardDrive, '#3B82F6'],
               ['STATUS', 'SAFE', Database, '#10B981'],
-            ].map(([label, value, Icon, color]) => (
-              <div key={label as string} className="rounded-2xl border border-slate-100 bg-white p-3 text-center">
+            ] as [string, string, typeof FileArchive, string][]).map(([label, value, Icon, color]) => (
+              <div key={label} className="rounded-2xl border border-slate-100 bg-white p-3 text-center">
                 <span className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: `${color}15` }}>
-                  <Icon size={15} style={{ color: color as string }} />
+                  <Icon size={15} style={{ color }} />
                 </span>
-                <p className="truncate text-sm font-extrabold uppercase" style={{ color: color as string }}>{value}</p>
+                <p className="truncate text-sm font-extrabold uppercase" style={{ color }}>{value}</p>
                 <p className="text-[9px] font-bold tracking-widest text-slate-400">{label}</p>
               </div>
             ))}
