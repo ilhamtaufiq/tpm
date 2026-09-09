@@ -517,7 +517,10 @@ class ModalService(BaseReportService):
                 HutangUsaha.nomor_referensi.like("IMP-%"),
                 HutangUsaha.tanggal >= tanggal_dari,
                 HutangUsaha.tanggal <= tanggal_sampai,
-                HutangUsaha.sumber != HutangSource.PEMBELIAN_MOBIL
+                HutangUsaha.sumber != HutangSource.PEMBELIAN_MOBIL,
+                # Hutang investor impor (unit=MODAL) bukan pengurang modal:
+                # mobil investor-nya juga di-skip di bawah → net 0, selaras Neraca.
+                HutangUsaha.unit != KasBankSource.MODAL
             ).scalar() or 0)
 
             mobil_import = 0

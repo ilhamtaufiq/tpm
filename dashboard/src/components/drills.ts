@@ -289,11 +289,13 @@ export const drillInvestorSaldo = (): DrillSpec => ({
     rp('total'),
   ],
   // Komposisi SALDO (selaras hutang_investor laporan): unit belum terjual
-  // (modal) + unit terjual belum cair (modal + laba). Bukan riwayat pencairan.
+  // (modal) + unit terjual belum cair (modal + laba) + hutang investor
+  // saldo awal impor (IMP-*, unit=MODAL).
   fetch: async () => {
-    const [units, pending] = await Promise.all([
+    const [units, pending, hutang] = await Promise.all([
       stockService.mobilList({ tipe_kepemilikan: 'INVESTOR', limit: 100 }),
       drillService.investorPending(),
+      drillService.hutangFiltered({ tanggal_dari: '2024-01-01', tanggal_sampai: '2099-12-31' }),
     ]);
     const list = ((units as { data?: Record<string, unknown>[] } | undefined)?.data ?? []);
     const rows: Record<string, unknown>[] = list
@@ -317,6 +319,17 @@ export const drillInvestorSaldo = (): DrillSpec => ({
         modal: Number(t.nominal_investor ?? 0),
         laba: Number(t.laba_investor ?? 0),
         total: Number(t.total_pencairan ?? 0),
+      });
+    }
+    for (const h of ((hutang as { data?: Record<string, unknown>[] } | undefined)?.data ?? [])) {
+      if (!String(h.nomor_referensi ?? '').startsWith('IMP-') || h.unit !== 'MODAL') continue;
+      rows.push({
+        unit: 'Saldo Awal (Impor)',
+        nama_investor: h.nama_kreditur,
+        status: 'SALDO_AWAL',
+        modal: 0,
+        laba: 0,
+        total: Number(h.sisa_hutang ?? 0),
       });
     }
     return { data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 };

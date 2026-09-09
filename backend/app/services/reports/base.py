@@ -582,6 +582,9 @@ class BaseReportService:
         manual_bengkel = get_debt_balance_by_unit([HutangSource.LAINNYA], unit=KasBankSource.BENGKEL)
         manual_ja = get_debt_balance_by_unit([HutangSource.LAINNYA], unit=KasBankSource.JASA_ANGKUT)
         manual_mobil = get_debt_balance_by_unit([HutangSource.LAINNYA], unit=KasBankSource.JUAL_BELI_MOBIL)
+        # Import saldo awal hutang investor (unit=MODAL via _map_unit_alias INVESTOR)
+        # tampil di baris "Hutang Investor", bukan "Hutang Lainnya".
+        manual_investor = get_debt_balance_by_unit([HutangSource.LAINNYA], unit=KasBankSource.MODAL)
         hutang_part += manual_bengkel
         hutang_mobil += manual_mobil
         hutang_ja = manual_ja
@@ -609,7 +612,7 @@ class BaseReportService:
             InvestorDisbursementDetail.tanggal <= tanggal_sampai
         ).scalar() or 0)
         
-        hutang_investor = unsold_investor_capital + max(0, investor_debt - investor_paid)
+        hutang_investor = unsold_investor_capital + max(0, investor_debt - investor_paid) + manual_investor
 
         # LAINNYA manual debts minus the unit-routed buckets above; only debts
         # with no mapped unit (or unit=LAINNYA) remain as "Hutang Lainnya".
