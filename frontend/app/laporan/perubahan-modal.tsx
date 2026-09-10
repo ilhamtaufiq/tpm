@@ -96,12 +96,10 @@ export default function LaporanPerubahanModalScreen() {
                 modalAwal: 0,
                 setoranKas: 0,
                 modalNonKas: 0,
-                investorFunding: 0,
                 labaBersih: 0,
                 labaInvestor: 0,
                 diskonPenjualanBengkel: 0,
                 prive: 0,
-                pembayaranInvestor: 0,
                 modalAkhir: 0,
                 perubahanBersih: 0,
                 expectedModalAkhir: 0,
@@ -116,18 +114,17 @@ export default function LaporanPerubahanModalScreen() {
         const setoranKas = r.penambahan?.setoran_modal || 0;
         const penyesuaianHargaBeli = r.penambahan?.penyesuaian_harga_beli_sparepart || 0;
         const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
-        const investorFunding = r.penambahan?.investor_funding || 0;
         const labaBersih = r.info?.laba_bersih || 0;
         // Laba investor hanya diakui setelah penjualan mobil LUNAS/TERJUAL (bukan saat DP/booking).
         const labaInvestor = r.info?.laba_investor || 0;
         // Sudah net di laba_bersih; tampilkan untuk rekonsiliasi (bukan baris penambah/pengurang ekuitas).
         const diskonPenjualanBengkel = r.info?.diskon_penjualan_bengkel || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
-        const pembayaranInvestor = r.pengurangan?.pembayaran_investor || 0;
         const modalAkhir = r.modal_akhir || 0;
 
+        // Investor = hutang (bukan aliran modal) — selaras xlsx & dashboard.
         const perubahanBersihAliran =
-            setoranKas + modalNonKas + investorFunding + labaBersih + labaInvestor - prive - pembayaranInvestor;
+            setoranKas + modalNonKas + labaBersih + labaInvestor - prive;
         const expectedModalAkhirAliran = modalAwal + perubahanBersihAliran;
 
         const validasi = r.info?.validasi;
@@ -140,12 +137,10 @@ export default function LaporanPerubahanModalScreen() {
             setoranKas,
             penyesuaianHargaBeli,
             modalNonKas,
-            investorFunding,
             labaBersih,
             labaInvestor,
             diskonPenjualanBengkel,
             prive,
-            pembayaranInvestor,
             modalAkhir,
             perubahanBersih: perubahanBersihAliran,
             expectedModalAkhir,
@@ -288,8 +283,8 @@ export default function LaporanPerubahanModalScreen() {
                         </View>
 
                         <View className="flex-row -mt-1">
-                            <StatCard label="SETORAN" value={equity.setoranKas + equity.modalNonKas + equity.investorFunding} icon={Wallet} bgColor="#4f46e5" subLabel="Kas + Non-Kas + Investor" />
-                            <StatCard label="PRIVE" value={equity.prive + equity.pembayaranInvestor} icon={ArrowDownLeft} bgColor="#e11d48" subLabel="Pengambilan Modal" />
+                            <StatCard label="SETORAN" value={equity.setoranKas + equity.modalNonKas} icon={Wallet} bgColor="#4f46e5" subLabel="Kas + Non-Kas" />
+                            <StatCard label="PRIVE" value={equity.prive} icon={ArrowDownLeft} bgColor="#e11d48" subLabel="Penarikan pemilik" />
                         </View>
 
                         <Card className="p-6 bg-white rounded-[24px] border border-slate-100 shadow-sm mt-2">
@@ -300,18 +295,11 @@ export default function LaporanPerubahanModalScreen() {
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest">Penambahan</Typography>
-                                {equity.setoranKas > 0 && (
-                                    <FinancialRow label="Setoran Modal Kas" value={equity.setoranKas} color="text-emerald-700" />
-                                )}
-                                {equity.modalNonKas !== 0 && (
-                                    <FinancialRow label="Penyesuaian" value={equity.modalNonKas} color={equity.modalNonKas < 0 ? "text-rose-600" : "text-emerald-700"} />
-                                )}
-                                {equity.investorFunding > 0 && (
-                                    <FinancialRow label="Dana Investor Mobil" value={equity.investorFunding} color="text-emerald-700" />
-                                )}
+                                <FinancialRow label="Penambahan Modal" value={equity.setoranKas + equity.modalNonKas} color="text-emerald-700" />
+                                <Typography variant="caption" className="text-slate-500 text-[11px] mb-2 pl-1">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</Typography>
                                 {equity.labaBersih >= 0 && (
                                     <>
-                                        <FinancialRow label="Laba Bersih Periode" value={equity.labaBersih} color="text-emerald-700" />
+                                        <FinancialRow label="Laba/Rugi Periode" value={equity.labaBersih} color="text-emerald-700" />
                                         {equity.diskonPenjualanBengkel > 0 && (
                                             <View className="mb-2 pl-1">
                                                 <Typography variant="caption" className="text-slate-500 text-[11px]">
@@ -321,18 +309,12 @@ export default function LaporanPerubahanModalScreen() {
                                         )}
                                     </>
                                 )}
-                                {equity.labaInvestor > 0 && (
-                                    <FinancialRow label="Laba Investor (Unit Terjual)" value={equity.labaInvestor} color="text-emerald-700" />
-                                )}
                             </View>
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-rose-600 mb-2 uppercase tracking-widest">Pengurangan</Typography>
-                                {equity.prive > 0 ? (
-                                    <FinancialRow label="Prive / Pengambilan Pemilik" value={equity.prive} isNegative />
-                                ) : (
-                                    <FinancialRow label="Prive / Pengambilan Pemilik" value={0} />
-                                )}
+                                <FinancialRow label="Prive/ Pengambilan Pemilik" value={equity.prive} isNegative />
+                                <Typography variant="caption" className="text-slate-500 text-[11px] mb-2 pl-1">* pengambilan pemilik dan akun ini hanya muncul di laporan perubahan modal saja, karena sifat nya mengurangi kumulatif antar modal dan laba/rugi</Typography>
                                 {equity.labaBersih < 0 && (
                                     <>
                                         <FinancialRow label="Rugi Periode" value={Math.abs(equity.labaBersih)} isNegative />
@@ -345,17 +327,13 @@ export default function LaporanPerubahanModalScreen() {
                                         )}
                                     </>
                                 )}
-                                {equity.labaInvestor < 0 && (
-                                    <FinancialRow label="Rugi Investor (Jual Beli Mobil)" value={Math.abs(equity.labaInvestor)} isNegative />
-                                )}
-                                {equity.pembayaranInvestor > 0 && (
-                                    <FinancialRow label="Pembayaran Investor Mobil" value={equity.pembayaranInvestor} isNegative />
-                                )}
+                                <FinancialRow label="Laba Investor Jual Beli Mobil" value={equity.labaInvestor} color={equity.labaInvestor < 0 ? "text-rose-600" : "text-emerald-700"} />
                             </View>
 
                             <View className="mt-4 pt-5 border-t-2 border-slate-100">
                                 <FinancialRow label="Perubahan Bersih Modal (Aliran)" value={equity.perubahanBersih} bold color="text-slate-700" />
                                 <FinancialRow label="Modal Akhir Periode (Teoritis)" value={equity.expectedModalAkhir} bold color="text-indigo-700" />
+                                <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">* akun beku tidak boleh berubah, modal awal = (total aktiva − total hutang)</Typography>
                             </View>
                         </Card>
 

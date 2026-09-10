@@ -90,7 +90,8 @@ export default function LabaRugiScreen() {
     const bengkelData = useMemo(() => {
         const unit = reportData?.units?.bengkel || {} as any;
         return {
-            penjualan: reportData?.bengkel_details?.total_subtotal || (unit.revenue + (reportData?.bengkel_details?.total_diskon || 0)),
+            // total_subtotal backend = NET (grand_total sudah dikurangi diskon).
+            penjualan: reportData?.bengkel_details?.total_subtotal || unit.revenue,
             hpp: unit.hpp || 0,
             biayaOps: unit.beban_operasional || 0,
             biayaGaji: unit.beban_gaji || 0,
@@ -182,11 +183,11 @@ export default function LabaRugiScreen() {
 
             <View className="p-5 w-full">
                 <View className="mb-4 w-full">
-                    <Typography variant="caption" weight="bold" className="text-blue-600 mb-2 uppercase tracking-widest text-[10px]">I. Pendapatan Operasional</Typography>
-                    <FinancialRow label="Penjualan Sparepart & Jasa" value={bengkelData.penjualan} bold large color="text-slate-800" />
-                    <FinancialRow label=" - Penjualan Sparepart (Retail)" value={reportData?.bengkel_details?.total_parts || 0} small indent />
-                    <FinancialRow label=" - Jasa Servis" value={reportData?.bengkel_details?.total_jasa || 0} small indent />
-                    <FinancialRow label=" - Diskon Penjualan" value={reportData?.bengkel_details?.total_diskon || 0} small indent isNegative color="text-rose-500" />
+                    <Typography variant="caption" weight="bold" className="text-blue-600 mb-2 uppercase tracking-widest text-[10px]">I. Penjualan Sparepart & Jasa</Typography>
+                    <FinancialRow label="Penjualan Sparepart (Retail)" value={reportData?.bengkel_details?.total_parts || 0} small indent />
+                    <FinancialRow label="Jasa Servis" value={reportData?.bengkel_details?.total_jasa || 0} small indent />
+                    <FinancialRow label="Diskon Penjualan" value={reportData?.bengkel_details?.total_diskon || 0} small indent isNegative color="text-rose-500" />
+                    <FinancialRow label="Penjualan Bersih Sparepart & Jasa" value={bengkelData.penjualan} bold large color="text-slate-800" />
                 </View>
 
                 <View className="bg-slate-50/80 p-3 rounded-xl mb-4 border border-slate-100">
@@ -207,7 +208,7 @@ export default function LabaRugiScreen() {
 
                 <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${bengkelData.laba_bersih >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}>
                     <View>
-                        <Typography variant="body2" weight="bold" className="text-white">IV. Laba/Rugi Bersih Unit</Typography>
+                        <Typography variant="body2" weight="bold" className="text-white">IV. Laba/ Rugi Bersih Unit</Typography>
                         <Typography variant="caption" className="text-white/60 uppercase tracking-tighter text-[10px] mt-0.5">Setelah Beban Operasional</Typography>
                     </View>
                     <Typography variant="h3" weight="bold" className="text-white">
@@ -251,7 +252,7 @@ export default function LabaRugiScreen() {
 
                     <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${unit.laba_bersih >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}>
                         <View>
-                            <Typography variant="body2" weight="bold" className="text-white">IV. Laba Bersih Unit</Typography>
+                            <Typography variant="body2" weight="bold" className="text-white">IV. Laba/ Rugi Bersih Unit</Typography>
                             <Typography variant="caption" className="text-white/60 uppercase tracking-tighter text-[10px] mt-0.5">Final Profit Share</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className="text-white">
@@ -302,6 +303,14 @@ export default function LabaRugiScreen() {
                         <FinancialRow label="Biaya Perbaikan Bengkel - Mobil Terjual" value={mobilRepairData.sold} isNegative color="text-rose-600" />
                     </View>
 
+                    {mobilPrepData.all > mobilPrepData.sold && (
+                        <Typography variant="caption" className="text-slate-400 text-[11px] mb-2 px-1">Info: persiapan semua stok {formatCurrency(mobilPrepData.all)} (belum terjual {formatCurrency(mobilPrepData.all - mobilPrepData.sold)}).</Typography>
+                    )}
+
+                    {mobilPrepData.all > mobilPrepData.sold && (
+                        <Typography variant="caption" className="text-slate-400 text-[11px] mb-2 px-1">Info: persiapan semua stok {formatCurrency(mobilPrepData.all)} (belum terjual {formatCurrency(mobilPrepData.all - mobilPrepData.sold)}).</Typography>
+                    )}
+
                     <View className="p-1 px-3 mb-4">
                         <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">III. Beban Umum Unit</Typography>
                         {(unit.sharing_investor || 0) > 0 && (
@@ -312,7 +321,7 @@ export default function LabaRugiScreen() {
 
                     <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${unit.laba_bersih >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}>
                         <View>
-                            <Typography variant="body2" weight="bold" className="text-white">IV. Laba Bersih Unit</Typography>
+                            <Typography variant="body2" weight="bold" className="text-white">IV. Laba/ Rugi Bersih Unit</Typography>
                             <Typography variant="caption" className="text-white/60 uppercase tracking-tighter text-[10px] mt-0.5">Setelah Biaya & Share</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className="text-white">
@@ -395,15 +404,15 @@ export default function LabaRugiScreen() {
                 </View>
 
                 <View className="mb-6 w-full px-2">
-                    <FinancialRow label="Total Laba Operasional Seluruh Unit" value={totalProfitBeforePrive} isDark large />
+                    <FinancialRow label="Laba operasional seluruh unit" value={totalProfitBeforePrive} isDark large />
                     <View className="h-[1px] bg-white/10 w-full my-3" />
-                    <FinancialRow label="Beban Prive (Penarikan Modal Pemilik)" value={priveTotal} isNegative isDark color="text-rose-400" />
+                    <FinancialRow label="Prive pemilik" value={priveTotal} isNegative isDark color="text-rose-400" />
                 </View>
 
                 <View className="w-full bg-indigo-900/50 p-6 rounded-3xl border border-indigo-800 shadow-inner">
                     <View className="flex-row justify-between items-end">
                         <View>
-                            <Typography variant="caption" weight="bold" className="text-indigo-300 uppercase tracking-[4px] mb-2 text-[9px]">Laba Bersih Akhir (TPM)</Typography>
+                            <Typography variant="caption" weight="bold" className="text-indigo-300 uppercase tracking-[4px] mb-2 text-[9px]">Laba bersih akhir</Typography>
                             <Typography variant="h1" weight="bold" className="text-white text-4xl tracking-tighter">
                                 {finalProfit < 0 ? `(${formatCurrency(Math.abs(finalProfit))})` : formatCurrency(finalProfit)}
                             </Typography>
