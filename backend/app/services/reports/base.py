@@ -608,8 +608,12 @@ class BaseReportService:
             Mobil.status == CarStatus.TERJUAL,
             Mobil.tanggal_terjual <= tanggal_sampai
         ).scalar() or 0)
+        # Hanya pencairan aktif yang mengurangi hutang. Baris [REVERSED] sudah
+        # dibatalkan (kas dikembalikan) — ikut menghitungnya membuat hutang
+        # investor hilang padahal dana belum dicairkan ulang.
         investor_paid = float(self.db.query(func.sum(InvestorDisbursementDetail.nominal)).join(TransaksiPenjualanMobil).filter(
-            InvestorDisbursementDetail.tanggal <= tanggal_sampai
+            InvestorDisbursementDetail.tanggal <= tanggal_sampai,
+            ~InvestorDisbursementDetail.catatan.ilike("[REVERSED]%"),
         ).scalar() or 0)
         
         hutang_investor = unsold_investor_capital + max(0, investor_debt - investor_paid) + manual_investor

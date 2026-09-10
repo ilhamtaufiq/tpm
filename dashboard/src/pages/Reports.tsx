@@ -533,6 +533,7 @@ export function Modal() {
   const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
   const labaBersih = r.info?.laba_bersih || 0;
   const prive = r.pengurangan?.prive || 0;
+  const labaInvestor = r.info?.laba_investor || 0;
   const pengembalianModal = r.pengurangan?.pengembalian_modal || 0;
   const priveTotal = prive + pengembalianModal;
   const modalAkhir = r.modal_akhir || 0;
@@ -585,8 +586,8 @@ export function Modal() {
         </div>
       </Card>
 
-      <Card title="RINCIAN PERUBAHAN EKUITAS">
-        <FinancialRow label="MODAL AWAL" value={modalAwal} bold large />
+      <Card title="Rincian Perubahan Ekuitas">
+        <FinancialRow label="Modal Awal" value={modalAwal} bold large />
         <Drill
           spec={drillModalAwal(period.tanggal_dari)}
           period={{ tanggal_dari: '2024-01-01', tanggal_sampai: period.tanggal_dari }}
@@ -594,11 +595,11 @@ export function Modal() {
           total={modalAwal}
         />
         <p className="mt-1 text-[11px] text-slate-400">* akun beku tidak boleh berubah, modal awal = (total aktiva − total hutang)</p>
-        <FinancialRow label="PENYESUAIAN HARGA BELI SPARE PART (MEMO)" value={penyesuaianHargaBeli} />
+        <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={penyesuaianHargaBeli} />
         {penyesuaianHargaBeli !== 0 && <Drill spec={drillRevaluasi()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: period.tanggal_sampai }} amountKey="amount" total={penyesuaianHargaBeli} />}
 
         <div className="my-2 h-px w-full bg-slate-100" />
-        <FinancialRow label="PENAMBAHAN MODAL" value={setoranKas + modalNonKas} small indent />
+        <FinancialRow label="Penambahan Modal" value={setoranKas + modalNonKas} small indent />
         <Drill
           spec={drillPenambahanModal({ kas: setoranKas, non_kas: modalNonKas })}
           period={period}
@@ -606,19 +607,20 @@ export function Modal() {
           total={setoranKas + modalNonKas}
         />
         <p className="mt-1 pl-6 text-[11px] text-slate-400">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</p>
-        <FinancialRow label="LABA/RUGI PERIODE" value={labaBersih} small indent isNegative={labaBersih < 0} />
-        <FinancialRow label="PRIVE/ PENGAMBILAN PEMILIK" value={-priveTotal} small indent isNegative={priveTotal > 0} />
+        <FinancialRow label="Laba/Rugi Periode" value={labaBersih} small indent isNegative={labaBersih < 0} />
+        <FinancialRow label="Prive/ Pengambilan Pemilik" value={-priveTotal} small indent isNegative={priveTotal > 0} />
         {prive > 0 && <Drill spec={drillPrive()} period={period} amountKey="nominal" total={prive} />}
         <p className="mt-1 pl-6 text-[11px] text-slate-400">* pengambilan pemilik dan akun ini hanya muncul di laporan perubahan modal saja, karena sifat nya mengurangi kumulatif antar modal dan laba/rugi</p>
+        <FinancialRow label="Laba Investor Jual Beli Mobil" value={labaInvestor} small indent />
 
         <div className="my-2 h-px w-full bg-slate-100" />
-        <FinancialRow label="PERUBAHAN BERSIH MODAL (ALIRAN)" value={perubahanBersih} bold />
-        <FinancialRow label="MODAL AKHIR PERIODE (TEORITIS)" value={expected} bold color="text-indigo-700" />
+        <FinancialRow label="Perubahan Bersih Modal (Aliran)" value={perubahanBersih} bold />
+        <FinancialRow label="Modal Akhir Periode (Teoritis)" value={expected} bold color="text-indigo-700" />
 
         <div className="my-3 h-px w-full bg-slate-100" />
         <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Keseimbangan Ekuitas</p>
-        <FinancialRow label="MODAL AKHIR (AKTUAL-NERACA)" value={modalAkhir} />
-        <FinancialRow label="MODAL AKHIR (TEORITIS-BACKEND)" value={expected} />
+        <FinancialRow label="Modal Akhir (Aktual-Neraca)" value={modalAkhir} />
+        <FinancialRow label="Modal Akhir (Teoritis-Backend)" value={expected} />
       </Card>
     </div>
   );
