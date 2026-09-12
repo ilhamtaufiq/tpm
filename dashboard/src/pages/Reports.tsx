@@ -548,6 +548,12 @@ export function Modal() {
     <div className="animate-fade-up space-y-5">
       <PageHeader title="Perubahan Modal" sub="Aliran ekuitas pemilik per periode" right={<Badge tone={isBalanced ? 'ok' : 'warn'}>{isBalanced ? 'BALANCE' : 'SELISIH'}</Badge>} />
       <PeriodControls filterType={filterType} onType={setFilterType} label={period.label} onPrev={() => shift(-1)} onNext={() => shift(1)} />
+      {r.catatan && (
+        <div className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          <span>{r.catatan}</span>
+        </div>
+      )}
 
       <div className="relative overflow-hidden rounded-3xl bg-[#0B1F3A] p-6 text-white shadow-xl sm:p-8">
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-indigo-600/30 blur-3xl" />

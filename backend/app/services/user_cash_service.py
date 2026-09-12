@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 
 from app.models.user import User
+from app.utils.constants import HIDDEN_USERNAMES
 from app.models.keuangan import UserCashAdjustment
 from app.schemas.user import UserCashAdjustmentCreate
 from app.realtime import publish_realtime_event
@@ -19,7 +20,11 @@ class UserCashService:
 
     def get_user_list(self) -> List[User]:
         """Get all active users with their cash balances."""
-        stmt = select(User).where(User.is_active == True).order_by(User.full_name)
+        stmt = (
+            select(User)
+            .where(User.is_active == True, User.username.notin_(HIDDEN_USERNAMES))
+            .order_by(User.full_name)
+        )
         return self.db.execute(stmt).scalars().all()
 
     def adjust_balance(

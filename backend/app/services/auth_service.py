@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserResponse, Token, LoginResponse
-from app.utils.constants import UserRole
+from app.utils.constants import HIDDEN_USERNAMES, UserRole
 from app.utils.security import (
     hash_password,
     verify_password,
@@ -226,7 +226,7 @@ class AuthService:
         is_active: Optional[bool] = None,
     ) -> list[User]:
         """Get list of users with pagination."""
-        query = self.db.query(User)
+        query = self.db.query(User).filter(User.username.notin_(HIDDEN_USERNAMES))
 
         if is_active is not None:
             query = query.filter(User.is_active == is_active)

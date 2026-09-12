@@ -247,6 +247,13 @@ export default function LaporanPerubahanModalScreen() {
                     </View>
                 ) : (
                     <View className="space-y-5">
+                        {report.catatan && (
+                            <View className="flex-row items-start rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                                <AlertTriangle size={18} color="#d97706" />
+                                <Typography variant="caption" className="text-amber-800 ml-2 flex-1 leading-snug">{report.catatan}</Typography>
+                            </View>
+                        )}
+
                         <View className="w-full rounded-[36px] p-7 shadow-2xl overflow-hidden relative" style={{ backgroundColor: '#4f46e5' }}>
                             <View className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full" />
                             <View className="absolute top-20 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full" />

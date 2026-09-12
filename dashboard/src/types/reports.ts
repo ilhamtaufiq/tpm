@@ -197,4 +197,7 @@ export interface CapitalReport {
   };
   selisih?: number;
   is_balanced?: boolean;
+  /** Terisi bila periode berakhir sebelum saldo awal — angka semuanya nol. */
+  catatan?: string;
+  saldo_awal_date?: string;
 }

@@ -291,6 +291,7 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                 <div class="title">Laporan Perubahan Ekuitas</div>
                 <div class="subtitle">BENGKEL TPM - KONSOLIDASI</div>
                 <div class="date">Periode: ${formattedDate}</div>
+                ${data.catatan ? `<div class="date">${data.catatan}</div>` : ''}
             </div>
 
             <table>

@@ -28,10 +28,80 @@ from app.utils.workshop_finance import (
 )
 
 class ModalService(BaseReportService):
+    def _saldo_awal_date(self) -> date | None:
+        """Tanggal saldo awal = min tanggal transaksi impor (KasBank/Hutang/Piutang).
+
+        WAJIB difilter `IMP-%`: tanpa filter, satu transaksi backdate apa pun
+        menggeser saldo awal dan ikut mengubah `modal_awal` semua periode.
+        """
+        _imp_dates = [
+            self.db.query(func.min(KasBank.tanggal)).filter(
+                KasBank.nomor_referensi.like("IMP-%")
+            ).scalar(),
+            self.db.query(func.min(HutangUsaha.tanggal)).filter(HutangUsaha.nomor_referensi.like("IMP-%")).scalar(),
+            self.db.query(func.min(PiutangUsaha.tanggal)).filter(PiutangUsaha.nomor_referensi.like("IMP-%")).scalar(),
+        ]
+        known = [d for d in _imp_dates if d is not None]
+        return min(known) if known else None
+
+    def _empty_report(self, tanggal_dari: date, tanggal_sampai: date, saldo_awal: date) -> Dict[str, Any]:
+        """Periode yang berakhir sebelum saldo awal tidak punya data apa pun.
+        Kembalikan nol (bukan selisih palsu) + catatan agar UI bisa menjelaskan."""
+        return {
+            "periode": {"dari": tanggal_dari.isoformat(), "sampai": tanggal_sampai.isoformat()},
+            "saldo_awal_date": saldo_awal.isoformat(),
+            "catatan": f"Periode sebelum saldo awal ({saldo_awal.isoformat()}) — belum ada data.",
+            "modal_awal": 0.0,
+            "modal_akhir": 0.0,
+            "selisih": 0.0,
+            "is_balanced": True,
+            "laba_ditahan_periode": 0.0,
+            "penambahan": {
+                "setoran_modal": 0.0,
+                "penyesuaian_harga_beli_sparepart": 0.0,
+                "modal_non_kas": {
+                    "total": 0.0, "aset_tetap": 0.0, "stok_part": 0.0,
+                    "stok_mobil": 0.0, "piutang": 0.0,
+                    "setoran_mobil": 0.0, "setoran_piutang": 0.0,
+                    "setoran_hutang": 0.0, "setoran_aset": 0.0,
+                },
+                "investor_funding": 0.0,
+                "total": 0.0,
+            },
+            "pengurangan": {
+                "prive": 0.0,
+                "pengembalian_modal": 0.0,
+                "pembayaran_investor": 0.0,
+                "total": 0.0,
+            },
+            "info": {
+                "laba_bersih": 0.0,
+                "laba_investor": 0.0,
+                "diskon_penjualan_bengkel": 0.0,
+                "uang_muka_penjualan": 0.0,
+                "piutang_booking": 0.0,
+                "aset": {"kas_jenis_details": []},
+                "validasi": {
+                    "modal_teoritis": 0.0,
+                    "modal_aktual": 0.0,
+                    "selisih": 0.0,
+                    "penyesuaian": 0.0,
+                    "status": "BEFORE_OPENING_BALANCE",
+                },
+            },
+        }
+
     def get_report(self, tanggal_dari: date, tanggal_sampai: date) -> Dict[str, Any]:
         """Laporan Perubahan Modal (Capital Change) - Extended structure for Frontend"""
         from app.services.reports.neraca_service import NeracaService
         from app.services.penjualan_mobil_service import PenjualanMobilService
+
+        # Periode yang berakhir sebelum saldo awal tidak punya data pembanding:
+        # modal_akhir tak bisa dihitung dan modal_awal dipaksa ke nilai masa depan
+        # → selalu memunculkan selisih palsu. Kembalikan nol + catatan.
+        saldo_awal_date = self._saldo_awal_date()
+        if saldo_awal_date and tanggal_sampai < saldo_awal_date:
+            return self._empty_report(tanggal_dari, tanggal_sampai, saldo_awal_date)
 
         PenjualanMobilService(self.db).heal_deferred_investor_profit_on_bookings()
 
@@ -56,14 +126,6 @@ class ModalService(BaseReportService):
         # tahunan konsisten. Filter yg mulai sebelum saldo awal tetap pakai saldo
         # awal; filter sesudahnya roll-forward otomatis.
         from app.services.reports.neraca_service import NeracaService
-
-        # Tanggal saldo awal = min tanggal transaksi impor (KasBank/Hutang/Piutang).
-        _imp_dates = [
-            self.db.query(func.min(KasBank.tanggal)).scalar(),
-            self.db.query(func.min(HutangUsaha.tanggal)).filter(HutangUsaha.nomor_referensi.like("IMP-%")).scalar(),
-            self.db.query(func.min(PiutangUsaha.tanggal)).filter(PiutangUsaha.nomor_referensi.like("IMP-%")).scalar(),
-        ]
-        saldo_awal_date = min(d for d in _imp_dates if d is not None)
 
         is_opening = tanggal_dari <= saldo_awal_date
         if is_opening:
