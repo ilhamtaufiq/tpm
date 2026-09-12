@@ -801,9 +801,9 @@ export default function MobilInventoryScreen() {
                                 <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana / Potong Dari</Typography>
                                 <View className="flex-row -m-1">
                                     {[
-                                        { id: 'KAS_UNIT_MOBIL', label: 'Dompet', saldo: balancesData?.kas_unit_mobil?.saldo || 0, icon: Wallet, color: '#D97706' },
-                                        { id: 'KAS_UTAMA', label: 'Cash', saldo: balancesData?.kas_utama?.saldo || 0, icon: Banknote, color: '#059669' },
-                                        { id: 'BANK_UTAMA', label: 'BCA', saldo: balancesData?.bank_utama?.saldo || 0, icon: CreditCard, color: '#2563EB' }
+                                        { id: 'KAS_UNIT_MOBIL', label: 'Dompet', icon: Wallet, color: '#D97706' },
+                                        { id: 'KAS_UTAMA', label: 'Cash', icon: Banknote, color: '#059669' },
+                                        { id: 'BANK_UTAMA', label: 'BCA', icon: CreditCard, color: '#2563EB' }
                                     ].map((opt) => {
                                         const OptIcon = opt.icon;
                                         const active = expensePaymentMethod === opt.id;
@@ -819,9 +819,6 @@ export default function MobilInventoryScreen() {
                                                     <OptIcon size={20} color={active ? 'white' : opt.color} />
                                                     <Typography weight="bold" className={`text-[9px] uppercase tracking-wider mt-1.5 ${active ? 'text-white' : 'text-textGray'}`}>
                                                         {opt.label}
-                                                    </Typography>
-                                                    <Typography className={`text-[8px] font-bold mt-0.5 ${active ? 'text-white/80' : 'text-textGray/50'}`} numberOfLines={1}>
-                                                        {formatCurrency(opt.saldo)}
                                                     </Typography>
                                                 </Pressable>
                                             </View>
