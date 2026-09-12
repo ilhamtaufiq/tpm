@@ -44,6 +44,40 @@ class ModalService(BaseReportService):
         known = [d for d in _imp_dates if d is not None]
         return min(known) if known else None
 
+    FROZEN_MODAL_AWAL_KEY = "modal_awal_frozen"
+
+    def _frozen_modal_awal(self, anchor: date, computed: float) -> float:
+        """Modal awal BEKU tersimpan: dihitung sekali, lalu dibaca dari setting.
+
+        Tanpa ini, transaksi backdate (tanggal <= anchor) ikut snapshot
+        neraca(anchor) dan menggeser modal_awal SEMUA periode diam-diam.
+        Dengan freeze, backdate muncul sebagai selisih (jujur), bukan geseran.
+        reset_db me-truncate system_settings → otomatis beku ulang.
+        Hapus baris setting ini untuk beku ulang manual.
+        """
+        import json
+        from app.models.system_setting import SystemSetting
+        row = self.db.query(SystemSetting).filter(
+            SystemSetting.key == self.FROZEN_MODAL_AWAL_KEY
+        ).first()
+        if row and row.value:
+            try:
+                stored = json.loads(row.value)
+                # Anchor bergeser (import ulang IMP- baru) → beku ulang.
+                if stored.get("as_of") == anchor.isoformat():
+                    return float(stored["amount"])
+            except (ValueError, KeyError, TypeError):
+                pass
+        if row is None:
+            row = SystemSetting(
+                key=self.FROZEN_MODAL_AWAL_KEY,
+                description="Modal awal beku (snapshot neraca anchor, anti-geser backdate)",
+            )
+        row.value = json.dumps({"amount": computed, "as_of": anchor.isoformat()})
+        self.db.add(row)
+        self.db.commit()
+        return computed
+
     def _empty_report(self, tanggal_dari: date, tanggal_sampai: date, saldo_awal: date) -> Dict[str, Any]:
         """Periode yang berakhir sebelum saldo awal tidak punya data apa pun.
         Kembalikan nol (bukan selisih palsu) + catatan agar UI bisa menjelaskan."""
@@ -130,7 +164,9 @@ class ModalService(BaseReportService):
         # persediaan). Menghitungnya lagi di arus membuat hari anchor dobel → selisih
         # persis sebesar laba hari itu.
         flow_dari = anchor + timedelta(days=1)
-        modal_awal_theoretical = float(neraca_awal["modal"]["total_modal"])
+        modal_awal_theoretical = self._frozen_modal_awal(
+            anchor, float(neraca_awal["modal"]["total_modal"])
+        )
 
         data = self.get_unit_financial_breakdown(flow_dari, tanggal_sampai)
 
