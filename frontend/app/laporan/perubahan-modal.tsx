@@ -298,6 +298,11 @@ export default function LaporanPerubahanModalScreen() {
                             <Typography variant="body1" weight="bold" className="text-slate-900 mb-5">Rincian Perubahan Ekuitas</Typography>
 
                             <FinancialRow label="Modal Awal" value={equity.modalAwal} bold color="text-slate-900" />
+                            {(report.modal_awal_penyesuaian || 0) !== 0 && (
+                                <Typography variant="caption" className="text-slate-500 text-[11px] mb-2 pl-1">
+                                    · sudah bersih dari aktivitas hari saldo awal ({formatCurrency(report.modal_awal_penyesuaian || 0)} dipindah ke baris mutasi di bawah)
+                                </Typography>
+                            )}
                             <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={equity.penyesuaianHargaBeli} color="text-slate-700" />
 
                             <View className="mt-4 pt-4 border-t border-slate-50">

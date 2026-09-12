@@ -211,4 +211,10 @@ export interface CapitalReport {
   saldo_awal_date?: string;
   /** Tanggal snapshot modal_awal (anchor). Pakai untuk drill Modal Awal. */
   modal_awal_as_of?: string;
+  /**
+   * Aktivitas non-impor pada hari anchor yang DIKELUARKAN dari modal_awal.
+   * Drill Modal Awal membaca neraca(anchor) yang inklusif, jadi Σ drill lebih
+   * besar sebesar angka ini — tampilkan sebagai baris pengurang agar cocok.
+   */
+  modal_awal_penyesuaian?: number;
 }

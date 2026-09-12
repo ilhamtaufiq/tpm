@@ -286,4 +286,10 @@ export interface CapitalReport {
     saldo_awal_date?: string;
     /** Tanggal snapshot modal_awal (anchor). Pakai untuk drill Modal Awal. */
     modal_awal_as_of?: string;
+    /**
+     * Aktivitas non-impor hari anchor yang dikeluarkan dari modal_awal dan
+     * dipindah ke baris mutasi (laba/setoran). Non-nol hanya bila ada transaksi
+     * bertanggal tepat di hari saldo awal.
+     */
+    modal_awal_penyesuaian?: number;
 }

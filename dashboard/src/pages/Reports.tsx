@@ -628,7 +628,7 @@ export function Modal() {
         {/* modal_awal = 0 berarti periode pra-saldo-awal — drill tak relevan. */}
         {modalAwal !== 0 && (
           <Drill
-            spec={drillModalAwal(r.modal_awal_as_of ?? period.tanggal_dari)}
+            spec={drillModalAwal(r.modal_awal_as_of ?? period.tanggal_dari, r.modal_awal_penyesuaian)}
             period={{ tanggal_dari: '2024-01-01', tanggal_sampai: period.tanggal_dari }}
             amountKey="amount"
             total={modalAwal}

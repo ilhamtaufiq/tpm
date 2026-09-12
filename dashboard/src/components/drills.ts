@@ -650,9 +650,9 @@ export const drillMismatchInternal = (mismatches: Array<{ ref: string; piutang: 
 // `asOf` WAJIB dari `report.modal_awal_as_of` — backend meng-anchor ke tanggal
 // saldo awal impor, bukan `tanggal_dari - 1`, jadi memakai H−1 bikin komponen
 // tidak menjumlah ke modal_awal.
-export const drillModalAwal = (asOf: string): DrillSpec => {
+export const drillModalAwal = (asOf: string, penyesuaian = 0): DrillSpec => {
   return {
-  key: `modal-awal-${asOf}`,
+  key: `modal-awal-${asOf}-${penyesuaian}`,
   label: 'Rincian modal awal (Aktiva − Hutang)',
   columns: [
     { key: 'komponen', header: 'Komponen' },
@@ -668,6 +668,9 @@ export const drillModalAwal = (asOf: string): DrillSpec => {
       { komponen: 'Stok Mobil', amount: Number(al.stok_mobil ?? 0) },
       { komponen: 'Aktiva Tetap', amount: Number(r.aktiva_tetap?.total_aktiva_tetap ?? 0) },
       { komponen: 'Hutang (pengurang)', amount: -Number(r.hutang?.total_hutang ?? 0) },
+      // neraca(asOf) inklusif: aktivitas non-impor hari anchor ikut terbaca di
+      // sini, padahal sudah dikeluarkan dari modal_awal & tampil sebagai mutasi.
+      { komponen: 'Mutasi hari saldo awal (dipindah ke arus)', amount: -Number(penyesuaian ?? 0) },
     ].filter((x) => x.amount !== 0);
     return { data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 };
   },

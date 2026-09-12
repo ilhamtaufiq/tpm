@@ -45,6 +45,35 @@ class ModalService(BaseReportService):
         return min(known) if known else None
 
     FROZEN_MODAL_AWAL_KEY = "modal_awal_frozen"
+    # Naikkan saat rumus modal_awal berubah → baris beku lama dianggap basi.
+    FROZEN_MODAL_AWAL_V = 2
+
+    def _equity_flow_on(self, d: date) -> float:
+        """Pergerakan ekuitas pada SATU hari.
+
+        `neraca(anchor)` inklusif, jadi aktivitas non-impor bertanggal anchor
+        ikut tercampur ke modal_awal. Porsi hari itu dikurangi dari modal_awal
+        agar muncul sebagai mutasi (baris Laba/Setoran), bukan tersembunyi.
+        Komposisinya SAMA dengan raw_theoretical di get_report.
+        """
+        data = self.get_unit_financial_breakdown(d, d)
+        setoran = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.sumber == KasBankSource.MODAL,
+            KasBank.tipe == KasBankType.MASUK,
+            KasBank.tanggal == d,
+            ~KasBank.nomor_referensi.like("IMP-%"),
+        ).scalar() or 0)
+        pengembalian = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.sumber == KasBankSource.MODAL,
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.tanggal == d,
+        ).scalar() or 0)
+        return (
+            setoran
+            + float(data.get("retained_earnings", 0))
+            - float(data.get("prive_global", 0))
+            - pengembalian
+        )
 
     def _frozen_modal_awal(self, anchor: date, computed: float) -> float:
         """Modal awal BEKU tersimpan: dihitung sekali, lalu dibaca dari setting.
@@ -63,8 +92,9 @@ class ModalService(BaseReportService):
         if row and row.value:
             try:
                 stored = json.loads(row.value)
-                # Anchor bergeser (import ulang IMP- baru) → beku ulang.
-                if stored.get("as_of") == anchor.isoformat():
+                # Anchor bergeser (import ulang IMP- baru) / rumus berubah → beku ulang.
+                if (stored.get("as_of") == anchor.isoformat()
+                        and stored.get("v") == self.FROZEN_MODAL_AWAL_V):
                     return float(stored["amount"])
             except (ValueError, KeyError, TypeError):
                 pass
@@ -73,7 +103,9 @@ class ModalService(BaseReportService):
                 key=self.FROZEN_MODAL_AWAL_KEY,
                 description="Modal awal beku (snapshot neraca anchor, anti-geser backdate)",
             )
-        row.value = json.dumps({"amount": computed, "as_of": anchor.isoformat()})
+        row.value = json.dumps({
+            "amount": computed, "as_of": anchor.isoformat(), "v": self.FROZEN_MODAL_AWAL_V,
+        })
         self.db.add(row)
         self.db.commit()
         return computed
@@ -159,13 +191,19 @@ class ModalService(BaseReportService):
         # saldo_awal_date None = belum ada baris impor sama sekali → pakai tanggal_dari.
         anchor = saldo_awal_date if saldo_awal_date is not None else tanggal_dari
         neraca_awal = NeracaService(self.db).get_report(anchor)
-        # Mutasi dihitung MULAI HARI SETELAH anchor: snapshot neraca(anchor) bersifat
-        # inklusif (transaksi tanggal anchor sudah masuk modal_awal dan sudah menurunkan
-        # persediaan). Menghitungnya lagi di arus membuat hari anchor dobel → selisih
-        # persis sebesar laba hari itu.
-        flow_dari = anchor + timedelta(days=1)
+        # Mutasi dihitung DARI anchor, bukan anchor+1. Snapshot neraca(anchor)
+        # memang inklusif, tapi aktivitas non-impor hari anchor (laba, setoran,
+        # prive) BUKAN bagian posisi pembuka — ia mutasi. Alih-alih membuang
+        # seluruh hari anchor dari arus (laba hari itu ikut nyangkut di
+        # modal_awal), porsi itu DIKURANGI dari modal_awal lalu dihitung ulang
+        # sebagai arus oleh get_unit_financial_breakdown(anchor, ...).
+        # Baris IMP-* tetap jadi posisi pembuka: sudah di-skip dari arus
+        # (filter `~like("IMP-%")` + setoran_non_kas_import khusus impor).
+        flow_dari = anchor
+        anchor_day_flow = self._equity_flow_on(anchor)
         modal_awal_theoretical = self._frozen_modal_awal(
-            anchor, float(neraca_awal["modal"]["total_modal"])
+            anchor,
+            float(neraca_awal["modal"]["total_modal"]) - anchor_day_flow,
         )
 
         data = self.get_unit_financial_breakdown(flow_dari, tanggal_sampai)
@@ -751,6 +789,11 @@ class ModalService(BaseReportService):
             # harus memakai tanggal ini, bukan `tanggal_dari - 1`, agar komponen
             # yang ditampilkan menjumlah ke modal_awal.
             "modal_awal_as_of": anchor.isoformat(),
+            # Snapshot neraca(anchor) inklusif, jadi drill "Modal Awal" (yang membaca
+            # neraca pada tanggal ini) menjumlah LEBIH BESAR sebesar aktivitas
+            # non-impor hari anchor — angka ini yang harus ditampilkan sebagai baris
+            # "Mutasi hari saldo awal (dipindah dari modal awal)" agar Σ drill cocok.
+            "modal_awal_penyesuaian": anchor_day_flow,
             "info": {
                 "laba_bengkel": laba_bengkel_tpm_gross,
                 "laba_mobil": laba_mobil_tpm_gross,
