@@ -12,6 +12,7 @@ interface KasRow {
   id: number;
   nomor_transaksi: string;
   tanggal: string;
+  created_at?: string;
   tipe: string;
   sumber: string;
   nominal: number;
@@ -80,7 +81,7 @@ export default function Transaksi() {
                 downloadCSV(
                   'transaksi.csv',
                   ['Waktu', 'Referensi', 'Sumber', 'Tipe', 'Nominal', 'Keterangan'],
-                  rows.map((r) => [r.tanggal, r.nomor_transaksi, r.sumber, r.tipe, r.nominal, r.keterangan ?? '']),
+                  rows.map((r) => [r.created_at ?? r.tanggal, r.nomor_transaksi, r.sumber, r.tipe, r.nominal, r.keterangan ?? '']),
                 )
               }
               className="flex items-center gap-2 rounded-xl bg-[#0B1F3A] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#14305a]"
@@ -134,7 +135,7 @@ export default function Transaksi() {
               rightAlignFrom={4}
               onRowClick={(i) => setSelected(rows[i])}
               rows={rows.map((r) => [
-                <span key="t" className="whitespace-nowrap text-xs text-slate-400">{formatDateTime(r.tanggal)}</span>,
+                <span key="t" className="whitespace-nowrap text-xs text-slate-400">{formatDateTime(r.created_at ?? r.tanggal)}</span>,
                 <span key="n" className="font-mono text-xs font-bold text-slate-700">{r.nomor_transaksi}</span>,
                 <span key="s">
                   <Badge tone={SUMBER_META[r.sumber]?.tone ?? 'info'}>{SUMBER_META[r.sumber]?.label ?? r.sumber}</Badge>
@@ -167,7 +168,7 @@ export default function Transaksi() {
               );
               return (
                 <div>
-                  {item('tanggal', formatDateTime(String(val('tanggal'))))}
+                  {item('tanggal', formatDateTime(String(d.created_at ?? val('tanggal'))))}
                   {item('tipe', <Badge tone={String(val('tipe')) === 'MASUK' ? 'ok' : 'bad'}>{String(val('tipe'))}</Badge>)}
                   {item('sumber', String(val('sumber')))}
                   {item('jenis', String(val('jenis')))}

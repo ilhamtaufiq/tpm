@@ -21,6 +21,8 @@ export const formatDate = (dateString: string): string => {
 
 export const formatDateTime = (dateString: string): string => {
   if (!dateString) return '-';
+  // ponytail: backend kirim date-only "YYYY-MM-DD"; new Date() anggap UTC → geser +7 jam WIB. Untuk date-only, tampilkan tanggal saja.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return formatDate(dateString);
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('id-ID', {
