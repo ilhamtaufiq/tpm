@@ -284,4 +284,6 @@ export interface CapitalReport {
     /** Terisi bila periode berakhir sebelum saldo awal — angka semuanya nol. */
     catatan?: string;
     saldo_awal_date?: string;
+    /** Tanggal snapshot modal_awal (anchor). Pakai untuk drill Modal Awal. */
+    modal_awal_as_of?: string;
 }

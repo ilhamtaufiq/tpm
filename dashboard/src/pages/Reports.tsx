@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, ArrowDownLeft, ArrowUpRight, Banknote, Car, CheckCircle2, Scale, TrendingUp, Truck, Wallet, Wrench } from 'lucide-react';
@@ -18,8 +18,10 @@ import {
   drillGaji,
   drillHutangLainnya,
   drillHutangUnit,
+  drillBebanUmumMobil,
   drillInvestor,
   drillInvestorSaldo,
+  drillLabaPeriode,
   drillModalAwal,
   drillModalKomposisi,
   drillPenambahanModal,
@@ -48,6 +50,15 @@ const kasUnitLabel = (unit: unknown) => {
     : u === 'BENGKEL' ? 'KAS UNIT BENGKEL'
     : u === 'JASA_ANGKUT' ? 'KAS UNIT JASA ANGKUT'
     : u;
+};
+
+/** unit logis (dari unit_details) → KasBankJenis, untuk drill mutasi kas unit. */
+const kasUnitJenis = (unit: unknown) => {
+  const u = String(unit ?? '').toUpperCase();
+  return u === 'JUAL_BELI_MOBIL' ? 'KAS_UNIT_MOBIL'
+    : u === 'BENGKEL' ? 'KAS_UNIT_BENGKEL'
+    : u === 'JASA_ANGKUT' ? 'KAS_UNIT_JASA_ANGKUT'
+    : `KAS_UNIT_${u}`;
 };
 
 // ── Laba Rugi — port frontend/app/laporan/laba-rugi.tsx ─────────────────────
@@ -141,7 +152,9 @@ export function LabaRugi() {
         <>
           {groupLabel('I. PENJUALAN SPAREPART & JASA', 'text-indigo-600')}
           <FinancialRow label="Penjualan Sparepart (Retail)" value={bd.total_parts} small />
+          <Drill spec={drillBengkelSales()} period={period} amountKey="total_parts" total={bd.total_parts} />
           <FinancialRow label="Jasa Servis" value={bd.total_jasa} small />
+          <Drill spec={drillBengkelSales()} period={period} amountKey="total_jasa" total={bd.total_jasa} />
           <FinancialRow label="Diskon Penjualan" value={bd.total_diskon} small indent isNegative color="text-rose-500" />
           <Drill spec={drillBengkelSales()} period={period} amountKey="diskon" total={bd.total_diskon} />
           <div className="mt-2 rounded-xl bg-indigo-50/70 px-3 py-1.5">
@@ -222,7 +235,15 @@ export function LabaRugi() {
             </>
           )}
           <FinancialRow label="Beban Umum & Operasional" value={m.beban_umum ?? 0} isNegative small />
-          <Drill spec={drillPengeluaranUnit('jual_beli_mobil', 'umum mobil')} period={period} amountKey="jumlah" total={m.beban_umum ?? 0} />
+          {/* Ledger per unit + baris penyesuaian (beban_umum_komponen) supaya
+              Σ drill = m.beban_umum persis. */}
+          <Drill
+            spec={drillBebanUmumMobil(m.beban_umum_komponen)}
+            period={period}
+            amountKey="amount"
+            total={m.beban_umum ?? 0}
+            groupKey="unit"
+          />
         </>,
         m.laba_bersih,
         'Laba/ Rugi Bersih Unit',
@@ -387,14 +408,24 @@ export function Neraca() {
               <Drill spec={drillKasJenis('BANK_UTAMA', 'Bank Utama')} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="signed" total={0} hideDiff />
               <FinancialRow label="Kas di Unit Operasional" value={al.unit_cash} small />
               {unitCashDetails.map((u, i) => (
-                <FinancialRow
-                  key={i}
-                  // Excel: "KAS UNIT BENGKEL / JASA ANGKUT / MOBIL" — bukan kode backend mentah.
-                  label={kasUnitLabel(u.unit)}
-                  value={u.total_cash}
-                  small
-                  indent
-                />
+                <React.Fragment key={i}>
+                  <FinancialRow
+                    // Excel: "KAS UNIT BENGKEL / JASA ANGKUT / MOBIL" — bukan kode backend mentah.
+                    label={kasUnitLabel(u.unit)}
+                    value={u.total_cash}
+                    small
+                    indent
+                  />
+                  {/* Saldo (snapshot) vs drill (mutasi) adalah dua besaran berbeda —
+                      hideDiff agar badge tak membandingkan yang tak sepadan. */}
+                  <Drill
+                    spec={drillKasJenis(kasUnitJenis(u.unit), `mutasi ${kasUnitLabel(u.unit)}`)}
+                    period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }}
+                    amountKey="signed"
+                    total={0}
+                    hideDiff
+                  />
+                </React.Fragment>
               ))}
               <div className="my-2 h-px w-full bg-slate-100" />
               <FinancialRow label="Total Kas & Bank" value={al.total_kas_bank} bold color="text-emerald-700" />
@@ -594,13 +625,18 @@ export function Modal() {
 
       <Card title="Rincian Perubahan Ekuitas">
         <FinancialRow label="Modal Awal" value={modalAwal} bold large />
-        <Drill
-          spec={drillModalAwal(period.tanggal_dari)}
-          period={{ tanggal_dari: '2024-01-01', tanggal_sampai: period.tanggal_dari }}
-          amountKey="amount"
-          total={modalAwal}
-        />
-        <p className="mt-1 text-[11px] text-slate-400">* akun beku tidak boleh berubah, modal awal = (total aktiva − total hutang)</p>
+        {/* modal_awal = 0 berarti periode pra-saldo-awal — drill tak relevan. */}
+        {modalAwal !== 0 && (
+          <Drill
+            spec={drillModalAwal(r.modal_awal_as_of ?? period.tanggal_dari)}
+            period={{ tanggal_dari: '2024-01-01', tanggal_sampai: period.tanggal_dari }}
+            amountKey="amount"
+            total={modalAwal}
+          />
+        )}
+        <p className="mt-1 text-[11px] text-slate-400">
+          * akun beku: modal awal = (total aktiva − total hutang) pada posisi pembuka{r.modal_awal_as_of ? ` (${r.modal_awal_as_of})` : ''}, tidak berubah oleh transaksi setelahnya — perubahan aset/hutang masuk ke Modal Akhir.
+        </p>
         <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={penyesuaianHargaBeli} />
         {penyesuaianHargaBeli !== 0 && <Drill spec={drillRevaluasi()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: period.tanggal_sampai }} amountKey="amount" total={penyesuaianHargaBeli} />}
 
@@ -614,10 +650,18 @@ export function Modal() {
         />
         <p className="mt-1 pl-6 text-[11px] text-slate-400">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</p>
         <FinancialRow label="Laba/Rugi Periode" value={labaBersih} small indent isNegative={labaBersih < 0} />
+        <Drill
+          spec={drillLabaPeriode(r.info?.units as Record<string, Record<string, number>> | undefined)}
+          period={period}
+          amountKey="amount"
+          total={labaBersih}
+        />
         <FinancialRow label="Prive/ Pengambilan Pemilik" value={-priveTotal} small indent isNegative={priveTotal > 0} />
-        {prive > 0 && <Drill spec={drillPrive()} period={period} amountKey="nominal" total={prive} />}
+        {/* total = prive + pengembalian_modal (nilai baris), bukan `prive` saja. */}
+        {priveTotal > 0 && <Drill spec={drillPrive()} period={period} amountKey="nominal" total={priveTotal} />}
         <p className="mt-1 pl-6 text-[11px] text-slate-400">* pengambilan pemilik dan akun ini hanya muncul di laporan perubahan modal saja, karena sifat nya mengurangi kumulatif antar modal dan laba/rugi</p>
         <FinancialRow label="Laba Investor Jual Beli Mobil" value={labaInvestor} small indent />
+        {labaInvestor !== 0 && <Drill spec={drillInvestor()} period={period} amountKey="nominal" total={labaInvestor} />}
 
         <div className="my-2 h-px w-full bg-slate-100" />
         <FinancialRow label="Perubahan Bersih Modal (Aliran)" value={perubahanBersih} bold />

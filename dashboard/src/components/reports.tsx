@@ -246,27 +246,43 @@ export function Drill({
   amountKey,
   total,
   hideDiff,
+  groupKey,
+  unitOptions,
 }: {
   spec: DrillSpec;
   period: PeriodParams;
   amountKey: string;
   total: number;
   hideDiff?: boolean;
+  /** Nama kolom untuk mengelompokkan baris (mis. 'bisnis_kategori' | 'unit'). */
+  groupKey?: string;
+  /** Daftar unit yang diharapkan muncul sebagai filter; Σ tetap atas semua baris. */
+  unitOptions?: string[];
 }) {
   const [open, setOpen] = useState(false);
+  const [unit, setUnit] = useState<string>('');
   const q = useQuery({
-    queryKey: ['drill', spec.key, period.tanggal_dari, period.tanggal_sampai],
+    // amountKey ikut ke cache key: satu spec bisa dipakai beberapa baris dengan
+    // amountKey berbeda (mis. drillBengkelSales untuk diskon/grand_total/hpp) —
+    // tanpa ini mereka berbagi cache dan Σ memakai angka yang keliru.
+    queryKey: ['drill', spec.key, amountKey, period.tanggal_dari, period.tanggal_sampai],
     queryFn: () => spec.fetch(period),
     enabled: open,
     staleTime: 30_000,
   });
   const raw = q.data as { data?: Record<string, unknown>[]; total?: number } | Record<string, unknown>[] | undefined;
-  const rows = Array.isArray(raw) ? raw : (raw?.data ?? []);
+  const allRows = Array.isArray(raw) ? raw : (raw?.data ?? []);
   // Backend cap per halaman = 100 baris — Σ bisa palsu bila data terpotong.
-  const capped = !Array.isArray(raw) && typeof raw?.total === 'number' ? raw.total > rows.length : rows.length >= 100;
+  const capped = !Array.isArray(raw) && typeof raw?.total === 'number' ? raw.total > allRows.length : allRows.length >= 100;
+  const units = groupKey
+    ? Array.from(new Set([...(unitOptions ?? []), ...allRows.map((r) => String(r[groupKey] ?? ''))].filter(Boolean))).sort()
+    : [];
+  // Filter hanya mempersempit tampilan — Σ badge tetap atas seluruh baris supaya
+  // tetap cocok dengan angka laporan.
+  const rows = groupKey && unit ? allRows.filter((r) => String(r[groupKey] ?? '') === unit) : allRows;
   const { page, pages, setPage } = usePagination(rows.length);
   const visible = rows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
-  const sum = rows.reduce((a, r) => a + (typeof r[amountKey] === 'number' ? (r[amountKey] as number) : parseFloat(String(r[amountKey] ?? '0')) || 0), 0);
+  const sum = allRows.reduce((a, r) => a + (typeof r[amountKey] === 'number' ? (r[amountKey] as number) : parseFloat(String(r[amountKey] ?? '0')) || 0), 0);
   const diff = total - sum;
 
   return (
@@ -289,9 +305,30 @@ export function Drill({
           ) : q.isError ? (
             <p className="p-4 text-center text-xs text-rose-500">Gagal memuat rincian.</p>
           ) : rows.length === 0 ? (
-            <p className="p-4 text-center text-xs text-slate-400">Tidak ada transaksi sumber pada periode ini.</p>
+            <p className="p-4 text-center text-xs text-slate-400">
+              {allRows.length > 0 && groupKey && unit
+                ? `Tidak ada baris untuk unit "${unit}".`
+                : 'Tidak ada transaksi sumber pada periode ini.'}
+            </p>
           ) : (
             <>
+              {groupKey && units.length > 1 && (
+                <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-100 bg-slate-50/70 px-3 py-2">
+                  {['', ...units].map((u) => (
+                    <button
+                      key={u || '__all__'}
+                      onClick={() => setUnit(u)}
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
+                        unit === u
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:text-indigo-600'
+                      }`}
+                    >
+                      {u ? kasJenisLabel(u) : 'Semua unit'}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[520px] text-xs">
                   <thead>

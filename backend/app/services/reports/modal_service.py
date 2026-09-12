@@ -50,6 +50,7 @@ class ModalService(BaseReportService):
         return {
             "periode": {"dari": tanggal_dari.isoformat(), "sampai": tanggal_sampai.isoformat()},
             "saldo_awal_date": saldo_awal.isoformat(),
+            "modal_awal_as_of": saldo_awal.isoformat(),
             "catatan": f"Periode sebelum saldo awal ({saldo_awal.isoformat()}) — belum ada data.",
             "modal_awal": 0.0,
             "modal_akhir": 0.0,
@@ -109,31 +110,36 @@ class ModalService(BaseReportService):
         neraca_sync.sync_internal_transactions()
         neraca_sync.sync_ja_muatan_finance()
 
-        data = self.get_unit_financial_breakdown(tanggal_dari, tanggal_sampai)
-        
+        # ── MODAL AWAL: BEKU ────────────────────────────────────────────────
+        # Modal awal adalah posisi pembuka usaha: saat kita mulai, kita tak tahu
+        # modal awalnya berapa — yang kita tahu hanya aset dan hutang. Maka
+        # modal_awal = total aktiva − total hutang, dihitung SEKALI pada tanggal
+        # saldo awal, lalu BEKU. Perubahan aset/hutang setelah itu masuk ke akun
+        # mutasi (laba, setoran, prive) dan ke Modal Akhir — tidak pernah
+        # menggeser Modal Awal.
+        # Karena itu `flow_dari` = anchor, bukan tanggal_dari: seluruh mutasi
+        # sejak posisi pembuka dihitung kumulatif, agar
+        # Modal Awal + mutasi = Modal Akhir tetap seimbang di periode mana pun.
+        from app.services.reports.neraca_service import NeracaService
+
+        # saldo_awal_date None = belum ada baris impor sama sekali → pakai tanggal_dari.
+        anchor = saldo_awal_date if saldo_awal_date is not None else tanggal_dari
+        neraca_awal = NeracaService(self.db).get_report(anchor)
+        # Mutasi dihitung MULAI HARI SETELAH anchor: snapshot neraca(anchor) bersifat
+        # inklusif (transaksi tanggal anchor sudah masuk modal_awal dan sudah menurunkan
+        # persediaan). Menghitungnya lagi di arus membuat hari anchor dobel → selisih
+        # persis sebesar laba hari itu.
+        flow_dari = anchor + timedelta(days=1)
+        modal_awal_theoretical = float(neraca_awal["modal"]["total_modal"])
+
+        data = self.get_unit_financial_breakdown(flow_dari, tanggal_sampai)
+
         m = data["units"]["mobil"]
         ja = data["units"]["jasa_angkut"]
         b = data["units"]["bengkel"]
 
-        # 1. Theoretical Opening Modal Position (End of Yesterday)
-        # We start with a full snapshot of the business's net worth at the start of the period.
-        # This includes Physical Cash + Inventory + Fixed Assets - Liabilities.
-        yesterday = tanggal_dari - timedelta(days=1)
-
-        # xlsx: modal awal = total aktiva − total hutang (beku). Saldo awal impor
-        # (IMP-*) adalah posisi pembuka sistem, bukan transaksi periode — anchor
-        # ke tanggal saldo awal (bukan tanggal_dari filter) agar harian/bulanan/
-        # tahunan konsisten. Filter yg mulai sebelum saldo awal tetap pakai saldo
-        # awal; filter sesudahnya roll-forward otomatis.
-        from app.services.reports.neraca_service import NeracaService
-
-        is_opening = tanggal_dari <= saldo_awal_date
-        if is_opening:
-            anchor = saldo_awal_date
-        else:
-            anchor = tanggal_dari
-        neraca_awal = NeracaService(self.db).get_report(anchor)
-        modal_awal_theoretical = float(neraca_awal["modal"]["total_modal"])
+        # Snapshot komponen pada posisi pembuka (untuk delta non-kas display).
+        yesterday = flow_dari - timedelta(days=1)
 
         # Snapshot start komponen (untuk delta non-kas display) dari Neraca.
         start_aset_tetap = float(neraca_awal["aktiva_tetap"]["total_aktiva_tetap"])
@@ -148,13 +154,14 @@ class ModalService(BaseReportService):
         setoran_modal = float(self.db.query(func.sum(KasBank.nominal)).filter(
             KasBank.sumber == KasBankSource.MODAL,
             KasBank.tipe == KasBankType.MASUK,
-            KasBank.tanggal >= tanggal_dari,
+            KasBank.tanggal >= flow_dari,
             KasBank.tanggal <= tanggal_sampai,
             ~KasBank.nomor_referensi.like("IMP-%")
         ).scalar() or 0)
 
-        # Get Current Period Financial Breakdown (Source of Truth for unit performances)
-        data = self.get_unit_financial_breakdown(tanggal_dari, tanggal_sampai)
+        # Kumulatif sejak posisi pembuka (flow_dari), bukan tanggal_dari filter —
+        # lihat catatan MODAL AWAL/BEKU di atas.
+        data = self.get_unit_financial_breakdown(flow_dari, tanggal_sampai)
         internal_elimination = float(data.get("internal_elimination", 0))
         internal_profit_elimination = float(data.get("internal_jbm_unrealized_profit", 0))
         b = data["units"].get("bengkel", {})
@@ -314,7 +321,7 @@ class ModalService(BaseReportService):
         pengembalian_modal = float(self.db.query(func.sum(KasBank.nominal)).filter(
             KasBank.tipe == KasBankType.KELUAR,
             KasBank.sumber == KasBankSource.MODAL,
-            KasBank.tanggal >= tanggal_dari,
+            KasBank.tanggal >= flow_dari,
             KasBank.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
@@ -360,7 +367,7 @@ class ModalService(BaseReportService):
             .filter(
                 TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
                 Mobil.status == CarStatus.TERJUAL,
-                Mobil.tanggal_terjual >= tanggal_dari,
+                Mobil.tanggal_terjual >= flow_dari,
                 Mobil.tanggal_terjual <= tanggal_sampai,
             )
             .scalar()
@@ -380,7 +387,7 @@ class ModalService(BaseReportService):
         beli_mobil = float(self.db.query(func.sum(KasBank.nominal)).filter(
             KasBank.tipe == KasBankType.KELUAR,
             KasBank.sumber == KasBankSource.PEMBELIAN_MOBIL,
-            KasBank.tanggal >= tanggal_dari,
+            KasBank.tanggal >= flow_dari,
             KasBank.tanggal <= tanggal_sampai
         ).scalar() or 0)
         
@@ -389,14 +396,14 @@ class ModalService(BaseReportService):
         # 2. Preparation costs paid in this period (as they increase asset value)
         # Note: repairs_total (internal workshop) is EXCLUDED because it's caught in total_non_kas delta.
         penambahan_stok_mobil = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
-            Mobil.tanggal_masuk >= tanggal_dari,
+            Mobil.tanggal_masuk >= flow_dari,
             Mobil.tanggal_masuk <= tanggal_sampai,
             Mobil.deleted_at.is_(None)
         ).scalar() or 0)
 
         # 2. Spare Part Stock Rotation
         penambahan_stok_sparepart = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
-            PembelianSparePart.tanggal >= tanggal_dari,
+            PembelianSparePart.tanggal >= flow_dari,
             PembelianSparePart.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
@@ -404,18 +411,18 @@ class ModalService(BaseReportService):
         # This prevents "Selisih" when a car is bought with investor money.
         investor_capital_baru = float(self.db.query(func.sum(Mobil.nominal_investor)).filter(
             Mobil.tipe_kepemilikan == OwnershipType.INVESTOR,
-            Mobil.tanggal_masuk >= tanggal_dari,
+            Mobil.tanggal_masuk >= flow_dari,
             Mobil.tanggal_masuk <= tanggal_sampai,
             Mobil.deleted_at.is_(None)
         ).scalar() or 0)
 
         pembayaran_investor = float(self.db.query(func.sum(InvestorDisbursementDetail.nominal)).join(TransaksiPenjualanMobil).filter(
-            InvestorDisbursementDetail.tanggal >= tanggal_dari,
+            InvestorDisbursementDetail.tanggal >= flow_dari,
             InvestorDisbursementDetail.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
         beli_sparepart = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
-            PembelianSparePart.tanggal_bayar >= tanggal_dari,
+            PembelianSparePart.tanggal_bayar >= flow_dari,
             PembelianSparePart.tanggal_bayar <= tanggal_sampai,
             PembelianSparePart.metode_bayar == PaymentMethod.TUNAI
         ).scalar() or 0)
@@ -427,14 +434,14 @@ class ModalService(BaseReportService):
         # New debt incurred (unpaid portion of stock bought in this period)
         hutang_mobil_baru = float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
             HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
-            HutangUsaha.tanggal >= tanggal_dari,
+            HutangUsaha.tanggal >= flow_dari,
             HutangUsaha.tanggal <= tanggal_sampai,
             HutangUsaha.status != HutangStatus.BATAL
         ).scalar() or 0)
         
         hutang_part_baru = float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
             HutangUsaha.sumber == HutangSource.PEMBELIAN_PART,
-            HutangUsaha.tanggal >= tanggal_dari,
+            HutangUsaha.tanggal >= flow_dari,
             HutangUsaha.tanggal <= tanggal_sampai,
             HutangUsaha.status != HutangStatus.BATAL
         ).scalar() or 0)
@@ -442,34 +449,34 @@ class ModalService(BaseReportService):
         # Debt payments made in this period (needed because they reduce cash but don't increase stock)
         pembayaran_hutang_mobil = float(self.db.query(func.sum(PembayaranHutang.nominal)).join(HutangUsaha).filter(
             HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
-            PembayaranHutang.tanggal >= tanggal_dari,
+            PembayaranHutang.tanggal >= flow_dari,
             PembayaranHutang.tanggal <= tanggal_sampai
         ).scalar() or 0)
         
         pembayaran_hutang_part = float(self.db.query(func.sum(PembayaranHutang.nominal)).join(HutangUsaha).filter(
             HutangUsaha.sumber == HutangSource.PEMBELIAN_PART,
-            PembayaranHutang.tanggal >= tanggal_dari,
+            PembayaranHutang.tanggal >= flow_dari,
             PembayaranHutang.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
         # Total external debt payments in this period
         total_pembayaran_hutang = float(self.db.query(func.sum(PembayaranHutang.nominal)).join(HutangUsaha).filter(
             HutangUsaha.is_internal != True,
-            PembayaranHutang.tanggal >= tanggal_dari,
+            PembayaranHutang.tanggal >= flow_dari,
             PembayaranHutang.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
         # 3. Piutang Usaha (Receivables) - EXCLUDING INTERNAL
         # We only track growth in external receivables as equity growth.
         penambahan_piutang_period = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
-            PiutangUsaha.tanggal >= tanggal_dari,
+            PiutangUsaha.tanggal >= flow_dari,
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL,
             PiutangUsaha.is_internal != True
         ).scalar() or 0)
         
         kasbon_baru = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
-            PiutangUsaha.tanggal >= tanggal_dari,
+            PiutangUsaha.tanggal >= flow_dari,
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL,
             PiutangUsaha.is_internal != True,
@@ -563,39 +570,17 @@ class ModalService(BaseReportService):
         # Use the ACTUAL snapshot as the authoritative modal_akhir
         modal_akhir = modal_aktual
         
-        # Calculate opening import values in this period as non-cash setoran modal delta.
-        # Saldo awal (IMP-*) adalah posisi pembuka: hanya jadi setoran non-kas bila
-        # filter mulai setelah saldo awal; bila filter menutup saldo awal, saldo awal
-        # sudah masuk modal_awal (anchor) — jangan dihitung setoran periode.
-        if not is_opening:
-            piutang_import = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
-                PiutangUsaha.nomor_referensi.like("IMP-%"),
-                PiutangUsaha.tanggal >= tanggal_dari,
-                PiutangUsaha.tanggal <= tanggal_sampai,
-                PiutangUsaha.unit != KasBankSource.KASBON
-            ).scalar() or 0)
-
-            hutang_import = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
-                HutangUsaha.nomor_referensi.like("IMP-%"),
-                HutangUsaha.tanggal >= tanggal_dari,
-                HutangUsaha.tanggal <= tanggal_sampai,
-                HutangUsaha.sumber != HutangSource.PEMBELIAN_MOBIL,
-                # Hutang investor impor (unit=MODAL) bukan pengurang modal:
-                # mobil investor-nya juga di-skip di bawah → net 0, selaras Neraca.
-                HutangUsaha.unit != KasBankSource.MODAL
-            ).scalar() or 0)
-
-            mobil_import = 0
-            opening_cars = self.db.query(Mobil).filter(
-                Mobil.tanggal_masuk >= tanggal_dari,
-                Mobil.tanggal_masuk <= tanggal_sampai,
-                Mobil.deleted_at.is_(None)
-            ).all()
-        else:
-            piutang_import = 0.0
-            hutang_import = 0.0
-            mobil_import = 0.0
-            opening_cars = []
+        # Saldo awal impor (IMP-*) adalah isi posisi pembuka itu sendiri — sudah
+        # tercakup di modal_awal (snapshot anchor), jadi SELALU dikecualikan dari
+        # arus. Dulu ini kondisional (`not is_opening`); dengan anchor yang kini
+        # selalu posisi pembuka, baris IMP- bertanggal tepat di anchor sehingga
+        # `>= flow_dari` pasti ikut menjaringnya → wajib selalu di-skip.
+        # Nilainya tetap dihitung untuk komponen display (setoran_mobil/piutang/
+        # hutang/aset) di `modal_non_kas`.
+        piutang_import = 0.0
+        hutang_import = 0.0
+        mobil_import = 0.0
+        opening_cars: list = []
         for mc in opening_cars:
             has_cash_out = self.db.query(KasBank).filter(
                 KasBank.tipe == KasBankType.KELUAR,
@@ -615,25 +600,10 @@ class ModalService(BaseReportService):
         # to 0 hides the liability and breaks modal_teoritis vs modal_aktual.
         setoran_non_kas_import = (mobil_import + piutang_import) - hutang_import
 
-        # Opening-balance fixed assets (imported without KasBank ASET KELUAR)
-        # are non-cash capital injected by the owner.  Add them to setoran non-kas.
-        from app.models.keuangan import Aset
+        # Aset tetap pada posisi pembuka sudah ada di snapshot modal_awal, dan aset
+        # yang dibeli selama periode dibayar kas (kas turun, aset naik → net 0 pada
+        # ekuitas). Jadi tidak ada setoran non-kas yang perlu ditambahkan.
         aset_import = 0.0
-        if not is_opening:
-            opening_assets = self.db.query(Aset).filter(
-                Aset.tanggal_beli >= tanggal_dari,
-                Aset.tanggal_beli <= tanggal_sampai,
-                Aset.status == AssetStatus.AKTIF,
-            ).all()
-            for a in opening_assets:
-                has_cash_out = self.db.query(KasBank).filter(
-                    KasBank.tipe == KasBankType.KELUAR,
-                    KasBank.sumber == KasBankSource.ASET,
-                    KasBank.referensi_id == a.id,
-                ).first()
-                if not has_cash_out:
-                    aset_import += float(a.harga_beli)
-        setoran_non_kas_import += aset_import
 
         # Clean expected theoretical ending modal based on classical accounting formula.
         # Investor = hutang: laba investor & pembayaran investor BUKAN aliran modal.
@@ -741,6 +711,10 @@ class ModalService(BaseReportService):
                 "total": total_pengurangan
             },
             "modal_akhir": modal_akhir,
+            # Tanggal snapshot yang dipakai untuk modal_awal. Drill "Modal Awal"
+            # harus memakai tanggal ini, bukan `tanggal_dari - 1`, agar komponen
+            # yang ditampilkan menjumlah ke modal_awal.
+            "modal_awal_as_of": anchor.isoformat(),
             "info": {
                 "laba_bengkel": laba_bengkel_tpm_gross,
                 "laba_mobil": laba_mobil_tpm_gross,

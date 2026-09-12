@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, RotateCcw, Palette, Paintbrush, Camera, Trash2, Image as ImageIcon } from 'lucide-react-native';
+import { View, ScrollView, Pressable } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { ChevronLeft, RotateCcw, Paintbrush, Camera, Trash2, Image as ImageIcon, Check, Sun, Moon } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { router } from 'expo-router';
-import { useUIStore, defaultColors } from '../../store/useUIStore';
+import { useUIStore, colorPalettes, findPaletteId, ColorPalette } from '../../store/useUIStore';
 import * as ImagePicker from 'expo-image-picker';
 import { authService } from '../../services/auth';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -12,10 +13,22 @@ import { getFileUrl } from '../../utils/image';
 import { ActivityIndicator, Image } from 'react-native';
 import { appAlert, appConfirm } from '../../utils/appAlert';
 
+/** Palet gelap/terang ditentukan dari luminance latarnya, untuk memilih ikon. */
+const isDarkPalette = (palette: ColorPalette) => {
+    const hex = palette.colors.background.replace('#', '');
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) || 0);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
+};
+
 export default function ThemeSettingsScreen() {
-    const { themeColors, setThemeColor, resetTheme } = useUIStore();
+    const { themeColors, setPalette, resetTheme } = useUIStore();
     const { user, setAuth, token } = useAuthStore();
+    const insets = useSafeAreaInsets();
     const [isUploading, setIsUploading] = useState(false);
+
+    const activePaletteId = findPaletteId(themeColors);
+    const isDefault = activePaletteId === 'tpm';
+    const activePaletteName = colorPalettes.find((p) => p.id === activePaletteId)?.name;
 
     const pickBackground = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -69,19 +82,21 @@ export default function ThemeSettingsScreen() {
         );
     };
 
-    const colorOptions = [
-        { label: 'Warna Utama (Primary)', key: 'primary', description: 'Warna untuk header dan tombol utama' },
-        { label: 'Warna Sekunder (Secondary)', key: 'secondary', description: 'Warna untuk aksen dan highlight' },
-        { label: 'Warna Latar (Background)', key: 'background', description: 'Warna latar belakang aplikasi' },
-        { label: 'Warna Kartu (Surface)', key: 'surface', description: 'Warna untuk kartu dan elemen di atas latar' },
-        { label: 'Warna Teks Utama', key: 'text', description: 'Warna teks konten utama' },
-        { label: 'Warna Teks Abu', key: 'textGray', description: 'Warna teks keterangan atau detail' },
-    ];
-
-    const presets = [
-        '#023C69', '#EE2737', '#10B981', '#F59E0B', '#3B82F6', '#6366F1',
-        '#8B5CF6', '#EC4899', '#111827', '#F9F9F9', '#FFFFFF', '#767676'
-    ];
+    const handleResetTheme = () => {
+        if (isDefault) {
+            appAlert("Sudah Default", "Tema saat ini sudah memakai palet TPM Default.");
+            return;
+        }
+        appConfirm(
+            "Reset ke Default",
+            "Semua warna akan dikembalikan ke palet TPM Default. Lanjutkan?",
+            () => {
+                resetTheme();
+                appAlert("Berhasil", "Tema dikembalikan ke TPM Default.");
+            },
+            { confirmText: 'Reset', variant: 'warning' }
+        );
+    };
 
     return (
         <SafeAreaView className="flex-1 bg-background">
@@ -96,90 +111,142 @@ export default function ThemeSettingsScreen() {
                     </Pressable>
                     <View className="flex-1 ml-4">
                         <Typography variant="h3" weight="bold">Tampilan</Typography>
+                        <Typography variant="caption" className="text-text/40">
+                            {activePaletteName ? `Palet: ${activePaletteName}` : 'Palet: Kustom'}
+                        </Typography>
                     </View>
                     <Pressable
-                        onPress={resetTheme}
-                        className="w-10 h-10 items-center justify-center rounded-2xl bg-surface border border-gray-100 shadow-sm"
+                        onPress={handleResetTheme}
+                        disabled={isDefault}
+                        className={`w-10 h-10 items-center justify-center rounded-2xl border shadow-sm ${isDefault ? 'bg-gray-50 border-gray-100 opacity-40' : 'bg-surface border-gray-100'}`}
                     >
-                        <RotateCcw size={20} color={themeColors.secondary} />
+                        <RotateCcw size={20} color={isDefault ? themeColors.textGray : themeColors.secondary} />
                     </Pressable>
                 </View>
 
-                <ScrollView className="flex-1 px-6 pt-4" showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    className="flex-1"
+                    contentContainerStyle={{
+                        paddingHorizontal: 24,
+                        paddingTop: 16,
+                        paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 40),
+                    }}
+                    showsVerticalScrollIndicator={false}
+                >
                     <View className="bg-primary/5 p-6 rounded-[32px] mb-8 items-center border border-primary/10">
                         <View className="w-16 h-16 bg-primary rounded-full items-center justify-center mb-4 shadow-lg">
                             <Paintbrush size={32} color="white" />
                         </View>
                         <Typography variant="h4" weight="bold" className="text-primary text-center">Kustomisasi Tema</Typography>
-                        <Typography variant="caption" className="text-primary/60 text-center mt-1">Ubah palet warna aplikasi sesuai keinginan Anda</Typography>
-                    </View>
-
-                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mb-4">Warna UI</Typography>
-
-                    {colorOptions.map((option) => (
-                        <View key={option.key} className="bg-surface p-5 rounded-[32px] mb-4 border border-gray-100 shadow-sm">
-                            <View className="flex-row items-center justify-between mb-4">
-                                <View className="flex-1 mr-4">
-                                    <Typography weight="bold" className="text-[15px]">{option.label}</Typography>
-                                    <Typography variant="caption" className="text-text/40">{option.description}</Typography>
-                                </View>
-                                <View
-                                    style={{ backgroundColor: (themeColors as any)[option.key] }}
-                                    className="w-12 h-12 rounded-2xl border border-gray-100 shadow-inner"
-                                />
-                            </View>
-
-                            {/* Presets */}
-                            <View className="flex-row flex-wrap gap-3 mb-5">
-                                {presets.map((color) => (
-                                    <Pressable
-                                        key={color}
-                                        onPress={() => setThemeColor(option.key as any, color)}
-                                        className="w-8 h-8 rounded-full border border-gray-100 shadow-sm"
-                                        style={{
-                                            backgroundColor: color,
-                                            borderWidth: (themeColors as any)[option.key] === color ? 2 : 1,
-                                            borderColor: (themeColors as any)[option.key] === color ? themeColors.primary : '#E5E7EB'
-                                        }}
-                                    />
-                                ))}
-                            </View>
-
-                            {/* Hex Input */}
-                            <View className="flex-row items-center bg-background rounded-2xl px-4 py-3 border border-gray-50">
-                                <Typography className="text-text/30 mr-2 font-bold">#</Typography>
-                                <TextInput
-                                    className="flex-1 text-text font-outfit-medium"
-                                    value={(themeColors as any)[option.key].replace('#', '')}
-                                    onChangeText={(text) => {
-                                        // Allow only hex characters
-                                        const cleanHex = text.replace(/[^0-9A-Fa-f]/g, '');
-                                        if (cleanHex.length <= 6) {
-                                            setThemeColor(option.key as any, `#${cleanHex}`);
-                                        }
-                                    }}
-                                    maxLength={6}
-                                    placeholder="HEX"
-                                    placeholderTextColor="#9CA3AF"
-                                />
-                                <Palette size={18} color={themeColors.textGray} opacity={0.5} />
-                            </View>
-                        </View>
-                    ))}
-
-                    <View className="mt-4 p-6 bg-secondary/5 rounded-[32px] border border-secondary/10 mb-10">
-                        <Typography variant="caption" className="text-secondary/60 text-center">
-                            Perubahan akan langsung diterapkan ke seluruh halaman aplikasi.
+                        <Typography variant="caption" className="text-primary/60 text-center mt-1">
+                            Pilih palet warna — seluruh aplikasi langsung menyesuaikan
                         </Typography>
                     </View>
 
-                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mb-4">Latar Belakang Beranda</Typography>
-                    
-                    <View className="bg-surface p-5 rounded-[32px] mb-8 border border-gray-100 shadow-sm overflow-hidden">
+                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mb-4">
+                        Palet Warna
+                    </Typography>
+
+                    <View className="flex-row flex-wrap justify-between">
+                        {colorPalettes.map((palette) => {
+                            const selected = palette.id === activePaletteId;
+                            const dark = isDarkPalette(palette);
+                            return (
+                                <Pressable
+                                    key={palette.id}
+                                    onPress={() => setPalette(palette)}
+                                    className="w-[48%] mb-4 rounded-[28px] overflow-hidden border shadow-sm"
+                                    style={{
+                                        borderColor: selected ? palette.colors.primary : '#E5E7EB',
+                                        borderWidth: selected ? 2 : 1,
+                                        backgroundColor: palette.colors.surface,
+                                    }}
+                                >
+                                    {/* Pratinjau mini: latar + kartu + baris teks + aksen */}
+                                    <View
+                                        style={{ backgroundColor: palette.colors.background }}
+                                        className="h-20 justify-center px-3"
+                                    >
+                                        <View style={{ backgroundColor: palette.colors.surface }} className="rounded-xl p-2">
+                                            <View
+                                                style={{ backgroundColor: palette.colors.text, width: '62%' }}
+                                                className="h-1.5 rounded-full opacity-80"
+                                            />
+                                            <View
+                                                style={{ backgroundColor: palette.colors.textGray, width: '42%' }}
+                                                className="h-1.5 rounded-full mt-1.5 opacity-60"
+                                            />
+                                        </View>
+                                        <View className="flex-row mt-2 gap-1.5">
+                                            <View style={{ backgroundColor: palette.colors.primary }} className="flex-1 h-4 rounded-lg" />
+                                            <View style={{ backgroundColor: palette.colors.secondary }} className="w-8 h-4 rounded-lg" />
+                                        </View>
+                                    </View>
+
+                                    <View className="flex-row items-center justify-between px-3 py-2.5">
+                                        <View className="flex-row items-center flex-1 mr-2">
+                                            {dark ? (
+                                                <Moon size={13} color={palette.colors.textGray} />
+                                            ) : (
+                                                <Sun size={13} color={palette.colors.textGray} />
+                                            )}
+                                            <Typography
+                                                variant="caption"
+                                                weight="bold"
+                                                className="ml-1.5 flex-1"
+                                                style={{ color: palette.colors.text }}
+                                                numberOfLines={1}
+                                            >
+                                                {palette.name}
+                                            </Typography>
+                                        </View>
+                                        <View
+                                            className="w-5 h-5 rounded-full items-center justify-center"
+                                            style={{
+                                                backgroundColor: selected ? palette.colors.primary : 'transparent',
+                                                borderWidth: selected ? 0 : 1.5,
+                                                borderColor: '#D1D5DB',
+                                            }}
+                                        >
+                                            {selected && <Check size={12} color="#FFFFFF" />}
+                                        </View>
+                                    </View>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+
+                    <View className="mt-2 p-5 bg-surface rounded-[28px] border border-gray-100 shadow-sm mb-8">
+                        <Typography variant="caption" weight="bold" className="text-text/40 uppercase tracking-[1.5px] mb-3">
+                            Pratinjau Palet Aktif
+                        </Typography>
+                        <View className="flex-row items-center gap-2">
+                            {(['primary', 'secondary', 'background', 'surface', 'text', 'textGray'] as const).map((key) => (
+                                <View key={key} className="flex-1 items-center">
+                                    <View
+                                        style={{ backgroundColor: themeColors[key] }}
+                                        className="w-full h-10 rounded-xl border border-gray-100"
+                                    />
+                                    <Typography variant="caption" className="text-text/40 text-[9px] mt-1.5">
+                                        {key === 'textGray' ? 'gray' : key}
+                                    </Typography>
+                                </View>
+                            ))}
+                        </View>
+                        <Typography variant="caption" className="text-text/30 mt-4 text-center">
+                            Perubahan langsung diterapkan ke seluruh halaman aplikasi.
+                        </Typography>
+                    </View>
+
+                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mb-4">
+                        Latar Belakang Beranda
+                    </Typography>
+
+                    <View className="bg-surface p-5 rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
                         <View className="w-full h-40 bg-gray-100 rounded-2xl mb-4 overflow-hidden items-center justify-center relative">
                             {user?.home_background ? (
-                                <Image 
-                                    source={{ uri: getFileUrl(user.home_background) as string }} 
+                                <Image
+                                    source={{ uri: getFileUrl(user.home_background) as string }}
                                     className="w-full h-full"
                                     resizeMode="cover"
                                 />
@@ -189,7 +256,7 @@ export default function ThemeSettingsScreen() {
                                     <Typography variant="caption" className="text-text/30 mt-2">Default Gradient</Typography>
                                 </View>
                             )}
-                            
+
                             {isUploading && (
                                 <View className="absolute inset-0 bg-black/20 items-center justify-center">
                                     <ActivityIndicator color="white" />

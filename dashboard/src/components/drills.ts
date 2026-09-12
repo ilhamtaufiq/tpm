@@ -398,18 +398,89 @@ export const drillLembur = (): DrillSpec => ({
 });
 
 // Pengeluaran ledger per unit bisnis (bisnis_kategori backend).
-export const drillPengeluaranUnit = (unit: string, label: string): DrillSpec => ({
-  key: `pengeluaran-${unit}`,
-  label: `Rincian ${label}`,
-  columns: [
-    tgl(),
-    { key: 'nomor_transaksi', header: 'Nomor' },
-    { key: 'kategori', header: 'Kategori' },
-    { key: 'deskripsi', header: 'Deskripsi' },
-    rp('jumlah'),
-  ],
-  fetch: (p: PeriodParams) => drillService.pengeluaranUnit(unit, p),
-});
+// `unit` boleh satu kategori atau gabungan — laporan menggabungkan beberapa
+// kategori untuk satu baris (mis. overhead mobil = mobil + jual_beli_mobil +
+// penjualan_mobil di base.py), jadi drill harus menjaring daftar yang sama.
+export const drillPengeluaranUnit = (unit: string | string[], label: string): DrillSpec => {
+  const units = Array.isArray(unit) ? unit : [unit];
+  return {
+    key: `pengeluaran-${units.join('+')}`,
+    label: `Rincian ${label}`,
+    columns: [
+      tgl(),
+      { key: 'nomor_transaksi', header: 'Nomor' },
+      ...(units.length > 1 ? [{ key: 'bisnis_kategori', header: 'Unit' }] : []),
+      { key: 'kategori', header: 'Kategori' },
+      { key: 'deskripsi', header: 'Deskripsi' },
+      rp('jumlah'),
+    ],
+    fetch: async (p: PeriodParams) => {
+      const pages = await Promise.all(
+        units.map((u) =>
+          drillService
+            .pengeluaranUnit(u, p)
+            .catch(() => ({ data: [] as Record<string, unknown>[], total: 0, page: 1, size: 0, pages: 0 })),
+        ),
+      );
+      const rows = pages
+        .flatMap((r) => r.data ?? [])
+        .sort((a, b) => String(a.tanggal ?? '').localeCompare(String(b.tanggal ?? '')));
+      return { data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 };
+    },
+  };
+};
+
+// Beban Umum mobil: ledger per unit + baris penyesuaian agar Σ = angka laporan.
+// Ledger mentah saja TIDAK rekonsiliasi: pengeluaran yang punya mobil_id sudah
+// di-tag ke unit dan dikurangkan dari overhead (base.py:291), dan prive unit
+// bukan beban. Baris penyesuaian dari `beban_umum_komponen` menutup selisihnya.
+export const drillBebanUmumMobil = (parts?: {
+  total_unit_expenses?: number;
+  tagged_ke_mobil?: number;
+  prive?: number;
+  post_sale?: number;
+}): DrillSpec => {
+  const n = (v: unknown) => Number(v ?? 0) || 0;
+  const UNITS = ['mobil', 'jual_beli_mobil', 'penjualan_mobil'];
+  const unitLabel = (u: string) =>
+    u === 'penjualan_mobil' ? 'Mobil (Umum)' : u === 'jual_beli_mobil' ? 'Mobil (Persiapan)' : 'Mobil (Unit)';
+  return {
+    key: 'beban-umum-mobil',
+    label: 'Rincian beban umum mobil',
+    columns: [
+      { key: 'unit', header: 'Unit' },
+      { key: 'keterangan', header: 'Keterangan' },
+      rp('amount'),
+    ],
+    fetch: async (p: PeriodParams) => {
+      const pages = await Promise.all(
+        UNITS.map((u) =>
+          drillService
+            .pengeluaranUnit(u, p)
+            .catch(() => ({ data: [] as Record<string, unknown>[], total: 0, page: 1, size: 0, pages: 0 })),
+        ),
+      );
+      const rows: Record<string, unknown>[] = pages.flatMap((r, i) =>
+        (r.data ?? []).map((x) => ({
+          unit: unitLabel(UNITS[i]),
+          keterangan: String(x.deskripsi ?? x.kategori ?? '-'),
+          amount: n(x.jumlah),
+          tanggal: x.tanggal,
+        })),
+      );
+      const adj: Array<[string, number]> = [
+        ['Dikurangi: sudah ter-tag ke unit mobil', -n(parts?.tagged_ke_mobil)],
+        ['Dikurangi: pengeluaran prive unit (bukan beban)', -n(parts?.prive)],
+        ['Ditambah: biaya pasca-penjualan', n(parts?.post_sale)],
+      ];
+      for (const [keterangan, amount] of adj) {
+        if (amount !== 0) rows.push({ unit: 'Penyesuaian', keterangan, amount });
+      }
+      rows.sort((a, b) => String(a.tanggal ?? '').localeCompare(String(b.tanggal ?? '')));
+      return { data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 };
+    },
+  };
+};
 
 // Prive = max(ledger kategori PRIVE, kas keterangan Prive/Pencairan/pembagian laba).
 export const drillPrive = (): DrillSpec => ({
@@ -571,15 +642,17 @@ export const drillMismatchInternal = (mismatches: Array<{ ref: string; piutang: 
   };
 };
 
-// Komposisi Modal Awal: snapshot Aktiva − Hutang per H−1 awal periode
-// (selaras modal_awal_theoretical modal_service: kas + stok + aset + piutang
-// − hutang non-investor). Hutang investor dikecualikan karena dihitung modal.
-export const drillModalAwal = (tanggalDari: string): DrillSpec => {
-  const d = new Date(`${tanggalDari}T00:00:00`);
-  d.setDate(d.getDate() - 1);
-  const asOf = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+// Komposisi Modal Awal: snapshot Aktiva − Hutang pada tanggal anchor backend.
+// Backend pakai `neraca(anchor).modal.total_modal`, dan Neraca menghitungnya
+// sebagai total_aktiva − total_hutang — hutang investor TERMASUK (dana investor
+// = kewajiban pihak ketiga, bukan modal). Jangan dikecualikan: menguranginya
+// bikin total meleset sebesar hutang_investor.
+// `asOf` WAJIB dari `report.modal_awal_as_of` — backend meng-anchor ke tanggal
+// saldo awal impor, bukan `tanggal_dari - 1`, jadi memakai H−1 bikin komponen
+// tidak menjumlah ke modal_awal.
+export const drillModalAwal = (asOf: string): DrillSpec => {
   return {
-  key: `modal-awal-${tanggalDari}`,
+  key: `modal-awal-${asOf}`,
   label: 'Rincian modal awal (Aktiva − Hutang)',
   columns: [
     { key: 'komponen', header: 'Komponen' },
@@ -594,20 +667,60 @@ export const drillModalAwal = (tanggalDari: string): DrillSpec => {
       { komponen: 'Persediaan Sparepart', amount: Number(al.persediaan_sparepart ?? 0) },
       { komponen: 'Stok Mobil', amount: Number(al.stok_mobil ?? 0) },
       { komponen: 'Aktiva Tetap', amount: Number(r.aktiva_tetap?.total_aktiva_tetap ?? 0) },
-      { komponen: 'Hutang non-investor (pengurang)', amount: -(Number(r.hutang?.total_hutang ?? 0) - Number(r.hutang?.hutang_investor ?? 0)) },
+      { komponen: 'Hutang (pengurang)', amount: -Number(r.hutang?.total_hutang ?? 0) },
     ].filter((x) => x.amount !== 0);
     return { data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 };
   },
   };
 };
 
+// Laba/Rugi Periode per unit bisnis (Modal).
+// Rumusnya HARUS sama dengan modal_service.py:176-179, dibaca dari `info.units`
+// (bukan `info.laba_bengkel` yang berisi LABA KOTOR TPM — beda konsep). Diverifikasi
+// Σ ketiga unit = info.laba_bersih, BEDA 0.
+export const drillLabaPeriode = (units?: Record<string, Record<string, number>>): DrillSpec => {
+  const n = (v: unknown) => Number(v ?? 0) || 0;
+  const b = units?.bengkel ?? {};
+  const m = units?.mobil ?? {};
+  const ja = units?.jasa_angkut ?? {};
+  const rows = [
+    { unit: 'Bengkel', amount: n(b.laba_kotor) - n(b.total_expenses) - n(b.common_expenses) },
+    { unit: 'Mobil', amount: n(m.total_laba_kotor) - n(m.overhead) },
+    {
+      unit: 'Jasa Angkut',
+      amount: n(ja.revenue_tpm) - n(ja.trip_costs) - n(ja.repairs) - n(ja.overhead) - n(ja.armada_ops) - n(ja.armada_ops_ledger),
+    },
+  ].filter((r) => r.amount !== 0);
+  return {
+    key: 'laba-periode-unit',
+    label: 'Rincian laba/rugi per unit',
+    columns: [
+      { key: 'unit', header: 'Unit Bisnis' },
+      rp('amount'),
+    ],
+    fetch: async () => ({ data: rows, total: rows.length, page: 1, size: rows.length, pages: 1 }),
+  };
+};
+
 // Komposisi Modal Neraca: satu baris "Modal" di laporan, drill buka rinciannya.
-export const drillModalKomposisi = (parts: { setoran?: number; laba_ditahan?: number; prive?: number; total?: number }): DrillSpec => {
+// Baris laporan = `total_modal` = identity (aktiva − hutang), sedangkan
+// setoran_modal/laba_ditahan/prive adalah hitungan bottom-up (`modal_komponen`)
+// yang belum men-net hutang investor. Karena itu selisihnya dipaparkan sebagai
+// baris penutup, bukan disembunyikan — Δ-nya persis hutang investor.
+export const drillModalKomposisi = (parts: {
+  setoran?: number;
+  laba_ditahan?: number;
+  prive?: number;
+  total?: number;
+}): DrillSpec => {
   const n = (v: number | undefined) => Number(v ?? 0);
+  const bottomUp = n(parts.setoran) + n(parts.laba_ditahan) - n(parts.prive);
+  const gap = n(parts.total) - bottomUp;
   const rows = [
     { komponen: 'Setoran Modal', amount: n(parts.setoran) },
     { komponen: 'Laba Ditahan', amount: n(parts.laba_ditahan) },
     { komponen: 'Prive (Pengambilan Pemilik)', amount: -n(parts.prive) },
+    { komponen: 'Selisih bottom-up vs Aktiva−Hutang (hutang investor)', amount: gap },
   ].filter((r) => r.amount !== 0);
   return {
     key: 'modal-komposisi',

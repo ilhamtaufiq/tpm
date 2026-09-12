@@ -340,7 +340,9 @@ export default function LaporanPerubahanModalScreen() {
                             <View className="mt-4 pt-5 border-t-2 border-slate-100">
                                 <FinancialRow label="Perubahan Bersih Modal (Aliran)" value={equity.perubahanBersih} bold color="text-slate-700" />
                                 <FinancialRow label="Modal Akhir Periode (Teoritis)" value={equity.expectedModalAkhir} bold color="text-indigo-700" />
-                                <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">* akun beku tidak boleh berubah, modal awal = (total aktiva − total hutang)</Typography>
+                                <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">
+                                    * akun beku: modal awal = (total aktiva − total hutang) pada posisi pembuka{report.modal_awal_as_of ? ` (${report.modal_awal_as_of})` : ''}, tidak berubah oleh transaksi setelahnya — perubahan aset/hutang masuk ke Modal Akhir.
+                                </Typography>
                             </View>
                         </Card>
 

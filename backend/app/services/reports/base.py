@@ -1106,6 +1106,16 @@ class BaseReportService:
                     "workshop_bills_unsold": workshop_bills_unsold,
                     "prep_total": prep_total_period,
                     "overhead": general_mobil_overhead,
+                    # Komponen pembentuk overhead (lihat perhitungannya di atas).
+                    # Dipaparkan agar drill dashboard bisa merekonsiliasi PERSIS:
+                    # menyaring per `bisnis_kategori` saja tidak cukup, karena
+                    # pengeluaran yang punya mobil_id sudah di-tag dan dikurangkan.
+                    "overhead_komponen": {
+                        "total_unit_expenses": total_mobil_unit_expenses,
+                        "tagged_ke_mobil": total_tagged_from_mobil_ledger,
+                        "prive": float(mobil_prive_unit),
+                        "post_sale": post_sale_mobil_expenses,
+                    },
                     "total_outflow_wallet": raw_mobil_outflow,
                     "prive": float(mobil_prive_unit),
                     "details": mobil_details

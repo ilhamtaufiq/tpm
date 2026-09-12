@@ -162,6 +162,11 @@ class LabaRugiService(BaseReportService):
                     "beban_operasional": m_prep,
                     "maintenance": m_maintenance,
                     "beban_umum": m_overhead,
+                    # Komponen pembentuk beban_umum (dihitung di base.py). Drill
+                    # dashboard memakainya agar Σ drill = angka laporan; menyaring
+                    # ledger per bisnis_kategori saja tidak cukup karena baris
+                    # ber-mobil_id sudah di-tag dan dikurangkan dari overhead.
+                    "beban_umum_komponen": m.get("overhead_komponen") or {},
                     "sharing_investor": m_sharing,
                     "laba_kotor": m_laba_kotor,
                     "laba_bersih": m_laba_bersih

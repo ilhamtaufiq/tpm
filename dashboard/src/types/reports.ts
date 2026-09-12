@@ -132,6 +132,13 @@ export interface LabaRugiUnit {
   beban_gaji?: number;
   beban_lembur?: number;
   beban_umum?: number;
+  /** Komponen pembentuk beban_umum (base.py) — dipakai drill rekonsiliasi. */
+  beban_umum_komponen?: {
+    total_unit_expenses?: number;
+    tagged_ke_mobil?: number;
+    prive?: number;
+    post_sale?: number;
+  };
   maintenance?: number;
   sharing_investor?: number;
   pendapatan_lainnya?: number;
@@ -194,10 +201,14 @@ export interface CapitalReport {
     diskon_penjualan_bengkel?: number;
     validasi?: { modal_teoritis?: number; modal_aktual?: number; selisih?: number; status: string };
     aset?: { kas_bank: number; kas_jenis_details?: KasJenisDetail[] };
+    /** Breakdown per unit untuk drill laba/rugi periode (kunci = unit logis). */
+    units?: Record<string, Record<string, number>>;
   };
   selisih?: number;
   is_balanced?: boolean;
   /** Terisi bila periode berakhir sebelum saldo awal — angka semuanya nol. */
   catatan?: string;
   saldo_awal_date?: string;
+  /** Tanggal snapshot modal_awal (anchor). Pakai untuk drill Modal Awal. */
+  modal_awal_as_of?: string;
 }
