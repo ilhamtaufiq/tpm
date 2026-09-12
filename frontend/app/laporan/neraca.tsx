@@ -95,7 +95,6 @@ export default function NeracaScreen() {
 
     const {
         totalHutangExternal,
-        totalAktivaAdj,
         totalAktivaLancarAdj,
         totalStokAdj,
         stockBreakdown,
@@ -142,7 +141,6 @@ export default function NeracaScreen() {
             totalLabaAdj: lAdj,
             adjUnitCashDetails,
             totalAktivaLancarAdj: alAdj,
-            totalAktivaAdj: aAdj,
         };
     }, [report]);
 
@@ -373,15 +371,9 @@ export default function NeracaScreen() {
 
     const renderBalanceCheck = () => {
         if (!report) return null;
-        const cv = report.cross_validation || {} as any;
         // Gunakan data dari backend sebagai sumber kebenaran utama
         const selisih = report.selisih || 0;
         const isBalanced = report.is_balanced ?? (Math.abs(selisih) < 100);
-
-        // Komponen modal dari backend (modal.modal_komponen vs modal.equity_identity)
-        const modalBottomUp = report.modal?.modal_komponen ?? ((report.modal?.setoran_modal || 0) + (report.modal?.laba_ditahan || 0) - (report.modal?.prive || 0));
-        const modalIdentity = report.modal?.equity_identity ?? (totalAktivaAdj - totalHutangExternal);
-        const selisihModal = report.modal?.selisih_modal ?? (modalBottomUp - modalIdentity);
 
         return (
             <View className={`mb-24 rounded-[32px] overflow-hidden p-6 ${isBalanced ? 'bg-primary' : 'bg-amber-600'} shadow-2xl relative w-full`}>
@@ -417,26 +409,6 @@ export default function NeracaScreen() {
                             );
                         })()}
                     </View>
-                </View>
-
-                {/* Validasi Komponen Modal dari Backend */}
-                <View className="bg-white/5 rounded-xl p-4 border border-white/10 mb-4 w-full">
-                    <Typography variant="caption" weight="bold" className="text-white/50 uppercase tracking-widest text-[9px] mb-2">Validasi Komponen Modal</Typography>
-                    <FinancialRow label="Modal (Bottom-Up)" value={modalBottomUp} isDark small />
-                    <FinancialRow label="Modal (Aktiva-Hutang)" value={modalIdentity} isDark small />
-                    <View className="h-[1px] bg-white/15 w-full my-1.5" />
-                    <FinancialRow
-                        label="Selisih Modal"
-                        value={Math.abs(selisihModal)}
-                        isDark
-                        bold
-                        isNegative={selisihModal < 0}
-                        color={
-                            Math.abs(selisihModal) < 100
-                                ? "text-emerald-300"
-                                : (selisihModal < 0 ? "text-red-400" : "text-amber-300")
-                        }
-                    />
                 </View>
 
                 <View className={`flex-row items-center justify-center p-4 rounded-xl w-full border ${isBalanced ? 'bg-emerald-500/20 border-emerald-500/30' : 'bg-amber-500/20 border-amber-500/30'}`}>
