@@ -36,6 +36,7 @@ from app.api.v1 import (
     master_data,
     data_import,
     system,
+    lacak,
 )
 
 
@@ -74,6 +75,7 @@ api_router.include_router(trash.router, prefix="/trash", tags=["Trash"])
 api_router.include_router(master_data.router)
 api_router.include_router(data_import.router)
 api_router.include_router(system.router)
+api_router.include_router(lacak.router)
 api_router.include_router(realtime.router)
 
 

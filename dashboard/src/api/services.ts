@@ -49,7 +49,17 @@ export const financeService = {
   hutangPayments: (id: number) => get<Record<string, unknown>[]>(`/hutang/${id}/payments`),
   userCashBalances: () => get<unknown[]>('/user-cash/users'),
   userCashHistory: (limit = 50) => get<unknown[]>('/user-cash/history', { limit }),
+  /** Lacak dokumen lintas prefix (KAS/PTG/HTG/BGL/MBL/JAS/PGL/PBL/GJI/KSB/AST/KRY). */
+  lacak: (nomor: string) => get<LacakResult>(`/lacak/${encodeURIComponent(nomor)}`),
 };
+
+export interface LacakResult {
+  kind: string;
+  nomor: string;
+  tanggal?: string | null;
+  fields: Record<string, unknown>;
+  payments: Record<string, unknown>[];
+}
 
 export const stockService = {
   lowStock: () => get<unknown[]>('/spare-parts/low-stock'),

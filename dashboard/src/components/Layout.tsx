@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftRight,
@@ -112,6 +112,27 @@ function Sidebar({ onNav }: { onNav?: () => void }) {
   );
 }
 
+/** Jam header: detik ikut berjalan agar terlihat data hidup. */
+function useClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+function HeaderClock() {
+  const now = useClock();
+  const tanggal = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+  const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  return (
+    <span className="font-mono text-xs tabular-nums text-slate-500 sm:text-sm">
+      {tanggal} <span className="text-slate-300">·</span> {jam}
+    </span>
+  );
+}
+
 export default function Layout() {
   const [open, setOpen] = useState(false);
   return (
@@ -150,6 +171,7 @@ export default function Layout() {
               Monitoring operasional & keuangan <span className="text-slate-300">·</span>{' '}
               <span className="font-semibold text-slate-600">real-time</span>
             </p>
+            <HeaderClock />
           </div>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-6">

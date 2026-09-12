@@ -4,39 +4,47 @@ import { useSearchParams } from 'react-router-dom';
 import { financeService } from '../api/services';
 import { formatCurrency, formatDateTime } from '../utils/format';
 import { Badge, Card, DataTable, Loading, PageHeader } from '../components/ui';
+import { kasJenisLabel } from '../components/reports';
 
-type Found = { kind: 'KAS' | 'PTG' | 'HTG'; doc: Record<string, unknown>; payments: Record<string, unknown>[] };
-
-async function lookup(nomor: string): Promise<Found | null> {
-  const key = nomor.trim().toUpperCase();
-  if (!key) return null;
-  if (key.startsWith('PTG')) {
-    const r = await financeService.piutangSearch(key);
-    const doc = r.data?.[0];
-    if (!doc || String(doc.nomor_piutang ?? '').toUpperCase() !== key) return null;
-    const payments = (doc.pembayaran as Record<string, unknown>[] | undefined) ?? (await financeService.piutangPayments(Number(doc.id)).catch(() => []));
-    return { kind: 'PTG', doc, payments };
-  }
-  if (key.startsWith('HTG')) {
-    const r = await financeService.hutangSearch(key);
-    const doc = r.data?.[0];
-    if (!doc || String(doc.nomor_hutang ?? '').toUpperCase() !== key) return null;
-    const payments = (doc.pembayaran as Record<string, unknown>[] | undefined) ?? (await financeService.hutangPayments(Number(doc.id)).catch(() => []));
-    return { kind: 'HTG', doc, payments };
-  }
-  if (key.startsWith('KAS')) {
-    const doc = await financeService.kasBankByNomor(key).catch(() => null);
-    if (!doc) return null;
-    return { kind: 'KAS', doc, payments: [] };
-  }
-  return null;
-}
-
-const KIND_META = {
-  KAS: { label: 'Kas/Bank', tone: 'info' as const },
-  PTG: { label: 'Piutang', tone: 'warn' as const },
-  HTG: { label: 'Hutang', tone: 'bad' as const },
+const KIND_LABEL: Record<string, string> = {
+  KAS: 'Kas/Bank',
+  PTG: 'Piutang',
+  HTG: 'Hutang',
+  BGL: 'Penjualan Bengkel',
+  MBL: 'Penjualan Mobil',
+  JAS: 'Muatan Jasa Angkut',
+  PGL: 'Pengeluaran',
+  PBL: 'Pembelian Spare Part',
+  GJI: 'Slip Gaji',
+  KSB: 'Kasbon Karyawan',
+  AST: 'Aset Tetap',
+  KRY: 'Karyawan',
 };
+
+const TONE: Record<string, 'ok' | 'warn' | 'bad' | 'info'> = {
+  KAS: 'info',
+  PTG: 'warn',
+  HTG: 'bad',
+};
+
+// Identitas dokumen sudah tampil sebagai judul kartu — jangan diulang.
+const HIDDEN = new Set([
+  'id', 'nomor_transaksi', 'nomor_piutang', 'nomor_hutang', 'nomor_slip', 'nomor_kasbon', 'kode',
+]);
+const MONEY = /(nominal|total|harga|jumlah|gaji|laba|hpp|subtotal|diskon|dp|sisa|saldo|biaya|pendapatan|bayar|tunjangan|potongan|residu)/i;
+
+const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}/.test(v);
+
+function renderValue(key: string, raw: unknown): React.ReactNode {
+  if (raw === null || raw === undefined || raw === '') return '-';
+  const s = String(raw);
+  if (MONEY.test(key) && s !== '' && !Number.isNaN(Number(s))) {
+    return <span className="font-mono font-bold">{formatCurrency(Number(s))}</span>;
+  }
+  if (key === 'jenis') return kasJenisLabel(s);
+  if (isDate(s)) return formatDateTime(s);
+  return s.replace(/_/g, ' ');
+}
 
 export default function Lacak() {
   const [params, setParams] = useSearchParams();
@@ -45,9 +53,10 @@ export default function Lacak() {
   const nomor = initial.trim().toUpperCase();
   const q = useQuery({
     queryKey: ['lacak', nomor],
-    queryFn: () => lookup(nomor),
+    queryFn: () => financeService.lacak(nomor),
     enabled: nomor.length > 0,
     staleTime: 30_000,
+    retry: false,
   });
 
   const submit = (e: React.FormEvent) => {
@@ -57,13 +66,13 @@ export default function Lacak() {
 
   return (
     <div className="animate-fade-up space-y-5">
-      <PageHeader title="Lacak Nomor" sub="KAS · PTG · HTG — detail + mutasi pembayaran" />
+      <PageHeader title="Lacak Nomor" sub="Semua dokumen — KAS · PTG · HTG · BGL · MBL · JAS · PGL · PBL · GJI · KSB · AST · KRY" />
       <Card>
         <form onSubmit={submit} className="flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Contoh: KAS2609060004 / PTG2609060001 / HTG2609060001"
+            placeholder="Contoh: BGL2609120001 / KAS2609060004 / PTG2609060001"
             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-sm uppercase outline-none focus:border-indigo-400 focus:bg-white"
           />
           <button type="submit" className="shrink-0 rounded-xl bg-[#0B1F3A] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#14305a]">
@@ -76,7 +85,9 @@ export default function Lacak() {
       ) : q.isLoading ? (
         <Loading text="Mencari dokumen…" />
       ) : q.isError || !q.data ? (
-        <Card><p className="py-6 text-center text-sm text-rose-500">Nomor {nomor} tidak ditemukan.</p></Card>
+        <Card>
+          <p className="py-6 text-center text-sm text-rose-500">Nomor {nomor} tidak ditemukan.</p>
+        </Card>
       ) : (
         <DocDetail found={q.data} />
       )}
@@ -84,42 +95,24 @@ export default function Lacak() {
   );
 }
 
-function DocDetail({ found }: { found: Found }) {
-  const { kind, doc, payments } = found;
-  const meta = KIND_META[kind];
-  const item = (k: string, v: React.ReactNode) => (
-    <div key={k} className="flex items-start justify-between gap-4 border-b border-slate-50 py-2 text-sm last:border-0">
-      <span className="shrink-0 font-bold capitalize text-slate-400">{k.replace(/_/g, ' ')}</span>
-      <span className="text-right font-medium text-slate-700">{v}</span>
-    </div>
-  );
-  const numKey = kind === 'KAS' ? 'nomor_transaksi' : kind === 'PTG' ? 'nomor_piutang' : 'nomor_hutang';
+function DocDetail({ found }: { found: Awaited<ReturnType<typeof financeService.lacak>> }) {
+  const { kind, nomor, fields, payments } = found;
+  const label = KIND_LABEL[kind] ?? kind;
+  const rows = Object.entries(fields).filter(([k, v]) => !HIDDEN.has(k) && v !== null && v !== undefined && v !== '');
+
   return (
     <div className="space-y-5">
-      <Card title={String(doc[numKey] ?? '-')} sub={meta.label} right={<Badge tone={meta.tone}>{meta.label}</Badge>}>
-        {kind === 'KAS' ? (
-          <div>
-            {item('tanggal', formatDateTime(String(doc.tanggal ?? '-')))}
-            {item('tipe', String(doc.tipe ?? '-'))}
-            {item('sumber', String(doc.sumber ?? '-'))}
-            {item('jenis', String(doc.jenis ?? '-'))}
-            {item('nominal', <span className="font-mono font-extrabold">{formatCurrency(Number(doc.nominal ?? 0))}</span>)}
-            {item('referensi', String(doc.nomor_referensi ?? '-'))}
-            {item('keterangan', String(doc.keterangan ?? '-'))}
-          </div>
-        ) : (
-          <div>
-            {item('tanggal', formatDateTime(String(doc.tanggal ?? '-')))}
-            {item(kind === 'PTG' ? 'debitur' : 'kreditur', String(doc.nama_debitur ?? doc.nama_kreditur ?? '-'))}
-            {item('nominal', <span className="font-mono font-extrabold">{formatCurrency(Number(doc.nominal_piutang ?? doc.nominal_hutang ?? 0))}</span>)}
-            {item('dibayar', formatCurrency(Number(doc.total_dibayar ?? 0)))}
-            {item('sisa', <span className="font-mono font-extrabold">{formatCurrency(Number(doc.sisa_piutang ?? doc.sisa_hutang ?? 0))}</span>)}
-            {item('status', String(doc.status ?? '-'))}
-            {item('jatuh tempo', String(doc.tanggal_jatuh_tempo ?? '-'))}
-          </div>
-        )}
+      <Card title={nomor} sub={label} right={<Badge tone={TONE[kind] ?? 'info'}>{kind}</Badge>}>
+        <div>
+          {rows.map(([k, v]) => (
+            <div key={k} className="flex items-start justify-between gap-4 border-b border-slate-50 py-2 text-sm last:border-0">
+              <span className="shrink-0 font-bold capitalize text-slate-400">{k.replace(/_/g, ' ')}</span>
+              <span className="text-right font-medium text-slate-700">{renderValue(k, v)}</span>
+            </div>
+          ))}
+        </div>
       </Card>
-      {kind !== 'KAS' && (
+      {payments.length > 0 && (
         <Card title="Mutasi Pembayaran" sub={`${payments.length} pembayaran`}>
           <DataTable
             headers={['Tanggal', 'Jumlah', 'Metode', 'Keterangan']}
