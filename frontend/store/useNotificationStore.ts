@@ -96,8 +96,14 @@ export const useNotificationStore = create<NotificationState>()(
                         await AsyncStorage.setItem(key, value);
                     } catch (error: any) {
                         if (error?.message?.includes('quota') || error?.message?.includes('exceeded')) {
-                            await AsyncStorage.clear();
-                            await AsyncStorage.setItem(key, value);
+                            // Drop only our own (stale, larger) value — never clear the whole
+                            // store: that would wipe the offline write queue and the session.
+                            await AsyncStorage.removeItem(key);
+                            try {
+                                await AsyncStorage.setItem(key, value);
+                            } catch (retryError) {
+                                console.warn('[Notification Store] Dropping notification history, storage full', retryError);
+                            }
                         } else {
                             throw error;
                         }

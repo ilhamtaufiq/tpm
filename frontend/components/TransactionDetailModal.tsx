@@ -143,6 +143,10 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
             return;
         }
 
+        // Opening a second item before the first response lands used to render
+        // A's details under B's header. Ignore anything from a stale request.
+        let cancelled = false;
+
         const fetchDetails = async () => {
             if (visible && item) {
                 setLoading(true);
@@ -202,24 +206,26 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                         }
                     } else if (item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT') {
                         data = await jasaAngkutService.getMuatan(id);
-                        setDetails(data);
                     } else if (item.type === 'workshop' || item.source === 'BENGKEL' || item.source === 'bengkel') {
                         data = await bengkelService.getDetailTransaksi(id);
-                        setDetails(data);
                     } else {
                         data = await keuanganService.getKasBankTransaction(id);
-                        setDetails(data);
                     }
+                    if (cancelled) return;
                     setDetails(data);
                 } catch (error) {
                     console.error('Failed to fetch transaction details:', error);
                 } finally {
-                    setLoading(false);
+                    if (!cancelled) setLoading(false);
                 }
             }
         };
 
         fetchDetails();
+
+        return () => {
+            cancelled = true;
+        };
     }, [visible, item]);
 
     const handleShareLink = async () => {

@@ -1,4 +1,5 @@
 import api, { BASE_URL } from '../utils/api';
+import { useAuthStore } from '../store/useAuthStore';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
@@ -65,10 +66,12 @@ export const backupService = {
             link.click();
             link.parentNode?.removeChild(link);
         } else {
-            // Mobile download using expo-file-system and sharing
+            // Mobile download using expo-file-system and sharing.
+            // The token lives in the auth store — `api.defaults.headers.common`
+            // is never populated (the request interceptor sets it per-request).
             const fileUri = FileSystem.documentDirectory + filename;
-            const authToken = await api.defaults.headers.common['Authorization'];
-            
+            const authToken = useAuthStore.getState().token;
+
             const downloadResumable = FileSystem.createDownloadResumable(
                 downloadUrl,
                 fileUri,

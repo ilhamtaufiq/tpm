@@ -61,6 +61,20 @@ export function stopOfflineSyncWorker() {
     started = false;
 }
 
+/**
+ * Errors that retrying can never fix: unsupported on this platform, malformed
+ * item, or a payload the server will reject identically every time.
+ */
+function isPermanentError(err: any): boolean {
+    if (err?.permanent === true) return true;
+    const message = typeof err?.message === 'string' ? err.message : '';
+    return (
+        message.includes('not supported on web') ||
+        message.includes('Upload metadata missing') ||
+        err?.name === 'OfflineQueuePermanentError'
+    );
+}
+
 function scheduleFlush(delayMs: number) {
     if (flushTimer) clearTimeout(flushTimer);
     flushTimer = setTimeout(() => {
@@ -79,6 +93,10 @@ export async function flushOfflineQueue(options?: {
     const store = useOfflineQueueStore.getState();
     if (store.isFlushing) return { ok: 0, failed: 0 };
 
+    // Claim the flag before anything can await — otherwise a debounced flush and
+    // a user-triggered "Retry" both pass the guard and run concurrently.
+    store.setFlushing(true);
+
     let work = store
         .getPending()
         .filter((it) => it.retryCount < OFFLINE_QUEUE_MAX_RETRIES)
@@ -89,9 +107,11 @@ export async function flushOfflineQueue(options?: {
         work = work.filter((it) => options.onlyIds!.includes(it.id));
     }
 
-    if (work.length === 0) return { ok: 0, failed: 0 };
+    if (work.length === 0) {
+        useOfflineQueueStore.getState().setFlushing(false);
+        return { ok: 0, failed: 0 };
+    }
 
-    store.setFlushing(true);
     let ok = 0;
     let failed = 0;
 
@@ -119,9 +139,23 @@ export async function flushOfflineQueue(options?: {
                 const msgStr =
                     typeof message === 'string' ? message : JSON.stringify(message);
 
-                // 4xx (except 408/429) → permanent fail, don't infinite retry
                 const status = err?.response?.status as number | undefined;
-                if (status && status >= 400 && status < 500 && status !== 408 && status !== 429) {
+
+                if (status === 401 || status === 403) {
+                    // Session problem, not a data problem. Everything left in the
+                    // queue is still valid — leave it pending and stop. The next
+                    // flush after re-login retries it automatically.
+                    for (const rest of work.slice(work.indexOf(item))) {
+                        useOfflineQueueStore.getState().updateItem(rest.id, { lastError: msgStr });
+                    }
+                    break;
+                }
+
+                if (isPermanentError(err)) {
+                    // Retrying cannot help — park it without burning the retry budget.
+                    useOfflineQueueStore.getState().markStatus(item.id, 'failed', msgStr);
+                } else if (status && status >= 400 && status < 500 && status !== 408 && status !== 429) {
+                    // 4xx (except 408/429) → permanent fail, don't infinite retry
                     useOfflineQueueStore.getState().markStatus(item.id, 'failed', msgStr);
                 } else {
                     useOfflineQueueStore.getState().incrementRetry(item.id, msgStr);

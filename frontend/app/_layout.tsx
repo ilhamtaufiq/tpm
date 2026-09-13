@@ -1,5 +1,6 @@
 import { Buffer } from 'buffer';
-import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
+import { QueryClientProvider, onlineManager } from '@tanstack/react-query';
+import { queryClient } from '../utils/queryClient';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
@@ -70,33 +71,6 @@ if (
         }
     });
 }
-
-const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            // Avoid network storm when switching menus: cache is "fresh" for 60s.
-            // Realtime WS + pull-to-refresh still update sooner when needed.
-            staleTime: 1000 * 60,
-            // 24 hours until garbage collected from storage
-            gcTime: 1000 * 60 * 60 * 24,
-            // Only refetch focused queries if data is actually stale
-            refetchOnWindowFocus: true,
-            refetchOnReconnect: true,
-            refetchOnMount: true,
-            networkMode: 'offlineFirst',
-            // Standard retry logic
-            retry: (failureCount, error: any) => {
-                if (error?.message?.includes('network')) return false;
-                return failureCount < 2;
-            },
-        },
-        mutations: {
-            // Paused mutations are a fallback; durable queue is source of truth for offline writes
-            networkMode: 'online',
-            retry: 0,
-        },
-    },
-});
 
 // Configure offline persistence (read cache only — writes use durable offlineQueue store)
 const asyncStoragePersister = createAsyncStoragePersister({

@@ -145,3 +145,13 @@ class ResetPasswordRequest(BaseModel):
 
     token: str
     new_password: str = Field(..., min_length=6, max_length=100)
+
+
+class ChangePasswordRequest(BaseModel):
+    """Schema for change password request.
+
+    Body, not query params — query strings land in nginx/Cloudflare access logs.
+    """
+
+    old_password: str
+    new_password: str = Field(..., min_length=6, max_length=100)

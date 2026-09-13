@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, ScrollView, Platform, Dimensions, StyleSheet, TextInput, FlatList, SectionList, TouchableOpacity, Pressable, GestureResponderEvent, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -219,7 +219,17 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
     const selectedServicesForDisplay = useMemo(() => services.filter((service) => service.service_id !== 0 || service.nama_jasa.trim().length > 0), [services]);
     const hasBillableItems = selectedPartsForDisplay.length > 0 || selectedServicesForDisplay.length > 0;
 
+    // Re-hydrate only when a *different record* is loaded. Keying on the object
+    // itself re-ran this on every background refetch and silently discarded
+    // whatever the user had typed.
+    const hydratedRecordRef = useRef<number | string | null>(null);
+
     useEffect(() => {
+        if (initialData && hydratedRecordRef.current === initialData.id) {
+            return;
+        }
+        hydratedRecordRef.current = initialData?.id ?? null;
+
         if (initialData) {
             setKategori(initialData.kategori);
             setNomorPlat(initialData.plat_nomor || initialData.nomor_plat || '');
@@ -641,7 +651,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
             metode_bayar: kategori === 'umum' ? metodeBayarFinal : 'KREDIT',
             detail_services: detailServices,
             detail_parts: detailParts,
-            diskon: 0,
+            diskon: Number(parseNumber(diskon)) || 0,
             tampilkan_diskon_struk: showDiscountOnPrint,
             payments: kategori === 'umum' ? paymentItems : [],
             jumlah_bayar: kategori === 'umum' ? totalPaid : 0,

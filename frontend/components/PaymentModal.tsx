@@ -58,6 +58,23 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         }
     }, [visible]);
 
+    // The modal stays mounted across records, so re-prime the amount for the
+    // record currently being opened — otherwise the previous one's remainder
+    // is still in the field and the payment is booked against the wrong debt.
+    React.useEffect(() => {
+        if (!visible) return;
+        setPayments([
+            {
+                id: Date.now() + Math.random(),
+                metode: '',
+                nominal: formatNumber(Number(initialAmount ?? 0)),
+                catatan: '',
+            },
+        ]);
+        setIsSplitPayment(false);
+        setPaymentNote('');
+    }, [visible, id, initialAmount]);
+
     // Unit label mapping for display
     const unitLabel = useMemo(() => {
         const labels: Record<string, string> = {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, FC } from 'react';
-import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput, Animated, Keyboard } from 'react-native';
+import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput, Animated, Keyboard, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, type BarcodeType } from 'expo-camera';
@@ -73,6 +73,10 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     // Scan sound hook
     const { playSuccess, playError } = useScanSound();
 
+    // `scanned` is state (async), so it lagged behind the per-frame callback and
+    // one physical scan could be delivered 2-3 times. Gate on a ref instead.
+    const scanLockRef = useRef(false);
+
     // Web camera error + flash indicator state
     const [webCameraError, setWebCameraError] = useState<string | null>(null);
     const [webFlashVisible, setWebFlashVisible] = useState(false);
@@ -102,6 +106,12 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         }, 1500);
     }, []);
 
+    // Callbacks arrive as fresh identities on every parent render. Holding them in
+    // a ref keeps the camera effect's deps stable — otherwise each scan tore down
+    // and re-acquired the camera mid-session.
+    const callbacksRef = useRef({ onScan, playSuccess, playError, showScanMatch });
+    callbacksRef.current = { onScan, playSuccess, playError, showScanMatch };
+
     // Laser Animation Effect
     useEffect(() => {
         if (!visible) return;
@@ -124,6 +134,12 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
         const initializeScanner = async () => {
             if (!mounted) return;
+
+            if (visible) {
+                // Reopening the modal must accept scans immediately.
+                scanLockRef.current = false;
+                setScanned(false);
+            }
 
             if (visible && !permission?.granted && scannerMode === 'camera') {
                 requestPermission();
@@ -217,18 +233,19 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     async (decodedText: string) => {
                         if (webScanInProgress.current) return;
                         webScanInProgress.current = true;
+                        const cb = callbacksRef.current;
                         try {
-                            const matched = await onScan(decodedText);
+                            const matched = await cb.onScan(decodedText);
                             if (matched) {
-                                playSuccess();
-                                showScanMatch('match');
+                                cb.playSuccess();
+                                cb.showScanMatch('match');
                             } else {
-                                playError();
-                                showScanMatch('no-match');
+                                cb.playError();
+                                cb.showScanMatch('no-match');
                             }
                         } catch {
-                            playError();
-                            showScanMatch('no-match');
+                            cb.playError();
+                            cb.showScanMatch('no-match');
                         }
                         // Short cooldown before allowing next scan
                         setTimeout(() => {
@@ -261,7 +278,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     });
             }
         };
-    }, [visible, scannerMode, onScan, playSuccess, playError, showScanMatch, preferLinearBarcode]);
+    }, [visible, scannerMode, preferLinearBarcode]);
 
     const toggleScannerMode = async () => {
         let newMode: 'camera' | 'hardware' | 'web-camera';
@@ -287,28 +304,32 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         if (preferLinearBarcode && shouldRejectLinearPreferredScan(result.type)) {
             return;
         }
+        if (scanLockRef.current) return;
+        scanLockRef.current = true;
         setScanned(true);
         const parsed = parseBarcodeScan(result.data);
         if (__DEV__) {
             console.log(`[Scanner] type=${result.type} format=${parsed.format} raw=${parsed.raw} preferred=${parsed.preferred}`);
         }
+        const cb = callbacksRef.current;
         try {
-            const matched = await onScan(result.data);
+            const matched = await cb.onScan(result.data);
             if (matched) {
-                playSuccess();
-                showScanMatch('match');
+                cb.playSuccess();
+                cb.showScanMatch('match');
             } else {
-                playError();
-                showScanMatch('no-match');
+                cb.playError();
+                cb.showScanMatch('no-match');
             }
         } catch {
-            playError();
-            showScanMatch('no-match');
+            cb.playError();
+            cb.showScanMatch('no-match');
         }
         // In continuous mode, use shorter cooldown (1s) so user can scan rapidly
         // In single-scan mode, use 2s cooldown
         const cooldown = continuous ? 1000 : 2000;
         setTimeout(() => {
+            scanLockRef.current = false;
             setScanned(false);
         }, cooldown);
     };
@@ -332,10 +353,22 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     <View style={styles.permissionContainer}>
                         <Typography variant="h3" weight="bold" className="text-center mb-4">Izin Kamera Diperlukan</Typography>
                         <Typography className="text-gray-500 text-center mb-8 px-10">
-                            Kami memerlukan akses kamera untuk memindai barcode sparepart secara instan.
+                            {permission && permission.canAskAgain === false
+                                ? 'Izin kamera diblokir permanen. Aktifkan lewat Pengaturan perangkat, atau pakai mode scanner hardware.'
+                                : 'Kami memerlukan akses kamera untuk memindai barcode sparepart secara instan.'}
                         </Typography>
-                        <Button title="Berikan Izin" onPress={requestPermission} />
-                        <Pressable onPress={onClose} className="mt-4">
+                        {permission?.canAskAgain === false ? (
+                            <Button
+                                title="Buka Pengaturan"
+                                onPress={() => { void Linking.openSettings(); }}
+                            />
+                        ) : (
+                            <Button title="Berikan Izin" onPress={requestPermission} />
+                        )}
+                        <Pressable onPress={toggleScannerMode} className="mt-4">
+                            <Typography className="text-gray-400">Pakai Scanner Hardware</Typography>
+                        </Pressable>
+                        <Pressable onPress={onClose} className="mt-3">
                             <Typography className="text-gray-400">Batal</Typography>
                         </Pressable>
                     </View>

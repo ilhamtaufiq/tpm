@@ -50,4 +50,4 @@ wb.save('${OUTPUT.replace(/\\/g, '\\\\')}')
 print(f'Saved to {OUTPUT}')
 `;
 
-child.execSync(`"${pythonExe}" -c "${script.replace(/"/g, '\\"')}", { stdio: 'inherit' });
+child.execSync(`"${pythonExe}" -c "${script.replace(/"/g, '\\"')}"`, { stdio: 'inherit' });

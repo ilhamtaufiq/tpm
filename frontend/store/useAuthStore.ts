@@ -3,8 +3,13 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-
-const SECURE_STORE_MAX_BYTES = 2048;
+import { queryClient } from '../utils/queryClient';
+import {
+    SECURE_STORE_MAX_BYTES,
+    buildSecureSlice,
+    extractPersistedToken,
+    mergeSecureToken,
+} from './authStorageSplit';
 
 interface AuthState {
     user: any | null;
@@ -87,15 +92,20 @@ export const useAuthStore = create<AuthState>()(
                     originalToken: null,
                 });
             },
-            logout: () => set({
-                user: null,
-                token: null,
-                isAuthenticated: false,
-                isImpersonating: false,
-                impersonatorUser: null,
-                originalUser: null,
-                originalToken: null,
-            }),
+            logout: () => {
+                // Drop cached data so the next user never sees the previous one's
+                // financials from memory or the 7-day persisted cache.
+                queryClient.clear();
+                set({
+                    user: null,
+                    token: null,
+                    isAuthenticated: false,
+                    isImpersonating: false,
+                    impersonatorUser: null,
+                    originalUser: null,
+                    originalToken: null,
+                });
+            },
         }),
         {
             name: 'auth-storage',
@@ -120,34 +130,49 @@ export const useAuthStore = create<AuthState>()(
 
                 return {
                     getItem: async (key: string) => {
+                        let secureValue: string | null = null;
                         try {
-                            const secureValue = await SecureStore.getItemAsync(key);
-                            if (secureValue) {
-                                return secureValue;
-                            }
+                            secureValue = await SecureStore.getItemAsync(key);
                         } catch (error) {
                             console.warn('[Auth Store] SecureStore read failed, falling back to AsyncStorage', error);
                         }
-                        return AsyncStorage.getItem(key);
+
+                        const plainValue = await AsyncStorage.getItem(key);
+
+                        if (!plainValue) return secureValue;
+                        if (!secureValue) return plainValue;
+                        // Both copies exist: SecureStore holds only the token when the
+                        // full payload was too large. Take the encrypted token.
+                        return mergeSecureToken(secureValue, plainValue);
                     },
                     setItem: async (key: string, value: string) => {
-                        if (value.length > SECURE_STORE_MAX_BYTES) {
-                            await AsyncStorage.setItem(key, value);
+                        if (value.length <= SECURE_STORE_MAX_BYTES) {
                             try {
-                                await SecureStore.deleteItemAsync(key);
-                            } catch {
-                                // non-fatal
+                                await SecureStore.setItemAsync(key, value);
+                                await AsyncStorage.removeItem(key);
+                                return;
+                            } catch (error) {
+                                console.warn('[Auth Store] SecureStore write failed, falling back to AsyncStorage', error);
+                                await AsyncStorage.setItem(key, value);
+                                return;
                             }
-                            return;
                         }
 
-                        try {
-                            await SecureStore.setItemAsync(key, value);
-                            await AsyncStorage.removeItem(key);
-                        } catch (error) {
-                            console.warn('[Auth Store] SecureStore write failed, using AsyncStorage', error);
-                            await AsyncStorage.setItem(key, value);
+                        // Too large for SecureStore (the 2048-byte cap is really an
+                        // iOS keychain limit). Keep the token encrypted on its own and
+                        // spill only the bulky `user` blob to AsyncStorage.
+                        const token = extractPersistedToken(value);
+                        if (token) {
+                            try {
+                                // Same shape as the full payload so getItem parses it identically.
+                                await SecureStore.setItemAsync(key, buildSecureSlice(token));
+                            } catch (error) {
+                                console.warn('[Auth Store] SecureStore token write failed; leaving plaintext copy', error);
+                                await AsyncStorage.setItem(key, value);
+                                return;
+                            }
                         }
+                        await AsyncStorage.setItem(key, value);
                     },
                     removeItem: async (key: string) => {
                         await Promise.allSettled([

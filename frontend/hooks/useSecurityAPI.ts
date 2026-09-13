@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../utils/api';
 import { ProtectedFeatures } from '../store/useSecurityStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface SecurityStatusResponse {
     is_pin_enabled: boolean;
@@ -8,8 +9,13 @@ interface SecurityStatusResponse {
 }
 
 export const useSecurityStatus = () => {
+    // Gate on auth: firing this before the token exists returns 401, and the
+    // global 401 interceptor logs the user out mid-hydration.
+    const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
     return useQuery({
         queryKey: ['security', 'status'],
+        enabled: isAuthenticated,
         queryFn: async () => {
             const { data } = await api.get<SecurityStatusResponse>('/security/status');
             return data;

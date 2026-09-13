@@ -145,11 +145,10 @@ export const authService = {
     },
 
     changePassword: async (oldPassword: string, newPassword: string) => {
-        const response = await api.post('/auth/change-password', null, {
-            params: {
-                old_password: oldPassword,
-                new_password: newPassword
-            }
+        // Body, not query params — query strings are written to access logs.
+        const response = await api.post('/auth/change-password', {
+            old_password: oldPassword,
+            new_password: newPassword,
         });
         return response.data;
     },

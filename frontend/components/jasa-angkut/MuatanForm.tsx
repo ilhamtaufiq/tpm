@@ -27,6 +27,25 @@ interface MuatanFormProps {
 
 const MAX_SUGGESTIONS = 5;
 
+const emptyFormData = () => ({
+    tanggal: new Date().toISOString().split('T')[0],
+    supir_id: '',
+    supir_nama: '',
+    armada_id: '',
+    nopol: '',
+    info_kendaraan: '',
+    jenis_muatan_list: [{ jenis: '', ritase: '1', harga_beli: '', harga_jual: '', asal: '', tujuan: '' }],
+    ritase: '1',
+    harga_beli: '',
+    harga_jual: '',
+    status_bayar: 'BELUM_LUNAS',
+    status: 'PROSES',
+    metode_bayar: 'TUNAI',
+    jumlah_bayar: '',
+    catatan: '',
+    biaya_operasional: [] as { deskripsi: string, jumlah: string }[],
+});
+
 export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     const queryClient = useQueryClient();
     const isEditMode = !!initialData;
@@ -88,8 +107,15 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         variant: 'info'
     });
 
-    // Initialize form with edit data
+    // Initialize form with edit data.
+    // The host keeps this component mounted across opens, so a null initialData
+    // must also reset — otherwise the previous trip's values leak into a new one.
     useEffect(() => {
+        if (!initialData) {
+            setFormData(emptyFormData());
+            return;
+        }
+
         if (initialData) {
             setFormData({
                 tanggal: initialData.tanggal?.split('T')[0] || new Date().toISOString().split('T')[0],

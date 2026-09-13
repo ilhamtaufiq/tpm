@@ -191,7 +191,7 @@ const buildNotification = (payload: RealtimePayload) => {
     };
 };
 
-const getRealtimeUrl = (token: string) => {
+const getRealtimeUrl = () => {
     const baseUrl = (FILE_URL || '').replace(/\/$/, '');
     const wsBase = baseUrl.startsWith('https://')
         ? baseUrl.replace('https://', 'wss://')
@@ -199,7 +199,8 @@ const getRealtimeUrl = (token: string) => {
             ? baseUrl.replace('http://', 'ws://')
             : baseUrl;
 
-    return `${wsBase}/api/v1/realtime/ws?token=${encodeURIComponent(token)}`;
+    // No token in the URL — it would be logged by nginx/Cloudflare.
+    return `${wsBase}/api/v1/realtime/ws`;
 };
 
 export function useRealtimeSync() {
@@ -239,11 +240,13 @@ export function useRealtimeSync() {
             if (cancelled) return;
 
             console.log('[Realtime] Connecting...', { role });
-            const socket = new WebSocket(getRealtimeUrl(token));
+            const socket = new WebSocket(getRealtimeUrl());
             socketRef.current = socket;
 
             socket.onopen = () => {
                 console.log('[Realtime] Connected');
+                // Authenticate as the first frame — the server closes 4401 otherwise.
+                socket.send(JSON.stringify({ type: 'auth', token }));
                 reconnectAttemptRef.current = 0;
             };
 

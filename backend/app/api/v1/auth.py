@@ -15,6 +15,7 @@ from app.schemas.user import (
     LoginResponse,
     OTPVerifyRequest,
     PushTokenRegisterRequest,
+    ChangePasswordRequest,
 )
 import os
 import uuid
@@ -249,14 +250,17 @@ async def upload_home_background(
 
 @router.post("/change-password")
 def change_password(
-    old_password: str,
-    new_password: str,
+    data: ChangePasswordRequest,
     db: DBSession,
     current_user: CurrentUser,
 ):
-    """Change current user password."""
+    """Change current user password.
+
+    Credentials travel in the JSON body; query params would be written
+    verbatim to nginx/Cloudflare access logs.
+    """
     service = AuthService(db)
-    service.change_password(current_user.id, old_password, new_password)
+    service.change_password(current_user.id, data.old_password, data.new_password)
     return {"message": "Password changed successfully"}
 
 

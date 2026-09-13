@@ -41,7 +41,11 @@ function buildFormData(item: OfflineQueueItem): FormData {
     }
     const field = upload.fieldName || 'file';
     if (Platform.OS === 'web') {
-        throw new Error('Offline image upload not supported on web — re-upload when online');
+        // Platform limitation, not a transient failure — flag it so the worker
+        // parks the item instead of burning all retries on web.
+        const error = new Error('Offline image upload not supported on web — re-upload when online');
+        (error as any).permanent = true;
+        throw error;
     }
     // React Native multipart shape
     // @ts-expect-error RN FormData file

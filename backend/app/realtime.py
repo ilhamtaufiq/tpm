@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -50,6 +51,30 @@ class RealtimeManager:
 
     def set_loop(self, loop: Optional[asyncio.AbstractEventLoop]) -> None:
         self._loop = loop
+
+    async def authenticate(self, websocket: WebSocket, timeout: float = 10.0) -> Optional[str]:
+        """Read the auth frame and return a verified-ready token, or None.
+
+        The token travels in the first frame rather than the query string —
+        query strings are written verbatim to nginx/Cloudflare access logs.
+        """
+        try:
+            raw = await asyncio.wait_for(websocket.receive_text(), timeout=timeout)
+        except (asyncio.TimeoutError, WebSocketDisconnect):
+            return None
+
+        try:
+            frame = json.loads(raw)
+        except (ValueError, TypeError):
+            return None
+
+        if not isinstance(frame, dict) or frame.get("type") != "auth":
+            return None
+
+        token = frame.get("token") or ""
+        if token.startswith("Bearer "):
+            token = token.removeprefix("Bearer ").strip()
+        return token or None
 
     async def connect(self, websocket: WebSocket, token: str) -> RealtimeConnection:
         print("[Realtime] Incoming websocket connection")
