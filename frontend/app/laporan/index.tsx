@@ -19,6 +19,7 @@ import {
     FileText,
     PieChart,
     Layers,
+    ArrowRightLeft,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -80,6 +81,7 @@ const REPORT_GROUPS: ReportGroup[] = [
             { title: 'Laba Rugi', icon: BarChart3, path: '/laporan/laba-rugi', size: 'full', color: '#023C69', desc: 'Analisa performa keuangan bulanan' },
             { title: 'Perubahan Modal', icon: Wallet, path: '/laporan/perubahan-modal', size: 'full', color: '#7C3AED', desc: 'Mutasi modal & posisi kas' },
             { title: 'Neraca', icon: Scale, path: '/laporan/neraca', size: 'full', color: '#0F766E', desc: 'Posisi keuangan: aktiva, hutang & modal' },
+            { title: 'Arus Kas per Akun', icon: ArrowRightLeft, path: '/laporan/arus-kas-akun', size: 'full', color: '#0D9488', desc: 'Rincian mutasi kas masuk & keluar per akun' },
         ],
     },
 ];
