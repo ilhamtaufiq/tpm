@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Boxes,
@@ -246,14 +247,39 @@ interface SlipRow {
   status?: string;
 }
 
+type SdmPeriodMode = 'semua' | 'harian' | 'bulanan' | 'tahunan';
+
+const sdmPeriodRange = (mode: SdmPeriodMode, val: string) => {
+  if (mode === 'semua') return { dari: undefined, sampai: undefined, year: undefined };
+  if (mode === 'harian') return { dari: val, sampai: val, year: parseInt(val.slice(0, 4), 10) };
+  if (mode === 'tahunan') return { dari: `${val}-01-01`, sampai: `${val}-12-31`, year: parseInt(val, 10) };
+  const [y, m] = val.split('-').map(Number);
+  const last = new Date(y, m, 0).getDate();
+  const mStr = m < 10 ? `0${m}` : `${m}`;
+  return { dari: `${val}-01`, sampai: `${val}-${mStr}-${last}`, year: y };
+};
+
 export function Sdm() {
+  const [mode, setMode] = useState<SdmPeriodMode>('semua');
+  const [pval, setPval] = useState(() => new Date().toISOString().slice(0, 7));
+  const { dari, sampai, year } = sdmPeriodRange(mode, pval);
   const today = todayISO();
-  const absensi = useQuery({ queryKey: ['absensi', today], queryFn: () => domainService.absensiToday(today) });
-  const kasbon = useQuery({ queryKey: ['kasbon_out'], queryFn: domainService.kasbonOutstanding });
-  const now = new Date();
+
+  const pickPeriod = (m: SdmPeriodMode) => {
+    setMode(m);
+    const now = new Date();
+    setPval(m === 'harian' ? today : m === 'tahunan' ? String(now.getFullYear()) : now.toISOString().slice(0, 7));
+  };
+
+  const absensiDate = mode === 'harian' ? pval : today;
+  const absensi = useQuery({ queryKey: ['absensi', absensiDate], queryFn: () => domainService.absensiToday(absensiDate) });
+  const kasbon = useQuery({
+    queryKey: ['kasbon_out', mode, pval],
+    queryFn: () => domainService.kasbonOutstanding(dari && sampai ? { tanggal_dari: dari, tanggal_sampai: sampai } : undefined),
+  });
   const slip = useQuery({
-    queryKey: ['slip', now.getFullYear()],
-    queryFn: () => domainService.slipGajiStatus({ limit: 50, periode_tahun: now.getFullYear() }),
+    queryKey: ['slip', mode, pval],
+    queryFn: () => domainService.slipGajiStatus({ limit: 50, ...(year ? { periode_tahun: year } : {}) }),
   });
 
   const daily = (absensi.data ?? {}) as { summary?: Record<string, number> };
@@ -282,7 +308,53 @@ export function Sdm() {
 
   return (
     <div className="animate-fade-up space-y-5">
-      <PageHeader title="SDM" sub={`Absensi, kasbon & slip gaji · ${today}`} />
+      <PageHeader title="SDM" sub={`Absensi, kasbon & slip gaji · ${mode === 'semua' ? 'Semua Periode' : pval}`} />
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1">
+          {(['semua', 'harian', 'bulanan', 'tahunan'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => pickPeriod(m)}
+              className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition ${
+                mode === m ? 'bg-[#0B1F3A] text-white shadow' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {m === 'semua' ? 'Semua' : m === 'harian' ? 'Harian' : m === 'bulanan' ? 'Bulanan' : 'Tahunan'}
+            </button>
+          ))}
+        </div>
+        {mode !== 'semua' && (
+          <div className="flex items-center gap-2">
+            {mode === 'harian' && (
+              <input
+                type="date"
+                value={pval}
+                onChange={(e) => setPval(e.target.value)}
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-400"
+              />
+            )}
+            {mode === 'bulanan' && (
+              <input
+                type="month"
+                value={pval}
+                onChange={(e) => setPval(e.target.value)}
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-400"
+              />
+            )}
+            {mode === 'tahunan' && (
+              <input
+                type="number"
+                min="2020"
+                max="2030"
+                value={pval}
+                onChange={(e) => setPval(e.target.value)}
+                className="w-24 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-400"
+              />
+            )}
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Stat label="Hadir hari ini" value={str(hadir || '-')} sub={`${Object.values(daily.summary ?? {}).reduce((a, v) => a + num(v), 0)} tercatat`} icon={CalendarCheck2} tone="green" />
         <Stat label="Kasbon outstanding" value={formatCurrency(kasbonTotal)} sub={`${krows.length} belum lunas`} icon={HandCoins} tone="red" />
