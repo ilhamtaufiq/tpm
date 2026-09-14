@@ -177,6 +177,7 @@ def get_dashboard_summary(
             "sampai": tanggal_sampai.isoformat() if tanggal_sampai else None,
         },
         "bengkel": {
+            "total_penjualan": float(bengkel_summary["total_penjualan"]),
             "total_transaksi": bengkel_summary["total_transaksi"],
             "laba_kotor": bengkel_summary["total_laba_kotor"],
             "laba_bersih": float(lr_report["units"]["bengkel"]["laba_bersih"]),

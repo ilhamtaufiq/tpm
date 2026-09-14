@@ -59,9 +59,9 @@ export default function FinanceTab() {
 
     // Calculate totals
     const totalPendapatan = dashboard ? (
-        dashboard.bengkel.total_penjualan +
-        dashboard.mobil.total_penjualan +
-        dashboard.jasa_angkut.total_pendapatan
+        (dashboard.bengkel?.total_penjualan || 0) +
+        (dashboard.mobil?.total_penjualan || 0) +
+        (dashboard.jasa_angkut?.total_pendapatan || 0)
     ) : 0;
 
     const totalPengeluaran = dashboard?.pengeluaran.total || 0;
@@ -182,7 +182,7 @@ export default function FinanceTab() {
                             {/* Detailed Cash Breakdown */}
                             <View className="mt-2 space-y-1">
                                 <View className="flex-row justify-between">
-                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Kantor</Typography>
+                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Pusat</Typography>
                                     <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.kas_utama?.saldo || 0)}</Typography>
                                 </View>
                                 <View className="flex-row justify-between">
@@ -208,7 +208,7 @@ export default function FinanceTab() {
                                 <View className="w-9 h-9 bg-blue-50 rounded-xl items-center justify-center mr-2.5">
                                     <ArrowRightLeft size={18} color="#3B82F6" />
                                 </View>
-                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Bank BCA</Typography>
+                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Bank</Typography>
                             </View>
                             <Typography weight="bold" className="text-blue-600 text-base tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
                                 {formatCurrency(aggregateBank)}
@@ -217,16 +217,8 @@ export default function FinanceTab() {
                             {/* Detailed Bank Breakdown */}
                             <View className="mt-2 space-y-1">
                                 <View className="flex-row justify-between">
-                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Utama</Typography>
-                                    <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.bank_utama?.saldo || 0)}</Typography>
-                                </View>
-                                <View className="flex-row justify-between">
                                     <Typography className="text-textGray/40 text-[8px] uppercase font-bold">BCA</Typography>
-                                    <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.bank_bca?.saldo || 0)}</Typography>
-                                </View>
-                                <View className="flex-row justify-between">
-                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Lainnya</Typography>
-                                    <Typography className="text-textMain text-[8px] font-bold">{formatCurrency((dashboard?.kas_bank?.bank_mandiri?.saldo || 0) + (dashboard?.kas_bank?.bank_bri?.saldo || 0) + (dashboard?.kas_bank?.bank_lainnya?.saldo || 0))}</Typography>
+                                    <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.bank_utama?.saldo || 0)}</Typography>
                                 </View>
                             </View>
 
