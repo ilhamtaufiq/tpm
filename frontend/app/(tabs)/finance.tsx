@@ -272,28 +272,19 @@ export default function FinanceTab() {
                         <View className="flex-1">
                             <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-1">Pendapatan Omset</Typography>
                             <View className="flex-row items-center">
-                                <View className="w-6 h-6 bg-emerald-50 rounded-lg items-center justify-center mr-1.5">
+                                <View className="w-6 h-6 bg-emerald-50 rounded-lg items-center justify-center mr-2">
                                     <TrendingUp size={12} color="#10B981" />
                                 </View>
                                 <Typography className="text-textMain text-xs font-bold">{formatCurrency(totalPendapatan)}</Typography>
                             </View>
                         </View>
-                        <View className="flex-1 ml-2 pl-2 border-l border-gray-50">
-                            <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-1">HPP (Harga Beli)</Typography>
+                        <View className="flex-1 ml-4 pl-4 border-l border-gray-50">
+                            <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-1">Pengeluaran (HPP, Ops & SDM)</Typography>
                             <View className="flex-row items-center">
-                                <View className="w-6 h-6 bg-amber-50 rounded-lg items-center justify-center mr-1.5">
-                                    <TrendingDown size={12} color="#F59E0B" />
-                                </View>
-                                <Typography className="text-amber-700 text-xs font-bold">{formatCurrency(totalHpp)}</Typography>
-                            </View>
-                        </View>
-                        <View className="flex-1 ml-2 pl-2 border-l border-gray-50">
-                            <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-1">Beban Ops & SDM</Typography>
-                            <View className="flex-row items-center">
-                                <View className="w-6 h-6 bg-rose-50 rounded-lg items-center justify-center mr-1.5">
+                                <View className="w-6 h-6 bg-rose-50 rounded-lg items-center justify-center mr-2">
                                     <TrendingDown size={12} color="#EF4444" />
                                 </View>
-                                <Typography className="text-textMain text-xs font-bold">{formatCurrency(totalPengeluaranOpsGaji)}</Typography>
+                                <Typography className="text-textMain text-xs font-bold">{formatCurrency(totalPengeluaranLabaRugi)}</Typography>
                             </View>
                         </View>
                     </View>
