@@ -157,14 +157,52 @@ export function Mobil() {
 }
 
 // ── Angkut ───────────────────────────────────────────────────────
+type AngkutPeriodMode = 'semua' | 'harian' | 'bulanan' | 'tahunan';
+
+const angkutPeriodRange = (mode: AngkutPeriodMode, val: string) => {
+  if (mode === 'semua') return { dari: undefined, sampai: undefined };
+  if (mode === 'harian') return { dari: val, sampai: val };
+  if (mode === 'tahunan') return { dari: `${val}-01-01`, sampai: `${val}-12-31` };
+  const [y, m] = val.split('-').map(Number);
+  const last = new Date(y, m, 0).getDate();
+  const mStr = m < 10 ? `0${m}` : `${m}`;
+  return { dari: `${val}-01`, sampai: `${val}-${mStr}-${last}` };
+};
+
 export function Angkut() {
+  const [mode, setMode] = useState<AngkutPeriodMode>('semua');
+  const [pval, setPval] = useState(() => new Date().toISOString().slice(0, 7));
+  const { dari, sampai } = angkutPeriodRange(mode, pval);
+
+  const pickPeriod = (m: AngkutPeriodMode) => {
+    setMode(m);
+    const now = new Date();
+    setPval(m === 'harian' ? todayISO() : m === 'tahunan' ? String(now.getFullYear()) : now.toISOString().slice(0, 7));
+  };
+
   const sum = useQuery({
-    queryKey: ['muatan_sum'],
-    queryFn: () => domainService.muatanSummary({ tanggal_dari: monthStartISO(), tanggal_sampai: todayISO() }),
+    queryKey: ['muatan_sum', mode, pval],
+    queryFn: () => domainService.muatanSummary(dari && sampai ? { tanggal_dari: dari, tanggal_sampai: sampai } : undefined),
   });
+
+  const list = useQuery({
+    queryKey: ['muatan_list', mode, pval],
+    queryFn: () => domainService.muatanList({ limit: 50, ...(dari && sampai ? { tanggal_dari: dari, tanggal_sampai: sampai } : {}) }),
+  });
+
   const d = (sum.data ?? {}) as Row;
   const det = (d.details ?? {}) as Row;
-  const ritase = num(d.total_ritase ?? d.total_transaksi ?? d.total_muatan ?? 0);
+  const mList = (((list.data as Row | undefined)?.data ?? list.data ?? []) as Row[]).map((m) => ({
+    id: str(m.id ?? m.nomor_transaksi),
+    nomor: str(m.nomor_transaksi ?? m.kode ?? '-'),
+    tanggal: str(m.tanggal ?? m.created_at ?? '-').slice(0, 10),
+    supir: str(m.supir_nama ?? m.nama_supir ?? (m.supir as Row)?.nama ?? '-'),
+    rute: str(m.rute ?? `${str(m.lokasi_muat ?? '-')} → ${str(m.lokasi_bongkar ?? '-')}`),
+    pendapatan: num(m.total_tarif ?? m.nominal_ongkos ?? m.tarif ?? 0),
+    status: str(m.status_bayar ?? m.status ?? 'LUNAS'),
+  }));
+
+  const ritase = num(d.total_ritase ?? d.total_transaksi ?? d.total_muatan ?? mList.length);
 
   const costRows = [
     { label: 'BBM', value: num(det.biaya_bbm ?? d.biaya_bbm) },
@@ -176,7 +214,54 @@ export function Angkut() {
 
   return (
     <div className="animate-fade-up space-y-5">
-      <PageHeader title="Jasa Angkut" sub="Laba per trip, biaya & kasbon supir" />
+      <PageHeader title="Jasa Angkut" sub={`Ritase, pendapatan & biaya operasional · ${mode === 'semua' ? 'Semua Periode' : pval}`} />
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1">
+          {(['semua', 'harian', 'bulanan', 'tahunan'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => pickPeriod(m)}
+              className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition ${
+                mode === m ? 'bg-[#0B1F3A] text-white shadow' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {m === 'semua' ? 'Semua' : m === 'harian' ? 'Harian' : m === 'bulanan' ? 'Bulanan' : 'Tahunan'}
+            </button>
+          ))}
+        </div>
+        {mode !== 'semua' && (
+          <div className="flex items-center gap-2">
+            {mode === 'harian' && (
+              <input
+                type="date"
+                value={pval}
+                onChange={(e) => setPval(e.target.value)}
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-400"
+              />
+            )}
+            {mode === 'bulanan' && (
+              <input
+                type="month"
+                value={pval}
+                onChange={(e) => setPval(e.target.value)}
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-400"
+              />
+            )}
+            {mode === 'tahunan' && (
+              <input
+                type="number"
+                min="2020"
+                max="2030"
+                value={pval}
+                onChange={(e) => setPval(e.target.value)}
+                className="w-24 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-400"
+              />
+            )}
+          </div>
+        )}
+      </div>
+
       {sum.isLoading ? (
         <Loading />
       ) : (
@@ -223,6 +308,26 @@ export function Angkut() {
               </dl>
             </Card>
           </div>
+          <Card title={`Daftar Ritase (${mList.length})`} sub="Riwayat pengiriman & muatan" icon={Truck}>
+            {list.isLoading ? (
+              <Loading />
+            ) : mList.length === 0 ? (
+              <Empty text="Belum ada transaksi muatan pada periode ini." icon={Truck} />
+            ) : (
+              <DataTable
+                headers={['Nomor', 'Tanggal', 'Supir', 'Rute', 'Ongkos', 'Status']}
+                rightAlignFrom={4}
+                rows={mList.map((m) => [
+                  <span key="n" className="font-mono text-xs font-bold text-indigo-600">{m.nomor}</span>,
+                  <span key="t" className="text-xs text-slate-500">{m.tanggal}</span>,
+                  <span key="s" className="font-medium text-slate-800">{m.supir}</span>,
+                  <span key="r" className="text-xs text-slate-600">{m.rute}</span>,
+                  <span key="p" className="font-mono font-bold tabular-nums text-slate-800">{formatCurrency(m.pendapatan)}</span>,
+                  <span key="b"><Badge tone={m.status === 'LUNAS' ? 'ok' : 'warn'}>{m.status}</Badge></span>,
+                ])}
+              />
+            )}
+          </Card>
         </>
       )}
     </div>
