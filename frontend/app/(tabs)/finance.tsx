@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Image, StatusBar } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Image, StatusBar, Text } from 'react-native';
 import { useLocalSearchParams, useRouter, Redirect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -289,25 +289,59 @@ export default function FinanceTab() {
                     </View>
                 </View>
 
-                {/* Physical Cashflow Realization Banner */}
-                <View className="bg-gradient-to-br from-slate-900 to-primary p-5 rounded-[28px] shadow-md mb-10">
-                    <View className="flex-row justify-between items-center mb-3">
-                        <Typography className="text-white/60 text-[10px] uppercase font-bold tracking-widest">Realisasi Arus Kas (Physical Cashflow)</Typography>
-                        <Typography className="text-emerald-400 text-xs font-bold">Net: {formatCurrency(totalKasMasukReal - totalKasKeluarReal)}</Typography>
+                {/* Physical Cashflow Realization Banner (Bento Dark Style) */}
+                <View className="bg-slate-900 p-6 rounded-[32px] shadow-lg mb-10 border border-slate-800">
+                    <View className="flex-row justify-between items-center mb-4">
+                        <View className="flex-row items-center">
+                            <View className="w-8 h-8 bg-sky-500/10 rounded-xl items-center justify-center mr-3 border border-sky-500/20">
+                                <ArrowRightLeft size={16} color="#38BDF8" />
+                            </View>
+                            <Text style={{ color: '#CBD5E1', fontSize: 10, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase' }}>
+                                Realisasi Arus Kas
+                            </Text>
+                        </View>
+                        <View className={`px-3 py-1 rounded-full border ${(totalKasMasukReal - totalKasKeluarReal) >= 0 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'}`}>
+                            <Text style={{ color: (totalKasMasukReal - totalKasKeluarReal) >= 0 ? '#34D399' : '#F87171', fontSize: 10, fontWeight: '700' }}>
+                                Net: {(totalKasMasukReal - totalKasKeluarReal) >= 0 ? '+ ' : ''}{formatCurrency(totalKasMasukReal - totalKasKeluarReal)}
+                            </Text>
+                        </View>
                     </View>
-                    <View className="flex-row justify-between pt-2 border-t border-white/10">
+
+                    <View className="flex-row justify-between pt-4 border-t border-slate-800">
                         <View className="flex-1">
-                            <Typography className="text-white/40 text-[8px] uppercase font-bold mb-0.5">Uang Masuk Fisik</Typography>
-                            <Typography className="text-emerald-400 text-sm font-bold">{formatCurrency(totalKasMasukReal)}</Typography>
+                            <Text style={{ color: '#94A3B8', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', marginBottom: 6 }}>
+                                Uang Masuk Fisik
+                            </Text>
+                            <View className="flex-row items-center">
+                                <View className="w-7 h-7 bg-emerald-500/10 rounded-lg items-center justify-center mr-2 border border-emerald-500/20">
+                                    <TrendingUp size={14} color="#34D399" />
+                                </View>
+                                <Text style={{ color: '#34D399', fontSize: 14, fontWeight: '700' }}>
+                                    {formatCurrency(totalKasMasukReal)}
+                                </Text>
+                            </View>
                         </View>
-                        <View className="flex-1 ml-4 pl-4 border-l border-white/10">
-                            <Typography className="text-white/40 text-[8px] uppercase font-bold mb-0.5">Uang Keluar Fisik</Typography>
-                            <Typography className="text-rose-400 text-sm font-bold">{formatCurrency(totalKasKeluarReal)}</Typography>
+                        <View className="flex-1 ml-4 pl-4 border-l border-slate-800">
+                            <Text style={{ color: '#94A3B8', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', marginBottom: 6 }}>
+                                Uang Keluar Fisik
+                            </Text>
+                            <View className="flex-row items-center">
+                                <View className="w-7 h-7 bg-rose-500/10 rounded-lg items-center justify-center mr-2 border border-rose-500/20">
+                                    <TrendingDown size={14} color="#F87171" />
+                                </View>
+                                <Text style={{ color: '#F87171', fontSize: 14, fontWeight: '700' }}>
+                                    {formatCurrency(totalKasKeluarReal)}
+                                </Text>
+                            </View>
                         </View>
                     </View>
-                    <Typography className="text-white/40 text-[8px] italic mt-3">
-                        *Catatan: Pencairan Kasbon dicatat di Arus Kas Keluar & Piutang SDM (tidak memotong Laba Rugi).
-                    </Typography>
+
+                    <View className="mt-4 pt-3 border-t border-slate-800/80 flex-row items-center">
+                        <AlertTriangle size={13} color="#94A3B8" />
+                        <Text style={{ color: '#94A3B8', fontSize: 9, fontWeight: '500', marginLeft: 8, flex: 1 }}>
+                            Pencairan Kasbon masuk Arus Kas Keluar & Piutang SDM (tidak memotong Laba Rugi).
+                        </Text>
+                    </View>
                 </View>
 
                 {/* Wallet Cards */}
