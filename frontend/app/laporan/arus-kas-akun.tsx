@@ -9,14 +9,15 @@ import { id as localeID } from 'date-fns/locale';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { formatCurrency } from '../../utils/format';
-import { useLabaRugiReport } from '../../hooks/useKeuangan';
-import { LabaRugiReport } from '../../types/reports';
+import { useLabaRugiReport, useCapitalReport } from '../../hooks/useKeuangan';
+import { LabaRugiReport, CapitalReport } from '../../types/reports';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import {
     ReportPageHeader,
     ReportDateControls,
     ReportFilterType,
     KasArusJenisBreakdown,
+    KasJenisBreakdown,
 } from '../../components/laporan';
 
 export default function ArusKasAkunScreen() {
@@ -58,6 +59,7 @@ export default function ArusKasAkunScreen() {
     }, [date, filterType]);
 
     const { data, isLoading, refetch: fetchData } = useLabaRugiReport(reportParams);
+    const { data: capitalData, refetch: fetchCapital } = useCapitalReport(reportParams);
     const reportData = data as LabaRugiReport | undefined;
 
     const flows = reportData?.kas_per_jenis || [];
@@ -164,9 +166,9 @@ export default function ArusKasAkunScreen() {
                             <View className="bg-teal-700 px-6 py-4 flex-row items-center justify-between w-full">
                                 <View className="flex-row items-center">
                                     <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center mr-3 border border-white/10">
-                                        <Wallet size={18} color="white" />
+                                        <ArrowRightLeft size={18} color="white" />
                                     </View>
-                                    <Typography variant="h4" weight="bold" className="text-white tracking-tight">Rincian Arus Kas per Akun</Typography>
+                                    <Typography variant="h4" weight="bold" className="text-white tracking-tight">Rincian Mutasi Arus Kas per Akun</Typography>
                                 </View>
                                 <View className="bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
                                     <Typography weight="bold" className="text-white text-[10px] uppercase tracking-widest">{flows.length} Akun</Typography>
@@ -186,6 +188,30 @@ export default function ArusKasAkunScreen() {
                                 )}
                             </View>
                         </Card>
+
+                        {/* Ending Cash Position per Account */}
+                        {((capitalData as any)?.info?.aset?.kas_jenis_details?.length || 0) > 0 && (
+                            <Card className="mb-6 overflow-hidden border-0 shadow-sm bg-white rounded-[28px] w-full">
+                                <View className="bg-slate-800 px-6 py-4 flex-row items-center justify-between w-full">
+                                    <View className="flex-row items-center">
+                                        <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center mr-3 border border-white/10">
+                                            <Wallet size={18} color="white" />
+                                        </View>
+                                        <Typography variant="h4" weight="bold" className="text-white tracking-tight">Posisi Saldo Kas per Akun</Typography>
+                                    </View>
+                                    <View className="bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
+                                        <Typography weight="bold" className="text-white text-[10px] uppercase tracking-widest">Saldo Akhir</Typography>
+                                    </View>
+                                </View>
+
+                                <View className="p-6 w-full">
+                                    <Typography variant="caption" className="text-slate-400 text-[11px] mb-3">
+                                        Saldo posisi kas & bank per akun pada akhir periode {formattedDate}.
+                                    </Typography>
+                                    <KasJenisBreakdown details={(capitalData as any)?.info?.aset?.kas_jenis_details} />
+                                </View>
+                            </Card>
+                        )}
                     </>
                 )}
             </ScrollView>
