@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Image, StatusBar } from 'react-native';
 import { useLocalSearchParams, useRouter, Redirect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,17 +7,23 @@ import { getFileUrl } from '../../utils/image';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
-import { RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowRightLeft, CircleDollarSign, BarChart3, ChevronRight, AlertTriangle, Users, ArrowUpCircle, ArrowDownCircle, Landmark } from 'lucide-react-native';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowRightLeft, CircleDollarSign, BarChart3, ChevronRight, AlertTriangle, Users, ArrowUpCircle, ArrowDownCircle, Landmark, ChevronLeft, Calendar } from 'lucide-react-native';
 import { formatCurrency } from '../../utils/format';
 import { keuanganService, PiutangSummary, KasBankAllBalances } from '../../services/keuangan';
 import { useDashboardSummary, usePiutangSummary, useHutangSummary, useInvestorDisbursementSummary } from '../../hooks/useKeuangan';
 import { SkeletonStats, SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { format, subDays, addDays, subMonths, addMonths, subYears, addYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { id as localeID } from 'date-fns/locale';
+
+type FinanceFilterType = 'all' | 'daily' | 'monthly' | 'yearly';
 
 export default function FinanceTab() {
     const insets = useSafeAreaInsets();
     const [refreshing, setRefreshing] = useState(false);
+    const [filterType, setFilterType] = useState<FinanceFilterType>('monthly');
+    const [date, setDate] = useState(new Date());
     const { user } = useAuthStore();
     const router = useRouter();
     const { quickAction } = useLocalSearchParams<{ quickAction?: string }>();
@@ -33,12 +39,50 @@ export default function FinanceTab() {
         router.push(quickAction === 'mutasi' ? '/finance/mutasi' : '/finance/expenses');
     }, [quickAction, router]);
 
+    const handlePrev = useCallback(() => {
+        setDate(prev => {
+            if (filterType === 'daily') return subDays(prev, 1);
+            if (filterType === 'monthly') return subMonths(prev, 1);
+            return subYears(prev, 1);
+        });
+    }, [filterType]);
+
+    const handleNext = useCallback(() => {
+        setDate(prev => {
+            if (filterType === 'daily') return addDays(prev, 1);
+            if (filterType === 'monthly') return addMonths(prev, 1);
+            return addYears(prev, 1);
+        });
+    }, [filterType]);
+
+    const formattedDate = useMemo(() => {
+        if (filterType === 'all') return 'Semua Periode Data';
+        if (filterType === 'daily') return format(date, 'd MMMM yyyy', { locale: localeID });
+        if (filterType === 'monthly') return format(date, 'MMMM yyyy', { locale: localeID });
+        return format(date, 'yyyy', { locale: localeID });
+    }, [date, filterType]);
+
+    const dashboardParams = useMemo(() => {
+        if (filterType === 'all') {
+            return {
+                tanggal_dari: '2020-01-01',
+                tanggal_sampai: format(new Date(), 'yyyy-MM-dd')
+            };
+        }
+        const start = filterType === 'daily' ? date : (filterType === 'monthly' ? startOfMonth(date) : startOfYear(date));
+        const end = filterType === 'daily' ? date : (filterType === 'monthly' ? endOfMonth(date) : endOfYear(date));
+        return {
+            tanggal_dari: format(start, 'yyyy-MM-dd'),
+            tanggal_sampai: format(end, 'yyyy-MM-dd')
+        };
+    }, [date, filterType]);
+
     if (!isAdmin) {
         return <Redirect href="/(tabs)/home" />;
     }
 
     // API Hooks - Conditional query enabling based on auth state
-    const { data: dashboard, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useDashboardSummary(undefined);
+    const { data: dashboard, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useDashboardSummary(dashboardParams);
     const { data: piutangSummary, isLoading: isLoadingPiutang, refetch: refetchPiutang } = usePiutangSummary(undefined);
     const { data: hutangSummary, isLoading: isLoadingHutang, refetch: refetchHutang } = useHutangSummary();
     const { data: investorSummary, refetch: refetchInvestor } = useInvestorDisbursementSummary(undefined);
@@ -133,6 +177,66 @@ export default function FinanceTab() {
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 32) }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
+                {/* Period Filter Bar */}
+                <View className="bg-white border border-gray-100 rounded-3xl p-4 mb-6 shadow-sm">
+                    <View className="flex-row bg-gray-50 p-1 rounded-2xl mb-3">
+                        {[
+                            { key: 'daily', label: 'Hari' },
+                            { key: 'monthly', label: 'Bulan' },
+                            { key: 'yearly', label: 'Tahun' },
+                            { key: 'all', label: 'Semua' },
+                        ].map((item) => {
+                            const isActive = filterType === item.key;
+                            return (
+                                <Pressable
+                                    key={item.key}
+                                    onPress={() => setFilterType(item.key as FinanceFilterType)}
+                                    className={`flex-1 py-2 items-center rounded-xl ${isActive ? 'bg-white border border-gray-100' : ''}`}
+                                >
+                                    <Typography
+                                        variant="caption"
+                                        weight="bold"
+                                        className={isActive ? 'text-primary' : 'text-gray-400'}
+                                    >
+                                        {item.label}
+                                    </Typography>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+
+                    {filterType !== 'all' ? (
+                        <View className="flex-row justify-between items-center px-1">
+                            <Pressable
+                                onPress={handlePrev}
+                                className="w-9 h-9 bg-gray-50 rounded-full items-center justify-center border border-gray-100 active:bg-gray-100"
+                            >
+                                <ChevronLeft size={18} color="#1C1C1C" />
+                            </Pressable>
+
+                            <View className="flex-row items-center">
+                                <Calendar size={15} color="#023C69" />
+                                <Typography variant="body2" weight="bold" className="text-textMain ml-2 capitalize">
+                                    {formattedDate}
+                                </Typography>
+                            </View>
+
+                            <Pressable
+                                onPress={handleNext}
+                                className="w-9 h-9 bg-gray-50 rounded-full items-center justify-center border border-gray-100 active:bg-gray-100"
+                            >
+                                <ChevronRight size={18} color="#1C1C1C" />
+                            </Pressable>
+                        </View>
+                    ) : (
+                        <View className="items-center py-1">
+                            <Typography variant="caption" weight="bold" className="text-gray-400">
+                                Akumulasi Seluruh Data Terdaftar
+                            </Typography>
+                        </View>
+                    )}
+                </View>
+
                 {/* Main Profit Card (Standard Bento Style) */}
                 <View className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm mb-10">
                     <Typography className="text-textGray/40 text-[10px] uppercase font-bold tracking-[2px] mb-1">Estimasi Laba Bersih</Typography>
