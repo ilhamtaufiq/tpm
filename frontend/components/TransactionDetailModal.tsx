@@ -170,9 +170,9 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                         // Fetch Sub-Details if reference exists
                         if (data.referensi_id) {
                             try {
-                                const source = data.sumber;
+                                const source = String(data.sumber || item.source || '').toUpperCase();
                                 const refId = data.referensi_id;
-                                
+
                                 if (source === 'KASBON') {
                                     const kasbon = await sdmService.getKasbon(refId);
                                     setSubDetails({ type: 'kasbon', ...kasbon });
@@ -392,13 +392,16 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                         </BentoSection>
                     );
                 case 'workshop':
+                    const platW = subDetails.nomor_plat || subDetails.plat_nomor || '';
+                    const tipeW = subDetails.jenis_kendaraan || subDetails.tipe_motor || '';
+                    const unitW = platW || tipeW ? `${platW}${tipeW ? ` • ${tipeW}` : ''}` : '-';
                     return (
                         <BentoSection title="Detail Bengkel">
-                            <DetailRow label="Unit" value={`${subDetails.plat_nomor} - ${subDetails.tipe_motor || ''}`} icon={Car} color="#3B82F6" />
-                            <DetailRow label="Customer" value={subDetails.nama_customer || '-'} icon={User} color="#F59E0B" />
-                            <DetailRow label="Mekanik" value={subDetails.mekanik_nama || '-'} icon={User} color="#8B5CF6" />
-                            <DetailRow label="Kilometer" value={subDetails.kilometer ? `${subDetails.kilometer} KM` : '-'} icon={Hash} color="#6366F1" />
-                            <DetailRow label="Status" value={subDetails.status_pengerjaan} color="#6366F1" />
+                            <DetailRow label="Unit" value={unitW} icon={Car} color="#3B82F6" />
+                            <DetailRow label="Customer" value={subDetails.nama_customer || subDetails.customer_nama || subDetails.customer?.nama || '-'} icon={User} color="#F59E0B" />
+                            {subDetails.mekanik_nama ? <DetailRow label="Mekanik" value={subDetails.mekanik_nama} icon={User} color="#8B5CF6" /> : null}
+                            {subDetails.kilometer ? <DetailRow label="Kilometer" value={`${subDetails.kilometer} KM`} icon={Hash} color="#6366F1" /> : null}
+                            <DetailRow label="Status" value={subDetails.status_pengerjaan || subDetails.status_bayar || 'SELESAI'} color="#6366F1" />
                         </BentoSection>
                     );
                 default:
@@ -412,11 +415,11 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
         // Determine Account display name
         let accountName = '-';
         if (details?.jenis) {
-            accountName = details.jenis.replace('BANK_', '').replace('KAS_', '').replace('_', ' ');
+            accountName = String(details.jenis).replace('BANK_', '').replace('KAS_', '').replace(/_/g, ' ');
         } else if (details?.unit) {
-            accountName = details.unit.replace('_', ' ');
+            accountName = String(details.unit).replace(/_/g, ' ');
         } else if (item.status && item.type === 'financial') {
-            accountName = item.status.replace('BANK_', '').replace('KAS_', '').replace('_', ' ');
+            accountName = String(item.status).replace('BANK_', '').replace('KAS_', '').replace(/_/g, ' ');
         }
 
         // Determine Type display name
