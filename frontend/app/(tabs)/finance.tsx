@@ -144,6 +144,24 @@ export default function FinanceTab() {
         (dashboard.kas_bank.bank_lainnya?.total_masuk_bulan_ini || 0)
     ) : 0;
 
+    const aggregateCashOut = dashboard?.kas_bank ? (
+        (dashboard.kas_bank.kas_utama?.total_keluar_bulan_ini || 0) +
+        (dashboard.kas_bank.kas_unit_bengkel?.total_keluar_bulan_ini || 0) +
+        (dashboard.kas_bank.kas_unit_jasa_angkut?.total_keluar_bulan_ini || 0) +
+        (dashboard.kas_bank.kas_unit_mobil?.total_keluar_bulan_ini || 0)
+    ) : 0;
+
+    const aggregateBankOut = dashboard?.kas_bank ? (
+        (dashboard.kas_bank.bank_bca?.total_keluar_bulan_ini || 0) +
+        (dashboard.kas_bank.bank_utama?.total_keluar_bulan_ini || 0) +
+        (dashboard.kas_bank.bank_mandiri?.total_keluar_bulan_ini || 0) +
+        (dashboard.kas_bank.bank_bri?.total_keluar_bulan_ini || 0) +
+        (dashboard.kas_bank.bank_lainnya?.total_keluar_bulan_ini || 0)
+    ) : 0;
+
+    const totalKasMasukReal = aggregateCashIn + aggregateBankIn;
+    const totalKasKeluarReal = aggregateCashOut + aggregateBankOut;
+
     return (
         <View className="flex-1 bg-background overflow-hidden">
             <StatusBar barStyle="dark-content" />
@@ -238,15 +256,20 @@ export default function FinanceTab() {
                 </View>
 
                 {/* Main Profit Card (Standard Bento Style) */}
-                <View className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm mb-10">
-                    <Typography className="text-textGray/40 text-[10px] uppercase font-bold tracking-[2px] mb-1">Estimasi Laba Bersih</Typography>
+                <View className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm mb-6">
+                    <View className="flex-row justify-between items-center mb-1">
+                        <Typography className="text-textGray/40 text-[10px] uppercase font-bold tracking-[2px]">Estimasi Laba Bersih Operasional</Typography>
+                        <View className="bg-primary/10 px-2 py-0.5 rounded-full">
+                            <Typography className="text-primary text-[9px] font-bold">Laba Rugi</Typography>
+                        </View>
+                    </View>
                     <Typography variant="h1" weight="bold" className="text-textMain text-3xl mb-6 tracking-tighter">
                         {formatCurrency(totalLabaBersih)}
                     </Typography>
 
                     <View className="flex-row justify-between pt-5 border-t border-gray-50">
                         <View className="flex-1">
-                            <Typography className="text-textGray/30 text-[9px] uppercase font-bold mb-1">Pemasukan</Typography>
+                            <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-1">Pendapatan Omset</Typography>
                             <View className="flex-row items-center">
                                 <View className="w-6 h-6 bg-emerald-50 rounded-lg items-center justify-center mr-2">
                                     <TrendingUp size={12} color="#10B981" />
@@ -255,7 +278,7 @@ export default function FinanceTab() {
                             </View>
                         </View>
                         <View className="flex-1 ml-4 pl-4 border-l border-gray-50">
-                            <Typography className="text-textGray/30 text-[9px] uppercase font-bold mb-1">Pengeluaran</Typography>
+                            <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-1">Beban Ops & SDM</Typography>
                             <View className="flex-row items-center">
                                 <View className="w-6 h-6 bg-rose-50 rounded-lg items-center justify-center mr-2">
                                     <TrendingDown size={12} color="#EF4444" />
@@ -264,6 +287,27 @@ export default function FinanceTab() {
                             </View>
                         </View>
                     </View>
+                </View>
+
+                {/* Physical Cashflow Realization Banner */}
+                <View className="bg-gradient-to-br from-slate-900 to-primary p-5 rounded-[28px] shadow-md mb-10">
+                    <View className="flex-row justify-between items-center mb-3">
+                        <Typography className="text-white/60 text-[10px] uppercase font-bold tracking-widest">Realisasi Arus Kas (Physical Cashflow)</Typography>
+                        <Typography className="text-emerald-400 text-xs font-bold">Net: {formatCurrency(totalKasMasukReal - totalKasKeluarReal)}</Typography>
+                    </View>
+                    <View className="flex-row justify-between pt-2 border-t border-white/10">
+                        <View className="flex-1">
+                            <Typography className="text-white/40 text-[8px] uppercase font-bold mb-0.5">Uang Masuk Fisik</Typography>
+                            <Typography className="text-emerald-400 text-sm font-bold">{formatCurrency(totalKasMasukReal)}</Typography>
+                        </View>
+                        <View className="flex-1 ml-4 pl-4 border-l border-white/10">
+                            <Typography className="text-white/40 text-[8px] uppercase font-bold mb-0.5">Uang Keluar Fisik</Typography>
+                            <Typography className="text-rose-400 text-sm font-bold">{formatCurrency(totalKasKeluarReal)}</Typography>
+                        </View>
+                    </View>
+                    <Typography className="text-white/40 text-[8px] italic mt-3">
+                        *Catatan: Pencairan Kasbon dicatat di Arus Kas Keluar & Piutang SDM (tidak memotong Laba Rugi).
+                    </Typography>
                 </View>
 
                 {/* Wallet Cards */}
