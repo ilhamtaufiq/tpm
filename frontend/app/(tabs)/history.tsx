@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, TextInput, Image, StatusBar } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, TextInput, Image, StatusBar, Modal } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getFileUrl } from '../../utils/image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
 import { Header } from '../../components/ui/Header';
 import {
     Search,
@@ -17,11 +18,14 @@ import {
     HelpCircle,
     Filter,
     Calendar,
-    User
+    User,
+    ChevronLeft,
+    ChevronRight,
+    X
 } from 'lucide-react-native';
 import { router, Redirect, useLocalSearchParams } from 'expo-router';
 import { useUnitWalletHistory, useRecentActivity } from '../../hooks/useKeuangan';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, subDays, addDays, subMonths, addMonths, subYears, addYears } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { ActivityItem, KasBankTransaction } from '../../services/keuangan';
 import { formatCurrency } from '../../utils/format';
@@ -110,6 +114,27 @@ export default function HistoryTab() {
     const [search, setSearch] = useState('');
     const [selectedSource, setSelectedSource] = useState<string>('all');
     const [selectedType, setSelectedType] = useState<'all' | 'in' | 'out'>('all');
+    const [date, setDate] = useState(new Date());
+    const [dateMode, setDateMode] = useState<'all' | 'daily' | 'monthly' | 'yearly'>('all');
+    const [datePickerModalOpen, setDatePickerModalOpen] = useState(false);
+
+    const handlePrevDate = () => {
+        if (dateMode === 'monthly') setDate(curr => subMonths(curr, 1));
+        else if (dateMode === 'yearly') setDate(curr => subYears(curr, 1));
+        else setDate(curr => subDays(curr, 1));
+    };
+
+    const handleNextDate = () => {
+        if (dateMode === 'monthly') setDate(curr => addMonths(curr, 1));
+        else if (dateMode === 'yearly') setDate(curr => addYears(curr, 1));
+        else setDate(curr => addDays(curr, 1));
+    };
+
+    const getFormattedDateText = () => {
+        if (dateMode === 'monthly') return format(date, 'MMMM yyyy', { locale: localeID });
+        if (dateMode === 'yearly') return `Tahun ${format(date, 'yyyy')}`;
+        return format(date, 'dd MMMM yyyy', { locale: localeID });
+    };
     const { user } = useAuthStore();
     const { unit, focus_id, focus_entity } = useLocalSearchParams<{ unit?: string; focus_id?: string; focus_entity?: string }>();
     const unitKey = Array.isArray(unit) ? unit[0] : unit;
@@ -215,11 +240,34 @@ export default function HistoryTab() {
             if (role === 'MOBIL' && source !== 'jual_beli_mobil' && source !== 'pembelian_mobil') return false;
         }
 
+        // Apply Date Filter
+        if (dateMode !== 'all' && item.timestamp) {
+            const itemDate = new Date(item.timestamp);
+            if (dateMode === 'daily') {
+                const isSameDay = itemDate.getFullYear() === date.getFullYear() &&
+                                  itemDate.getMonth() === date.getMonth() &&
+                                  itemDate.getDate() === date.getDate();
+                if (!isSameDay) return false;
+            } else if (dateMode === 'monthly') {
+                const isSameMonth = itemDate.getFullYear() === date.getFullYear() &&
+                                    itemDate.getMonth() === date.getMonth();
+                if (!isSameMonth) return false;
+            } else if (dateMode === 'yearly') {
+                const isSameYear = itemDate.getFullYear() === date.getFullYear();
+                if (!isSameYear) return false;
+            }
+        }
+
         // Apply Source Filter
         if (selectedSource !== 'all') {
-            const itemSource = item.source?.toLowerCase();
+            const itemSource = item.source?.toLowerCase() || '';
+            const itemTitle = (item.title || '').toLowerCase();
+            const itemRef = (item.ref_number || '').toLowerCase();
             if (selectedSource === 'gaji') {
-                if (itemSource !== 'gaji' && itemSource !== 'kasbon') return false;
+                const isSdm = itemSource === 'gaji' || itemSource === 'kasbon' ||
+                              itemTitle.includes('kasbon') || itemTitle.includes('gaji') ||
+                              itemRef.startsWith('ksb') || itemRef.startsWith('gji');
+                if (!isSdm) return false;
             } else if (selectedSource === 'jual_beli_mobil') {
                 if (itemSource !== 'jual_beli_mobil' && itemSource !== 'pembelian_mobil') return false;
             } else {
@@ -295,6 +343,62 @@ export default function HistoryTab() {
                         />
                     </View>
                 </View>
+            </View>
+
+            {/* Date Filter Bar */}
+            <View className="mt-3">
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 8 }}>
+                    {[
+                        { id: 'all', label: 'Semua Waktu' },
+                        { id: 'daily', label: 'Harian' },
+                        { id: 'monthly', label: 'Bulanan' },
+                        { id: 'yearly', label: 'Tahunan' },
+                    ].map((m) => (
+                        <Pressable
+                            key={m.id}
+                            onPress={() => {
+                                setDateMode(m.id as any);
+                                if (m.id !== 'all' && !date) setDate(new Date());
+                            }}
+                            className={`px-4 py-2 rounded-xl border ${dateMode === m.id ? 'bg-primary border-primary shadow-sm' : 'bg-white border-gray-100 active:bg-gray-50'}`}
+                        >
+                            <Typography className={`text-xs font-bold ${dateMode === m.id ? 'text-white' : 'text-gray-500'}`}>
+                                {m.label}
+                            </Typography>
+                        </Pressable>
+                    ))}
+                </ScrollView>
+
+                {dateMode !== 'all' && (
+                    <View className="px-6 mt-2">
+                        <View className="bg-white border border-gray-100 rounded-2xl p-2 flex-row justify-between items-center shadow-sm">
+                            <Pressable
+                                onPress={handlePrevDate}
+                                className="w-9 h-9 bg-gray-50 rounded-xl items-center justify-center border border-gray-100 active:scale-95"
+                            >
+                                <ChevronLeft size={18} color="#1C1C1C" />
+                            </Pressable>
+
+                            <Pressable
+                                onPress={() => setDatePickerModalOpen(true)}
+                                className="items-center flex-1 mx-2 py-1 flex-row justify-center active:opacity-70"
+                            >
+                                <Calendar size={15} color="#023C69" />
+                                <Typography variant="body2" weight="bold" className="text-textMain ml-2 text-xs">
+                                    {getFormattedDateText()}
+                                </Typography>
+                                <ChevronRight size={14} color="#9CA3AF" className="ml-1" />
+                            </Pressable>
+
+                            <Pressable
+                                onPress={handleNextDate}
+                                className="w-9 h-9 bg-gray-50 rounded-xl items-center justify-center border border-gray-100 active:scale-95"
+                            >
+                                <ChevronRight size={18} color="#1C1C1C" />
+                            </Pressable>
+                        </View>
+                    </View>
+                )}
             </View>
 
             {/* Type & Source Filters */}
@@ -436,6 +540,144 @@ export default function HistoryTab() {
                 visible={modalVisible}
                 onClose={() => setModalVisible(false)}
             />
+
+            {/* Date Filter Modal */}
+            <Modal
+                visible={datePickerModalOpen}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setDatePickerModalOpen(false)}
+            >
+                <View className="flex-1 justify-center items-center bg-black/50 px-6">
+                    <View className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl border border-gray-100">
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Typography variant="h3" weight="bold">Filter Tanggal & Periode</Typography>
+                            <Pressable onPress={() => setDatePickerModalOpen(false)} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
+                                <X size={18} color="#4B5563" />
+                            </Pressable>
+                        </View>
+
+                        {/* Mode Selector */}
+                        <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                            Tipe Filter
+                        </Typography>
+                        <View className="flex-row gap-2 mb-5">
+                            {[
+                                { id: 'all', label: 'Semua' },
+                                { id: 'daily', label: 'Harian' },
+                                { id: 'monthly', label: 'Bulanan' },
+                                { id: 'yearly', label: 'Tahunan' },
+                            ].map((m) => (
+                                <Pressable
+                                    key={m.id}
+                                    onPress={() => {
+                                        setDateMode(m.id as any);
+                                        if (m.id !== 'all' && !date) setDate(new Date());
+                                    }}
+                                    className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                >
+                                    <Typography weight="bold" className={`text-xs ${dateMode === m.id ? 'text-white' : 'text-gray-600'}`}>
+                                        {m.label}
+                                    </Typography>
+                                </Pressable>
+                            ))}
+                        </View>
+
+                        {/* Month Selector Grid for Monthly */}
+                        {dateMode === 'monthly' && (
+                            <View className="mb-4">
+                                <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                                    Pilih Bulan ({format(date, 'yyyy')})
+                                </Typography>
+                                <View className="flex-row flex-wrap gap-2">
+                                    {Array.from({ length: 12 }, (_, i) => {
+                                        const monthDate = new Date(date.getFullYear(), i, 1);
+                                        const isSelected = date.getMonth() === i;
+                                        return (
+                                            <Pressable
+                                                key={i}
+                                                onPress={() => setDate(monthDate)}
+                                                className={`w-[30%] py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-emerald-600 border-emerald-600' : 'bg-gray-50 border-gray-100'}`}
+                                            >
+                                                <Typography weight="bold" className={`text-xs ${isSelected ? 'text-white' : 'text-textMain'}`}>
+                                                    {format(monthDate, 'MMM', { locale: localeID })}
+                                                </Typography>
+                                            </Pressable>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Year Selector for Monthly/Yearly */}
+                        {(dateMode === 'monthly' || dateMode === 'yearly') && (
+                            <View className="mb-4">
+                                <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                                    Pilih Tahun
+                                </Typography>
+                                <View className="flex-row gap-2">
+                                    {[2024, 2025, 2026, 2027, 2028].map((yr) => {
+                                        const isSelected = date.getFullYear() === yr;
+                                        return (
+                                            <Pressable
+                                                key={yr}
+                                                onPress={() => setDate(new Date(yr, date.getMonth(), 1))}
+                                                className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                            >
+                                                <Typography weight="bold" className={`text-xs ${isSelected ? 'text-white' : 'text-textMain'}`}>
+                                                    {yr}
+                                                </Typography>
+                                            </Pressable>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Quick Presets */}
+                        <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                            Pintas Cepat
+                        </Typography>
+                        <View className="flex-row gap-2 mb-5">
+                            <Pressable
+                                onPress={() => {
+                                    setDate(new Date());
+                                    setDateMode('daily');
+                                }}
+                                className="flex-1 py-2 bg-blue-50 border border-blue-100 rounded-xl items-center"
+                            >
+                                <Typography className="text-blue-700 text-xs font-bold">Hari Ini</Typography>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => {
+                                    setDate(new Date());
+                                    setDateMode('monthly');
+                                }}
+                                className="flex-1 py-2 bg-emerald-50 border border-emerald-100 rounded-xl items-center"
+                            >
+                                <Typography className="text-emerald-700 text-xs font-bold">Bulan Ini</Typography>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => {
+                                    setDate(new Date());
+                                    setDateMode('yearly');
+                                }}
+                                className="flex-1 py-2 bg-amber-50 border border-amber-100 rounded-xl items-center"
+                            >
+                                <Typography className="text-amber-700 text-xs font-bold">Tahun Ini</Typography>
+                            </Pressable>
+                        </View>
+
+                        <Button
+                            variant="primary"
+                            onPress={() => setDatePickerModalOpen(false)}
+                            className="w-full py-3 rounded-2xl"
+                        >
+                            Terapkan Filter
+                        </Button>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }

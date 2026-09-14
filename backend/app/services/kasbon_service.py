@@ -150,7 +150,7 @@ class KasbonService:
                     tanggal=data.tanggal,
                     tipe=KasBankType.KELUAR,
                     nominal=p_nominal,
-                    sumber=kasbon.unit,
+                    sumber=KasBankSource.KASBON,
                     metode_bayar=p_metode,
                     kas_jenis=p_kas_jenis, # Pass the explicit cash account type (e.g. KAS_UTAMA)
                     referensi_id=kasbon.id,
@@ -164,7 +164,7 @@ class KasbonService:
                 tanggal=data.tanggal,
                 tipe=KasBankType.KELUAR,
                 nominal=data.nominal,
-                sumber=kasbon.unit,
+                sumber=KasBankSource.KASBON,
                 metode_bayar=data.metode_bayar or PaymentMethod.TUNAI,
                 referensi_id=kasbon.id,
                 nomor_referensi=kasbon.nomor_kasbon,
