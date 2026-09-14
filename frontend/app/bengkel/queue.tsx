@@ -71,7 +71,7 @@ export default function QueueScreen() {
 
     // Filters and search state
     const [date, setDate] = useState(new Date());
-    const [dateMode, setDateMode] = useState<'daily' | 'monthly' | 'yearly'>('daily');
+    const [dateMode, setDateMode] = useState<'all' | 'daily' | 'monthly' | 'yearly'>('daily');
     const [datePickerModalOpen, setDatePickerModalOpen] = useState(false);
     const [queueSearchQuery, setQueueSearchQuery] = useState('');
     const [queueWorkStatusFilter, setQueueWorkStatusFilter] = useState<'ALL' | 'antre' | 'proses' | 'selesai' | 'batal'>('ALL');
@@ -100,6 +100,9 @@ export default function QueueScreen() {
     });
 
     const { tanggal_dari, tanggal_sampai } = useMemo(() => {
+        if (dateMode === 'all') {
+            return { tanggal_dari: undefined, tanggal_sampai: undefined };
+        }
         if (dateMode === 'monthly') {
             return {
                 tanggal_dari: format(startOfMonth(date), 'yyyy-MM-dd'),
@@ -259,18 +262,21 @@ export default function QueueScreen() {
     }, [getQueuePaymentStatus, queuePaymentFilter, queueSearchQuery, queueWorkStatusFilter, todayQueue]);
 
     const handlePrev = () => {
+        if (dateMode === 'all') return;
         if (dateMode === 'monthly') setDate(curr => subMonths(curr, 1));
         else if (dateMode === 'yearly') setDate(curr => subYears(curr, 1));
         else setDate(curr => subDays(curr, 1));
     };
 
     const handleNext = () => {
+        if (dateMode === 'all') return;
         if (dateMode === 'monthly') setDate(curr => addMonths(curr, 1));
         else if (dateMode === 'yearly') setDate(curr => addYears(curr, 1));
         else setDate(curr => addDays(curr, 1));
     };
 
     const getFormattedDate = () => {
+        if (dateMode === 'all') return 'Semua Waktu';
         if (dateMode === 'monthly') return format(date, 'MMMM yyyy', { locale: localeID });
         if (dateMode === 'yearly') return `Tahun ${format(date, 'yyyy')}`;
         return format(date, 'dd MMMM yyyy', { locale: localeID });
@@ -581,6 +587,7 @@ export default function QueueScreen() {
             <View className="bg-white border border-gray-100 rounded-2xl p-3 mb-4">
                 <View className="flex-row items-center justify-center gap-1.5 mb-2.5 pb-2.5 border-b border-gray-100">
                     {[
+                        { id: 'all', label: 'Semua' },
                         { id: 'daily', label: 'Harian' },
                         { id: 'monthly', label: 'Bulanan' },
                         { id: 'yearly', label: 'Tahunan' },
@@ -1095,6 +1102,7 @@ export default function QueueScreen() {
                         </Typography>
                         <View className="flex-row gap-2 mb-5">
                             {[
+                                { id: 'all', label: 'Semua' },
                                 { id: 'daily', label: 'Harian' },
                                 { id: 'monthly', label: 'Bulanan' },
                                 { id: 'yearly', label: 'Tahunan' },
