@@ -5,7 +5,7 @@ from typing import Dict, Any
 from sqlalchemy import func, or_, and_, case
 from app.services.reports.base import BaseReportService
 from app.models.keuangan import KasBank, HutangUsaha, PiutangUsaha, PembayaranHutang, PembayaranPiutang
-from app.models.mobil import Mobil, TransaksiPenjualanMobil, InvestorDisbursementDetail
+from app.models.mobil import Mobil, TransaksiPenjualanMobil, InvestorDisbursementDetail, InvestorWithdrawal
 from app.models.bengkel import TransaksiPenjualanBengkel, PembelianSparePart, DetailTransaksiSpareParts
 from app.utils.constants import (
     KasBankSource, 
@@ -493,6 +493,14 @@ class ModalService(BaseReportService):
         pembayaran_investor = float(self.db.query(func.sum(InvestorDisbursementDetail.nominal)).join(TransaksiPenjualanMobil).filter(
             InvestorDisbursementDetail.tanggal >= flow_dari,
             InvestorDisbursementDetail.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+
+        # Penarikan dana investor sebelum mobil terjual — neutralizer yang sama
+        # (kas keluar sumber=HUTANG, bukan pengembalian modal).
+        pembayaran_investor += float(self.db.query(func.sum(InvestorWithdrawal.nominal)).filter(
+            InvestorWithdrawal.tanggal >= flow_dari,
+            InvestorWithdrawal.tanggal <= tanggal_sampai,
+            ~InvestorWithdrawal.catatan.ilike("[REVERSED]%"),
         ).scalar() or 0)
 
         beli_sparepart = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(

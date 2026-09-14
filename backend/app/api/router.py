@@ -10,6 +10,7 @@ from app.api.v1 import (
     pengeluaran,
     mobil,
     penjualan_mobil,
+    investor_withdrawal,
     supir,
     muatan,
     karyawan,
@@ -53,6 +54,7 @@ api_router.include_router(transaksi_bengkel.router)
 api_router.include_router(pengeluaran.router)
 api_router.include_router(mobil.router)
 api_router.include_router(penjualan_mobil.router)
+api_router.include_router(investor_withdrawal.router)
 api_router.include_router(supir.router)
 api_router.include_router(muatan.router)
 api_router.include_router(karyawan.router)

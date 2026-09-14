@@ -17,8 +17,10 @@ from app.services.pembelian_part_service import PembelianPartService
 from app.services.hutang_service import HutangService
 from app.services.mobil_service import MobilService
 from app.services.reports.laba_rugi_service import LabaRugiService
+from app.services.investor_withdrawal_service import InvestorWithdrawalService
 from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, PiutangStatus, CarStatus, HutangSource, AssetStatus, InvestorDisbursementStatus, OwnershipType, ExpenseCategory, WorkshopStatus
 from app.models.keuangan import KasBank, PiutangUsaha as PiutangModel
+from app.models.mobil import Mobil, InvestorWithdrawal
 from app.models.bengkel import PengeluaranBengkel
 from app.utils.cache import build_key, get_cached, set_cached, invalidate_cache_prefix
 from sqlalchemy import func, or_, and_, case
@@ -154,6 +156,21 @@ def get_dashboard_summary(
     laba_bersih_akhir = lr_report["summary"]["laba_bersih"]
     # ---------------------------------------------------
 
+    # Investor capital summary for mobil unit
+    investor_dana_tertanam = float(
+        db.query(func.sum(Mobil.nominal_investor)).filter(
+            Mobil.tipe_kepemilikan == OwnershipType.INVESTOR,
+            Mobil.deleted_at.is_(None),
+        ).scalar() or 0
+    )
+    investor_withdrawal_svc = InvestorWithdrawalService(db)
+    investor_total_ditarik = float(
+        db.query(func.sum(InvestorWithdrawal.nominal)).filter(
+            ~InvestorWithdrawal.catatan.ilike("[REVERSED]%"),
+        ).scalar() or 0
+    )
+    investor_sisa_hutang = max(0.0, investor_dana_tertanam - investor_total_ditarik)
+
     result = {
         "periode": {
             "dari": tanggal_dari.isoformat() if tanggal_dari else None,
@@ -186,6 +203,9 @@ def get_dashboard_summary(
             ),
             "total_modal_tersedia": float(mobil_summary.get("total_modal_tersedia", 0)),
             "saldo_cash": float(kas_bank_summary.get("kas_unit_mobil", {}).get("saldo", 0)),
+            "investor_dana_tertanam": investor_dana_tertanam,
+            "investor_total_ditarik": investor_total_ditarik,
+            "investor_sisa_hutang": investor_sisa_hutang,
         },
         "jasa_angkut": {
             "total_pendapatan": float(muatan_summary["total_pendapatan"]),

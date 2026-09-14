@@ -21,7 +21,8 @@ import {
     Wrench,
     Truck,
     Car,
-    History
+    History,
+    Landmark
 } from 'lucide-react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { keuanganService, KasBankAllBalances, KasBankBalance, KasBankJenis } from '../../services/keuangan';
@@ -341,6 +342,30 @@ export default function AkunKeuanganScreen() {
                             </Pressable>
                         </View>
                     </View>
+
+                    {jenis === 'KAS_UNIT_MOBIL' && (
+                        <View className="flex-row items-center justify-between pt-3 mt-3 border-t border-purple-100/60 bg-purple-50/50 p-3 rounded-2xl">
+                            <View className="flex-row items-center">
+                                <Landmark size={16} color="#7C3AED" />
+                                <Typography className="text-purple-900 text-xs font-bold ml-2">Investor</Typography>
+                            </View>
+                            <View className="flex-row space-x-2">
+                                <Pressable
+                                    onPress={() => router.push('/finance/pencairan-investor')}
+                                    className="bg-purple-600 px-3 py-1.5 rounded-xl flex-row items-center"
+                                >
+                                    <TrendingUp size={12} color="white" />
+                                    <Typography className="text-white text-[10px] font-bold ml-1">Tarik Dana</Typography>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => router.push('/finance/hutang-investor')}
+                                    className="bg-purple-100 px-3 py-1.5 rounded-xl flex-row items-center border border-purple-200"
+                                >
+                                    <Typography className="text-purple-700 text-[10px] font-bold">Laporan Hutang</Typography>
+                                </Pressable>
+                            </View>
+                        </View>
+                    )}
                 </View>
             </Pressable>
         );

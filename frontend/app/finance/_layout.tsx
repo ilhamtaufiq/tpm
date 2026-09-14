@@ -28,6 +28,7 @@ export default function FinanceLayout() {
             <Stack.Screen name="mutasi" options={{ title: 'Mutasi Kas & Bank' }} />
             <Stack.Screen name="piutang" options={{ title: 'Kelola Piutang' }} />
             <Stack.Screen name="hutang" options={{ title: 'Kelola Hutang' }} />
+            <Stack.Screen name="hutang-investor" options={{ title: 'Hutang Investor' }} />
         </Stack>
     );
 }

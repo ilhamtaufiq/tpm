@@ -573,10 +573,19 @@ export default function MutasiKasScreen() {
                                             {item.keterangan}
                                         </Typography>
                                     </View>
-                                    <View className={isIncome ? "bg-emerald-50 px-2 py-1 rounded-lg" : "bg-rose-50 px-2 py-1 rounded-lg"}>
-                                        <Typography weight="bold" className={isIncome ? "text-emerald-600 text-[9px]" : "text-rose-600 text-[9px]"}>
-                                            {isIncome ? 'MASUK' : 'KELUAR'}
-                                        </Typography>
+                                    <View className="flex-row items-center space-x-1">
+                                        {(item.keterangan?.toLowerCase().includes('investor') || item.sumber === 'HUTANG') && (
+                                            <View className="bg-purple-50 px-2 py-1 rounded-lg border border-purple-100 mr-1">
+                                                <Typography weight="bold" className="text-purple-700 text-[9px]">
+                                                    INVESTOR
+                                                </Typography>
+                                            </View>
+                                        )}
+                                        <View className={isIncome ? "bg-emerald-50 px-2 py-1 rounded-lg" : "bg-rose-50 px-2 py-1 rounded-lg"}>
+                                            <Typography weight="bold" className={isIncome ? "text-emerald-600 text-[9px]" : "text-rose-600 text-[9px]"}>
+                                                {isIncome ? 'MASUK' : 'KELUAR'}
+                                            </Typography>
+                                        </View>
                                     </View>
                                 </View>
 

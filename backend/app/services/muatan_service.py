@@ -22,6 +22,7 @@ from app.utils.constants import (
 )
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang, KasBank
 from app.realtime import publish_realtime_event
+from app.utils.workshop_finance import workshop_finance_recognized_filters
 
 
 class MuatanService:
@@ -1193,11 +1194,15 @@ class MuatanService:
         from app.models.bengkel import TransaksiPenjualanBengkel
         from app.models.jasa_angkut import JasaAngkutPartService
 
-        # All JA workshop repairs in period
+        # All JA workshop repairs in period.
+        # WAJIB pakai workshop_finance_recognized_filters(): nota ANTRE/PROSES dengan
+        # grand_total > 0 sudah menambah pendapatan Bengkel (dan memakai stok part),
+        # jadi biayanya harus diakui di periode yang sama. Filter `== SELESAI`
+        # membuat biaya JA hilang → Laba/Rugi kelebihan → Modal Akhir Teoritis
+        # melampaui Aktual sebesar nilai nota itu.
         bengkel_parts = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
             TransaksiPenjualanBengkel.kategori == 'jasa_angkut',
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
+            *workshop_finance_recognized_filters(),
         )
         if tanggal_dari: bengkel_parts = bengkel_parts.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
         if tanggal_sampai: bengkel_parts = bengkel_parts.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
@@ -1338,8 +1343,7 @@ class MuatanService:
             ArmadaJasaAngkut, TransaksiPenjualanBengkel.armada_id == ArmadaJasaAngkut.id
         ).filter(
             TransaksiPenjualanBengkel.kategori == 'jasa_angkut',
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
+            *workshop_finance_recognized_filters(),
         )
         if tanggal_dari: bengkel_armada_query = bengkel_armada_query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
         if tanggal_sampai: bengkel_armada_query = bengkel_armada_query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)

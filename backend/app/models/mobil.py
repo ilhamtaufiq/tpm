@@ -112,6 +112,10 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
     pengeluaran_bengkel: Mapped[List["PengeluaranBengkel"]] = relationship(
         back_populates="mobil"
     )
+    penarikan_dana: Mapped[List["InvestorWithdrawal"]] = relationship(
+        back_populates="mobil",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def _repair_keywords(self) -> list[str]:
@@ -201,6 +205,14 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
         Used for determining profit split percentage with investors.
         """
         return self.hpp + self.total_part_service
+
+    @property
+    def total_penarikan_dana(self) -> Decimal:
+        """Dana investor yang sudah ditarik sebelum mobil terjual (di luar yang direversal)."""
+        return sum(
+            (w.nominal for w in self.penarikan_dana if "[REVERSED]" not in (w.catatan or "")),
+            Decimal("0"),
+        )
 
     def __repr__(self) -> str:
         return f"<Mobil(id={self.id}, kode='{self.kode}', plat='{self.nomor_plat}', status='{self.status}')>"
@@ -360,3 +372,24 @@ class InvestorDisbursementDetail(Base, TimestampMixin):
 
     # Relationship
     transaksi: Mapped["TransaksiPenjualanMobil"] = relationship(back_populates="rincian_pencairan")
+
+
+class InvestorWithdrawal(Base, TimestampMixin):
+    """Penarikan dana investor saat mobil belum terjual (pengembalian modal saja)."""
+
+    __tablename__ = "investor_withdrawal"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    mobil_id: Mapped[int] = mapped_column(
+        ForeignKey("mobil.id", ondelete="CASCADE"), index=True
+    )
+    tanggal: Mapped[date] = mapped_column(Date)
+    nominal: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    metode_bayar: Mapped[PaymentMethod] = mapped_column(SQLEnum(PaymentMethod))
+    catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    mobil: Mapped["Mobil"] = relationship(back_populates="penarikan_dana")

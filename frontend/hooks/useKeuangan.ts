@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ActivityItem, KasBankListResponse, keuanganService } from '../services/keuangan';
+import { ActivityItem, KasBankListResponse, InvestorWithdrawalRequest, keuanganService } from '../services/keuangan';
 
 // =============================================
 // KAS & BANK
@@ -341,6 +341,50 @@ export const useInvestorDisbursementHistory = (params?: any) => {
     return useQuery({
         queryKey: ['investor_disbursement_history', params],
         queryFn: () => keuanganService.getInvestorDisbursementHistory(params),
+    });
+};
+
+// =============================================
+// PENARIKAN DANA INVESTOR (MOBIL BELUM TERJUAL)
+// =============================================
+const invalidateInvestorWithdrawal = (queryClient: any) => {
+    queryClient.invalidateQueries({ queryKey: ['unsold_investor_cars'] });
+    queryClient.invalidateQueries({ queryKey: ['investor_withdrawal_history'] });
+    queryClient.invalidateQueries({ queryKey: ['investor_disbursement_summary'] });
+    queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+    queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+    queryClient.invalidateQueries({ queryKey: ['capital_report'] });
+};
+
+export const useUnsoldInvestorCars = (namaInvestor?: string) => {
+    return useQuery({
+        queryKey: ['unsold_investor_cars', namaInvestor],
+        queryFn: () => keuanganService.getUnsoldInvestorCars(namaInvestor),
+    });
+};
+
+export const useInvestorWithdrawalHistory = (params?: any) => {
+    return useQuery({
+        queryKey: ['investor_withdrawal_history', params],
+        queryFn: () => keuanganService.getInvestorWithdrawalHistory(params),
+    });
+};
+
+export const useCreateInvestorWithdrawal = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: InvestorWithdrawalRequest) => keuanganService.createInvestorWithdrawal(data),
+        onSuccess: () => invalidateInvestorWithdrawal(queryClient),
+    });
+};
+
+export const useReverseInvestorWithdrawal = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data?: { alasan?: string } }) =>
+            keuanganService.reverseInvestorWithdrawal(id, data),
+        onSuccess: () => invalidateInvestorWithdrawal(queryClient),
     });
 };
 

@@ -520,10 +520,10 @@ class NeracaService(BaseReportService):
                 ).delete(synchronize_session=False)
 
             internal_trx = self.db.query(TransaksiPenjualanBengkel).filter(
+                # Guardrail sama dgn mobil: nota ANTRE/PROSES tetap butuh piutang
+                # internalnya, kalau tidak biaya JA ada di P&L tanpa penyeimbang.
+                *workshop_finance_recognized_filters(),
                 TransaksiPenjualanBengkel.kategori == "jasa_angkut",
-                TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
-                TransaksiPenjualanBengkel.grand_total > 0,
             ).all()
 
             for trx in internal_trx:

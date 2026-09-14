@@ -24,7 +24,7 @@ from app.models.bengkel import (
     SparePartRevaluation,
     SparePartRevaluationRelease,
 )
-from app.models.mobil import Mobil, TransaksiPenjualanMobil, InvestorDisbursementDetail
+from app.models.mobil import Mobil, TransaksiPenjualanMobil, InvestorDisbursementDetail, InvestorWithdrawal
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutPartService, ArmadaJasaAngkut, JasaAngkutBiayaLainnya
 from app.models.keuangan import KasBank, Aset, PiutangUsaha, HutangUsaha, PembayaranPiutang
 
@@ -615,7 +615,25 @@ class BaseReportService:
             InvestorDisbursementDetail.tanggal <= tanggal_sampai,
             ~InvestorDisbursementDetail.catatan.ilike("[REVERSED]%"),
         ).scalar() or 0)
-        
+
+        # Penarikan dana investor sebelum mobil terjual (pengembalian modal sebagian).
+        # Yang ditarik dari mobil belum terjual mengurangi bucket modal belum terjual.
+        # Setelah mobil terjual, nominal_investor dihitung penuh lagi di investor_debt,
+        # jadi penarikan atas mobil yang sudah terjual diperlakukan sebagai pembayaran.
+        withdrawal_q = self.db.query(func.sum(InvestorWithdrawal.nominal)).join(Mobil).filter(
+            InvestorWithdrawal.tanggal <= tanggal_sampai,
+            ~InvestorWithdrawal.catatan.ilike("[REVERSED]%"),
+        )
+        withdrawal_unsold = float(withdrawal_q.filter(
+            or_(
+                Mobil.status != CarStatus.TERJUAL,
+                Mobil.tanggal_terjual > tanggal_sampai
+            )
+        ).scalar() or 0)
+        withdrawal_all = float(withdrawal_q.scalar() or 0)
+        unsold_investor_capital = max(0.0, unsold_investor_capital - withdrawal_unsold)
+        investor_paid += withdrawal_all - withdrawal_unsold
+
         hutang_investor = unsold_investor_capital + max(0, investor_debt - investor_paid) + manual_investor
 
         # LAINNYA manual debts minus the unit-routed buckets above; only debts

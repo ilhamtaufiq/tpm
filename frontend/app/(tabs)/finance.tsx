@@ -7,7 +7,7 @@ import { getFileUrl } from '../../utils/image';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
-import { RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowRightLeft, CircleDollarSign, BarChart3, ChevronRight, AlertTriangle, Users, ArrowUpCircle, ArrowDownCircle } from 'lucide-react-native';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowRightLeft, CircleDollarSign, BarChart3, ChevronRight, AlertTriangle, Users, ArrowUpCircle, ArrowDownCircle, Landmark } from 'lucide-react-native';
 import { formatCurrency } from '../../utils/format';
 import { keuanganService, PiutangSummary, KasBankAllBalances } from '../../services/keuangan';
 import { useDashboardSummary, usePiutangSummary, useHutangSummary, useInvestorDisbursementSummary } from '../../hooks/useKeuangan';
@@ -357,6 +357,7 @@ export default function FinanceTab() {
                             { label: 'Piutang', icon: CircleDollarSign, color: '#F59E0B', path: '/finance/piutang' },
                             { label: 'Hutang', icon: ArrowDownCircle, color: '#E11D48', path: '/finance/hutang' },
                             { label: 'Investor', icon: TrendingUp, color: '#8B5CF6', path: '/finance/pencairan-investor' },
+                            { label: 'Hutang Investor', icon: Landmark, color: '#7C3AED', path: '/finance/hutang-investor' },
                             { label: 'Report', icon: BarChart3, color: '#10B981', path: '/laporan' },
                         ].map((action, idx) => (
                             <Pressable
@@ -426,6 +427,16 @@ export default function FinanceTab() {
                                     <Typography className="text-emerald-700 text-[9px] font-bold">{formatCurrency(dashboard?.mobil?.saldo_cash || 0)}</Typography>
                                 </View>
                             </View>
+                            {((dashboard?.mobil?.investor_dana_tertanam || 0) > 0 || (dashboard?.mobil?.investor_total_ditarik || 0) > 0) && (
+                                <View className="mt-2 pt-2 border-t border-gray-50 flex-row justify-between items-center">
+                                    <Typography className="text-purple-600 text-[9px] font-bold uppercase">
+                                        Modal Investor: {formatCurrency(dashboard?.mobil?.investor_sisa_hutang || 0)}
+                                    </Typography>
+                                    <Typography className="text-textGray/60 text-[9px]">
+                                        Ditarik: {formatCurrency(dashboard?.mobil?.investor_total_ditarik || 0)}
+                                    </Typography>
+                                </View>
+                            )}
                         </View>
                     </Pressable>
 

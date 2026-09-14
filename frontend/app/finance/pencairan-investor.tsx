@@ -29,13 +29,20 @@ import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency, formatDate, formatDateTime, formatNumber, parseNumber } from '../../utils/format';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
-import { 
-    usePendingInvestorDisbursements, 
-    useInvestorDisbursementSummary, 
-    useProcessInvestorDisbursement, 
+import {
+    usePendingInvestorDisbursements,
+    useInvestorDisbursementSummary,
+    useProcessInvestorDisbursement,
     useReverseInvestorDisbursement,
-    useInvestorDisbursementHistory 
+    useInvestorDisbursementHistory,
+    useUnsoldInvestorCars,
+    useInvestorWithdrawalHistory,
+    useCreateInvestorWithdrawal,
+    useReverseInvestorWithdrawal
 } from '../../hooks/useKeuangan';
+import { WITHDRAWAL_ACCOUNTS } from '../../services/keuangan';
+import type { InvestorWithdrawalCar } from '../../services/keuangan';
+import type { KasBankJenis } from '../../services/keuangan';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -49,7 +56,8 @@ export default function PencairanInvestorScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
-    const [activeTab, setActiveTab] = useState<'PENDING' | 'HISTORY'>('PENDING');
+    const [activeTab, setActiveTab] = useState<'PENDING' | 'HISTORY' | 'BELUM_TERJUAL'>('PENDING');
+    const [selectedMobilId, setSelectedMobilId] = useState<number | null>(null);
     const [printing, setPrinting] = useState(false);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -59,8 +67,8 @@ export default function PencairanInvestorScreen() {
     // Form states
     const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
     const [metode, setMetode] = useState<'TUNAI' | 'TRANSFER' | 'SPLIT'>('TRANSFER');
-    const [payments, setPayments] = useState<{ metode: 'TUNAI' | 'TRANSFER', nominal: string }[]>([
-        { metode: 'TUNAI', nominal: '' }
+    const [payments, setPayments] = useState<{ metode: 'TUNAI' | 'TRANSFER', nominal: string, kas_jenis?: KasBankJenis }[]>([
+        { metode: 'TUNAI', nominal: '', kas_jenis: 'KAS_UNIT_MOBIL' }
     ]);
     const [catatan, setCatatan] = useState('');
 
@@ -80,11 +88,25 @@ export default function PencairanInvestorScreen() {
     const disburseMutation = useProcessInvestorDisbursement();
     const reverseMutation = useReverseInvestorDisbursement();
 
-    const { 
-        data: historyData, 
-        isLoading: isLoadingHistory, 
-        refetch: refetchHistory 
+    const {
+        data: historyData,
+        isLoading: isLoadingHistory,
+        refetch: refetchHistory
     } = useInvestorDisbursementHistory({ search: search || undefined });
+
+    const {
+        data: unsoldCars,
+        isLoading: isLoadingUnsold,
+        refetch: refetchUnsold
+    } = useUnsoldInvestorCars(search || undefined);
+
+    const {
+        data: withdrawalHistory,
+        refetch: refetchWithdrawalHistory
+    } = useInvestorWithdrawalHistory({ nama_investor: search || undefined });
+
+    const withdrawalMutation = useCreateInvestorWithdrawal();
+    const reverseWithdrawalMutation = useReverseInvestorWithdrawal();
 
     const renderBackdrop = useCallback(
         (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,
@@ -93,9 +115,12 @@ export default function PencairanInvestorScreen() {
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([refetchList(), refetchSummary(), refetchHistory()]);
+        await Promise.all([
+            refetchList(), refetchSummary(), refetchHistory(),
+            refetchUnsold(), refetchWithdrawalHistory()
+        ]);
         setRefreshing(false);
-    }, [refetchList, refetchSummary, refetchHistory]);
+    }, [refetchList, refetchSummary, refetchHistory, refetchUnsold, refetchWithdrawalHistory]);
 
     // Alert State
     const [alertState, setAlertState] = useState<{
@@ -114,10 +139,18 @@ export default function PencairanInvestorScreen() {
         setAlertState({ visible: true, title, message, variant });
     };
 
-    const handleOpenModal = (item: any) => {
-        setSelectedId(item.id);
-        setCatatan(`Pencairan dana investor ${item.nama_investor} - ${item.mobil}`);
-        
+    const handleOpenModal = (item: any, mode: 'DISBURSE' | 'WITHDRAW' = 'DISBURSE') => {
+        if (mode === 'WITHDRAW') {
+            setSelectedMobilId(item.id);
+            setSelectedId(null);
+            setCatatan(`Penarikan dana investor ${item.nama_investor} - ${item.mobil}`);
+            setPayments([{ metode: 'TUNAI', nominal: formatNumber(String(item.sisa_bisa_ditarik || 0)), kas_jenis: 'KAS_UNIT_MOBIL' }]);
+        } else {
+            setSelectedId(item.id);
+            setSelectedMobilId(null);
+            setCatatan(`Pencairan dana investor ${item.nama_investor} - ${item.mobil}`);
+        }
+
         if (Platform.OS === 'web') {
             setModalVisible(true);
             setIsSheetOpen(true);
@@ -165,12 +198,77 @@ export default function PencairanInvestorScreen() {
             showAlert('Sukses', 'Dana investor berhasil dicairkan dan tercatat di KasBank.', 'success');
             setSelectedId(null);
             // Reset split payments
-            setPayments([{ metode: 'TUNAI', nominal: '' }]);
+            setPayments([{ metode: 'TUNAI', nominal: '', kas_jenis: 'KAS_UNIT_MOBIL' }]);
             setMetode('TRANSFER');
         } catch (error: any) {
             const errorMessage = error?.response?.data?.detail || error?.message || 'Gagal memproses pencairan';
             showAlert('Gagal', errorMessage, 'error');
         }
+    };
+
+    const handleProcessWithdrawal = async () => {
+        if (!selectedMobilId) return;
+
+        try {
+            const requestData: any = {
+                mobil_id: selectedMobilId,
+                tanggal,
+                catatan,
+            };
+
+            if (metode === 'SPLIT') {
+                requestData.payments = payments.map(p => ({
+                    metode: p.metode,
+                    nominal: parseNumber(p.nominal),
+                    kas_jenis: p.kas_jenis || 'KAS_UNIT_MOBIL'
+                }));
+            } else {
+                requestData.metode_bayar = metode;
+                requestData.nominal = parseNumber(payments[0]?.nominal);
+                requestData.kas_jenis = payments[0]?.kas_jenis || 'KAS_UNIT_MOBIL';
+            }
+
+            await withdrawalMutation.mutateAsync(requestData);
+
+            if (Platform.OS === 'web') {
+                setModalVisible(false);
+                setIsSheetOpen(false);
+            } else {
+                paymentSheetRef.current?.close();
+                setIsSheetOpen(false);
+            }
+
+            showAlert('Sukses', 'Dana investor berhasil ditarik dan tercatat di KasBank.', 'success');
+            setSelectedMobilId(null);
+            setPayments([{ metode: 'TUNAI', nominal: '', kas_jenis: 'KAS_UNIT_MOBIL' }]);
+            setMetode('TRANSFER');
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.detail || error?.message || 'Gagal memproses penarikan';
+            showAlert('Gagal', errorMessage, 'error');
+        }
+    };
+
+    const handleReverseWithdrawal = (item: any) => {
+        const executeReverse = async () => {
+            try {
+                await reverseWithdrawalMutation.mutateAsync({
+                    id: item.id,
+                    data: { alasan: `Reversal penarikan dana investor ${item.nama_investor || ''}` },
+                });
+                await Promise.all([refetchUnsold(), refetchWithdrawalHistory()]);
+                showAlert('Sukses', 'Penarikan dana investor berhasil direversal.', 'success');
+            } catch (error: any) {
+                const errorMessage = error?.response?.data?.detail || error?.message || 'Gagal melakukan reversal';
+                showAlert('Gagal', errorMessage, 'error');
+            }
+        };
+
+        appConfirm(
+            'Reversal Penarikan Dana',
+            `Batalkan penarikan ${formatCurrency(item.nominal)} (${formatDate(item.tanggal)})? Saldo kas akan dikembalikan.`,
+            executeReverse,
+            { confirmText: 'Reversal', variant: 'warning' }
+        );
     };
 
     const handleReverseDisbursement = (item: any) => {
@@ -218,7 +316,12 @@ export default function PencairanInvestorScreen() {
 
     const handleUpdatePayment = (index: number, field: string, value: any) => {
         const newPayments = [...payments];
-        newPayments[index] = { ...newPayments[index], [field]: value };
+        if (field === 'metode') {
+            const defaultKas: KasBankJenis = value === 'TRANSFER' ? 'BANK_UTAMA' : 'KAS_UNIT_MOBIL';
+            newPayments[index] = { ...newPayments[index], metode: value, kas_jenis: defaultKas };
+        } else {
+            newPayments[index] = { ...newPayments[index], [field]: value };
+        }
         setPayments(newPayments);
     };
 
@@ -283,14 +386,25 @@ export default function PencairanInvestorScreen() {
     };
 
     const renderProcessDisbursementContent = () => {
-        const selectedItem = pendingList?.find((i: any) => i.id === selectedId);
+        const isWithdraw = !!selectedMobilId;
+        const selectedItem = isWithdraw
+            ? unsoldCars?.find((i: any) => i.id === selectedMobilId)
+            : pendingList?.find((i: any) => i.id === selectedId);
         const totalInput = payments.reduce((acc, curr) => acc + parseNumber(curr.nominal), 0);
+        const submitMutation = isWithdraw ? withdrawalMutation : disburseMutation;
+        const limitNominal = isWithdraw
+            ? ((selectedItem as InvestorWithdrawalCar | undefined)?.sisa_bisa_ditarik || 0)
+            : ((selectedItem as any)?.total_pencairan || 0);
 
         return (
             <View className="px-8 py-4">
-                <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter mb-2">Konfirmasi Pencairan</Typography>
+                <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter mb-2">
+                    {isWithdraw ? 'Konfirmasi Penarikan Dana' : 'Konfirmasi Pencairan'}
+                </Typography>
                 <Typography variant="body2" className="text-gray-500 mb-6 font-medium">
-                    Anda akan memproses pencairan dana kepada investor. Nominal yang diajukan adalah sisa kewajiban.
+                    {isWithdraw
+                        ? 'Tarik dana investor sebelum mobil terjual. Maksimal sebesar sisa dana yang masih tertanam (tanpa laba).'
+                        : 'Anda akan memproses pencairan dana kepada investor. Nominal yang diajukan adalah sisa kewajiban.'}
                 </Typography>
 
                 <Card variant="outlined" className="p-6 mb-8 border-primary/20 bg-primary/5 rounded-[32px]">
@@ -299,9 +413,11 @@ export default function PencairanInvestorScreen() {
                             <Banknote size={24} color="#023C69" />
                         </View>
                         <View>
-                            <Typography className="text-primary/60 text-[10px] uppercase font-bold tracking-widest mb-1">Sisa Wajib Cair</Typography>
+                            <Typography className="text-primary/60 text-[10px] uppercase font-bold tracking-widest mb-1">
+                                {isWithdraw ? 'Maks Bisa Ditarik' : 'Sisa Wajib Cair'}
+                            </Typography>
                             <Typography variant="h2" weight="bold" className="text-primary text-2xl tracking-tighter">
-                                {formatCurrency(selectedItem?.total_pencairan || 0)}
+                                {formatCurrency(limitNominal)}
                             </Typography>
                         </View>
                     </View>
@@ -321,7 +437,14 @@ export default function PencairanInvestorScreen() {
                         {['TUNAI', 'TRANSFER', 'SPLIT'].map((m: any) => (
                             <Pressable
                                 key={m}
-                                onPress={() => setMetode(m)}
+                                onPress={() => {
+                                    setMetode(m);
+                                    if (m === 'TRANSFER') {
+                                        setPayments(prev => prev.map(p => ({ ...p, metode: 'TRANSFER', kas_jenis: 'BANK_UTAMA' })));
+                                    } else if (m === 'TUNAI') {
+                                        setPayments(prev => prev.map(p => ({ ...p, metode: 'TUNAI', kas_jenis: 'KAS_UNIT_MOBIL' })));
+                                    }
+                                }}
                                 className={`flex-1 h-14 items-center justify-center rounded-2xl border ${metode === m ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-gray-50 border-gray-200'}`}
                             >
                                 <Typography className={`text-xs font-bold ${metode === m ? 'text-white' : 'text-gray-500'}`}>{m}</Typography>
@@ -377,15 +500,39 @@ export default function PencairanInvestorScreen() {
                                     keyboardType="numeric"
                                     value={p.nominal}
                                     onChangeText={(text) => handleUpdatePayment(index, 'nominal', formatNumber(text))}
-                                    containerClassName="mb-0"
+                                    containerClassName={isWithdraw ? 'mb-4' : 'mb-0'}
                                 />
+
+                                {isWithdraw && (
+                                    <View>
+                                        <Typography variant="caption" weight="bold" className="text-gray-500 mb-2 uppercase tracking-[2px] text-[10px]">
+                                            Sumber Dana
+                                        </Typography>
+                                        <View className="flex-row flex-wrap">
+                                            {WITHDRAWAL_ACCOUNTS.map((acc) => (
+                                                <Pressable
+                                                    key={acc.value}
+                                                    onPress={() => handleUpdatePayment(index, 'kas_jenis', acc.value)}
+                                                    className={`mr-2 mb-2 px-4 py-3 rounded-2xl border ${(p.kas_jenis || 'KAS_UNIT_MOBIL') === acc.value ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                                >
+                                                    <Typography
+                                                        weight={(p.kas_jenis || 'KAS_UNIT_MOBIL') === acc.value ? 'bold' : 'medium'}
+                                                        className={`text-[10px] ${(p.kas_jenis || 'KAS_UNIT_MOBIL') === acc.value ? 'text-white' : 'text-textGray'}`}
+                                                    >
+                                                        {acc.label}
+                                                    </Typography>
+                                                </Pressable>
+                                            ))}
+                                        </View>
+                                    </View>
+                                )}
                             </Card>
                         ))}
                     </View>
                 ) : (
-                    <Input 
-                        label="Nominal Pencairan"
-                        placeholder="Opsional (Isi jika bayar parsial)"
+                    <Input
+                        label={isWithdraw ? 'Nominal Penarikan' : 'Nominal Pencairan'}
+                        placeholder={isWithdraw ? 'Maksimal sesuai sisa dana investor' : 'Opsional (Isi jika bayar parsial)'}
                         keyboardType="numeric"
                         value={payments[0]?.nominal || ''}
                         onChangeText={(text) => handleUpdatePayment(0, 'nominal', formatNumber(text))}
@@ -394,10 +541,34 @@ export default function PencairanInvestorScreen() {
                     />
                 )}
 
+                {isWithdraw && metode !== 'SPLIT' && (
+                    <View className="mb-6">
+                        <Typography variant="caption" weight="bold" className="text-gray-500 mb-3 px-1 uppercase tracking-widest">
+                            Sumber Dana
+                        </Typography>
+                        <View className="flex-row flex-wrap">
+                            {WITHDRAWAL_ACCOUNTS.map((acc) => {
+                                const active = (payments[0]?.kas_jenis || 'KAS_UNIT_MOBIL') === acc.value;
+                                return (
+                                    <Pressable
+                                        key={acc.value}
+                                        onPress={() => handleUpdatePayment(0, 'kas_jenis', acc.value)}
+                                        className={`mr-2 mb-2 px-4 py-3 rounded-2xl border ${active ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                    >
+                                        <Typography weight={active ? 'bold' : 'medium'} className={`text-[10px] ${active ? 'text-white' : 'text-textGray'}`}>
+                                            {acc.label}
+                                        </Typography>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+                    </View>
+                )}
+
                 <View className="flex-row gap-4 mb-6">
                     <View className="flex-1">
-                        <Input 
-                            label="Tanggal Cair"
+                        <Input
+                            label={isWithdraw ? 'Tanggal Tarik' : 'Tanggal Cair'}
                             placeholder="YYYY-MM-DD"
                             value={tanggal}
                             onChangeText={(text) => setTanggal(text)}
@@ -407,8 +578,8 @@ export default function PencairanInvestorScreen() {
                     </View>
                 </View>
 
-                <Input 
-                    label="Catatan Pencairan"
+                <Input
+                    label={isWithdraw ? 'Catatan Penarikan' : 'Catatan Pencairan'}
                     placeholder="Tambahkan keterangan transaksi..."
                     value={catatan}
                     onChangeText={(text) => setCatatan(text)}
@@ -434,11 +605,13 @@ export default function PencairanInvestorScreen() {
                             }
                         }}
                     />
-                    <Button 
-                        title={disburseMutation.isPending ? "Memproses..." : "Konfirmasi & Cairkan"}
+                    <Button
+                        title={submitMutation.isPending
+                            ? 'Memproses...'
+                            : (isWithdraw ? 'Konfirmasi & Tarik' : 'Konfirmasi & Cairkan')}
                         className="flex-[2] h-14 rounded-2xl bg-primary shadow-xl shadow-primary/30"
-                        loading={disburseMutation.isPending}
-                        onPress={handleProcessDisbursement}
+                        loading={submitMutation.isPending}
+                        onPress={isWithdraw ? handleProcessWithdrawal : handleProcessDisbursement}
                     />
                 </View>
             </View>
@@ -503,7 +676,14 @@ export default function PencairanInvestorScreen() {
                         <CircleDollarSign size={18} color={activeTab === 'PENDING' ? 'white' : '#9CA3AF'} />
                         <Typography className={`ml-2 text-sm font-bold ${activeTab === 'PENDING' ? 'text-white' : 'text-gray-400'}`}>Tunggu Bayar</Typography>
                     </Pressable>
-                    <Pressable 
+                    <Pressable
+                        onPress={() => setActiveTab('BELUM_TERJUAL')}
+                        className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'BELUM_TERJUAL' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
+                    >
+                        <Car size={18} color={activeTab === 'BELUM_TERJUAL' ? 'white' : '#9CA3AF'} />
+                        <Typography className={`ml-2 text-[11px] font-bold ${activeTab === 'BELUM_TERJUAL' ? 'text-white' : 'text-gray-400'}`}>Belum Terjual</Typography>
+                    </Pressable>
+                    <Pressable
                         onPress={() => setActiveTab('HISTORY')}
                         className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'HISTORY' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
                     >
@@ -603,6 +783,140 @@ export default function PencairanInvestorScreen() {
                                 title="Semua Pencairan Terpenuhi" 
                                 description="Tidak ada dana investor yang menunggu pencairan saat ini."
                                 icon={CheckCircle2}
+                            />
+                        )}
+                    </>
+                ) : activeTab === 'BELUM_TERJUAL' ? (
+                    <>
+                        <View className="flex-row items-center justify-between mb-4 px-1">
+                            <Typography variant="h3" weight="bold" className="tracking-tight text-textMain">Mobil Belum Terjual</Typography>
+                            {unsoldCars && unsoldCars.length > 0 && (
+                                <Typography variant="caption" className="text-primary font-bold">{unsoldCars.length} Unit</Typography>
+                            )}
+                        </View>
+
+                        {isLoadingUnsold && !refreshing ? (
+                            <View className="space-y-4">
+                                <SkeletonCard />
+                                <SkeletonCard />
+                            </View>
+                        ) : unsoldCars && unsoldCars.length > 0 ? (
+                            unsoldCars.map((item: InvestorWithdrawalCar) => (
+                                <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-gray-50 shadow-sm">
+                                    <View className="flex-row justify-between items-start mb-4">
+                                        <View className="flex-1 mr-3">
+                                            <View className="flex-row items-center mb-1">
+                                                <Car size={14} color="#023C69" className="mr-1.5" />
+                                                <Typography variant="body1" weight="bold" numberOfLines={1}>{item.mobil}</Typography>
+                                            </View>
+                                            <View className="flex-row items-center">
+                                                <User size={12} color="#9CA3AF" className="mr-1.5" />
+                                                <Typography variant="caption" className="text-gray-400">
+                                                    {item.nama_investor} • {item.persentase_investor}%
+                                                </Typography>
+                                            </View>
+                                        </View>
+                                        <View className="bg-amber-50 px-3 py-1.5 rounded-2xl border border-amber-100">
+                                            <Typography weight="bold" className="text-amber-700 text-[10px]">BELUM TERJUAL</Typography>
+                                        </View>
+                                    </View>
+
+                                    <View className="bg-gray-50/50 rounded-3xl p-4 mb-4 border border-gray-100/50">
+                                        <View className="flex-row justify-between mb-2">
+                                            <Typography className="text-gray-400 text-[10px] font-bold">DANA INVESTOR</Typography>
+                                            <Typography variant="caption" weight="semibold" className="text-gray-600">{formatCurrency(item.nominal_investor)}</Typography>
+                                        </View>
+                                        <View className="flex-row justify-between mb-2">
+                                            <Typography className="text-gray-400 text-[10px] font-bold">SUDAH DITARIK</Typography>
+                                            <Typography variant="caption" weight="bold" className="text-rose-600">-{formatCurrency(item.total_ditarik)}</Typography>
+                                        </View>
+                                        <View className="h-[1px] bg-gray-200 my-2 border-dashed" />
+                                        <View className="flex-row justify-between">
+                                            <Typography className="text-textMain text-[11px] font-bold">SISA BISA DITARIK</Typography>
+                                            <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(item.sisa_bisa_ditarik)}</Typography>
+                                        </View>
+                                    </View>
+
+                                    <View className="flex-row items-center justify-between">
+                                        <View className="flex-row items-center">
+                                            <Calendar size={12} color="#9CA3AF" />
+                                            <Typography variant="caption" className="text-gray-400 ml-1.5">Masuk: {formatDate(item.tanggal_masuk || '')}</Typography>
+                                        </View>
+                                        <Button
+                                            title="Tarik Dana"
+                                            onPress={() => handleOpenModal(item, 'WITHDRAW')}
+                                            size="sm"
+                                            disabled={item.sisa_bisa_ditarik <= 0}
+                                            className="px-6 rounded-2xl shadow-sm"
+                                        />
+                                    </View>
+                                </Card>
+                            ))
+                        ) : (
+                            <EmptyState
+                                title="Tidak Ada Mobil Investor"
+                                description="Semua mobil investor sudah terjual atau belum ada unit dengan dana investor."
+                                icon={Car}
+                            />
+                        )}
+
+                        <View className="flex-row items-center justify-between mb-4 mt-6 px-1">
+                            <Typography variant="h3" weight="bold" className="tracking-tight text-textMain">Riwayat Penarikan</Typography>
+                            {withdrawalHistory && withdrawalHistory.length > 0 && (
+                                <Typography variant="caption" className="text-primary font-bold">{withdrawalHistory.length} Data</Typography>
+                            )}
+                        </View>
+
+                        {withdrawalHistory && withdrawalHistory.length > 0 ? (
+                            withdrawalHistory.map((item: any) => (
+                                <Card key={`w-${item.id}`} className="mb-4 p-5 rounded-[32px] border-gray-50 shadow-sm">
+                                    <View className="flex-row justify-between items-start mb-3">
+                                        <View className="flex-1 mr-3">
+                                            <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(item.nominal)}</Typography>
+                                            <View className="flex-row items-center mt-1">
+                                                <Badge label={item.metode_bayar} variant={item.metode_bayar === 'TUNAI' ? 'warning' : 'info'} />
+                                                {(item.catatan || '').toUpperCase().includes('[REVERSED]') && (
+                                                    <View className="ml-2">
+                                                        <Badge label="REVERSED" variant="error" />
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </View>
+                                        <Typography variant="caption" className="text-gray-400">{formatDate(item.tanggal)}</Typography>
+                                    </View>
+
+                                    <Typography variant="caption" className="text-gray-500 mb-2" numberOfLines={1}>
+                                        {item.catatan || 'Tidak ada catatan'}
+                                    </Typography>
+
+                                    <View className="h-[1px] bg-gray-100 my-2" />
+
+                                    <View className="flex-row items-center">
+                                        <Car size={12} color="#9CA3AF" className="mr-1.5" />
+                                        <Typography variant="caption" className="text-gray-400" numberOfLines={1}>
+                                            {item.mobil || '-'} • {item.nama_investor || '-'}
+                                        </Typography>
+                                    </View>
+
+                                    {!(item.catatan || '').toUpperCase().includes('[REVERSED]') && (
+                                        <View className="mt-4 flex-row justify-end">
+                                            <Button
+                                                title={reverseWithdrawalMutation.isPending ? 'Memproses...' : 'Reversal'}
+                                                onPress={() => handleReverseWithdrawal(item)}
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={reverseWithdrawalMutation.isPending}
+                                                className="rounded-full px-4"
+                                            />
+                                        </View>
+                                    )}
+                                </Card>
+                            ))
+                        ) : (
+                            <EmptyState
+                                title="Belum Ada Penarikan"
+                                description="Riwayat penarikan dana investor sebelum mobil terjual akan tampil di sini."
+                                icon={History}
                             />
                         )}
                     </>

@@ -45,6 +45,46 @@ export interface DisbursementRequest {
     catatan?: string;
 }
 
+export interface InvestorWithdrawalCar {
+    id: number;
+    kode: string;
+    mobil: string;
+    nama_investor: string;
+    persentase_investor: number;
+    nominal_investor: number;
+    total_ditarik: number;
+    sisa_bisa_ditarik: number;
+    tanggal_masuk: string | null;
+    status: string;
+}
+
+export interface InvestorWithdrawal {
+    id: number;
+    mobil_id: number;
+    tanggal: string;
+    nominal: number;
+    metode_bayar: PaymentMethod;
+    catatan?: string;
+    created_at: string;
+}
+
+export interface InvestorWithdrawalRequest {
+    mobil_id: number;
+    nominal?: number;
+    metode_bayar?: PaymentMethod;
+    kas_jenis?: KasBankJenis;
+    payments?: { metode: PaymentMethod; nominal: number; kas_jenis?: KasBankJenis }[];
+    tanggal?: string;
+    catatan?: string;
+}
+
+// Sumber dana penarikan dana investor
+export const WITHDRAWAL_ACCOUNTS: { label: string; value: KasBankJenis }[] = [
+    { label: 'Dompet Mobil', value: 'KAS_UNIT_MOBIL' },
+    { label: 'Kas Utama', value: 'KAS_UTAMA' },
+    { label: 'Bank', value: 'BANK_UTAMA' },
+];
+
 
 export interface Piutang {
     id: number;
@@ -593,6 +633,33 @@ export const keuanganService = {
         tanggal_sampai?: string;
     }): Promise<any[]> => {
         const response = await api.get('/penjualan-mobil/investor/disbursement-history', { params });
+        return response.data;
+    },
+
+    // Penarikan dana investor sebelum mobil terjual
+    getUnsoldInvestorCars: async (namaInvestor?: string): Promise<InvestorWithdrawalCar[]> => {
+        const response = await api.get('/investor-withdrawals/unsold-cars', {
+            params: { nama_investor: namaInvestor }
+        });
+        return response.data;
+    },
+
+    getInvestorWithdrawalHistory: async (params?: {
+        nama_investor?: string;
+        tanggal_dari?: string;
+        tanggal_sampai?: string;
+    }): Promise<InvestorWithdrawal[]> => {
+        const response = await api.get('/investor-withdrawals/history', { params });
+        return response.data;
+    },
+
+    createInvestorWithdrawal: async (data: InvestorWithdrawalRequest) => {
+        const response = await api.post('/investor-withdrawals', data);
+        return response.data;
+    },
+
+    reverseInvestorWithdrawal: async (withdrawalId: number, data?: { alasan?: string }) => {
+        const response = await api.post(`/investor-withdrawals/${withdrawalId}/reversal`, data || {});
         return response.data;
     },
 

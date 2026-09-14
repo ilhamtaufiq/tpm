@@ -30,7 +30,8 @@ import {
     Settings,
     Banknote,
     Receipt,
-    CreditCard
+    CreditCard,
+    Landmark
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -666,6 +667,30 @@ export default function MobilInventoryScreen() {
                                     onPress: () => {
                                         handleCloseWallet();
                                         router.push({ pathname: '/finance/piutang', params: { unit: 'JUAL_BELI_MOBIL', from: 'mobil' } });
+                                    }
+                                },
+                                {
+                                    key: 'TARIK_INVESTOR',
+                                    label: 'Tarik Investor',
+                                    sublabel: 'PENARIKAN MODAL',
+                                    icon: <TrendingUp size={16} color="#7C3AED" />,
+                                    iconBg: 'bg-purple-50',
+                                    text: 'text-purple-700',
+                                    onPress: () => {
+                                        handleCloseWallet();
+                                        router.push('/finance/pencairan-investor');
+                                    }
+                                },
+                                {
+                                    key: 'HUTANG_INVESTOR',
+                                    label: 'Hutang Investor',
+                                    sublabel: 'REKAP DANA',
+                                    icon: <Landmark size={16} color="#6D28D9" />,
+                                    iconBg: 'bg-purple-100/60',
+                                    text: 'text-purple-900',
+                                    onPress: () => {
+                                        handleCloseWallet();
+                                        router.push('/finance/hutang-investor');
                                     }
                                 },
                             ].map((action) => (
