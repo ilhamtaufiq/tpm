@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { financeService } from '../api/services';
+import { financeService, LacakResult } from '../api/services';
 import { formatCurrency, formatDateTime } from '../utils/format';
 import { Badge, Card, DataTable, Loading, PageHeader } from '../components/ui';
 import { kasJenisLabel } from '../components/reports';
@@ -50,7 +50,7 @@ export default function Lacak() {
   const [params, setParams] = useSearchParams();
   const initial = params.get('nomor') ?? '';
   const [input, setInput] = useState(initial);
-  const nomor = initial.trim().toUpperCase();
+  const nomor = initial.trim();
   const q = useQuery({
     queryKey: ['lacak', nomor],
     queryFn: () => financeService.lacak(nomor),
@@ -61,33 +61,40 @@ export default function Lacak() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    setParams(input.trim() ? { nomor: input.trim().toUpperCase() } : {});
+    setParams(input.trim() ? { nomor: input.trim() } : {});
+  };
+
+  const handleSelectNomor = (selectedNomor: string) => {
+    setInput(selectedNomor);
+    setParams({ nomor: selectedNomor });
   };
 
   return (
     <div className="animate-fade-up space-y-5">
-      <PageHeader title="Lacak Nomor" sub="Semua dokumen — KAS · PTG · HTG · BGL · MBL · JAS · PGL · PBL · GJI · KSB · AST · KRY" />
+      <PageHeader title="Lacak Nomor & Keterangan" sub="Cari berdasarkan nomor dokumen atau kata kunci keterangan" />
       <Card>
         <form onSubmit={submit} className="flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Contoh: BGL2609120001 / KAS2609060004 / PTG2609060001"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-sm uppercase outline-none focus:border-indigo-400 focus:bg-white"
+            placeholder="Cari nomor (misal: BGL2609120001) atau keterangan (misal: ganti oli)..."
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-sm outline-none focus:border-indigo-400 focus:bg-white"
           />
           <button type="submit" className="shrink-0 rounded-xl bg-[#0B1F3A] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#14305a]">
-            Lacak
+            Cari
           </button>
         </form>
       </Card>
       {!nomor ? (
-        <Card><p className="py-6 text-center text-sm text-slate-400">Masukkan nomor dokumen untuk melihat rincian.</p></Card>
+        <Card><p className="py-6 text-center text-sm text-slate-400">Masukkan nomor dokumen atau keterangan transaksi untuk melacak.</p></Card>
       ) : q.isLoading ? (
-        <Loading text="Mencari dokumen…" />
+        <Loading text="Mencari data…" />
       ) : q.isError || !q.data ? (
         <Card>
-          <p className="py-6 text-center text-sm text-rose-500">Nomor {nomor} tidak ditemukan.</p>
+          <p className="py-6 text-center text-sm text-rose-500">Pencarian "{nomor}" tidak ditemukan.</p>
         </Card>
+      ) : q.data.kind === 'SEARCH' && q.data.results ? (
+        <SearchResults results={q.data.results} onSelect={handleSelectNomor} />
       ) : (
         <DocDetail found={q.data} />
       )}
@@ -95,8 +102,36 @@ export default function Lacak() {
   );
 }
 
-function DocDetail({ found }: { found: Awaited<ReturnType<typeof financeService.lacak>> }) {
-  const { kind, nomor, fields, payments } = found;
+function SearchResults({ results, onSelect }: { results: NonNullable<LacakResult['results']>; onSelect: (nomor: string) => void }) {
+  return (
+    <Card title="Hasil Pencarian Keterangan" sub={`${results.length} dokumen ditemukan`}>
+      <DataTable
+        headers={['Nomor', 'Jenis', 'Tanggal', 'Keterangan', 'Nominal', 'Aksi']}
+        empty="Tidak ada dokumen yang cocok."
+        rightAlignFrom={4}
+        rows={results.map((r, i) => [
+          <button key={`n${i}`} onClick={() => onSelect(r.nomor)} className="font-mono font-bold text-indigo-600 hover:underline">
+            {r.nomor}
+          </button>,
+          <Badge key={`b${i}`} tone={TONE[r.kind] ?? 'info'}>{KIND_LABEL[r.kind] ?? r.kind}</Badge>,
+          <span key={`t${i}`}>{r.tanggal ? formatDateTime(r.tanggal) : '-'}</span>,
+          <span key={`k${i}`} className="text-slate-700">{r.keterangan}</span>,
+          <span key={`m${i}`} className="font-mono font-bold">{r.nominal ? formatCurrency(r.nominal) : '-'}</span>,
+          <button
+            key={`a${i}`}
+            onClick={() => onSelect(r.nomor)}
+            className="rounded-lg bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-100"
+          >
+            Lihat Rincian
+          </button>,
+        ])}
+      />
+    </Card>
+  );
+}
+
+function DocDetail({ found }: { found: LacakResult }) {
+  const { kind, nomor, fields = {}, payments = [] } = found;
   const label = KIND_LABEL[kind] ?? kind;
   const rows = Object.entries(fields).filter(([k, v]) => !HIDDEN.has(k) && v !== null && v !== undefined && v !== '');
 

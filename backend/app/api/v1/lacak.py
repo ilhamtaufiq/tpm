@@ -10,7 +10,7 @@ from decimal import Decimal
 from enum import Enum
 
 from fastapi import APIRouter, HTTPException
-from sqlalchemy import inspect as sa_inspect
+from sqlalchemy import inspect as sa_inspect, or_
 
 from app.api.deps import DBSession, CurrentUser
 from app.models.bengkel import PembelianSparePart, PengeluaranBengkel, TransaksiPenjualanBengkel
@@ -87,30 +87,64 @@ def _payments(db, kategori: str, doc) -> list[dict]:
     return [_serialize(r) for r in rows]
 
 
+def _search_keterangan(db, key: str) -> list[dict]:
+    """Cari dokumen berdasarkan pencocokan teks keterangan/catatan/nama."""
+    results = []
+    pattern = f"%{key}%"
+    for prefix, (model, field, _) in PREFIX_MAP.items():
+        cols = [c for c in ["keterangan", "catatan", "nama_aset", "nama"] if hasattr(model, c)]
+        if not cols:
+            continue
+        conditions = [getattr(model, c).ilike(pattern) for c in cols]
+        rows = db.query(model).filter(or_(*conditions)).limit(20).all()
+        for r in rows:
+            fields = _serialize(r)
+            desc = fields.get("keterangan") or fields.get("catatan") or fields.get("nama_aset") or fields.get("nama") or "-"
+            tgl = fields.get("tanggal") or fields.get("tanggal_beli") or fields.get("tanggal_bergabung") or fields.get("created_at")
+            nominal = fields.get("total") or fields.get("nominal") or fields.get("jumlah") or fields.get("gaji_bersih") or fields.get("total_biaya") or 0
+            results.append({
+                "kind": prefix,
+                "nomor": getattr(r, field),
+                "tanggal": tgl,
+                "keterangan": str(desc),
+                "nominal": float(nominal) if isinstance(nominal, Decimal) else (nominal if isinstance(nominal, (int, float)) else 0),
+            })
+    return results
+
+
 @router.get("/{nomor}")
 def lacak_nomor(nomor: str, db: DBSession, current_user: CurrentUser):
-    """Cari dokumen berdasarkan nomor (KAS/PTG/HTG/BGL/MBL/JAS/PGL/PBL/GJI/KSB/AST/KRY)."""
-    key = (nomor or "").strip().upper()
+    """Cari dokumen berdasarkan nomor atau keterangan (KAS/PTG/HTG/BGL/MBL/JAS/PGL/PBL/GJI/KSB/AST/KRY)."""
+    key = (nomor or "").strip()
     if not key:
-        raise HTTPException(status_code=400, detail="Nomor dokumen kosong")
+        raise HTTPException(status_code=400, detail="Kata kunci pencarian kosong")
 
-    prefix = next((p for p in _PREFIXES if key.startswith(p)), None)
-    if prefix is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Prefix nomor tidak dikenal (dikenal: {', '.join(sorted(_PREFIXES))})",
-        )
+    key_upper = key.upper()
+    prefix = next((p for p in _PREFIXES if key_upper.startswith(p)), None)
 
-    model, field, kategori = PREFIX_MAP[prefix]
-    doc = db.query(model).filter(getattr(model, field) == key).first()
-    if not doc:
-        raise HTTPException(status_code=404, detail=f"Nomor {key} tidak ditemukan")
+    if prefix:
+        model, field, kategori = PREFIX_MAP[prefix]
+        doc = db.query(model).filter(getattr(model, field) == key_upper).first()
+        if doc:
+            fields = _serialize(doc)
+            return {
+                "kind": prefix,
+                "nomor": key_upper,
+                "tanggal": fields.get("tanggal") or fields.get("tanggal_beli") or fields.get("tanggal_bergabung"),
+                "fields": fields,
+                "payments": _payments(db, kategori, doc),
+            }
 
-    fields = _serialize(doc)
-    return {
-        "kind": prefix,
-        "nomor": key,
-        "tanggal": fields.get("tanggal") or fields.get("tanggal_beli") or fields.get("tanggal_bergabung"),
-        "fields": fields,
-        "payments": _payments(db, kategori, doc),
-    }
+    # Jika pencarian exact nomor tidak ketemu (atau query adalah teks keterangan)
+    search_results = _search_keterangan(db, key)
+    if search_results:
+        return {
+            "kind": "SEARCH",
+            "nomor": key,
+            "results": search_results,
+        }
+
+    raise HTTPException(
+        status_code=404,
+        detail=f"Nomor atau keterangan '{key}' tidak ditemukan",
+    )

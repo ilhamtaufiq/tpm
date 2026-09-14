@@ -57,8 +57,15 @@ export interface LacakResult {
   kind: string;
   nomor: string;
   tanggal?: string | null;
-  fields: Record<string, unknown>;
-  payments: Record<string, unknown>[];
+  fields?: Record<string, unknown>;
+  payments?: Record<string, unknown>[];
+  results?: Array<{
+    kind: string;
+    nomor: string;
+    tanggal?: string | null;
+    keterangan: string;
+    nominal: number;
+  }>;
 }
 
 export const stockService = {
