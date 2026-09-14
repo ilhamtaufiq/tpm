@@ -1,3 +1,6 @@
+# Sensitive Scripts
+backend/scripts/create_god_user.py
+
 # Environments
 .env
 .env.local
