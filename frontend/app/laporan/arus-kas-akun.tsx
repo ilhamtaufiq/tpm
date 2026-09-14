@@ -266,17 +266,17 @@ export default function ArusKasAkunScreen() {
                             return (
                                 <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
                                     <View className="bg-indigo-50/70 px-5 py-4 flex-row justify-between items-center border-b border-indigo-100/50 w-full">
-                                        <View className="flex-row items-center">
-                                            <View className="w-10 h-10 rounded-full bg-indigo-100/80 items-center justify-center mr-3">
+                                        <View className="flex-row items-center flex-1 mr-2">
+                                            <View className="w-10 h-10 rounded-full bg-indigo-100/80 items-center justify-center mr-3 flex-shrink-0">
                                                 <Wallet size={20} color="#4F46E5" />
                                             </View>
-                                            <View>
-                                                <Typography variant="h4" weight="bold" className="text-indigo-900 tracking-tight">Posisi Saldo Kas per Akun</Typography>
+                                            <View className="flex-1">
+                                                <Typography variant="h4" weight="bold" className="text-indigo-900 tracking-tight" numberOfLines={1} adjustsFontSizeToFit>Posisi Saldo Kas per Akun</Typography>
                                                 <Typography variant="caption" className="text-indigo-700/60 uppercase text-[10px] tracking-wider mt-0.5">Ending Cash Position</Typography>
                                             </View>
                                         </View>
-                                        <View className="bg-indigo-100/50 px-3 py-1.5 rounded-full border border-indigo-200/30">
-                                            <Typography variant="body2" weight="bold" className="text-indigo-800">
+                                        <View className="bg-indigo-100/50 px-3 py-1.5 rounded-full border border-indigo-200/30 flex-shrink-0">
+                                            <Typography variant="body2" weight="bold" className="text-indigo-800" numberOfLines={1} adjustsFontSizeToFit>
                                                 {formatCurrencyDisplay(totalSaldoKas)}
                                             </Typography>
                                         </View>

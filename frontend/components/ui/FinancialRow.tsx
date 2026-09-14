@@ -56,6 +56,8 @@ export const FinancialRow = React.memo(({
                 variant={large ? 'h3' : small ? 'body2' : 'body1'}
                 weight={bold ? 'bold' : 'semibold'}
                 className={`${textClass} flex-shrink-0`}
+                numberOfLines={1}
+                adjustsFontSizeToFit
             >
                 {displayValue}
             </Typography>
