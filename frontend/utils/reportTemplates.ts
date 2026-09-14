@@ -386,3 +386,92 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
         </html>
     `;
 };
+
+export const buildArusKasAkunExportHtml = (data: LabaRugiReport, capitalData: CapitalReport | undefined, date: Date, filterType: string) => {
+    const formattedDate = format(date, filterType === 'daily' ? 'd MMMM yyyy' : (filterType === 'monthly' ? 'MMMM yyyy' : 'yyyy'), { locale: localeID });
+    const flows = data.kas_per_jenis || [];
+    let totalMasuk = 0;
+    let totalKeluar = 0;
+    for (const f of flows) {
+        totalMasuk += f.masuk || 0;
+        totalKeluar += f.keluar || 0;
+    }
+    const net = totalMasuk - totalKeluar;
+
+    const kasDetails = (capitalData as any)?.info?.aset?.kas_jenis_details || [];
+    let totalSaldoKas = 0;
+    for (const d of kasDetails) {
+        totalSaldoKas += Number(d.saldo || 0);
+    }
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+            <style>${reportStyles}</style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="title">Laporan Arus Kas per Akun</div>
+                <div class="subtitle">TPM MOTOR & LOGISTICS</div>
+                <div class="date">Periode: ${formattedDate}</div>
+            </div>
+
+            <div class="recap-box" style="margin-top: 0; margin-bottom: 25px;">
+                <div class="recap-title">REKAPITULASI MUTASI FISIK KAS</div>
+                <div class="info-row"><span>Total Uang Masuk:</span><span class="positive">${formatCurrency(totalMasuk)}</span></div>
+                <div class="info-row"><span>Total Uang Keluar:</span><span class="negative">${formatCurrency(totalKeluar)}</span></div>
+                <div class="info-row" style="border-top: 1px solid rgba(255,255,255,0.2); margin-top: 8px; padding-top: 8px; font-weight: 800;">
+                    <span>Net Mutasi Kas:</span><span>${net >= 0 ? '+ ' : ''}${formatCurrency(net)}</span>
+                </div>
+            </div>
+
+            <table>
+                <tr class="section-title"><td colspan="4">RINCIAN MUTASI ARUS KAS PER AKUN</td></tr>
+                <tr style="background-color: #f8fafc; font-weight: 700;">
+                    <td>NAMA REKENING / AKUN</td>
+                    <td class="amount">UANG MASUK</td>
+                    <td class="amount">UANG KELUAR</td>
+                    <td class="amount">NET MUTASI</td>
+                </tr>
+                ${flows.map(f => `
+                <tr>
+                    <td>${(KAS_JENIS_LABELS[f.jenis] || f.jenis.replace(/_/g, ' '))}</td>
+                    <td class="amount positive">${f.masuk ? formatCurrency(f.masuk) : '-'}</td>
+                    <td class="amount negative">${f.keluar ? formatCurrency(f.keluar) : '-'}</td>
+                    <td class="amount">${f.net >= 0 ? '+ ' : ''}${formatCurrency(f.net)}</td>
+                </tr>
+                `).join('')}
+                <tr class="total-row">
+                    <td>TOTAL MUTASI</td>
+                    <td class="amount positive">${formatCurrency(totalMasuk)}</td>
+                    <td class="amount negative">${formatCurrency(totalKeluar)}</td>
+                    <td class="amount">${net >= 0 ? '+ ' : ''}${formatCurrency(net)}</td>
+                </tr>
+            </table>
+
+            ${kasDetails.length > 0 ? `
+            <table>
+                <tr class="section-title"><td colspan="2">POSISI SALDO AKHIR PER AKUN</td></tr>
+                ${kasDetails.map((d: any) => `
+                <tr>
+                    <td>${(KAS_JENIS_LABELS[d.jenis] || String(d.jenis).replace(/_/g, ' '))}</td>
+                    <td class="amount">${formatCurrency(d.saldo || 0)}</td>
+                </tr>
+                `).join('')}
+                <tr class="grand-total">
+                    <td>TOTAL SALDO KAS & BANK</td>
+                    <td class="amount">${formatCurrency(totalSaldoKas)}</td>
+                </tr>
+            </table>
+            ` : ''}
+
+            <div class="footer">
+                Laporan Arus Kas per Akun TPM Finance System<br/>
+                Dicetak pada ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeID })}
+            </div>
+        </body>
+        </html>
+    `;
+};
