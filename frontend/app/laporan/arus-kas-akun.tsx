@@ -191,26 +191,34 @@ export default function ArusKasAkunScreen() {
                                 <View className={`bg-slate-900 p-6 rounded-[32px] shadow-xl shadow-slate-900/20 mb-8 mt-2 w-full border ${cardBorder}`}>
                                     <View className="flex-row justify-between items-center mb-6">
                                         <View className={`${badgeBg} px-3 py-1.5 rounded-full border`}>
-                                            <Typography className={`${badgeText} text-[10px] font-bold uppercase tracking-widest`}>
+                                            <Typography style={{ color: isPositive ? '#2DD4BF' : '#F87171' }} className="text-[10px] font-bold uppercase tracking-widest">
                                                 {isPositive ? 'Realisasi Surplus' : 'Realisasi Defisit'}
                                             </Typography>
                                         </View>
                                         <View className="flex-row items-center">
                                             <ArrowRightLeft size={14} color={statusIconColor} />
-                                            <Typography className={`${statusNetText} text-[10px] font-bold ml-1.5`}>
+                                            <Typography style={{ color: isPositive ? '#34D399' : '#F87171' }} className="text-[10px] font-bold ml-1.5">
                                                 NET: {isPositive ? '+ ' : ''}{formatCurrencyDisplay(totals.net)}
                                             </Typography>
                                         </View>
                                     </View>
                                     <View className="flex-row justify-between pt-1">
                                         <View className="flex-1">
-                                            <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Uang Masuk</Typography>
-                                            <Typography weight="bold" className="text-emerald-400">{formatCurrencyDisplay(totals.masuk)}</Typography>
+                                            <Typography style={{ color: '#94A3B8' }} className="text-[9px] uppercase font-bold mb-1 tracking-widest">
+                                                Total Uang Masuk
+                                            </Typography>
+                                            <Typography style={{ color: '#34D399' }} weight="bold" numberOfLines={1} adjustsFontSizeToFit>
+                                                {formatCurrencyDisplay(totals.masuk)}
+                                            </Typography>
                                         </View>
                                         <View className="w-[1px] bg-slate-700/50 mx-4" />
                                         <View className="flex-1 items-end">
-                                            <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Uang Keluar</Typography>
-                                            <Typography weight="bold" className="text-rose-400">{formatCurrencyDisplay(totals.keluar)}</Typography>
+                                            <Typography style={{ color: '#94A3B8' }} className="text-[9px] uppercase font-bold mb-1 tracking-widest">
+                                                Total Uang Keluar
+                                            </Typography>
+                                            <Typography style={{ color: '#F87171' }} weight="bold" numberOfLines={1} adjustsFontSizeToFit>
+                                                {formatCurrencyDisplay(totals.keluar)}
+                                            </Typography>
                                         </View>
                                     </View>
                                 </View>
