@@ -237,17 +237,17 @@ export default function ArusKasAkunScreen() {
                         {/* Breakdown per Account Card */}
                         <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
                             <View className="bg-teal-50/70 px-5 py-4 flex-row justify-between items-center border-b border-teal-100/50 w-full">
-                                <View className="flex-row items-center">
-                                    <View className="w-10 h-10 rounded-full bg-teal-100/80 items-center justify-center mr-3">
+                                <View className="flex-row items-center flex-1 mr-2">
+                                    <View className="w-10 h-10 rounded-full bg-teal-100/80 items-center justify-center mr-3 flex-shrink-0">
                                         <ArrowRightLeft size={20} color="#0D9488" />
                                     </View>
-                                    <View>
-                                        <Typography variant="h4" weight="bold" className="text-teal-900 tracking-tight">Rincian Mutasi Arus Kas</Typography>
-                                        <Typography variant="caption" className="text-teal-700/60 uppercase text-[10px] tracking-wider mt-0.5">Cash Flow Breakdown</Typography>
+                                    <View className="flex-1">
+                                        <Typography variant="h4" weight="bold" className="text-teal-900 tracking-tight" numberOfLines={1}>Rincian Mutasi Arus Kas</Typography>
+                                        <Typography variant="caption" className="text-teal-700/60 uppercase text-[10px] tracking-wider mt-0.5" numberOfLines={1}>Cash Flow Breakdown</Typography>
                                     </View>
                                 </View>
-                                <View className="bg-teal-100/50 px-3 py-1.5 rounded-full border border-teal-200/30">
-                                    <Typography variant="body2" weight="bold" className="text-teal-800">{flows.length} Akun</Typography>
+                                <View className="bg-teal-100/50 px-3 py-1.5 rounded-full border border-teal-200/30 flex-shrink-0">
+                                    <Typography variant="body2" weight="bold" className="text-teal-800" numberOfLines={1} adjustsFontSizeToFit>{flows.length} Akun</Typography>
                                 </View>
                             </View>
 
