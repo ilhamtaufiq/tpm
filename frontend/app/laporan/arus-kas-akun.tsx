@@ -8,7 +8,7 @@ import { id as localeID } from 'date-fns/locale';
 
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatCurrencyDisplay } from '../../utils/format';
 import { useLabaRugiReport, useCapitalReport } from '../../hooks/useKeuangan';
 import { LabaRugiReport, CapitalReport } from '../../types/reports';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -121,45 +121,31 @@ export default function ArusKasAkunScreen() {
                     </View>
                 ) : (
                     <>
-                        {/* Summary Header Card */}
-                        <Card className="mb-6 bg-slate-900 p-6 rounded-[32px] border border-slate-800 shadow-lg">
-                            <View className="flex-row justify-between items-center mb-4">
+                        {/* Summary Header Card (Matches Neraca Header Card Layout) */}
+                        <View className="bg-slate-900 p-6 rounded-[32px] shadow-xl shadow-slate-900/20 mb-8 mt-2 w-full">
+                            <View className="flex-row justify-between items-center mb-6">
+                                <View className="bg-teal-500/20 px-3 py-1.5 rounded-full border border-teal-500/20">
+                                    <Typography className="text-teal-400 text-[10px] font-bold uppercase tracking-widest">Realisasi Mutasi</Typography>
+                                </View>
                                 <View className="flex-row items-center">
-                                    <View className="w-8 h-8 bg-teal-500/20 rounded-xl items-center justify-center mr-3 border border-teal-500/30">
-                                        <ArrowRightLeft size={16} color="#2DD4BF" />
-                                    </View>
-                                    <Typography className="text-slate-300 text-[10px] uppercase font-bold tracking-[2px]">
-                                        Total Realisasi Mutasi
-                                    </Typography>
-                                </View>
-                                <View className={`px-3 py-1 rounded-full border ${totals.net >= 0 ? 'bg-emerald-500/20 border-emerald-500/30' : 'bg-rose-500/20 border-rose-500/30'}`}>
-                                    <Typography className={`text-[10px] font-bold ${totals.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                        Net: {totals.net >= 0 ? '+ ' : ''}{formatCurrency(totals.net)}
+                                    <ArrowRightLeft size={14} color={totals.net >= 0 ? "#34D399" : "#F87171"} />
+                                    <Typography className={`${totals.net >= 0 ? 'text-emerald-400' : 'text-rose-400'} text-[10px] font-bold ml-1.5`}>
+                                        NET: {totals.net >= 0 ? '+ ' : ''}{formatCurrencyDisplay(totals.net)}
                                     </Typography>
                                 </View>
                             </View>
-
-                            <View className="flex-row justify-between pt-4 border-t border-slate-800">
+                            <View className="flex-row justify-between pt-1">
                                 <View className="flex-1">
-                                    <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1.5">Total Uang Masuk</Typography>
-                                    <View className="flex-row items-center">
-                                        <View className="w-7 h-7 bg-emerald-500/10 rounded-lg items-center justify-center mr-2 border border-emerald-500/20">
-                                            <TrendingUp size={14} color="#34D399" />
-                                        </View>
-                                        <Typography className="text-emerald-400 text-sm font-bold">{formatCurrency(totals.masuk)}</Typography>
-                                    </View>
+                                    <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Uang Masuk</Typography>
+                                    <Typography weight="bold" className="text-emerald-400">{formatCurrencyDisplay(totals.masuk)}</Typography>
                                 </View>
-                                <View className="flex-1 ml-4 pl-4 border-l border-slate-800">
-                                    <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1.5">Total Uang Keluar</Typography>
-                                    <View className="flex-row items-center">
-                                        <View className="w-7 h-7 bg-rose-500/10 rounded-lg items-center justify-center mr-2 border border-rose-500/20">
-                                            <TrendingDown size={14} color="#F87171" />
-                                        </View>
-                                        <Typography className="text-rose-400 text-sm font-bold">{formatCurrency(totals.keluar)}</Typography>
-                                    </View>
+                                <View className="w-[1px] bg-slate-700/50 mx-4" />
+                                <View className="flex-1 items-end">
+                                    <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Uang Keluar</Typography>
+                                    <Typography weight="bold" className="text-rose-400">{formatCurrencyDisplay(totals.keluar)}</Typography>
                                 </View>
                             </View>
-                        </Card>
+                        </View>
 
                         {/* Breakdown per Account Card */}
                         <Card className="mb-6 overflow-hidden border-0 shadow-sm bg-white rounded-[28px] w-full">
