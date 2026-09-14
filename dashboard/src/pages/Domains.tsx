@@ -271,6 +271,7 @@ export function Sdm() {
     setPval(m === 'harian' ? today : m === 'tahunan' ? String(now.getFullYear()) : now.toISOString().slice(0, 7));
   };
 
+  const currentYear = year ?? new Date().getFullYear();
   const absensiDate = mode === 'harian' ? pval : today;
   const absensi = useQuery({ queryKey: ['absensi', absensiDate], queryFn: () => domainService.absensiToday(absensiDate) });
   const kasbon = useQuery({
@@ -358,7 +359,7 @@ export function Sdm() {
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Stat label="Hadir hari ini" value={str(hadir || '-')} sub={`${Object.values(daily.summary ?? {}).reduce((a, v) => a + num(v), 0)} tercatat`} icon={CalendarCheck2} tone="green" />
         <Stat label="Kasbon outstanding" value={formatCurrency(kasbonTotal)} sub={`${krows.length} belum lunas`} icon={HandCoins} tone="red" />
-        <Stat label="Slip lunas" value={`${paidCount}/${srows.length}`} sub={`Tahun ${now.getFullYear()}`} icon={ReceiptText} tone="indigo" />
+        <Stat label="Slip lunas" value={`${paidCount}/${srows.length}`} sub={`Tahun ${currentYear}`} icon={ReceiptText} tone="indigo" />
         <Stat label="Karyawan" value={str(krows.length > 0 || srows.length > 0 ? 'Aktif' : '-')} sub="Terdata di sistem" icon={Users} tone="navy" />
       </div>
       <div className="grid gap-5 xl:grid-cols-5">
