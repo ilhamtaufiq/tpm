@@ -233,7 +233,7 @@ export default function HistoryTab() {
         // Generic history still respects role isolation. Wallet mode is already scoped
         // to a specific unit ledger so transfer/setoran rows with source "LAINNYA" remain visible.
         const role = user?.role;
-        if (!walletFilter && role !== 'ADMIN' && role !== 'MANAGER') {
+        if (!walletFilter && selectedSource === 'all' && role !== 'ADMIN' && role !== 'MANAGER') {
             const source = item.source?.toLowerCase();
             if (role === 'BENGKEL' && source !== 'bengkel' && source !== 'pembelian_part') return false;
             if (role === 'JASA_ANGKUT' && source !== 'jasa_angkut') return false;

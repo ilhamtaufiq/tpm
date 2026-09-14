@@ -314,13 +314,18 @@ def get_recent_activity(
     # 1. Fetch recent transactions (KasBank)
     if source_clean in ("gaji", "sdm", "kasbon"):
         from app.models.keuangan import KasBank
+        from app.models.karyawan import KasbonKaryawan, SlipGaji
         query = db.query(KasBank).filter(
             or_(
                 KasBank.sumber.in_([KasBankSource.GAJI, KasBankSource.KASBON]),
+                func.lower(KasBank.sumber).in_(["gaji", "kasbon", "sdm", "kasbon_karyawan"]),
                 KasBank.keterangan.ilike("%kasbon%"),
                 KasBank.keterangan.ilike("%gaji%"),
-                KasBank.nomor_referensi.ilike("ksb%"),
-                KasBank.nomor_referensi.ilike("gji%"),
+                KasBank.keterangan.ilike("%sdm%"),
+                KasBank.nomor_referensi.ilike("%ksb%"),
+                KasBank.nomor_referensi.ilike("%gji%"),
+                KasBank.nomor_transaksi.ilike("%ksb%"),
+                KasBank.nomor_transaksi.ilike("%gji%"),
             )
         ).order_by(KasBank.created_at.desc()).limit(kas_pool_limit)
         kas_data = query.all()
@@ -407,6 +412,70 @@ def get_recent_activity(
             "source": str(item.sumber.value),
             "ref_number": item.nomor_referensi,
         })
+
+    # Direct fallback for KasbonKaryawan & SlipGaji if source is SDM
+    if source_clean in ("gaji", "sdm", "kasbon"):
+        from app.models.karyawan import KasbonKaryawan, SlipGaji
+        from sqlalchemy.orm import joinedload
+
+        kas_ref_set = {
+            (item.nomor_referensi or "").lower() for item in kas_data if item.nomor_referensi
+        }
+        kas_ref_set.update(
+            (item.nomor_transaksi or "").lower() for item in kas_data if item.nomor_transaksi
+        )
+
+        kasbon_rows = (
+            db.query(KasbonKaryawan)
+            .options(joinedload(KasbonKaryawan.karyawan))
+            .order_by(KasbonKaryawan.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        for kb in kasbon_rows:
+            ref_code = (kb.nomor_kasbon or "").lower()
+            if ref_code not in kas_ref_set:
+                emp_name = kb.karyawan.nama if getattr(kb, "karyawan", None) else "Karyawan"
+                ts = kb.created_at.isoformat() if kb.created_at else kb.tanggal.isoformat()
+                activities.append({
+                    "type": "financial",
+                    "id": f"kasbon_{kb.id}",
+                    "original_id": kb.id,
+                    "title": f"Kasbon karyawan {emp_name} ({kb.nomor_kasbon})",
+                    "subtitle": kb.nomor_kasbon,
+                    "amount": float(kb.nominal),
+                    "is_incoming": False,
+                    "status": kb.status.value if hasattr(kb.status, "value") else str(kb.status),
+                    "timestamp": ts,
+                    "source": "KASBON",
+                    "ref_number": kb.nomor_kasbon,
+                })
+
+        slip_rows = (
+            db.query(SlipGaji)
+            .options(joinedload(SlipGaji.karyawan))
+            .order_by(SlipGaji.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        for sg in slip_rows:
+            ref_code = (sg.nomor_slip or "").lower()
+            if ref_code not in kas_ref_set:
+                emp_name = sg.karyawan.nama if getattr(sg, "karyawan", None) else "Karyawan"
+                ts = sg.created_at.isoformat() if sg.created_at else sg.tanggal.isoformat()
+                activities.append({
+                    "type": "financial",
+                    "id": f"gaji_{sg.id}",
+                    "original_id": sg.id,
+                    "title": f"Gaji karyawan {emp_name} ({sg.nomor_slip})",
+                    "subtitle": sg.nomor_slip,
+                    "amount": float(sg.thp or sg.total_gaji or 0),
+                    "is_incoming": False,
+                    "status": "LUNAS",
+                    "timestamp": ts,
+                    "source": "GAJI",
+                    "ref_number": sg.nomor_slip,
+                })
 
     for item in bengkel_data:
         title, subtitle = _workshop_activity_labels(item)
