@@ -389,6 +389,8 @@ export default function LabaRugiScreen() {
         const finalProfit = reportData?.summary?.laba_bersih || 0;
         const totalProfitBeforePrive = reportData?.summary?.laba_operasional || 0;
         const priveTotal = reportData?.summary?.prive || 0;
+        const totalRevenue = reportData?.summary?.total_revenue || 0;
+        const totalExpenses = (reportData?.summary?.total_hpp || 0) + (reportData?.summary?.total_beban_operasional || 0) + (reportData?.summary?.total_beban_umum || 0);
 
         return (
             <Card className="bg-indigo-950 p-6 rounded-[40px] shadow-2xl shadow-indigo-900/40 mb-12 overflow-hidden relative w-full border border-indigo-900">
@@ -404,6 +406,9 @@ export default function LabaRugiScreen() {
                 </View>
 
                 <View className="mb-6 w-full px-2">
+                    <FinancialRow label="Total Pemasukan (Revenue)" value={totalRevenue} isDark bold color="text-emerald-400" />
+                    <FinancialRow label="Total Pengeluaran (HPP & Beban Ops)" value={totalExpenses} isNegative isDark bold color="text-rose-400" />
+                    <View className="h-[1px] bg-white/10 w-full my-3" />
                     <FinancialRow label="Laba operasional seluruh unit" value={totalProfitBeforePrive} isDark large />
                     <View className="h-[1px] bg-white/10 w-full my-3" />
                     <FinancialRow label="Prive pemilik" value={priveTotal} isNegative isDark color="text-rose-400" />
