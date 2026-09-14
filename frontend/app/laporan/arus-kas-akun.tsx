@@ -217,21 +217,33 @@ export default function ArusKasAkunScreen() {
                             );
                         })()}
 
+                        {/* Section Header Indicator */}
+                        <View className="flex-row items-center mb-4 px-2 mt-2">
+                            <View className="w-2 h-8 bg-teal-500 rounded-full mr-3" />
+                            <View>
+                                <Typography variant="h3" weight="bold" className="text-text tracking-tight">MUTASI & POSISI KAS</Typography>
+                                <Typography variant="caption" className="text-textGray">Rincian Per Akun Keuangan</Typography>
+                            </View>
+                        </View>
+
                         {/* Breakdown per Account Card */}
-                        <Card className="mb-6 overflow-hidden border-0 shadow-sm bg-white rounded-[28px] w-full">
-                            <View className={`${totals.net >= 0 ? 'bg-teal-700' : 'bg-rose-700'} px-6 py-4 flex-row items-center justify-between w-full`}>
+                        <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                            <View className="bg-teal-50/70 px-5 py-4 flex-row justify-between items-center border-b border-teal-100/50 w-full">
                                 <View className="flex-row items-center">
-                                    <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center mr-3 border border-white/10">
-                                        <ArrowRightLeft size={18} color="white" />
+                                    <View className="w-10 h-10 rounded-full bg-teal-100/80 items-center justify-center mr-3">
+                                        <ArrowRightLeft size={20} color="#0D9488" />
                                     </View>
-                                    <Typography variant="h4" weight="bold" className="text-white tracking-tight">Rincian Mutasi Arus Kas per Akun</Typography>
+                                    <View>
+                                        <Typography variant="h4" weight="bold" className="text-teal-900 tracking-tight">Rincian Mutasi Arus Kas</Typography>
+                                        <Typography variant="caption" className="text-teal-700/60 uppercase text-[10px] tracking-wider mt-0.5">Cash Flow Breakdown</Typography>
+                                    </View>
                                 </View>
-                                <View className="bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
-                                    <Typography weight="bold" className="text-white text-[10px] uppercase tracking-widest">{flows.length} Akun</Typography>
+                                <View className="bg-teal-100/50 px-3 py-1.5 rounded-full border border-teal-200/30">
+                                    <Typography variant="body2" weight="bold" className="text-teal-800">{flows.length} Akun</Typography>
                                 </View>
                             </View>
 
-                            <View className="p-6 w-full">
+                            <View className="p-5 w-full">
                                 <Typography variant="caption" className="text-slate-400 text-[11px] mb-4">
                                     Rincian mutasi fisik arus kas per rekening/dompet selama periode {formattedDate}.
                                 </Typography>
@@ -252,22 +264,25 @@ export default function ArusKasAkunScreen() {
                             const totalSaldoKas = details.reduce((acc: number, item: any) => acc + Number(item.saldo || 0), 0);
 
                             return (
-                                <Card className="mb-6 overflow-hidden border-0 shadow-sm bg-white rounded-[28px] w-full">
-                                    <View className="bg-slate-800 px-6 py-4 flex-row items-center justify-between w-full">
+                                <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                                    <View className="bg-indigo-50/70 px-5 py-4 flex-row justify-between items-center border-b border-indigo-100/50 w-full">
                                         <View className="flex-row items-center">
-                                            <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center mr-3 border border-white/10">
-                                                <Wallet size={18} color="white" />
+                                            <View className="w-10 h-10 rounded-full bg-indigo-100/80 items-center justify-center mr-3">
+                                                <Wallet size={20} color="#4F46E5" />
                                             </View>
-                                            <Typography variant="h4" weight="bold" className="text-white tracking-tight">Posisi Saldo Kas per Akun</Typography>
+                                            <View>
+                                                <Typography variant="h4" weight="bold" className="text-indigo-900 tracking-tight">Posisi Saldo Kas per Akun</Typography>
+                                                <Typography variant="caption" className="text-indigo-700/60 uppercase text-[10px] tracking-wider mt-0.5">Ending Cash Position</Typography>
+                                            </View>
                                         </View>
-                                        <View className="bg-white/10 px-3 py-1 rounded-lg border border-white/10">
-                                            <Typography weight="bold" className="text-emerald-300 text-[10px] uppercase tracking-widest">
-                                                Total: {formatCurrencyDisplay(totalSaldoKas)}
+                                        <View className="bg-indigo-100/50 px-3 py-1.5 rounded-full border border-indigo-200/30">
+                                            <Typography variant="body2" weight="bold" className="text-indigo-800">
+                                                {formatCurrencyDisplay(totalSaldoKas)}
                                             </Typography>
                                         </View>
                                     </View>
 
-                                    <View className="p-6 w-full">
+                                    <View className="p-5 w-full">
                                         <Typography variant="caption" className="text-slate-400 text-[11px] mb-3">
                                             Saldo posisi kas & bank per akun pada akhir periode {formattedDate}.
                                         </Typography>
