@@ -108,10 +108,10 @@ export default function FinanceTab() {
         (dashboard.jasa_angkut?.total_pendapatan || 0)
     ) : 0;
 
-    const totalPengeluaran = dashboard?.pengeluaran.total || 0;
+    const totalPengeluaranOpsGaji = dashboard?.pengeluaran.total || 0;
     const commonOverhead = dashboard?.pengeluaran.breakdown.umum || 0;
-
     const totalLabaBersih = dashboard?.laba_operasional ?? 0;
+    const totalPengeluaranLabaRugi = totalPendapatan - totalLabaBersih;
 
     // Aggregate sub-accounts for summary cards
     const aggregateCash = dashboard?.kas_bank ? (
@@ -278,12 +278,12 @@ export default function FinanceTab() {
                             </View>
                         </View>
                         <View className="flex-1 ml-4 pl-4 border-l border-gray-50">
-                            <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-1">Beban Ops & SDM</Typography>
+                            <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-1">Pengeluaran (HPP & Ops)</Typography>
                             <View className="flex-row items-center">
                                 <View className="w-6 h-6 bg-rose-50 rounded-lg items-center justify-center mr-2">
                                     <TrendingDown size={12} color="#EF4444" />
                                 </View>
-                                <Typography className="text-textMain text-xs font-bold">{formatCurrency(totalPengeluaran)}</Typography>
+                                <Typography className="text-textMain text-xs font-bold">{formatCurrency(totalPengeluaranLabaRugi)}</Typography>
                             </View>
                         </View>
                     </View>
