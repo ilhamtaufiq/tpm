@@ -121,35 +121,48 @@ export default function ArusKasAkunScreen() {
                     </View>
                 ) : (
                     <>
-                        {/* Summary Header Card (Matches Neraca Header Card Layout) */}
-                        <View className="bg-slate-900 p-6 rounded-[32px] shadow-xl shadow-slate-900/20 mb-8 mt-2 w-full">
-                            <View className="flex-row justify-between items-center mb-6">
-                                <View className="bg-teal-500/20 px-3 py-1.5 rounded-full border border-teal-500/20">
-                                    <Typography className="text-teal-400 text-[10px] font-bold uppercase tracking-widest">Realisasi Mutasi</Typography>
+                        {/* Summary Header Card (Matches Neraca Header Card Layout with Dynamic Colors) */}
+                        {(() => {
+                            const isPositive = totals.net >= 0;
+                            const badgeBg = isPositive ? 'bg-teal-500/20 border-teal-500/20' : 'bg-rose-500/20 border-rose-500/20';
+                            const badgeText = isPositive ? 'text-teal-400' : 'text-rose-400';
+                            const statusNetText = isPositive ? 'text-emerald-400' : 'text-rose-400';
+                            const statusIconColor = isPositive ? '#34D399' : '#F87171';
+                            const cardBorder = isPositive ? 'border-slate-800' : 'border-rose-900/40';
+
+                            return (
+                                <View className={`bg-slate-900 p-6 rounded-[32px] shadow-xl shadow-slate-900/20 mb-8 mt-2 w-full border ${cardBorder}`}>
+                                    <View className="flex-row justify-between items-center mb-6">
+                                        <View className={`${badgeBg} px-3 py-1.5 rounded-full border`}>
+                                            <Typography className={`${badgeText} text-[10px] font-bold uppercase tracking-widest`}>
+                                                {isPositive ? 'Realisasi Surplus' : 'Realisasi Defisit'}
+                                            </Typography>
+                                        </View>
+                                        <View className="flex-row items-center">
+                                            <ArrowRightLeft size={14} color={statusIconColor} />
+                                            <Typography className={`${statusNetText} text-[10px] font-bold ml-1.5`}>
+                                                NET: {isPositive ? '+ ' : ''}{formatCurrencyDisplay(totals.net)}
+                                            </Typography>
+                                        </View>
+                                    </View>
+                                    <View className="flex-row justify-between pt-1">
+                                        <View className="flex-1">
+                                            <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Uang Masuk</Typography>
+                                            <Typography weight="bold" className="text-emerald-400">{formatCurrencyDisplay(totals.masuk)}</Typography>
+                                        </View>
+                                        <View className="w-[1px] bg-slate-700/50 mx-4" />
+                                        <View className="flex-1 items-end">
+                                            <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Uang Keluar</Typography>
+                                            <Typography weight="bold" className="text-rose-400">{formatCurrencyDisplay(totals.keluar)}</Typography>
+                                        </View>
+                                    </View>
                                 </View>
-                                <View className="flex-row items-center">
-                                    <ArrowRightLeft size={14} color={totals.net >= 0 ? "#34D399" : "#F87171"} />
-                                    <Typography className={`${totals.net >= 0 ? 'text-emerald-400' : 'text-rose-400'} text-[10px] font-bold ml-1.5`}>
-                                        NET: {totals.net >= 0 ? '+ ' : ''}{formatCurrencyDisplay(totals.net)}
-                                    </Typography>
-                                </View>
-                            </View>
-                            <View className="flex-row justify-between pt-1">
-                                <View className="flex-1">
-                                    <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Uang Masuk</Typography>
-                                    <Typography weight="bold" className="text-emerald-400">{formatCurrencyDisplay(totals.masuk)}</Typography>
-                                </View>
-                                <View className="w-[1px] bg-slate-700/50 mx-4" />
-                                <View className="flex-1 items-end">
-                                    <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Uang Keluar</Typography>
-                                    <Typography weight="bold" className="text-rose-400">{formatCurrencyDisplay(totals.keluar)}</Typography>
-                                </View>
-                            </View>
-                        </View>
+                            );
+                        })()}
 
                         {/* Breakdown per Account Card */}
                         <Card className="mb-6 overflow-hidden border-0 shadow-sm bg-white rounded-[28px] w-full">
-                            <View className="bg-teal-700 px-6 py-4 flex-row items-center justify-between w-full">
+                            <View className={`${totals.net >= 0 ? 'bg-teal-700' : 'bg-rose-700'} px-6 py-4 flex-row items-center justify-between w-full`}>
                                 <View className="flex-row items-center">
                                     <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center mr-3 border border-white/10">
                                         <ArrowRightLeft size={18} color="white" />
