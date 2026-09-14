@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { financeService, LacakResult } from '../api/services';
+import { financeService, type LacakResult } from '../api/services';
 import { formatCurrency, formatDateTime } from '../utils/format';
 import { Badge, Card, DataTable, Loading, PageHeader } from '../components/ui';
 import { kasJenisLabel } from '../components/reports';
