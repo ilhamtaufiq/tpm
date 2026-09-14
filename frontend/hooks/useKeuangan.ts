@@ -223,11 +223,12 @@ export const useDashboardSummary = (params?: any, options?: { refetchInterval?: 
 
 export const useRecentActivity = (
     limit: number = 10,
+    source?: string,
     options?: { refetchInterval?: number; enabled?: boolean }
 ) => {
     return useQuery<ActivityItem[]>({
-        queryKey: ['recent_activity', limit],
-        queryFn: () => keuanganService.getRecentActivity(limit),
+        queryKey: ['recent_activity', limit, source],
+        queryFn: () => keuanganService.getRecentActivity(limit, source),
         staleTime: 1000 * 30,
         refetchOnReconnect: true,
         ...options

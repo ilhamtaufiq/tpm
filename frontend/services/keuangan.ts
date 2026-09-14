@@ -541,8 +541,13 @@ export const keuanganService = {
         return response.data;
     },
 
-    getRecentActivity: async (limit: number = 10): Promise<ActivityItem[]> => {
-        const response = await api.get('/dashboard/recent-activity', { params: { limit } });
+    getRecentActivity: async (limit: number = 10, source?: string): Promise<ActivityItem[]> => {
+        const response = await api.get('/dashboard/recent-activity', {
+            params: {
+                limit,
+                source: source && source !== 'all' ? source : undefined
+            }
+        });
         return response.data;
     },
 

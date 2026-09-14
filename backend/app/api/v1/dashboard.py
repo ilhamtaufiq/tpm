@@ -293,41 +293,94 @@ def get_recent_activity(
     db: DBSession,
     current_user: ManagerUser,
     limit: int = 10,
+    source: Optional[str] = None,
 ):
     """Get unified recent activity feed (Financial + Operational)."""
     # ── Cache check (30-second TTL) ───────────────────────────────────
-    _cache_key = build_key("recent_activity", limit)
+    _cache_key = build_key("recent_activity", limit, source or "all")
     _cached = get_cached(_cache_key)
     if _cached is not None:
         return _cached
     # ─────────────────────────────────────────────────────────────────
 
-    # 1. Fetch recent transactions (KasBank)
+    source_clean = (source or "all").lower()
+
     kas_bank_service = KasBankService(db)
-    kas_data = kas_bank_service.get_list(
-        limit=limit,
-        sort_by="created_at",
-        sort_order="desc"
-    )["data"]
+    bengkel_service = TransaksiBengkelService(db)
+    muatan_service = MuatanService(db)
+
+    kas_pool_limit = max(limit * 5, 500)
+
+    # 1. Fetch recent transactions (KasBank)
+    if source_clean in ("gaji", "sdm", "kasbon"):
+        from app.models.keuangan import KasBank
+        query = db.query(KasBank).filter(
+            or_(
+                KasBank.sumber.in_([KasBankSource.GAJI, KasBankSource.KASBON]),
+                KasBank.keterangan.ilike("%kasbon%"),
+                KasBank.keterangan.ilike("%gaji%"),
+                KasBank.nomor_referensi.ilike("ksb%"),
+                KasBank.nomor_referensi.ilike("gji%"),
+            )
+        ).order_by(KasBank.created_at.desc()).limit(kas_pool_limit)
+        kas_data = query.all()
+    elif source_clean == "bengkel":
+        kas_data = kas_bank_service.get_list(
+            limit=kas_pool_limit,
+            sumber=KasBankSource.BENGKEL,
+            sort_by="created_at",
+            sort_order="desc"
+        )["data"]
+    elif source_clean == "jasa_angkut":
+        kas_data = kas_bank_service.get_list(
+            limit=kas_pool_limit,
+            sumber=KasBankSource.JASA_ANGKUT,
+            sort_by="created_at",
+            sort_order="desc"
+        )["data"]
+    elif source_clean in ("jual_beli_mobil", "pembelian_mobil", "mobil"):
+        from app.models.keuangan import KasBank
+        query = db.query(KasBank).filter(
+            KasBank.sumber.in_([KasBankSource.JUAL_BELI_MOBIL, KasBankSource.PEMBELIAN_MOBIL])
+        ).order_by(KasBank.created_at.desc()).limit(kas_pool_limit)
+        kas_data = query.all()
+    elif source_clean == "pengeluaran":
+        kas_data = kas_bank_service.get_list(
+            limit=kas_pool_limit,
+            sumber=KasBankSource.PENGELUARAN,
+            sort_by="created_at",
+            sort_order="desc"
+        )["data"]
+    else:
+        kas_data = kas_bank_service.get_list(
+            limit=kas_pool_limit,
+            sort_by="created_at",
+            sort_order="desc"
+        )["data"]
 
     # 2. Fetch recent workshop sales (Bengkel)
-    # Use updated_at so internal JB Mobil services resurface in history after auto-settle on sale.
-    bengkel_service = TransaksiBengkelService(db)
-    bengkel_pool_limit = max(limit * 5, 50)
-    bengkel_data = bengkel_service.get_list(
-        limit=bengkel_pool_limit,
-        sort_by="updated_at",
-        sort_order="desc"
-    )["data"]
-    bengkel_data = [item for item in bengkel_data if _workshop_activity_recognized(item)]
+    bengkel_data = []
+    if source_clean in ("all", "bengkel", "jual_beli_mobil"):
+        bengkel_pool_limit = max(limit * 5, 500)
+        bengkel_raw = bengkel_service.get_list(
+            limit=bengkel_pool_limit,
+            sort_by="updated_at",
+            sort_order="desc"
+        )["data"]
+        bengkel_data = [item for item in bengkel_raw if _workshop_activity_recognized(item)]
+        if source_clean == "jual_beli_mobil":
+            bengkel_data = [item for item in bengkel_data if (getattr(item, "kategori", None) or "").lower() == "jual_beli_mobil"]
+        elif source_clean == "bengkel":
+            bengkel_data = [item for item in bengkel_data if (getattr(item, "kategori", None) or "umum").lower() not in ("jual_beli_mobil", "jasa_angkut")]
 
     # 3. Fetch recent transport loads (Jasa Angkut)
-    muatan_service = MuatanService(db)
-    muatan_data = muatan_service.get_list(
-        limit=limit,
-        sort_by="created_at",
-        sort_order="desc"
-    )["data"]
+    muatan_data = []
+    if source_clean in ("all", "jasa_angkut"):
+        muatan_data = muatan_service.get_list(
+            limit=kas_pool_limit if source_clean == "jasa_angkut" else limit,
+            sort_by="created_at",
+            sort_order="desc"
+        )["data"]
 
     # 4. Normalize and Merge
     activities = []

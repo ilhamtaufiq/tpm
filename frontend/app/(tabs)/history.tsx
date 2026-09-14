@@ -52,7 +52,7 @@ const getSourceConfig = (source: string, title?: string) => {
     if (t.includes('angkut') || t.includes('muatan') || t.includes('jas')) {
         return { icon: Truck, color: '#10B981', label: 'Jasa Angkut' };
     }
-    if (t.includes('gaji') || t.includes('kantor') || t.includes('sdm')) {
+    if (t.includes('gaji') || t.includes('kantor') || t.includes('sdm') || t.includes('kasbon')) {
         return { icon: User, color: '#8B5CF6', label: 'SDM' };
     }
 
@@ -175,7 +175,7 @@ export default function HistoryTab() {
         data: recentTransactions,
         isLoading: isRecentLoading,
         refetch: refetchRecent,
-    } = useRecentActivity(100, {
+    } = useRecentActivity(100, selectedSource, {
         enabled: !walletFilter,
     });
 
@@ -264,9 +264,11 @@ export default function HistoryTab() {
             const itemTitle = (item.title || '').toLowerCase();
             const itemRef = (item.ref_number || '').toLowerCase();
             if (selectedSource === 'gaji') {
+                const itemSubtitle = (item.subtitle || '').toLowerCase();
                 const isSdm = itemSource === 'gaji' || itemSource === 'kasbon' ||
                               itemTitle.includes('kasbon') || itemTitle.includes('gaji') ||
-                              itemRef.startsWith('ksb') || itemRef.startsWith('gji');
+                              itemRef.includes('ksb') || itemRef.includes('gji') ||
+                              itemSubtitle.includes('ksb') || itemSubtitle.includes('gji');
                 if (!isSdm) return false;
             } else if (selectedSource === 'jual_beli_mobil') {
                 if (itemSource !== 'jual_beli_mobil' && itemSource !== 'pembelian_mobil') return false;

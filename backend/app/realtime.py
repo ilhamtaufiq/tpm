@@ -53,11 +53,19 @@ class RealtimeManager:
         self._loop = loop
 
     async def authenticate(self, websocket: WebSocket, timeout: float = 10.0) -> Optional[str]:
-        """Read the auth frame and return a verified-ready token, or None.
+        """Accept the socket and read the auth frame or query token.
 
-        The token travels in the first frame rather than the query string —
-        query strings are written verbatim to nginx/Cloudflare access logs.
+        Token can arrive in query param ?token=... or first frame {type:'auth', token:'...'}.
         """
+        await websocket.accept()
+
+        token = websocket.query_params.get("token")
+        if token:
+            if token.startswith("Bearer "):
+                token = token.removeprefix("Bearer ").strip()
+            if token:
+                return token
+
         try:
             raw = await asyncio.wait_for(websocket.receive_text(), timeout=timeout)
         except (asyncio.TimeoutError, WebSocketDisconnect):
@@ -78,7 +86,6 @@ class RealtimeManager:
 
     async def connect(self, websocket: WebSocket, token: str) -> RealtimeConnection:
         print("[Realtime] Incoming websocket connection")
-        await websocket.accept()
 
         if token.startswith("Bearer "):
             token = token.removeprefix("Bearer ").strip()
