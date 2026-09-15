@@ -529,7 +529,7 @@ export default function QueueScreen() {
                             </View>
                         </View>
 
-                        {isActiveWork && !isBengkelTransactionLocked(item) && (
+                        {!isBengkelTransactionLocked(item) && !isBengkelTransactionVoided(item) && (
                             <View className="flex-row items-center mt-3 pt-3 border-t border-gray-50 gap-2">
                                 {[
                                     { label: 'Sparepart', mode: 'sparepart', icon: Package, color: '#059669' },

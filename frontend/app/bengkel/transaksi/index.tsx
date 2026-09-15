@@ -17,7 +17,7 @@ import { useJasaList } from '../../../hooks/useJasaServis';
 import { useActiveArmada } from '../../../hooks/useJasaAngkut';
 import { useMobilList } from '../../../hooks/useMobil';
 import { formatCurrency, formatNumber, parseNumber } from '../../../utils/format';
-import { isBengkelTransactionLocked } from '../../../utils/bengkelTransaction';
+import { isBengkelTransactionLocked, isBengkelTransactionVoided } from '../../../utils/bengkelTransaction';
 import { getCustomTabBarHeight } from '../../../components/ui/CustomTabBar';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../../utils/printSettings';
@@ -506,20 +506,15 @@ export default function BengkelTransaksiScreen() {
         const rows = existingTransactionsData?.data || [];
         return rows.filter((item: any) => {
             if (editTransactionId && Number(item.id) === editTransactionId) return false;
-            const workStatus = getEditableWorkStatus(item);
-            const paymentStatus = getEditablePaymentStatus(item);
-            const canEditWorkStatus = workStatus === 'PROSES';
-            const canEditPaymentStatus = paymentStatus === 'BELUM_BAYAR' || paymentStatus === 'BELUM_LUNAS';
-            return canEditWorkStatus && canEditPaymentStatus;
+            return !isBengkelTransactionLocked(item) && !isBengkelTransactionVoided(item);
         });
     }, [editTransactionId, existingTransactionsData]);
     const openCustomerTransactions = useMemo(() => {
         const rows = openCustomerTransactionsData?.data || [];
         const query = debouncedCustomerTransactionSearch.trim().toLowerCase();
         return rows.filter((item: any) => {
-            const workStatus = getEditableWorkStatus(item);
             const isGeneralCustomer = String(item.kategori || 'umum').toLowerCase() === 'umum';
-            if (!(isGeneralCustomer && (workStatus === 'PROSES'))) return false;
+            if (!isGeneralCustomer || isBengkelTransactionLocked(item) || isBengkelTransactionVoided(item)) return false;
             if (!query) return true;
             return [
                 item.customer_nama,
