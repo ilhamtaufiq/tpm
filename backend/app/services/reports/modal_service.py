@@ -75,6 +75,30 @@ class ModalService(BaseReportService):
             - pengembalian
         )
 
+    def heal_muatan_piutang_dates(self) -> None:
+        """Auto-heal date mismatches between MuatanJasaAngkut and linked PiutangUsaha."""
+        from app.models.jasa_angkut import MuatanJasaAngkut
+        from app.models.keuangan import PiutangUsaha
+        from app.utils.constants import PiutangSource
+        from sqlalchemy import or_
+
+        unmatched = self.db.query(PiutangUsaha).filter(
+            PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
+        ).all()
+        healed = False
+        for p in unmatched:
+            m = self.db.query(MuatanJasaAngkut).filter(
+                or_(
+                    MuatanJasaAngkut.id == p.referensi_id,
+                    MuatanJasaAngkut.nomor_transaksi == p.nomor_referensi
+                )
+            ).first()
+            if m and p.tanggal != m.tanggal:
+                p.tanggal = m.tanggal
+                healed = True
+        if healed:
+            self.db.commit()
+
     def _frozen_modal_awal(self, anchor: date, computed: float) -> float:
         """Modal awal BEKU tersimpan: dihitung sekali, lalu dibaca dari setting.
 
@@ -95,7 +119,12 @@ class ModalService(BaseReportService):
                 # Anchor bergeser (import ulang IMP- baru) / rumus berubah → beku ulang.
                 if (stored.get("as_of") == anchor.isoformat()
                         and stored.get("v") == self.FROZEN_MODAL_AWAL_V):
-                    return float(stored["amount"])
+                    if abs(float(stored.get("amount", 0)) - computed) > 1:
+                        stored["amount"] = computed
+                        row.value = json.dumps(stored)
+                        self.db.add(row)
+                        self.db.commit()
+                    return computed
             except (ValueError, KeyError, TypeError):
                 pass
         if row is None:
@@ -162,6 +191,8 @@ class ModalService(BaseReportService):
         """Laporan Perubahan Modal (Capital Change) - Extended structure for Frontend"""
         from app.services.reports.neraca_service import NeracaService
         from app.services.penjualan_mobil_service import PenjualanMobilService
+
+        self.heal_muatan_piutang_dates()
 
         # Periode yang berakhir sebelum saldo awal tidak punya data pembanding:
         # modal_akhir tak bisa dihitung dan modal_awal dipaksa ke nilai masa depan
