@@ -53,6 +53,17 @@ export const financeService = {
   lacak: (nomor: string) => get<LacakResult>(`/lacak/${encodeURIComponent(nomor)}`),
 };
 
+export const monitorService = {
+  stats: () => get<{
+    database?: {
+      total_size_mb?: number;
+      table_count?: number;
+      tables?: { name: string; rows: number }[];
+    };
+    system?: Record<string, unknown>;
+  }>('/monitor/stats'),
+};
+
 export interface LacakResult {
   kind: string;
   nomor: string;

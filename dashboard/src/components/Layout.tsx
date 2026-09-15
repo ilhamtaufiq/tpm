@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
+  Activity,
   ArrowLeftRight,
   Banknote,
   Boxes,
@@ -40,6 +41,7 @@ const NAV: NavItem[] = [
   { to: '/mobil', label: 'Mobil', icon: Car, group: 'Operasional' },
   { to: '/angkut', label: 'Angkut', icon: Truck, group: 'Operasional' },
   { to: '/sdm', label: 'SDM', icon: Users, group: 'Operasional' },
+  { to: '/monitor', label: 'System Monitor', icon: Activity, group: 'Sistem' },
   { to: '/pengaturan', label: 'Pengaturan', icon: SettingsIcon, group: 'Sistem' },
 ];
 
