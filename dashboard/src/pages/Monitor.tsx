@@ -1,11 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Activity, AlertTriangle, Database, RefreshCw, Server, ShieldCheck, Zap } from 'lucide-react';
+import { Activity, AlertCircle, AlertTriangle, Bug, Database, RefreshCw, Server, Smartphone, Globe, Zap } from 'lucide-react';
 import { monitorService } from '../api/services';
-import { Card, Loading, PageHeader, ProgressBar, Stat } from '../components/ui';
+import { Badge, Card, Empty, Loading, PageHeader, ProgressBar, Stat } from '../components/ui';
 
 interface TableStat {
   name: string;
   rows: number;
+}
+
+interface ClientLog {
+  id: string;
+  type: 'LAG' | 'BUG' | 'ERROR';
+  title: string;
+  message: string;
+  platform: 'android' | 'web' | 'ios';
+  duration?: number;
+  status?: number;
+  stack?: string;
+  url?: string;
+  timestamp: number;
 }
 
 interface MonitorStats {
@@ -14,6 +27,7 @@ interface MonitorStats {
     table_count?: number;
     tables?: TableStat[];
   };
+  client_logs?: ClientLog[];
   system?: Record<string, unknown>;
 }
 
@@ -21,13 +35,15 @@ export default function Monitor() {
   const [stats, setStats] = useState<MonitorStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'system' | 'database'>('system');
+  const [activeTab, setActiveTab] = useState<'client-logs' | 'system' | 'database'>('client-logs');
+  const [platformFilter, setPlatformFilter] = useState<'ALL' | 'ANDROID' | 'WEB'>('ALL');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'LAG' | 'BUG' | 'ERROR'>('ALL');
 
   const fetchStats = async () => {
     try {
       setRefreshing(true);
       const data = await monitorService.stats();
-      setStats(data);
+      setStats(data as MonitorStats);
     } catch (err) {
       console.error('[Dashboard Monitor] Failed to fetch stats:', err);
     } finally {
@@ -46,13 +62,27 @@ export default function Monitor() {
 
   const db = stats?.database;
   const tables = db?.tables || [];
+  const clientLogs = stats?.client_logs || [];
   const maxRows = Math.max(...tables.map((t) => t.rows), 1);
+
+  const filteredLogs = clientLogs.filter((log) => {
+    const matchPlatform =
+      platformFilter === 'ALL' ||
+      (platformFilter === 'ANDROID' && log.platform === 'android') ||
+      (platformFilter === 'WEB' && log.platform === 'web');
+    const matchType = typeFilter === 'ALL' || log.type === typeFilter;
+    return matchPlatform && matchType;
+  });
+
+  const lagCount = clientLogs.filter((l) => l.type === 'LAG').length;
+  const bugCount = clientLogs.filter((l) => l.type === 'BUG').length;
+  const errCount = clientLogs.filter((l) => l.type === 'ERROR').length;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="System & Log Monitor"
-        sub="Monitoring performa database, beban server, dan kesehatan sistem real-time."
+        sub="Monitoring real-time bug, error, lag dari build Android APK & Web Frontend."
         right={
           <button
             onClick={fetchStats}
@@ -66,32 +96,50 @@ export default function Monitor() {
       />
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Stat
-          label="Ukuran DB"
-          value={`${db?.total_size_mb || '0.0'} MB`}
-          sub="Total kapasitas PostgreSQL"
-          icon={Database}
+          label="Android & Web Logs"
+          value={String(clientLogs.length)}
+          sub="Total event terekam"
+          icon={Activity}
           tone="indigo"
         />
         <Stat
-          label="Total Tabel"
-          value={String(db?.table_count || 0)}
-          sub="Tabel aktif di skema DB"
-          icon={Server}
-          tone="green"
+          label="Lag & Delay"
+          value={String(lagCount)}
+          sub="Merespons > 1000ms"
+          icon={Zap}
+          tone="amber"
         />
         <Stat
-          label="Status Server"
-          value="HEALTHY"
-          sub="FastAPI + PostgreSQL"
-          icon={ShieldCheck}
-          tone="green"
+          label="App Bugs"
+          value={String(bugCount)}
+          sub="Crash / ErrorBoundary"
+          icon={Bug}
+          tone="red"
+        />
+        <Stat
+          label="HTTP Errors"
+          value={String(errCount)}
+          sub="Respon HTTP 4xx/5xx"
+          icon={AlertCircle}
+          tone="red"
         />
       </div>
 
       {/* Tab Navigation */}
       <div className="flex gap-2 border-b border-slate-200 pb-3">
+        <button
+          onClick={() => setActiveTab('client-logs')}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
+            activeTab === 'client-logs'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Smartphone size={15} />
+          Log Frontend (Android / Web) ({clientLogs.length})
+        </button>
         <button
           onClick={() => setActiveTab('system')}
           className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
@@ -100,8 +148,8 @@ export default function Monitor() {
               : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
           }`}
         >
-          <Activity size={15} />
-          Informasi Tabel & Baris DB
+          <Server size={15} />
+          Informasi Tabel DB
         </button>
         <button
           onClick={() => setActiveTab('database')}
@@ -112,12 +160,106 @@ export default function Monitor() {
           }`}
         >
           <Database size={15} />
-          Distribusi Data Database
+          Spesifikasi Database
         </button>
       </div>
 
       {/* Content */}
-      {activeTab === 'system' ? (
+      {activeTab === 'client-logs' ? (
+        <Card
+          title="Rekaman Audit Bug, Error, & Lag App"
+          sub="Data real-time yang dikirim langsung dari aplikasi Android APK & Web Client."
+          icon={Activity}
+          right={
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Platform Filters */}
+              <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+                {(['ALL', 'ANDROID', 'WEB'] as const).map((plat) => (
+                  <button
+                    key={plat}
+                    onClick={() => setPlatformFilter(plat)}
+                    className={`rounded-lg px-2.5 py-1 text-[10px] font-extrabold uppercase transition-colors ${
+                      platformFilter === plat
+                        ? 'bg-white text-indigo-600 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    {plat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Type Filters */}
+              <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+                {(['ALL', 'LAG', 'BUG', 'ERROR'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setTypeFilter(type)}
+                    className={`rounded-lg px-2.5 py-1 text-[10px] font-extrabold uppercase transition-colors ${
+                      typeFilter === type
+                        ? 'bg-white text-indigo-600 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+          }
+        >
+          {filteredLogs.length === 0 ? (
+            <Empty text="Belum ada event log terekam dari Android/Web." icon={Activity} />
+          ) : (
+            <div className="space-y-3">
+              {filteredLogs.map((log) => {
+                const isAndroid = log.platform === 'android';
+                const isLag = log.type === 'LAG';
+                const isBug = log.type === 'BUG';
+                const tone = isLag ? 'warn' : isBug ? 'bad' : 'info';
+                const dateStr = new Date(log.timestamp * (log.timestamp < 10000000000 ? 1000 : 1)).toLocaleTimeString('id-ID', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                });
+
+                return (
+                  <div
+                    key={log.id}
+                    className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition-colors hover:bg-slate-50"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Badge tone={tone}>{log.type}</Badge>
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
+                          {isAndroid ? <Smartphone size={13} className="text-emerald-600" /> : <Globe size={13} className="text-blue-600" />}
+                          {isAndroid ? 'Android APK' : 'Web Version'}
+                        </span>
+                      </div>
+                      <span className="font-mono text-xs text-slate-400">{dateStr}</span>
+                    </div>
+
+                    <p className="mt-2 font-bold text-slate-900 text-sm">{log.title}</p>
+                    <p className="mt-1 font-mono text-xs text-slate-600">{log.message}</p>
+
+                    {log.duration ? (
+                      <p className="mt-1 text-xs text-amber-600 font-semibold">
+                        Delay: {log.duration}ms
+                      </p>
+                    ) : null}
+
+                    {log.stack ? (
+                      <pre className="mt-3 overflow-x-auto rounded-lg bg-slate-900 p-3 font-mono text-[10px] text-rose-300">
+                        {log.stack}
+                      </pre>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      ) : activeTab === 'system' ? (
         <Card title="Distribusi Jumlah Baris per Tabel" sub="Data jumlah record aktif dalam database" icon={Zap}>
           <div className="space-y-4">
             {tables.map((table) => {
@@ -136,10 +278,11 @@ export default function Monitor() {
         </Card>
       ) : (
         <Card title="Statistik Penyimpanan Skema" sub="Informasi arsitektur database backend" icon={AlertTriangle}>
-          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 font-mono text-xs text-slate-700">
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 font-mono text-xs text-slate-700 space-y-1">
             <p>Database Engine: PostgreSQL (SQLAlchemy Async ORM)</p>
             <p>Connected Service: TPM Core API v1</p>
             <p>Total Managed Tables: {tables.length}</p>
+            <p>Client Event Ingestion: Active (Android & Web)</p>
           </div>
         </Card>
       )}

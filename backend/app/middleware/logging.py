@@ -25,13 +25,15 @@ class MetricsCollector:
         # History of recent requests: (endpoint, duration, status, timestamp)
         self.history = deque(maxlen=max_history)
         self.endpoint_stats: Dict[str, Dict] = {}
+        # Client-reported logs (Lag, Bug, Error from Android / Web frontend)
+        self.client_logs = deque(maxlen=500)
 
     def log_request(self, method: str, path: str, status: int, duration: float):
         self.request_count += 1
         self.total_duration += duration
         if status >= 400:
             self.error_count += 1
-        
+
         timestamp = time.time()
         self.history.append({
             "method": method,
@@ -44,20 +46,36 @@ class MetricsCollector:
         # Update per-path stats
         if path not in self.endpoint_stats:
             self.endpoint_stats[path] = {"count": 0, "avg_duration": 0, "errors": 0}
-        
+
         stats = self.endpoint_stats[path]
         stats["count"] += 1
         stats["errors"] += 1 if status >= 400 else 0
         # Running average
         stats["avg_duration"] = (stats["avg_duration"] * (stats["count"] - 1) + duration) / stats["count"]
 
+    def log_client_event(self, event_type: str, title: str, message: str, platform: str = "android", duration: float = 0, status: int = 0, stack: str = None, url: str = None):
+        timestamp = time.time()
+        self.client_logs.appendleft({
+            "id": f"cli_{int(timestamp*1000)}_{len(self.client_logs)}",
+            "type": event_type,
+            "title": title,
+            "message": message,
+            "platform": platform,
+            "duration": duration,
+            "status": status,
+            "stack": stack,
+            "url": url,
+            "timestamp": timestamp
+        })
+
     def get_stats(self):
         return {
             "total_requests": self.request_count,
             "total_errors": self.error_count,
             "avg_latency": self.total_duration / max(1, self.request_count),
-            "recent_history": list(self.history)[-50:], # Last 50 for the graph
-            "endpoint_breakdown": self.endpoint_stats
+            "recent_history": list(self.history)[-50:], # Last 50 for graph
+            "endpoint_breakdown": self.endpoint_stats,
+            "client_logs": list(self.client_logs)
         }
 
 metrics = MetricsCollector()

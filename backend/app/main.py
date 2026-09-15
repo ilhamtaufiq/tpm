@@ -160,6 +160,30 @@ def create_app() -> FastAPI:
         stats["database"] = get_db_stats()
         return stats
 
+    @app.post("/api/v1/monitor/client-logs", tags=["Monitoring"])
+    def add_client_log(data: dict):
+        """Receive lag, bug, and error logs from mobile Android APK or Web frontend."""
+        event_type = data.get("type", "ERROR")
+        title = data.get("title", "Client Event")
+        message = data.get("message", "")
+        platform = data.get("platform", "android")
+        duration = data.get("duration", 0)
+        status = data.get("status", 0)
+        stack = data.get("stack")
+        url = data.get("url")
+
+        metrics.log_client_event(
+            event_type=event_type,
+            title=title,
+            message=message,
+            platform=platform,
+            duration=duration,
+            status=status,
+            stack=stack,
+            url=url
+        )
+        return {"status": "ok"}
+
     @app.get("/monitor", response_class=HTMLResponse, tags=["Monitoring"])
     def monitor_dashboard():
         """Standalone monitoring dashboard (Outside the app)."""
