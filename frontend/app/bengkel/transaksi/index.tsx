@@ -50,6 +50,52 @@ const isValidDateString = (value: string) => {
     return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 };
 
+function levenshteinDistance(a: string, b: string): number {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+    for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+    for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+    for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            dp[i][j] = Math.min(
+                dp[i - 1][j] + 1,
+                dp[i][j - 1] + 1,
+                dp[i - 1][j - 1] + cost
+            );
+        }
+    }
+    return dp[a.length][b.length];
+}
+
+function calculateFuzzyScore(itemText: string, token: string): number {
+    const text = itemText.toLowerCase();
+    const tok = token.toLowerCase();
+
+    if (!tok) return 0;
+    if (text.startsWith(tok)) return 100;
+
+    const words = text.split(/\s+/).filter(Boolean);
+    if (words.some(w => w.startsWith(tok))) return 80;
+    if (text.includes(tok)) return 60;
+
+    // Toleransi typo (Fuzzy distance) untuk kata >= 3 karakter
+    if (tok.length >= 3) {
+        const maxDist = tok.length <= 4 ? 1 : 2;
+        let minDist = Infinity;
+        for (const w of words) {
+            const dist = levenshteinDistance(w, tok);
+            if (dist < minDist) minDist = dist;
+        }
+        if (minDist <= maxDist) {
+            return 40 - minDist * 10;
+        }
+    }
+
+    return 0;
+}
+
 export default function BengkelTransaksiScreen() {
     const insets = useSafeAreaInsets();
     const queryClient = useQueryClient();
@@ -397,61 +443,45 @@ export default function BengkelTransaksiScreen() {
         if (!q) return services;
         const tokens = q.split(/\s+/).filter(Boolean);
 
-        const matched = services.filter((service: any) => {
-            const searchTarget = `${service.nama || ''} ${service.kategori || ''} ${service.deskripsi || ''}`.toLowerCase();
-            return tokens.every(token => searchTarget.includes(token));
-        });
+        const scored = services
+            .map((service: any) => {
+                const searchTarget = `${service.nama || ''} ${service.kategori || ''} ${service.deskripsi || ''}`;
+                let totalScore = 0;
+                for (const token of tokens) {
+                    const score = calculateFuzzyScore(searchTarget, token);
+                    if (score === 0) return null;
+                    totalScore += score;
+                }
+                return { service, score: totalScore };
+            })
+            .filter(Boolean) as { service: any; score: number }[];
 
-        const primaryToken = tokens[0] || q;
-        return matched.sort((a: any, b: any) => {
-            const nameA = String(a.nama || '').toLowerCase();
-            const nameB = String(b.nama || '').toLowerCase();
-
-            const aStartsWithFull = nameA.startsWith(q);
-            const bStartsWithFull = nameB.startsWith(q);
-            if (aStartsWithFull && !bStartsWithFull) return -1;
-            if (!aStartsWithFull && bStartsWithFull) return 1;
-
-            const aWordStartsWith = nameA.split(/\s+/).some(w => w.startsWith(primaryToken));
-            const bWordStartsWith = nameB.split(/\s+/).some(w => w.startsWith(primaryToken));
-            if (aWordStartsWith && !bWordStartsWith) return -1;
-            if (!aWordStartsWith && bWordStartsWith) return 1;
-
-            return nameA.localeCompare(nameB);
-        });
+        return scored
+            .sort((a, b) => b.score - a.score || (a.service.nama || '').localeCompare(b.service.nama || ''))
+            .map(s => s.service);
     }, [services, debouncedServiceSearch]);
+
     const visibleParts = useMemo(() => {
         const q = debouncedPartSearch.trim().toLowerCase();
         if (!q) return parts;
         const tokens = q.split(/\s+/).filter(Boolean);
 
-        const matched = parts.filter((p: any) => {
-            const searchTarget = `${p.nama || ''} ${p.kode || ''} ${p.barcode || ''} ${p.kategori || ''}`.toLowerCase();
-            return tokens.every(token => searchTarget.includes(token));
-        });
+        const scored = parts
+            .map((p: any) => {
+                const searchTarget = `${p.nama || ''} ${p.kode || ''} ${p.barcode || ''} ${p.kategori || ''}`;
+                let totalScore = 0;
+                for (const token of tokens) {
+                    const score = calculateFuzzyScore(searchTarget, token);
+                    if (score === 0) return null;
+                    totalScore += score;
+                }
+                return { part: p, score: totalScore };
+            })
+            .filter(Boolean) as { part: any; score: number }[];
 
-        const primaryToken = tokens[0] || q;
-        return matched.sort((a: any, b: any) => {
-            const nameA = String(a.nama || '').toLowerCase();
-            const nameB = String(b.nama || '').toLowerCase();
-            const codeA = String(a.kode || '').toLowerCase();
-            const codeB = String(b.kode || '').toLowerCase();
-
-            // 1. Nama / Kode diawali query penuh (misal: "Rem Depan" untuk "rem")
-            const aStartsWithFull = nameA.startsWith(q) || codeA.startsWith(q);
-            const bStartsWithFull = nameB.startsWith(q) || codeB.startsWith(q);
-            if (aStartsWithFull && !bStartsWithFull) return -1;
-            if (!aStartsWithFull && bStartsWithFull) return 1;
-
-            // 2. Ada kata di dalam nama yang diawali token utama (misal: "Kampas Rem" untuk "rem")
-            const aWordStartsWith = nameA.split(/\s+/).some(w => w.startsWith(primaryToken));
-            const bWordStartsWith = nameB.split(/\s+/).some(w => w.startsWith(primaryToken));
-            if (aWordStartsWith && !bWordStartsWith) return -1;
-            if (!aWordStartsWith && bWordStartsWith) return 1;
-
-            // 3. Urutan abjad standar untuk sisanya
-            return nameA.localeCompare(nameB);
-        });
+        return scored
+            .sort((a, b) => b.score - a.score || (a.part.nama || '').localeCompare(b.part.nama || ''))
+            .map(s => s.part);
     }, [parts, debouncedPartSearch]);
     const visibleServices = serviceSearch.trim() || showServiceCatalog ? filteredServices : filteredServices.slice(0, 10);
     const getEditablePaymentStatus = (item: any) => {
