@@ -11,6 +11,7 @@ import { ShieldCheck, User, Lock, LogIn, Eye, EyeOff } from 'lucide-react-native
 import { StatusBar } from 'expo-status-bar';
 import { useUIStore } from '../../store/useUIStore';
 import { Image } from 'react-native';
+import Constants from 'expo-constants';
 
 const navigateByRole = (router: ReturnType<typeof useRouter>, role?: string) => {
     switch (role) {
@@ -43,6 +44,8 @@ export default function LoginScreen() {
     const router = useRouter();
     const { isAuthenticated, setAuth } = useAuthStore();
     const { appLogo, appName } = useUIStore();
+    // Commit dibaca app.config.js saat bundling — ikut ter-embed di tiap OTA update.
+    const buildCommit = Constants.expoConfig?.extra?.commit || 'dev';
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -199,7 +202,9 @@ export default function LoginScreen() {
                             <Typography variant="caption" className="text-textGray">BELUM PUNYA AKUN? </Typography>
                             <Typography variant="caption" weight="bold" className="text-primary">HUBUNGI ADMIN</Typography>
                         </View>
-                        <Typography variant="caption" className="text-gray-300 mt-2 text-[10px] tracking-normal">v1.0.0 © 2025 TPM GROUP</Typography>
+                        <Typography variant="caption" className="text-gray-300 mt-2 text-[10px] tracking-normal">
+                            v{Constants.expoConfig?.version || '1.0.0'} · {buildCommit} © 2025 TPM GROUP
+                        </Typography>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
