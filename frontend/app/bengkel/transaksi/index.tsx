@@ -440,7 +440,15 @@ export default function BengkelTransaksiScreen() {
 
     const filteredServices = useMemo(() => {
         const q = debouncedServiceSearch.trim().toLowerCase();
-        if (!q) return services;
+        if (!q) {
+            return [...services].sort((a, b) => {
+                const aSelected = Boolean(selectedServices[String(a.id)]);
+                const bSelected = Boolean(selectedServices[String(b.id)]);
+                if (aSelected && !bSelected) return -1;
+                if (!aSelected && bSelected) return 1;
+                return (a.nama || '').localeCompare(b.nama || '');
+            });
+        }
         const tokens = q.split(/\s+/).filter(Boolean);
 
         const scored = services
@@ -457,13 +465,27 @@ export default function BengkelTransaksiScreen() {
             .filter(Boolean) as { service: any; score: number }[];
 
         return scored
-            .sort((a, b) => b.score - a.score || (a.service.nama || '').localeCompare(b.service.nama || ''))
+            .sort((a, b) => {
+                const aSelected = Boolean(selectedServices[String(a.service.id)]);
+                const bSelected = Boolean(selectedServices[String(b.service.id)]);
+                if (aSelected && !bSelected) return -1;
+                if (!aSelected && bSelected) return 1;
+                return b.score - a.score || (a.service.nama || '').localeCompare(b.service.nama || '');
+            })
             .map(s => s.service);
-    }, [services, debouncedServiceSearch]);
+    }, [services, debouncedServiceSearch, selectedServices]);
 
     const visibleParts = useMemo(() => {
         const q = debouncedPartSearch.trim().toLowerCase();
-        if (!q) return parts;
+        if (!q) {
+            return [...parts].sort((a, b) => {
+                const aSelected = Boolean(selectedParts[a.id]);
+                const bSelected = Boolean(selectedParts[b.id]);
+                if (aSelected && !bSelected) return -1;
+                if (!aSelected && bSelected) return 1;
+                return 0;
+            });
+        }
         const tokens = q.split(/\s+/).filter(Boolean);
 
         const scored = parts
@@ -480,9 +502,15 @@ export default function BengkelTransaksiScreen() {
             .filter(Boolean) as { part: any; score: number }[];
 
         return scored
-            .sort((a, b) => b.score - a.score || (a.part.nama || '').localeCompare(b.part.nama || ''))
+            .sort((a, b) => {
+                const aSelected = Boolean(selectedParts[a.part.id]);
+                const bSelected = Boolean(selectedParts[b.part.id]);
+                if (aSelected && !bSelected) return -1;
+                if (!aSelected && bSelected) return 1;
+                return b.score - a.score || (a.part.nama || '').localeCompare(b.part.nama || '');
+            })
             .map(s => s.part);
-    }, [parts, debouncedPartSearch]);
+    }, [parts, debouncedPartSearch, selectedParts]);
     const visibleServices = serviceSearch.trim() || showServiceCatalog ? filteredServices : filteredServices.slice(0, 10);
     const getEditablePaymentStatus = (item: any) => {
         const itemKategori = String(item?.kategori || kategori || 'umum').toLowerCase();
