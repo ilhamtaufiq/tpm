@@ -106,6 +106,7 @@ export default function BengkelTransaksiScreen() {
     }, []);
 
     const debouncedPartSearch = useDebounce(partSearch, 300);
+    const debouncedServiceSearch = useDebounce(serviceSearch, 300);
     const debouncedExistingSearch = useDebounce(existingSearch, 300);
     const debouncedCustomerTransactionSearch = useDebounce(customerTransactionSearch, 300);
     const PART_PAGE_SIZE = 40;
@@ -392,14 +393,14 @@ export default function BengkelTransaksiScreen() {
     }, [action, editTransactionId, editingTransaction, grossSubtotal, isEditingTransactionLoading]);
 
     const filteredServices = useMemo(() => {
-        const q = serviceSearch.trim().toLowerCase();
+        const q = debouncedServiceSearch.trim().toLowerCase();
         if (!q) return services;
         return services.filter((service: any) =>
             (service.nama || '').toLowerCase().includes(q) ||
             (service.kategori || '').toLowerCase().includes(q) ||
             (service.deskripsi || '').toLowerCase().includes(q)
         );
-    }, [services, serviceSearch]);
+    }, [services, debouncedServiceSearch]);
     const visibleParts = parts;
     const visibleServices = serviceSearch.trim() || showServiceCatalog ? filteredServices : filteredServices.slice(0, 10);
     const getEditablePaymentStatus = (item: any) => {
