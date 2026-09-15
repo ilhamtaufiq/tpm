@@ -243,16 +243,19 @@ class SparePartService:
 
         # Search filter
         if search:
-            search_filter = f"%{search}%"
-            query = query.filter(
-                or_(
-                    SparePart.nama.ilike(search_filter),
-                    SparePart.kode.ilike(search_filter),
-                    SparePart.kode_part.ilike(search_filter),
-                    SparePart.kode_ean.ilike(search_filter),
-                    SparePart.merek.ilike(search_filter),
+            words = [w.strip() for w in search.split() if w.strip()]
+            for word in words:
+                search_filter = f"%{word}%"
+                query = query.filter(
+                    or_(
+                        SparePart.nama.ilike(search_filter),
+                        SparePart.kode.ilike(search_filter),
+                        SparePart.kode_part.ilike(search_filter),
+                        SparePart.kode_ean.ilike(search_filter),
+                        SparePart.merek.ilike(search_filter),
+                        SparePart.catatan.ilike(search_filter),
+                    )
                 )
-            )
 
         # Category filter
         if kategori:

@@ -168,7 +168,7 @@ export default function BengkelTransaksiScreen() {
         hasNextPage: hasNextPartsPage,
         isFetchingNextPage: isFetchingNextPartsPage,
     } = useSparePartsList({
-        limit: debouncedPartSearch ? 5000 : PART_PAGE_SIZE,
+        limit: 5000,
         sort_by: 'stok_nama',
         sort_order: 'asc',
         search: debouncedPartSearch || undefined,
@@ -468,7 +468,7 @@ export default function BengkelTransaksiScreen() {
 
         const scored = parts
             .map((p: any) => {
-                const searchTarget = `${p.nama || ''} ${p.kode || ''} ${p.barcode || ''} ${p.kategori || ''}`;
+                const searchTarget = `${p.nama || ''} ${p.kode || ''} ${p.kode_part || ''} ${p.barcode || ''} ${p.kategori || ''} ${p.merek || ''} ${p.lokasi_rak || ''} ${p.catatan || ''}`;
                 let totalScore = 0;
                 for (const token of tokens) {
                     const score = calculateFuzzyScore(searchTarget, token);

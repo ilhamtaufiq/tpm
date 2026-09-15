@@ -401,20 +401,6 @@ export const Header = ({
                             </Typography>
                         </Pressable>
 
-                        {/* Option: Log & Monitor */}
-                        <Pressable
-                            onPress={() => {
-                                setUserMenuVisible(false);
-                                router.push('/monitor');
-                            }}
-                            className="flex-row items-center p-3 rounded-2xl active:bg-gray-50"
-                        >
-                            <Activity size={16} color="#3B82F6" strokeWidth={2.2} />
-                            <Typography className="text-gray-700 text-xs font-medium ml-2">
-                                Log & Monitor
-                            </Typography>
-                        </Pressable>
-
                         {/* Option: Logout */}
                         <Pressable
                             onPress={handleLogout}
