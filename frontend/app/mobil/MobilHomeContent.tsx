@@ -1218,15 +1218,8 @@ export default function MobilInventoryScreen() {
                                                 </View>
                                                 
                                                 <Typography variant="h2" weight="bold" className="text-primary text-base mb-2">
-                                                    {formatCurrency(Number(item.harga_beli || 0) + Number(item.total_biaya || 0) + Number(item.total_part_service || 0))}
+                                                    {formatCurrency(Number(item.harga_jual || 0))}
                                                 </Typography>
-
-                                                <View className="flex-row items-center mb-2">
-                                                    <Typography className="text-textGray text-[9px] font-bold uppercase tracking-wider mr-1.5">Jual</Typography>
-                                                    <Typography weight="bold" className="text-emerald-600 text-xs">
-                                                        {formatCurrency(Number(item.harga_jual || 0))}
-                                                    </Typography>
-                                                </View>
 
                                                 <View className="flex-row flex-wrap gap-2 mb-2">
                                                     <View className="flex-row items-center bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
