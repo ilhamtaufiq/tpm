@@ -46,7 +46,7 @@ function statusColor(status: string) {
     }
 }
 
-export function OfflineQueueSheet() {
+function OfflineQueueSheetInner() {
     const sheetOpen = useOfflineQueueStore((s) => s.sheetOpen);
     const setSheetOpen = useOfflineQueueStore((s) => s.setSheetOpen);
     const items = useOfflineQueueStore((s) => s.items);
@@ -185,6 +185,8 @@ export function OfflineQueueSheet() {
         </Modal>
     );
 }
+
+export const OfflineQueueSheet = React.memo(OfflineQueueSheetInner);
 
 const styles = StyleSheet.create({
     backdrop: {

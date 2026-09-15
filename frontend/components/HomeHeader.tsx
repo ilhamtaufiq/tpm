@@ -16,8 +16,8 @@ interface HomeHeaderProps {
 }
 
 export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) => {
-    const { user } = useAuthStore();
-    const { themeColors } = useUIStore();
+    const user = useAuthStore(state => state.user);
+    const themeColors = useUIStore(state => state.themeColors);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 

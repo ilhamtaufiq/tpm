@@ -18,12 +18,12 @@ interface CustomerFormModalProps {
     initialName?: string;
 }
 
-export const CustomerFormModal = ({
+function CustomerFormModalInner({
     visible,
     onClose,
     onSuccess,
     initialName = ''
-}: CustomerFormModalProps) => {
+}: CustomerFormModalProps) {
     const insets = useSafeAreaInsets();
     const createMutation = useCreateCustomer();
 
@@ -243,4 +243,6 @@ export const CustomerFormModal = ({
             </BottomSheetContainer>
         </Modal>
     );
-};
+}
+
+export const CustomerFormModal = React.memo(CustomerFormModalInner);

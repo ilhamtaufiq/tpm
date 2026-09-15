@@ -66,20 +66,9 @@ import {
 import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
 import { useDeferredReady } from '../../hooks/useDeferredReady';
-
-// Heavy form/payment/karyawan — not in first paint chunk
-// @ts-expect-error Metro dynamic import
-const MuatanForm = React.lazy(() =>
-    import('../../components/jasa-angkut/MuatanForm').then((m) => ({ default: m.MuatanForm }))
-);
-// @ts-expect-error Metro dynamic import
-const PaymentModal = React.lazy(() =>
-    import('../../components/PaymentModal').then((m) => ({ default: m.PaymentModal }))
-);
-// @ts-expect-error Metro dynamic import
-const KaryawanSelector = React.lazy(() =>
-    import('../../components/ui/KaryawanSelector').then((m) => ({ default: m.KaryawanSelector }))
-);
+import { MuatanForm } from '../../components/jasa-angkut/MuatanForm';
+import { PaymentModal } from '../../components/PaymentModal';
+import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 
 type TripDeduction = { label: string; amount: number; kategori?: string };
 

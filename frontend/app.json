@@ -6,6 +6,7 @@
     "orientation": "default",
     "icon": "./assets/logo_tpm.png",
     "userInterfaceStyle": "light",
+    "jsEngine": "hermes",
     "newArchEnabled": false,
     "splash": {
       "image": "./assets/logo_tpm.png",
@@ -56,8 +57,8 @@
         "expo-build-properties",
         {
           "android": {
-            "minifyEnabled": false,
-            "enableProguardInReleaseBuilds": false
+            "minifyEnabled": true,
+            "enableProguardInReleaseBuilds": true
           }
         }
       ]

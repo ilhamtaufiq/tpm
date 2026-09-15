@@ -57,7 +57,7 @@ function buildPrintData(type: ReceiptType, id: string, receipt: PublicReceiptDat
         discount: receipt.discount || 0,
         total: receipt.total || 0,
         paid: receipt.paid,
-        paymentMethod: Number(receipt.paid || 0) > 0 ? receipt.paymentMethod : undefined,
+        paymentMethod: Number(receipt.paid || 0) > 0 ? (receipt.paymentMethod || undefined) : undefined,
         notes: receipt.notes,
         showDiscount: receipt.showDiscount !== false,
         vehiclePlate: receipt.vehiclePlate,
@@ -206,7 +206,8 @@ export default function PublicReceiptPage() {
                     // Capture DOM card → data URI for Web Share / download attach
                     const el = document.getElementById(PUBLIC_RECEIPT_CAPTURE_ROOT_ID);
                     if (el) {
-                        const html2canvas = (await import('html2canvas')).default;
+                        const html2canvasModule = require('html2canvas');
+                        const html2canvas = html2canvasModule.default || html2canvasModule;
                         const canvas = await html2canvas(el as HTMLElement, {
                             scale: 2,
                             useCORS: true,

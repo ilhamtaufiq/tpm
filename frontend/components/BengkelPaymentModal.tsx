@@ -38,7 +38,7 @@ interface BengkelPaymentModalProps {
     isInternalMobil?: boolean;
 }
 
-export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
+const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
     visible,
     onClose,
     onConfirm,
@@ -519,3 +519,5 @@ export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
         </Modal>
     );
 };
+
+export const BengkelPaymentModal = React.memo(BengkelPaymentModalInner);

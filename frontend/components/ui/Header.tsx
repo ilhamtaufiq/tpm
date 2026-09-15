@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Bell, User, X, ChevronRight, ChevronLeft, LogOut } from 'lucide-react-native';
+import { Search, Bell, User, X, ChevronRight, ChevronLeft, LogOut, Activity } from 'lucide-react-native';
 import { Typography } from './Typography';
 import { Pressable, View, Modal, TextInput, ScrollView, Dimensions, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,10 +46,14 @@ export const Header = ({
     variant = 'page'
 }: HeaderProps) => {
     const insets = useSafeAreaInsets();
-    const { user, logout, isImpersonating, impersonatorUser, stopImpersonation } = useAuthStore();
+    const user = useAuthStore(state => state.user);
+    const logout = useAuthStore(state => state.logout);
+    const isImpersonating = useAuthStore(state => state.isImpersonating);
+    const impersonatorUser = useAuthStore(state => state.impersonatorUser);
+    const stopImpersonation = useAuthStore(state => state.stopImpersonation);
     const unreadCount = useNotificationStore(state => state.unreadCount);
     const clearNotifications = useNotificationStore(state => state.clear);
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore(state => state.themeColors);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [localSearchQuery, setLocalSearchQuery] = useState('');
     const [userMenuVisible, setUserMenuVisible] = useState(false);
@@ -394,6 +398,20 @@ export const Header = ({
                             <User size={16} color="#6B7280" strokeWidth={2.2} />
                             <Typography className="text-gray-500 text-xs font-medium ml-2">
                                 Ubah Profile
+                            </Typography>
+                        </Pressable>
+
+                        {/* Option: Log & Monitor */}
+                        <Pressable
+                            onPress={() => {
+                                setUserMenuVisible(false);
+                                router.push('/monitor');
+                            }}
+                            className="flex-row items-center p-3 rounded-2xl active:bg-gray-50"
+                        >
+                            <Activity size={16} color="#3B82F6" strokeWidth={2.2} />
+                            <Typography className="text-gray-700 text-xs font-medium ml-2">
+                                Log & Monitor
                             </Typography>
                         </Pressable>
 

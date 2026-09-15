@@ -82,7 +82,7 @@ const getStatusBadge = (status: string): { variant: 'success' | 'warning' | 'inf
     return { variant: 'neutral', label: s.replace('BANK_', '') };
 };
 
-export const TransactionList = () => {
+function TransactionListInner() {
     const { data: transactions, isLoading } = useRecentActivity(5);
     const [selectedItem, setSelectedItem] = useState<ActivityItem | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -176,4 +176,6 @@ export const TransactionList = () => {
             />
         </View>
     );
-};
+}
+
+export const TransactionList = React.memo(TransactionListInner);

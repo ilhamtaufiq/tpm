@@ -89,7 +89,7 @@ export default function DataImportScreen() {
                 await downloadXlsxBlob(data as any, filename);
             } else {
                 const token = useAuthStore.getState().token;
-                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
                 const downloadUrl = `${BASE_URL}/data-import/template`;
                 const fileUri = `${FileSystem.documentDirectory}${filename}`;
 

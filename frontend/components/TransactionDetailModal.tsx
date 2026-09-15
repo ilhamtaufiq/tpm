@@ -103,7 +103,7 @@ const BentoSection = ({ title, children }: { title: string, children: React.Reac
     </View>
 );
 
-export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDetailModalProps) => {
+function TransactionDetailModalInner({ item, visible, onClose }: TransactionDetailModalProps) {
     const [loading, setLoading] = useState(false);
     const [details, setDetails] = useState<any>(null);
     const [subDetails, setSubDetails] = useState<any>(null);
@@ -707,4 +707,6 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
             />
         </Modal>
     );
-};
+}
+
+export const TransactionDetailModal = React.memo(TransactionDetailModalInner);

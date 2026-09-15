@@ -6,8 +6,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { persistQueryClient } from '@tanstack/react-query-persist-client';
 import { Stack, SplashScreen, useSegments, useRouter, router } from 'expo-router';
+import { enableFreeze } from 'react-native-screens';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, memo } from 'react';
 import * as Updates from 'expo-updates';
 import { View, Text, ActivityIndicator, AppState, AppStateStatus, Platform, Pressable } from 'react-native';
 import {
@@ -94,8 +95,17 @@ persistQueryClient({
     },
 });
 
+// Enable native screen freezing for background navigation stacks
+enableFreeze(true);
+
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
+
+const BackgroundServices = memo(function BackgroundServices() {
+    useRealtimeSync();
+    usePushNotifications();
+    return null;
+});
 
 function RootLayoutContent() {
     const [loaded, error] = useFonts({
@@ -133,32 +143,14 @@ function RootLayoutContent() {
     const user = useAuthStore(state => state.user);
     const isImpersonating = useAuthStore(state => state.isImpersonating);
 
-    useRealtimeSync();
-    usePushNotifications();
-
-    useEffect(() => {
-        if (Platform.OS === 'android') {
-            preloadHtml2CanvasScript();
-        }
-    }, []);
-
-    // Start offline worker after first paint — never block splash module init
-    useEffect(() => {
-        try {
-            startOfflineSyncWorker(queryClient);
-        } catch (e) {
-            console.warn('[LAYOUT] Offline sync worker failed to start', e);
-        }
-    }, []);
-
-    const theme = vars({
+    const theme = useMemo(() => vars({
         '--color-primary': themeColors.primary,
         '--color-secondary': themeColors.secondary,
         '--color-background': themeColors.background,
         '--color-surface': themeColors.surface,
         '--color-text': themeColors.text,
         '--color-text-gray': themeColors.textGray,
-    });
+    }), [themeColors.primary, themeColors.secondary, themeColors.background, themeColors.surface, themeColors.text, themeColors.textGray]);
 
     // OTA: cek setelah app siap — jangan block splash / auto-reload terlalu awal
     useEffect(() => {
@@ -382,6 +374,7 @@ function RootLayoutContent() {
 
     const appContent = (
         <>
+            <BackgroundServices />
             {Platform.OS === 'android' ? <ReceiptHtmlCaptureHost /> : null}
             <ConnectivityBanner />
             <OfflineQueueSheet />

@@ -115,7 +115,7 @@ export default function LaporanPerubahanModalScreen() {
         const penyesuaianHargaBeli = r.penambahan?.penyesuaian_harga_beli_sparepart || 0;
         const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
-        const labaOperasional = r.info?.laba_operasional ?? r.info?.laba_bersih ?? 0;
+        const labaOperasional = (r.info as any)?.laba_operasional ?? r.info?.laba_bersih ?? 0;
         const labaBersih = r.info?.laba_bersih ?? (labaOperasional - prive);
         // Laba investor hanya diakui setelah penjualan mobil LUNAS/TERJUAL (bukan saat DP/booking).
         const labaInvestor = r.info?.laba_investor || 0;
@@ -304,7 +304,7 @@ export default function LaporanPerubahanModalScreen() {
                                     · sudah bersih dari aktivitas hari saldo awal ({formatCurrency(report.modal_awal_penyesuaian || 0)} dipindah ke baris mutasi di bawah)
                                 </Typography>
                             )}
-                            <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={equity.penyesuaianHargaBeli} color="text-slate-700" />
+                            <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={equity.penyesuaianHargaBeli || 0} color="text-slate-700" />
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest">Penambahan</Typography>

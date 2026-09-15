@@ -164,6 +164,7 @@ export interface Hutang {
     tanggal_jatuh_tempo?: string;
     tanggal_lunas?: string;
     status: HutangStatus;
+    is_internal?: boolean;
     catatan?: string;
     pembayaran: PembayaranHutang[];
     created_at: string;

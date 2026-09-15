@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { AlertCircle, Repeat } from 'lucide-react-native';
+import { useMonitorStore } from '../store/useMonitorStore';
 
 interface ErrorBoundaryState {
     hasError: boolean;
@@ -29,6 +30,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
         console.error('Error caught by ErrorBoundary:', error);
         console.error('Error info:', errorInfo);
+        try {
+            useMonitorStore.getState().logBug(
+                `React Crash: ${error.name || 'Error'}`,
+                error.message,
+                errorInfo?.componentStack || error.stack
+            );
+        } catch (e) {}
         this.setState({ errorInfo });
     }
 

@@ -28,20 +28,24 @@ const StatusBadge = ({ status }: { status?: number }) => {
 };
 
 export default function MonitorScreen() {
-    const { 
-        requestCount, 
-        errorCount, 
-        avgLatency, 
-        totalPayloadSize, 
-        logs, 
+    const {
+        requestCount,
+        errorCount,
+        lagCount,
+        bugCount,
+        avgLatency,
+        totalPayloadSize,
+        logs,
+        appLogs,
         clearLogs,
         serverStats,
         setServerStats
     } = useMonitorStore();
-    
+
     const { themeColors } = useUIStore();
     const [renderLogs, setRenderLogs] = useState(true);
-    const [activeSection, setActiveSection] = useState<'network' | 'database'>('network');
+    const [activeSection, setActiveSection] = useState<'network' | 'logs' | 'database'>('logs');
+    const [logFilter, setLogFilter] = useState<'ALL' | 'LAG' | 'BUG' | 'ERROR'>('ALL');
 
     // Polling server stats
     useEffect(() => {
@@ -106,13 +110,21 @@ export default function MonitorScreen() {
 
                 {/* Tabs */}
                 <View className="flex-row px-6 mt-4">
-                    <Pressable 
+                    <Pressable
+                        onPress={() => setActiveSection('logs')}
+                        className={`px-4 py-2 rounded-full mr-2 ${activeSection === 'logs' ? 'bg-amber-600' : 'bg-white/5'}`}
+                    >
+                        <Typography weight="bold" className={`text-xs ${activeSection === 'logs' ? 'text-white' : 'text-white/40'}`}>
+                            LOG MONITOR ({appLogs.length})
+                        </Typography>
+                    </Pressable>
+                    <Pressable
                         onPress={() => setActiveSection('network')}
                         className={`px-4 py-2 rounded-full mr-2 ${activeSection === 'network' ? 'bg-blue-600' : 'bg-white/5'}`}
                     >
                         <Typography weight="bold" className={`text-xs ${activeSection === 'network' ? 'text-white' : 'text-white/40'}`}>NETWORK</Typography>
                     </Pressable>
-                    <Pressable 
+                    <Pressable
                         onPress={() => setActiveSection('database')}
                         className={`px-4 py-2 rounded-full ${activeSection === 'database' ? 'bg-purple-600' : 'bg-white/5'}`}
                     >
@@ -121,7 +133,104 @@ export default function MonitorScreen() {
                 </View>
 
                 <ScrollView className="flex-1 px-6 pt-6" showsVerticalScrollIndicator={false}>
-                    {activeSection === 'network' ? (
+                    {activeSection === 'logs' ? (
+                        <>
+                            {/* Summary Badges */}
+                            <View className="flex-row flex-wrap -mx-2 mb-4">
+                                <View className="w-1/3 px-1 mb-2">
+                                    <View className="bg-amber-500/10 p-3 rounded-2xl border border-amber-500/20 items-center">
+                                        <Typography className="text-amber-400 text-[9px] font-bold uppercase">Lag Stutter</Typography>
+                                        <Typography weight="bold" className="text-amber-300 text-lg mt-0.5">{lagCount}</Typography>
+                                    </View>
+                                </View>
+                                <View className="w-1/3 px-1 mb-2">
+                                    <View className="bg-rose-500/10 p-3 rounded-2xl border border-rose-500/20 items-center">
+                                        <Typography className="text-rose-400 text-[9px] font-bold uppercase">App Bugs</Typography>
+                                        <Typography weight="bold" className="text-rose-300 text-lg mt-0.5">{bugCount}</Typography>
+                                    </View>
+                                </View>
+                                <View className="w-1/3 px-1 mb-2">
+                                    <View className="bg-purple-500/10 p-3 rounded-2xl border border-purple-500/20 items-center">
+                                        <Typography className="text-purple-400 text-[9px] font-bold uppercase">HTTP Errors</Typography>
+                                        <Typography weight="bold" className="text-purple-300 text-lg mt-0.5">{errorCount}</Typography>
+                                    </View>
+                                </View>
+                            </View>
+
+                            {/* Filter Chips */}
+                            <View className="flex-row mb-4 space-x-2">
+                                {(['ALL', 'LAG', 'BUG', 'ERROR'] as const).map((filter) => (
+                                    <Pressable
+                                        key={filter}
+                                        onPress={() => setLogFilter(filter)}
+                                        className={`px-3 py-1.5 rounded-xl border ${
+                                            logFilter === filter
+                                                ? 'bg-white/20 border-white/40'
+                                                : 'bg-white/5 border-white/5'
+                                        }`}
+                                    >
+                                        <Typography
+                                            weight="bold"
+                                            className={`text-[10px] ${
+                                                logFilter === filter ? 'text-white' : 'text-white/40'
+                                            }`}
+                                        >
+                                            {filter}
+                                        </Typography>
+                                    </Pressable>
+                                ))}
+                            </View>
+
+                            {/* App Logs List */}
+                            <View className="bg-white/5 rounded-[32px] border border-white/10 overflow-hidden mb-12">
+                                {appLogs.filter(l => logFilter === 'ALL' || l.type === logFilter).length === 0 ? (
+                                    <View className="py-16 items-center">
+                                        <AlertCircle size={28} color="#9CA3AF" />
+                                        <Typography className="text-white/40 mt-3 font-bold text-[11px] tracking-widest uppercase">
+                                            Belum Ada Log Terdeteksi
+                                        </Typography>
+                                    </View>
+                                ) : (
+                                    appLogs
+                                        .filter(l => logFilter === 'ALL' || l.type === logFilter)
+                                        .map((log) => {
+                                            const isLag = log.type === 'LAG';
+                                            const isBug = log.type === 'BUG';
+                                            const isErr = log.type === 'ERROR';
+                                            const badgeBg = isLag ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : isBug ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+
+                                            return (
+                                                <View key={log.id} className="p-4 border-b border-white/5">
+                                                    <View className="flex-row items-center justify-between mb-1">
+                                                        <View className={`px-2 py-0.5 rounded border ${badgeBg}`}>
+                                                            <Typography weight="bold" className="text-[9px]">
+                                                                {log.type}
+                                                            </Typography>
+                                                        </View>
+                                                        <Typography className="text-[9px] text-white/30 font-mono">
+                                                            {format(log.timestamp, 'HH:mm:ss')}
+                                                        </Typography>
+                                                    </View>
+                                                    <Typography weight="bold" className="text-white/90 text-xs mt-1">
+                                                        {log.title}
+                                                    </Typography>
+                                                    <Typography className="text-white/60 text-[11px] mt-0.5 font-mono">
+                                                        {log.message}
+                                                    </Typography>
+                                                    {log.stack && (
+                                                        <View className="mt-2 p-2 bg-black/40 rounded-xl border border-white/5">
+                                                            <Typography className="text-rose-300/80 text-[9px] font-mono" numberOfLines={4}>
+                                                                {log.stack}
+                                                            </Typography>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            );
+                                        })
+                                )}
+                            </View>
+                        </>
+                    ) : activeSection === 'network' ? (
                         <>
                             {/* Network Metrics Dashboard */}
                             <View className="flex-row flex-wrap -mx-2">

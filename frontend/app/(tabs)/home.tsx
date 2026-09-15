@@ -17,8 +17,8 @@ export default function HomeScreen() {
     const insets = useSafeAreaInsets();
     const queryClient = useQueryClient();
     const [refreshing, setRefreshing] = React.useState(false);
-    const { themeColors } = useUIStore();
-    const { user } = useAuthStore();
+    const themeColors = useUIStore(state => state.themeColors);
+    const user = useAuthStore(state => state.user);
 
     const router = useRouter();
 

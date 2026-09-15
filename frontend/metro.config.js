@@ -11,6 +11,16 @@ if (!config.resolver.assetExts.includes("txt")) {
 config.resolver.unstable_enablePackageExports = true;
 config.resolver.unstable_conditionNames = ["react-native", "browser", "require"];
 
+config.transformer = {
+    ...(config.transformer || {}),
+    getTransformOptions: async () => ({
+        transform: {
+            experimentalImportSupport: false,
+            inlineRequires: true,
+        },
+    }),
+};
+
 // Prefer filesystem paths under this app (Node core "buffer" name collides with npm package).
 const nm = (pkg) => path.resolve(__dirname, "node_modules", pkg);
 

@@ -60,8 +60,8 @@ const ServiceCard = React.memo(function ServiceCard({
     );
 });
 
-export const ServiceGrid = () => {
-    const { user } = useAuthStore();
+function ServiceGridInner() {
+    const user = useAuthStore(state => state.user);
     const { columns } = useResponsive();
     const queryClient = useQueryClient();
 
@@ -134,4 +134,6 @@ export const ServiceGrid = () => {
             </View>
         </View>
     );
-};
+}
+
+export const ServiceGrid = React.memo(ServiceGridInner);
