@@ -422,12 +422,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             {activeUnit.merek} {activeUnit.model}
                         </Typography>
 
-                        <View className="mt-4 bg-emerald-50/50 px-8 py-5 rounded-[36px] border border-emerald-100 items-center w-full">
-                            <Typography variant="caption" className="text-emerald-600 font-bold uppercase tracking-[2px] mb-1 text-[10px]">Estimasi Modal Unit</Typography>
-                            <Typography variant="h1" weight="bold" className="text-primary text-4xl">
-                                {formatCurrency(Number(activeUnit.harga_beli || 0) + Number(activeUnit.total_biaya || 0) + Number(activeUnit.total_part_service || 0))}
-                            </Typography>
-                        </View>
                     </View>
 
                     {/* Bento Specs Grid - PREMIUM DESIGN */}
@@ -544,6 +538,14 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
                     {/* Finance Breakdown Card */}
                     <Typography variant="h3" weight="bold" className="mb-6 text-textMain tracking-tight">Rincian Finansial</Typography>
+
+                    <View className="bg-emerald-50/50 px-8 py-5 rounded-[36px] border border-emerald-100 items-center w-full mb-6">
+                        <Typography variant="caption" className="text-emerald-600 font-bold uppercase tracking-[2px] mb-1 text-[10px]">Estimasi Modal Unit</Typography>
+                        <Typography variant="h1" weight="bold" className="text-primary text-4xl">
+                            {formatCurrency(Number(activeUnit.harga_beli || 0) + Number(activeUnit.total_biaya || 0) + Number(activeUnit.total_part_service || 0))}
+                        </Typography>
+                    </View>
+
                     <Card className="p-6 rounded-[36px] bg-white border border-gray-100 shadow-xl shadow-black/5 mb-10">
                         <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-gray-50">
                             <View>

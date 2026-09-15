@@ -401,7 +401,11 @@ export default function BengkelTransaksiScreen() {
             (service.deskripsi || '').toLowerCase().includes(q)
         );
     }, [services, debouncedServiceSearch]);
-    const visibleParts = parts;
+    const visibleParts = useMemo(() => {
+        const q = debouncedPartSearch.trim().toLowerCase();
+        if (!q) return parts;
+        return parts.filter((p: any) => (p.nama || '').toLowerCase().startsWith(q));
+    }, [parts, debouncedPartSearch]);
     const visibleServices = serviceSearch.trim() || showServiceCatalog ? filteredServices : filteredServices.slice(0, 10);
     const getEditablePaymentStatus = (item: any) => {
         const itemKategori = String(item?.kategori || kategori || 'umum').toLowerCase();
