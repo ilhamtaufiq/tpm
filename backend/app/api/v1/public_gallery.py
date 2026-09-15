@@ -53,6 +53,7 @@ async def get_mobil_gallery_data(
         "nomor_plat": mobil.nomor_plat,
         "transmisi": mobil.transmisi,
         "kilometer": mobil.kilometer,
+        "harga_jual": float(mobil.harga_jual) if mobil.harga_jual is not None else None,
         "status": mobil.status.value if mobil.status else None,
         "media": media_list,
         "media_count": len(media_list),
@@ -135,7 +136,17 @@ async def view_mobil_gallery(
         </div>
         """
 
-    # Specs HTML
+    # Price & Specs HTML
+    price_html = ""
+    if mobil.harga_jual:
+        harga_fmt = f"Rp {int(mobil.harga_jual):,}".replace(",", ".")
+        price_html = f"""
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 20px; padding: 16px; text-align: center; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(16,185,129,0.25);">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.9; margin-bottom: 4px;">Harga Jual</div>
+            <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">{harga_fmt}</div>
+        </div>
+        """
+
     specs_html = ""
     specs = [
         ("📅", "Tahun", str(mobil.tahun)),
@@ -413,6 +424,7 @@ async def view_mobil_gallery(
             </div>
 
             <div class="content">
+                {price_html}
                 <div class="specs-grid">
                     {specs_html}
                 </div>
