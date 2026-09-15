@@ -184,13 +184,17 @@ export default function HutangUsahaScreen() {
                 .map((m: any) => String(m.id))
         );
 
-        // 2. Map sold cars to their Bengkel invoice numbers (BGL...)
+        // 2. Map sold cars and Jasa Angkut to their Bengkel invoice numbers (BGL...)
         const soldBengkelInvoices = new Set<string>();
+        const jaBengkelInvoices = new Set<string>();
         if (bengkelData?.data) {
             bengkelData.data.forEach((b: any) => {
                 const kategori = String(b.kategori || '').toLowerCase();
                 if (kategori === 'jual_beli_mobil' && b.mobil_id && soldCarIds.has(String(b.mobil_id))) {
                     if (b.nomor_transaksi) soldBengkelInvoices.add(b.nomor_transaksi);
+                }
+                if (kategori === 'jasa_angkut' || b.armada_id) {
+                    if (b.nomor_transaksi) jaBengkelInvoices.add(b.nomor_transaksi);
                 }
             });
         }
@@ -199,7 +203,13 @@ export default function HutangUsahaScreen() {
         let countBelumLunas = 0;
 
         const filtered = hutangListRaw.filter(item => {
-            const isInternal = item.nama_kreditur?.toUpperCase().includes('BENGKEL');
+            const isInternal = item.is_internal || item.nama_kreditur?.toUpperCase().includes('BENGKEL');
+
+            // Sembunyikan transaksi bengkel internal untuk Jasa Angkut (sparepart / perbaikan)
+            if (isInternal) {
+                if (item.unit === 'JASA_ANGKUT') return false;
+                if (item.nomor_referensi && jaBengkelInvoices.has(item.nomor_referensi)) return false;
+            }
 
             // Jika internal dan ada referensi nomor_transaksi bengkel, cek apakah mobilnya sudah terjual
             if (isInternal && item.nomor_referensi) {
