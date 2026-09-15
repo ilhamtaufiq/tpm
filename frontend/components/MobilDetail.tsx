@@ -283,13 +283,14 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
         const fullUrl = `${baseUrl}/uploads/${filePath}`;
 
         console.log('[MobilDetail] Rendering media:', item.id, item.file_type, fullUrl);
+        const previewHeight = Math.min(height * 0.4, 360);
 
         return (
             <View
                 className="relative"
                 style={{ width }}
             >
-                <View className="h-96 bg-gray-100 overflow-hidden">
+                <View style={{ height: previewHeight }} className="bg-gray-100 overflow-hidden">
                     {item.file_type === 'video' ? (
                         <View className="flex-1 bg-black">
                             <Video
@@ -318,19 +319,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         </Pressable>
                     )}
                 </View>
-
-                {/* Delete Button - Glass Style */}
-                <Pressable
-                    onPress={() => {
-                        console.log('[MobilDetail] Delete pressed for media:', item.id);
-                        setDeleteDialog({ visible: true, mediaId: item.id });
-                    }}
-                    hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                    className="absolute left-6 bg-red-500/80 backdrop-blur-md p-3 rounded-2xl border border-white/20 shadow-lg z-50"
-                    style={{ bottom: 64, elevation: 5 }}
-                >
-                    <Trash2 size={18} color="white" />
-                </Pressable>
             </View>
         );
     };
@@ -396,7 +384,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
                     {/* Pagination Dots */}
                     {activeUnit.media && activeUnit.media.length > 1 && (
-                        <View className="absolute flex-row self-center space-x-1.5 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5" style={{ bottom: 64 }}>
+                        <View className="absolute flex-row self-center space-x-1.5 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5" style={{ bottom: 20 }}>
                             {activeUnit.media.map((_: any, i: number) => (
                                 <View
                                     key={i}
@@ -405,31 +393,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             ))}
                         </View>
                     )}
-
-                    {/* Media Quick Actions */}
-                    <View className="absolute right-6 flex-row gap-2" style={{ bottom: 64 }}>
-                        <Pressable
-                            onPress={handleShareGallery}
-                            className="w-14 h-14 bg-emerald-500 rounded-2xl items-center justify-center shadow-2xl border border-emerald-400/30"
-                        >
-                            {shareSuccess ? (
-                                <CheckCircle2 size={22} color="white" />
-                            ) : (
-                                <Share2 size={22} color="white" />
-                            )}
-                        </Pressable>
-                        <Pressable
-                            onPress={handlePickMedia}
-                            disabled={uploadMediaAction.isPending}
-                            className="w-14 h-14 bg-white rounded-2xl items-center justify-center shadow-2xl border border-gray-100"
-                        >
-                            {uploadMediaAction.isPending ? (
-                                <ActivityIndicator size="small" color="#023C69" />
-                            ) : (
-                                <Plus size={24} color="#023C69" strokeWidth={3} />
-                            )}
-                        </Pressable>
-                    </View>
                 </View>
 
                 <View className="bg-white -mt-8 rounded-t-[48px] px-6 pt-10">
@@ -460,6 +423,95 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     <View className="flex-row justify-between mb-10">
                         <SpecCard icon={Settings} label="Transmisi" value={activeUnit.transmisi} color="#10B981" />
                         <SpecCard icon={Palette} label="Warna" value={activeUnit.warna} color="#6366F1" />
+                    </View>
+
+                    {/* Pengaturan Media Card */}
+                    <View className="mb-10">
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Pengaturan Media</Typography>
+                            <Typography variant="caption" className="text-textGray font-medium">
+                                {activeUnit.media?.length || 0} File
+                            </Typography>
+                        </View>
+
+                        <Card className="p-5 rounded-[32px] bg-white border border-gray-100 shadow-sm">
+                            {/* Action Buttons: Share & Upload */}
+                            <View className="flex-row space-x-3 mb-4">
+                                <Pressable
+                                    onPress={handleShareGallery}
+                                    className="flex-1 bg-emerald-500 py-3.5 px-4 rounded-2xl flex-row items-center justify-center border border-emerald-400/30 active:bg-emerald-600 shadow-sm"
+                                >
+                                    {shareSuccess ? (
+                                        <CheckCircle2 size={18} color="white" />
+                                    ) : (
+                                        <Share2 size={18} color="white" />
+                                    )}
+                                    <Typography weight="bold" className="text-white text-xs ml-2">
+                                        {shareSuccess ? 'Tersalin' : 'Bagikan Galeri'}
+                                    </Typography>
+                                </Pressable>
+
+                                <Pressable
+                                    onPress={handlePickMedia}
+                                    disabled={uploadMediaAction.isPending}
+                                    className="flex-1 bg-primary py-3.5 px-4 rounded-2xl flex-row items-center justify-center border border-primary/20 active:bg-primary/90 shadow-sm"
+                                >
+                                    {uploadMediaAction.isPending ? (
+                                        <ActivityIndicator size="small" color="white" />
+                                    ) : (
+                                        <>
+                                            <Plus size={18} color="white" />
+                                            <Typography weight="bold" className="text-white text-xs ml-2">
+                                                Tambah Gambar
+                                            </Typography>
+                                        </>
+                                    )}
+                                </Pressable>
+                            </View>
+
+                            {/* Thumbnails list with delete action */}
+                            {activeUnit.media && activeUnit.media.length > 0 ? (
+                                <View className="flex-row flex-wrap -m-1">
+                                    {activeUnit.media.map((med: any, idx: number) => {
+                                        const baseUrl = (FILE_URL || '').replace(/\/$/, '');
+                                        const filePath = med.file_path.replace(/^\//, '');
+                                        const fullUrl = `${baseUrl}/uploads/${filePath}`;
+                                        return (
+                                            <View key={med.id} className="w-1/3 p-1">
+                                                <View className="bg-gray-100 rounded-2xl overflow-hidden h-24 relative border border-gray-200">
+                                                    {med.file_type === 'video' ? (
+                                                        <Pressable onPress={() => setLightboxIndex(idx)} className="w-full h-full bg-black items-center justify-center">
+                                                            <PlayCircle size={24} color="white" opacity={0.8} />
+                                                        </Pressable>
+                                                    ) : (
+                                                        <Pressable onPress={() => setLightboxIndex(idx)} className="w-full h-full">
+                                                            <Image source={{ uri: fullUrl }} className="w-full h-full" resizeMode="cover" />
+                                                        </Pressable>
+                                                    )}
+                                                    {/* Delete Button on Thumbnail */}
+                                                    <Pressable
+                                                        onPress={() => setDeleteDialog({ visible: true, mediaId: med.id })}
+                                                        className="absolute top-1.5 right-1.5 bg-red-600/90 w-7 h-7 rounded-xl items-center justify-center border border-white/20 shadow-md active:scale-95"
+                                                    >
+                                                        <Trash2 size={13} color="white" />
+                                                    </Pressable>
+                                                    {med.file_type === 'video' && (
+                                                        <View className="absolute bottom-1.5 left-1.5 bg-black/60 px-1.5 py-0.5 rounded-md">
+                                                            <Typography className="text-white text-[8px] font-bold">VIDEO</Typography>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            ) : (
+                                <View className="py-6 items-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                    <ImageIcon size={32} color="#9CA3AF" opacity={0.4} />
+                                    <Typography className="text-gray-400 text-xs mt-2 italic">Belum ada foto/video unit ini</Typography>
+                                </View>
+                            )}
+                        </Card>
                     </View>
 
                     {/* Extended Info Cards */}
