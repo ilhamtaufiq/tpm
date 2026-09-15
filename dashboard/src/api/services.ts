@@ -304,10 +304,13 @@ export interface BackupFile {
 export const backupService = {
   list: () => get<BackupFile[]>('/backup/list'),
   create: () => client.post<BackupFile>('/backup/create').then((r) => r.data),
-  download: async (filename: string) => {
+  download: async (filename: string, onProgress?: (pct: number) => void) => {
     const { data } = await client.get(`/backup/download/${encodeURIComponent(filename)}`, {
       responseType: 'blob',
       timeout: 120000,
+      onDownloadProgress: (e) => {
+        if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
+      },
     });
     const url = URL.createObjectURL(data as Blob);
     const a = document.createElement('a');
@@ -319,12 +322,15 @@ export const backupService = {
   remove: (filename: string) => client.delete(`/backup/${encodeURIComponent(filename)}`).then((r) => r.data),
   restore: (filename: string, password: string) =>
     client.post(`/backup/restore/${encodeURIComponent(filename)}`, { password }).then((r) => r.data),
-  upload: async (file: File) => {
+  upload: async (file: File, onProgress?: (pct: number) => void) => {
     const form = new FormData();
     form.append('file', file);
     const { data } = await client.post('/backup/upload', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 120000,
+      onUploadProgress: (e) => {
+        if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
+      },
     });
     return data as BackupFile;
   },

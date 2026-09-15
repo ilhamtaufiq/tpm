@@ -49,6 +49,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
     // Financial & Ownership
     const [hargaBeli, setHargaBeli] = useState(formatNumber(String(initialData?.harga_beli || '')));
+    const [hargaJual, setHargaJual] = useState(formatNumber(String(initialData?.harga_jual || '')));
     const [namaInvestor, setNamaInvestor] = useState(initialData?.nama_investor || '');
     const [nominalInvestor, setNominalInvestor] = useState(formatNumber(String(initialData?.nominal_investor || '')));
     const [persentaseInvestor, setPersentaseInvestor] = useState(String(initialData?.persentase_investor || '0'));
@@ -194,6 +195,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             nominal_investor: parseNumber(nominalInvestor) || 0,
             persentase_investor: parseFloat(persentaseInvestor) || 0,
             investor_kas_jenis: (namaInvestor && parseNumber(nominalInvestor) > 0) ? investorKasJenis : null,
+            harga_jual: parseNumber(hargaJual) || 0,
         };
 
         if (!isEdit) {
@@ -378,6 +380,15 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                             </View>
                         )}
                     </View>
+
+                    <Input
+                        label="Harga Jual Unit (Rp)"
+                        placeholder="0"
+                        containerClassName="mt-4"
+                        keyboardType="numeric"
+                        value={hargaJual}
+                        onChangeText={(v) => setHargaJual(formatNumber(v))}
+                    />
 
                         {!isEdit && (
                         <View className="mt-4">

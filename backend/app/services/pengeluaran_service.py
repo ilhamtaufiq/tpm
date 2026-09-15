@@ -203,9 +203,13 @@ class PengeluaranService:
         if metode_bayar:
             query = query.filter(PengeluaranBengkel.metode_bayar == metode_bayar)
 
-        # Business unit filter (drill-down per unit laporan)
+        # Business unit filter (drill-down per unit laporan).
+        # Menerima daftar dipisah koma: unit mobil tercatat sebagai
+        # mobil/jual_beli_mobil/penjualan_mobil tergantung era input.
         if bisnis_kategori:
-            query = query.filter(func.lower(PengeluaranBengkel.bisnis_kategori) == bisnis_kategori.lower())
+            units = [u.strip().lower() for u in bisnis_kategori.split(",") if u.strip()]
+            if units:
+                query = query.filter(func.lower(PengeluaranBengkel.bisnis_kategori).in_(units))
 
         # Date range filter
         if tanggal_dari:

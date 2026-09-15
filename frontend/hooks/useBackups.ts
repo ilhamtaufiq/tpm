@@ -31,7 +31,8 @@ export const useDeleteBackup = () => {
 export const useUploadBackup = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (file: any) => backupService.uploadBackup(file),
+        mutationFn: ({ file, onProgress }: { file: any; onProgress?: (pct: number) => void }) =>
+            backupService.uploadBackup(file, onProgress),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['backups'] });
         },

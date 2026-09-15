@@ -1,6 +1,6 @@
 import { appAlert } from '../../utils/appAlert';
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Animated, Easing } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -32,6 +32,66 @@ import { getErrorMessage } from '../../utils/error';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
+/**
+ * Byte-level bar when the platform reports Content-Length, else an indeterminate
+ * sweep. `progress: null` means unknown — zip/mysqldump give no byte counts.
+ */
+function ProgressBar({ progress, color }: { progress: number | null; color: string }) {
+    const anim = useRef(new Animated.Value(0)).current;
+    const sweep = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (progress === null) return;
+        Animated.timing(anim, {
+            toValue: Math.min(100, Math.max(0, progress)),
+            duration: 300,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: false,
+        }).start();
+    }, [progress, anim]);
+
+    useEffect(() => {
+        if (progress !== null) return;
+        const loop = Animated.loop(
+            Animated.timing(sweep, {
+                toValue: 1,
+                duration: 1400,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: true,
+            })
+        );
+        loop.start();
+        return () => loop.stop();
+    }, [progress, sweep]);
+
+    if (progress === null) {
+        return (
+            <View className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <Animated.View
+                    className="h-full rounded-full"
+                    style={{
+                        width: '40%',
+                        backgroundColor: color,
+                        transform: [{ translateX: sweep.interpolate({ inputRange: [0, 1], outputRange: [-160, 400] }) }],
+                    }}
+                />
+            </View>
+        );
+    }
+
+    return (
+        <View className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+            <Animated.View
+                className="h-full rounded-full"
+                style={{
+                    backgroundColor: color,
+                    width: anim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }),
+                }}
+            />
+        </View>
+    );
+}
+
 export default function BackupScreen() {
     const { themeColors } = useUIStore();
     const router = useRouter();
@@ -40,11 +100,37 @@ export default function BackupScreen() {
     const [selectedBackup, setSelectedBackup] = useState<BackupFile | null>(null);
     const [restorePassword, setRestorePassword] = useState('');
 
+    // Byte-level % when the platform reports sizes; null renders the indeterminate sweep.
+    const [progress, setProgress] = useState<number | null>(null);
+    const [downloadingName, setDownloadingName] = useState<string | null>(null);
+    // Create/restore are single blocking calls with no byte counts — show elapsed instead.
+    const [elapsed, setElapsed] = useState(0);
+
     const { data: backups, isLoading, refetch } = useBackupList();
     const createMutation = useCreateBackup();
     const deleteMutation = useDeleteBackup();
     const restoreMutation = useRestoreBackup();
     const uploadMutation = useUploadBackup();
+
+    const creating = createMutation.isPending;
+    const restoring = isRestoring;
+    const timed = creating || restoring;
+    useEffect(() => {
+        if (!timed) return;
+        setElapsed(0);
+        const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+        return () => clearInterval(id);
+    }, [timed]);
+
+    const busyLabel = creating
+        ? 'Membuat backup (dump DB + zip)…'
+        : restoring
+            ? 'Merestore sistem…'
+            : uploadMutation.isPending
+                ? 'Mengunggah file backup…'
+                : downloadingName
+                    ? `Mengunduh ${downloadingName}…`
+                    : null;
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -108,8 +194,8 @@ export default function BackupScreen() {
                 } as any;
             }
 
-            await uploadMutation.mutateAsync(fileToUpload);
-            
+            await uploadMutation.mutateAsync({ file: fileToUpload, onProgress: setProgress });
+
             setDialogConfig({
                 visible: true,
                 title: 'Sukses',
@@ -123,6 +209,8 @@ export default function BackupScreen() {
                 message: getErrorMessage(error, 'Gagal mengunggah backup'),
                 variant: 'error'
             });
+        } finally {
+            setProgress(null);
         }
     };
 
@@ -150,7 +238,8 @@ export default function BackupScreen() {
 
     const handleDownload = async (filename: string) => {
         try {
-            await backupService.downloadBackup(filename);
+            setDownloadingName(filename);
+            await backupService.downloadBackup(filename, setProgress);
         } catch (error) {
             setDialogConfig({
                 visible: true,
@@ -158,6 +247,9 @@ export default function BackupScreen() {
                 message: 'Gagal mendownload file backup.',
                 variant: 'error'
             });
+        } finally {
+            setDownloadingName(null);
+            setProgress(null);
         }
     };
 
@@ -223,9 +315,14 @@ export default function BackupScreen() {
             <View className="flex-row pt-4 border-t border-slate-50 space-x-3">
                 <Pressable 
                     onPress={() => handleDownload(item.filename)}
-                    className="flex-1 bg-emerald-50 h-11 rounded-xl flex-row items-center justify-center border border-emerald-100 active:bg-emerald-100"
+                    disabled={!!downloadingName}
+                    className={`flex-1 bg-emerald-50 h-11 rounded-xl flex-row items-center justify-center border border-emerald-100 active:bg-emerald-100 ${downloadingName ? 'opacity-50' : ''}`}
                 >
-                    <Download size={14} color="#059669" />
+                    {downloadingName === item.filename ? (
+                        <ActivityIndicator size="small" color="#059669" />
+                    ) : (
+                        <Download size={14} color="#059669" />
+                    )}
                     <Typography weight="bold" className="ml-2 text-emerald-700 text-[10px] uppercase tracking-wider">Download</Typography>
                 </Pressable>
                 <Pressable 
@@ -304,8 +401,27 @@ export default function BackupScreen() {
                 </View>
             </View>
 
-            <ScrollView 
-                className="flex-1 px-6 pt-10" 
+            {busyLabel && (
+                <View className="px-6 pt-4">
+                    <View className="bg-white rounded-2xl border border-slate-100 p-4">
+                        <View className="flex-row items-center justify-between mb-2">
+                            <Typography className="text-slate-500 text-[10px] font-bold uppercase tracking-wider flex-1" numberOfLines={1}>
+                                {busyLabel}
+                            </Typography>
+                            <Typography className="text-slate-400 text-[10px] font-bold ml-2">
+                                {progress !== null ? `${progress}%` : `${elapsed}s`}
+                            </Typography>
+                        </View>
+                        <ProgressBar
+                            progress={progress}
+                            color={restoring ? '#EF4444' : themeColors.primary}
+                        />
+                    </View>
+                </View>
+            )}
+
+            <ScrollView
+                className="flex-1 px-6 pt-10"
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
             >
@@ -400,7 +516,12 @@ export default function BackupScreen() {
                                 disabled={isRestoring}
                                 className={`h-16 rounded-3xl flex-row items-center justify-center shadow-lg ${isRestoring ? 'bg-red-400' : 'bg-red-500'}`}
                             >
-                                {isRestoring ? <ActivityIndicator color="white" /> : (
+                                {isRestoring ? (
+                                    <>
+                                        <ActivityIndicator color="white" />
+                                        <Typography weight="bold" className="text-white text-base ml-3">Merestore… {elapsed}s</Typography>
+                                    </>
+                                ) : (
                                     <>
                                         <RefreshCw size={20} color="white" />
                                         <Typography weight="bold" className="text-white text-base ml-3">Ya, Restore Data</Typography>

@@ -8,6 +8,7 @@ import {
   FileSpreadsheet,
   HardDrive,
   Info,
+  Loader2,
   Lock,
   RefreshCw,
   Trash2,
@@ -16,7 +17,7 @@ import {
 import { backupService, dataImportService, systemService } from '../api/services';
 import type { BackupFile, ImportResult } from '../api/services';
 import { formatCurrencyDisplay } from '../utils/format';
-import { Badge, Card, PageHeader } from '../components/ui';
+import { Badge, Card, PageHeader, ProgressBar } from '../components/ui';
 
 const errMsg = (e: unknown, fallback: string) => {
   const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
@@ -40,6 +41,20 @@ export function Settings() {
   const [restorePassword, setRestorePassword] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const uploadRef = useRef<HTMLInputElement>(null);
+
+  // Byte-level % when the browser gives Content-Length (download/upload); null = unknown.
+  const [progress, setProgress] = useState<number | null>(null);
+  const [downloadingName, setDownloadingName] = useState<string | null>(null);
+  // Create/restore are single blocking calls with no byte counts — show elapsed instead.
+  const [elapsed, setElapsed] = useState(0);
+
+  const timed = backupBusy === 'create' || backupBusy === 'restore';
+  useEffect(() => {
+    if (!timed) return;
+    setElapsed(0);
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [timed]);
 
   const loadBackups = useCallback(async () => {
     try {
@@ -88,14 +103,27 @@ export function Settings() {
     if (!file) return;
     try {
       setBackupBusy('upload');
-      await backupService.upload(file);
+      await backupService.upload(file, setProgress);
       setNotice({ tone: 'ok', text: 'File backup berhasil diunggah ke server.' });
       await loadBackups();
     } catch (e) {
       setNotice({ tone: 'bad', text: errMsg(e, 'Gagal mengunggah backup.') });
     } finally {
       setBackupBusy(null);
+      setProgress(null);
       if (uploadRef.current) uploadRef.current.value = '';
+    }
+  };
+
+  const doDownloadBackup = async (filename: string) => {
+    try {
+      setDownloadingName(filename);
+      await backupService.download(filename, setProgress);
+    } catch (e) {
+      setNotice({ tone: 'bad', text: errMsg(e, 'Gagal mengunduh backup.') });
+    } finally {
+      setDownloadingName(null);
+      setProgress(null);
     }
   };
 
@@ -373,16 +401,16 @@ export function Settings() {
               disabled={!!backupBusy}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0B1F3A] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#14305a] disabled:opacity-50"
             >
-              <Database size={15} />
-              {backupBusy === 'create' ? 'Membuat…' : 'Backup Sekarang'}
+              {backupBusy === 'create' ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+              {backupBusy === 'create' ? `Membuat… ${elapsed}s` : 'Backup Sekarang'}
             </button>
             <button
               onClick={() => uploadRef.current?.click()}
               disabled={!!backupBusy}
               className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
-              <Upload size={15} />
-              Upload .zip
+              {backupBusy === 'upload' ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+              {backupBusy === 'upload' ? 'Mengunggah…' : 'Upload .zip'}
             </button>
             <button
               onClick={loadBackups}
@@ -393,6 +421,28 @@ export function Settings() {
             </button>
             <input ref={uploadRef} type="file" accept=".zip" className="hidden" onChange={doUploadBackup} />
           </div>
+
+          {(backupBusy || downloadingName) && (
+            <div className="animate-fade-up space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                <span>
+                  {backupBusy === 'create' && 'Membuat backup (dump DB + zip)…'}
+                  {backupBusy === 'upload' && 'Mengunggah file backup…'}
+                  {backupBusy === 'restore' && 'Merestore sistem…'}
+                  {backupBusy === 'list' && 'Memuat daftar backup…'}
+                  {!backupBusy && downloadingName && `Mengunduh ${downloadingName}…`}
+                </span>
+                <span className="tabular-nums">
+                  {progress !== null ? `${progress}%` : `${elapsed}s`}
+                </span>
+              </div>
+              <ProgressBar
+                value={progress ?? 0}
+                tone={backupBusy === 'restore' ? 'rose' : 'indigo'}
+                indeterminate={progress === null}
+              />
+            </div>
+          )}
 
           {backups.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-400">
@@ -408,8 +458,17 @@ export function Settings() {
                       <p className="text-[11px] text-slate-400">{fmtDate(b.created_at)} · {formatSize(b.size)}</p>
                     </div>
                     <div className="flex shrink-0 gap-1.5">
-                      <button onClick={() => backupService.download(b.filename)} title="Download" className="rounded-lg bg-emerald-50 p-2 text-emerald-600 hover:bg-emerald-100">
-                        <Download size={14} />
+                      <button
+                        onClick={() => doDownloadBackup(b.filename)}
+                        disabled={!!downloadingName}
+                        title="Download"
+                        className="rounded-lg bg-emerald-50 p-2 text-emerald-600 hover:bg-emerald-100 disabled:opacity-50"
+                      >
+                        {downloadingName === b.filename ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Download size={14} />
+                        )}
                       </button>
                       <button onClick={() => { setRestoreTarget(b); setRestorePassword(''); }} title="Restore" className="rounded-lg bg-indigo-50 p-2 text-indigo-600 hover:bg-indigo-100">
                         <RefreshCw size={14} />
@@ -484,7 +543,14 @@ export function Settings() {
                 disabled={backupBusy === 'restore'}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50"
               >
-                {backupBusy === 'restore' ? 'Merestore…' : 'Ya, Restore Data'}
+                {backupBusy === 'restore' ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" />
+                    Merestore… {elapsed}s
+                  </>
+                ) : (
+                  'Ya, Restore Data'
+                )}
               </button>
               <button
                 onClick={() => { setRestoreTarget(null); setRestorePassword(''); }}

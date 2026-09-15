@@ -29,7 +29,8 @@ import {
     ArrowDownLeft,
     Info,
     Share2,
-    Link
+    Link,
+    Tag
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
@@ -506,7 +507,19 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             </View>
                         </View>
 
-                        {activeUnit.harga_jual > 0 && (
+                        {activeUnit.status?.toUpperCase() !== 'TERJUAL' && (
+                            <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-gray-50">
+                                <View>
+                                    <Typography variant="caption" className="text-textGray mb-1">Harga Jual Unit</Typography>
+                                    <Typography variant="h3" weight="bold" className="text-emerald-600">{formatCurrency(Number(activeUnit.harga_jual || 0))}</Typography>
+                                </View>
+                                <View className="w-12 h-12 bg-emerald-50 rounded-2xl items-center justify-center">
+                                    <Tag size={20} color="#10B981" />
+                                </View>
+                            </View>
+                        )}
+
+                        {activeUnit.status?.toUpperCase() === 'TERJUAL' && Number(activeUnit.harga_jual || 0) > 0 && (
                             <>
                                 <View className="flex-row justify-between items-center">
                                     <View>

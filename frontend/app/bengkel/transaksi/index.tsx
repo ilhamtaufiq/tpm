@@ -122,7 +122,7 @@ export default function BengkelTransaksiScreen() {
         isFetchingNextPage: isFetchingNextPartsPage,
     } = useSparePartsList({
         limit: PART_PAGE_SIZE,
-        sort_by: 'nama',
+        sort_by: 'stok_nama',
         sort_order: 'asc',
         search: debouncedPartSearch || undefined,
     });

@@ -255,6 +255,11 @@ export const bengkelService = {
         return response.data;
     },
 
+    getPengeluaranById: async (id: number) => {
+        const response = await api.get(`/pengeluaran/${id}`);
+        return response.data;
+    },
+
     getPengeluaranSummary: async () => {
         const response = await api.get('/pengeluaran/summary');
         return response.data;

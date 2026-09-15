@@ -283,6 +283,10 @@ class SparePartService:
                 query = query.order_by(func.sum(DetailTransaksiSpareParts.qty).desc())
             else:
                 query = query.order_by(func.sum(DetailTransaksiSpareParts.qty).asc())
+        elif sort_by == "stok_nama":
+            # In-stock (incl. Always Ready 999999) first, then nama A-Z.
+            in_stock_rank = case((SparePart.stok > 0, 0), else_=1)
+            query = query.order_by(in_stock_rank.asc(), SparePart.nama.asc())
         else:
             sort_column = getattr(SparePart, sort_by, SparePart.nama)
             if sort_order == "desc":

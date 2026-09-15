@@ -162,7 +162,11 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                         data = await keuanganService.getPiutang(id);
                     } else if (subtitle.startsWith('HTG')) {
                         data = await keuanganService.getHutang(id);
-                    } 
+                    } else if (item.source === 'PENGELUARAN') {
+                        // Baris pengeluaran dompet: id di-negatifkan saat merge demi dedup,
+                        // jadi ambil nilai absolutnya (id tabel pengeluaran).
+                        data = await bengkelService.getPengeluaranById(Math.abs(id));
+                    }
                     // 2. Route by type and source
                     else if (item.type === 'financial') {
                         data = await keuanganService.getKasBankTransaction(id);

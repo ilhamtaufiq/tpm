@@ -39,3 +39,16 @@ h1, h2, h3 {
 .animate-fade-up {
   animation: fade-up 0.35s ease both;
 }
+
+/* Indeterminate sweep — used when the server gives no byte counts (zip/mysqldump). */
+@keyframes progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+.animate-progress-slide {
+  animation: progress-slide 1.4s ease-in-out infinite;
+}

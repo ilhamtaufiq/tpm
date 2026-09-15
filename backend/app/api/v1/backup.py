@@ -19,6 +19,18 @@ class BackupResponse(BaseModel):
 class RestoreRequest(BaseModel):
     password: str
 
+def _safe_filename(filename: str) -> str:
+    """Reject anything that isn't a bare backup filename.
+
+    `filename` reaches os.path.join from the URL path / multipart header, so
+    `..\\..\\x.zip` escapes the backup dir — a backslash is not a forward slash,
+    so the router's path param still matches it on Windows.
+    """
+    name = os.path.basename(filename.replace("\\", "/"))
+    if name != filename or not name.endswith(".zip") or name.startswith("."):
+        raise HTTPException(status_code=400, detail="Nama file backup tidak valid")
+    return name
+
 @router.get("/list", response_model=List[BackupResponse])
 def list_backups(current_user: CurrentUser):
     """List all available backups on the server."""
@@ -61,10 +73,11 @@ def download_backup(filename: str, current_user: CurrentUser):
             detail="Hanya Administrator yang dapat men-download backup"
         )
     
+    filename = _safe_filename(filename)
     file_path = os.path.join(backup_service.backup_dir, filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File backup tidak ditemukan")
-    
+
     return FileResponse(
         path=file_path,
         filename=filename,
@@ -80,6 +93,7 @@ def delete_backup(filename: str, current_user: CurrentUser):
             detail="Hanya Administrator yang dapat menghapus backup"
         )
     
+    filename = _safe_filename(filename)
     if backup_service.delete_backup(filename):
         return {"message": f"Backup {filename} berhasil dihapus"}
     else:
@@ -115,7 +129,8 @@ def restore_backup(
     
     # Close session early to return connection to pool while restoring
     db.close()
-    
+
+    filename = _safe_filename(filename)
     try:
         if backup_service.restore_backup(filename):
             return {"message": "Sistem berhasil direstore. Silakan login kembali jika diperlukan."}
@@ -136,25 +151,20 @@ def upload_backup(
             detail="Hanya Administrator yang dapat mengunggah backup"
         )
     
-    if not file.filename.endswith(".zip"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Hanya file .zip yang diizinkan"
-        )
-    
-    file_path = os.path.join(backup_service.backup_dir, file.filename)
-    
+    filename = _safe_filename(file.filename or "")
+    file_path = os.path.join(backup_service.backup_dir, filename)
+
     # Save the file
     try:
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gagal menyimpan file: {str(e)}")
-    
+
     # Return info about the uploaded file
     stats = os.stat(file_path)
     return {
-        "filename": file.filename,
+        "filename": filename,
         "size": stats.st_size,
         "created_at": datetime.fromtimestamp(stats.st_ctime).isoformat()
     }

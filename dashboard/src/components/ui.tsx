@@ -255,12 +255,25 @@ export function DataTable({
   );
 }
 
-export function ProgressBar({ value, tone = 'emerald' }: { value: number; tone?: 'emerald' | 'rose' | 'amber' | 'indigo' }) {
+export function ProgressBar({
+  value,
+  tone = 'emerald',
+  indeterminate = false,
+}: {
+  value: number;
+  tone?: 'emerald' | 'rose' | 'amber' | 'indigo';
+  indeterminate?: boolean;
+}) {
   const pct = Math.min(100, Math.max(0, value));
   const bg = { emerald: 'bg-emerald-500', rose: 'bg-rose-500', amber: 'bg-amber-500', indigo: 'bg-indigo-500' }[tone];
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-      <div className={`h-full rounded-full ${bg}`} style={{ width: `${pct}%` }} />
+      <div
+        className={`h-full rounded-full ${bg} ${
+          indeterminate ? 'animate-progress-slide' : 'transition-[width] duration-300 ease-out'
+        }`}
+        style={indeterminate ? { width: '40%' } : { width: `${pct}%` }}
+      />
     </div>
   );
 }

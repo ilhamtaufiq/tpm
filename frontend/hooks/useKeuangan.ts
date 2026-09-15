@@ -1,6 +1,13 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ActivityItem, KasBankListResponse, InvestorWithdrawalRequest, keuanganService } from '../services/keuangan';
+import { bengkelService } from '../services/bengkel';
+import {
+    expenseUnitsParam,
+    expenseToKasRow,
+    filterWalletExpenseRows,
+    mergeWalletRows,
+} from '../utils/walletMerge';
 
 // =============================================
 // KAS & BANK
@@ -27,8 +34,32 @@ export const useKasBankList = (
     });
 };
 
+// Pengeluaran ber-bisnis_kategori unit: baris kasnya selalu bersumber PENGELUARAN,
+// jadi tak pernah cocok dengan filter dompet — diambil dari endpoint pengeluaran.
+const useUnitWalletExpenses = (
+    unitScope: string,
+    params: { limit?: number; tanggal_dari?: string; tanggal_sampai?: string },
+    options?: { enabled?: boolean },
+) => {
+    const bisnisKategori = expenseUnitsParam(unitScope);
+    return useQuery({
+        // Root 'pengeluaran' agar ikut ter-invalidate oleh realtime + sync offline.
+        queryKey: ['pengeluaran', 'wallet', unitScope, params],
+        queryFn: () => bengkelService.getPengeluaran({
+            bisnis_kategori: bisnisKategori,
+            limit: params.limit ?? 20,
+            tanggal_dari: params.tanggal_dari,
+            tanggal_sampai: params.tanggal_sampai,
+            sort_by: 'tanggal',
+            sort_order: 'desc',
+        }),
+        enabled: !!bisnisKategori && options?.enabled !== false,
+    });
+};
+
 // Dompet unit = ledger KAS_UNIT_X + arus keluar unit dari akun pusat
-// (kasbon/piutang sumber KAS_UTAMA/BANK_UTAMA tulis jenis pusat, sumber unit).
+// (kasbon/piutang sumber KAS_UTAMA/BANK_UTAMA tulis jenis pusat, sumber unit)
+// + pengeluaran ber-bisnis_kategori unit.
 export const useUnitWalletHistory = (
     jenis: string,
     sumber: string,
@@ -42,20 +73,28 @@ export const useUnitWalletHistory = (
         { ...params, sumber, tipe: 'KELUAR' },
         { ...options, enabled: ready }
     );
+    const expenseQuery = useUnitWalletExpenses(sumber, {
+        limit: params.limit ?? 20,
+        tanggal_dari: params.tanggal_dari,
+        tanggal_sampai: params.tanggal_sampai,
+    }, { enabled: ready });
     const data = useMemo<KasBankListResponse | undefined>(() => {
+        if (!ready) return undefined;
         const a = walletQuery.data?.data ?? [];
         const b = (centralQuery.data?.data ?? []).filter((item: any) => item.jenis !== jenis);
-        const seen = new Set<number>();
-        const merged = [...a, ...b].filter((item: any) =>
-            item?.id == null || seen.has(item.id) ? false : (seen.add(item.id), true)
+        const kept = filterWalletExpenseRows(
+            expenseQuery.data?.data ?? [],
+            sumber,
+            [...a, ...b].map((item: any) => item.nomor_referensi).filter(Boolean),
         );
-        merged.sort((x: any, y: any) => {
-            const dx = x.tanggal < y.tanggal ? 1 : x.tanggal > y.tanggal ? -1 : (y.id ?? 0) - (x.id ?? 0);
-            return dx;
-        });
+        const merged = mergeWalletRows(a, b, kept.map(expenseToKasRow));
         return { ...(walletQuery.data ?? centralQuery.data ?? {}), data: merged, total: merged.length } as KasBankListResponse;
-    }, [walletQuery.data, centralQuery.data, jenis]);
-    return { data, isLoading: walletQuery.isLoading || centralQuery.isLoading, refetch: async () => { await Promise.all([walletQuery.refetch(), centralQuery.refetch()]); } };
+    }, [ready, walletQuery.data, centralQuery.data, expenseQuery.data, jenis, sumber]);
+    return {
+        data,
+        isLoading: ready && (walletQuery.isLoading || centralQuery.isLoading || expenseQuery.isLoading),
+        refetch: async () => { await Promise.all([walletQuery.refetch(), centralQuery.refetch(), expenseQuery.refetch()]); },
+    };
 };
 
 export const useTransfer = () => {

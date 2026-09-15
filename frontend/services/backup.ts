@@ -28,16 +28,19 @@ export const backupService = {
         return response.data;
     },
 
-    uploadBackup: async (file: any): Promise<BackupFile> => {
+    uploadBackup: async (file: any, onProgress?: (pct: number) => void): Promise<BackupFile> => {
         const formData = new FormData();
-        // On web, file is a File object. On mobile, we might need a different approach 
+        // On web, file is a File object. On mobile, we might need a different approach
         // but for now we focus on the web/generic FormData approach.
         formData.append('file', file);
         const response = await api.post('/backup/upload', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
-            timeout: 300000
+            timeout: 300000,
+            onUploadProgress: (e) => {
+                if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
+            }
         });
         return response.data;
     },
@@ -49,14 +52,17 @@ export const backupService = {
         return response.data;
     },
 
-    downloadBackup: async (filename: string) => {
-        const downloadUrl = `${BASE_URL}/backup/download/${filename}`;
-        
+    downloadBackup: async (filename: string, onProgress?: (pct: number) => void) => {
+        const downloadUrl = `${BASE_URL}/backup/download/${encodeURIComponent(filename)}`;
+
         if (Platform.OS === 'web') {
             // Standard web download
-            const response = await api.get(`/backup/download/${filename}`, {
+            const response = await api.get(`/backup/download/${encodeURIComponent(filename)}`, {
                 responseType: 'blob',
-                timeout: 600000 // 10 minutes for large downloads
+                timeout: 600000, // 10 minutes for large downloads
+                onDownloadProgress: (e) => {
+                    if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
+                }
             });
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
@@ -77,7 +83,13 @@ export const backupService = {
                 fileUri,
                 {
                     headers: {
-                        'Authorization': authToken as string
+                        // Must be the full scheme — the backend's HTTPBearer rejects a bare token.
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                },
+                (p) => {
+                    if (p.totalBytesExpectedToWrite > 0) {
+                        onProgress?.(Math.round((p.totalBytesWritten / p.totalBytesExpectedToWrite) * 100));
                     }
                 }
             );
