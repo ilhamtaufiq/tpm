@@ -51,7 +51,7 @@ import { useKasBankBalances, useUnitWalletHistory, useCreateTransaction, useTran
 
 import { useCreatePengeluaran } from '../../hooks/useBengkel';
 import { formatCurrency, formatNumber, parseNumber, formatDate } from '../../utils/format';
-import { Platform, Modal, TouchableOpacity } from 'react-native';
+import { Platform, Modal, TouchableOpacity, Share } from 'react-native';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
@@ -343,6 +343,44 @@ export default function MobilInventoryScreen() {
                 }
             }
         });
+    };
+
+    const handleShareGallery = async (unit: any) => {
+        const galleryToken = unit.public_gallery_token;
+        if (!galleryToken) {
+            appAlert('Token Tidak Tersedia', 'Token publik detail mobil belum tersedia. Jalankan migrasi database lalu muat ulang data.');
+            return;
+        }
+
+        const galleryUrl = `${(FILE_URL || 'https://tpm.cianjur.space')}/api/v1/public/gallery/mobil/${galleryToken}/view`;
+        const shareTitle = `${unit.merek} ${unit.model} ${unit.tahun}`;
+        const shareMessage = `${shareTitle} - ${unit.nomor_plat}\n\nLihat foto & video unit ini:\n${galleryUrl}`;
+
+        try {
+            if (Platform.OS === 'web') {
+                if (navigator.share) {
+                    await navigator.share({
+                        title: shareTitle,
+                        text: shareMessage,
+                        url: galleryUrl,
+                    });
+                } else {
+                    await navigator.clipboard.writeText(galleryUrl);
+                    appAlert('Sukses', 'Link galeri berhasil disalin ke clipboard');
+                }
+            } else {
+                await Share.share({
+                    title: shareTitle,
+                    message: shareMessage,
+                    url: galleryUrl,
+                });
+            }
+        } catch (error: any) {
+            if (error?.message !== 'Share dismissed') {
+                console.error('Share error:', error);
+                appAlert('Gagal', 'Tidak dapat membagikan galeri');
+            }
+        }
     };
 
     const getStatusColor = (status: string) => {
@@ -1234,6 +1272,12 @@ export default function MobilInventoryScreen() {
                                             </View>
 
                                             <View className="flex-row justify-end space-x-2 border-t border-gray-50 pt-3 mt-1">
+                                                <Pressable
+                                                    className="w-8 h-8 bg-emerald-50 rounded-lg items-center justify-center border border-emerald-100 active:bg-emerald-100"
+                                                    onPress={() => handleShareGallery(item)}
+                                                >
+                                                    <Share2 size={14} color="#10B981" />
+                                                </Pressable>
                                                 {(getNormalizedStatus(item.status) === 'tersedia' || getNormalizedStatus(item.status) === 'booking') && (
                                                     <Pressable
                                                         className="w-8 h-8 bg-emerald-50 rounded-lg items-center justify-center border border-emerald-100 active:bg-emerald-100"
