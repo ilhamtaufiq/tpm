@@ -5,6 +5,7 @@ This module provides utilities for automatically recording financial transaction
 to the kas_bank ledger when transactions occur in other parts of the system.
 """
 
+import logging
 from datetime import date
 from decimal import Decimal
 from typing import Optional
@@ -21,6 +22,57 @@ from app.utils.constants import (
     KasBankJenis,
     PaymentMethod,
 )
+
+logger = logging.getLogger(__name__)
+
+# Akun kas tunai vs akun bank. TRANSFER yang mendarat di akun kas adalah defect
+# nyata: uang bank tercatat mengurangi kas tunai, dan saldo satu akun jadi salah.
+_AKUN_BANK = frozenset({KasBankJenis.BANK_UTAMA})
+_AKUN_KAS = frozenset({
+    KasBankJenis.CASH,
+    KasBankJenis.KAS_UTAMA,
+    KasBankJenis.KAS_UNIT_BENGKEL,
+    KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+    KasBankJenis.KAS_UNIT_MOBIL,
+})
+
+
+def _resolve_kas_jenis(
+    kas_jenis: Optional[KasBankJenis],
+    metode_bayar: PaymentMethod,
+    sumber: Optional[KasBankSource],
+) -> KasBankJenis:
+    """Pilih akun final, tolak `kas_jenis` yang menempatkan TRANSFER di akun kas.
+
+    Pemanggil boleh memilih akun lain selama tidak bertentangan (`kas_jenis`
+    dipakai untuk konteks yang tidak diketahui policy, mis. penarikan investor
+    yang selalu dividen dari dompet unit). Satu arah saja yang diblokir:
+    TRANSFER ke akun kas. Arah sebaliknya (TUNAI ke bank) tidak menggeser uang
+    antar unit, jadi dibiarkan tapi diperingatkan karena labelnya menyesatkan.
+    """
+    if kas_jenis is None:
+        return get_kas_jenis(metode_bayar, sumber)
+
+    try:
+        bank_method = PaymentMethod(metode_bayar) == PaymentMethod.TRANSFER
+    except (ValueError, TypeError):
+        bank_method = False
+
+    if bank_method and kas_jenis in _AKUN_KAS:
+        expected = get_kas_jenis(metode_bayar, sumber)
+        logger.warning(
+            "kas_jenis=%s tidak konsisten dengan metode_bayar=%s (sumber=%s); dipakai %s",
+            kas_jenis, metode_bayar, sumber, expected,
+        )
+        return expected
+
+    if not bank_method and kas_jenis in _AKUN_BANK:
+        logger.warning(
+            "kas_jenis=%s (akun bank) dengan metode_bayar=%s (sumber=%s)",
+            kas_jenis, metode_bayar, sumber,
+        )
+
+    return kas_jenis
 
 
 def get_kas_jenis(metode_bayar: PaymentMethod, sumber: Optional[KasBankSource] = None) -> KasBankJenis:
@@ -90,8 +142,8 @@ def create_kas_entry(
     """
     service = KasBankService(db)
 
-    # Use explicit kas_jenis if provided, otherwise map from payment method and source
-    selected_jenis = kas_jenis if kas_jenis else get_kas_jenis(metode_bayar, sumber)
+    # Use explicit kas_jenis if provided and consistent, otherwise derive from policy
+    selected_jenis = _resolve_kas_jenis(kas_jenis, metode_bayar, sumber)
 
     data = KasBankCreate(
         tanggal=tanggal,

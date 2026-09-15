@@ -48,6 +48,19 @@ const BISNIS_KATEGORI = [
     { label: 'Jual Beli Mobil', value: 'jual_beli_mobil', icon: Car, color: '#3B82F6' },
 ];
 
+const AKUN = [
+    { label: 'Kantor', short: 'Kantor', value: 'KAS_UTAMA' },
+    { label: 'Bank', short: 'Bank', value: 'BANK_UTAMA' },
+    { label: 'Unit Jasa Angkut', short: 'J. Angkut', value: 'KAS_UNIT_JASA_ANGKUT' },
+    { label: 'Unit Bengkel', short: 'Bengkel', value: 'KAS_UNIT_BENGKEL' },
+    { label: 'Unit Mobil', short: 'Mobil', value: 'KAS_UNIT_MOBIL' },
+];
+
+// Akun menentukan metode bayar. Dijadikan satu pilihan supaya operator tidak
+// bisa memilih kombinasi yang bertentangan (mis. Cash + TRANSFER) yang dulu
+// membuat uang bank tercatat mengurangi kas tunai.
+const metodeDariAkun = (akun: string | null) => (akun === 'BANK_UTAMA' ? 'TRANSFER' : 'TUNAI');
+
 export default function ExpensesScreen() {
     const router = useRouter();
 
@@ -67,8 +80,8 @@ export default function ExpensesScreen() {
     const [payMetode, setPayMetode] = useState('');
     const [kasJenis, setKasJenis] = useState<string | null>(null);
     const [splitPayments, setSplitPayments] = useState([
-        { metode: 'TUNAI', jumlah: '', kas_jenis: null },
-        { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
+        { metode: 'TUNAI', jumlah: '', kas_jenis: 'KAS_UTAMA' },
+        { metode: 'TRANSFER', jumlah: '', kas_jenis: 'BANK_UTAMA' },
     ]);
     const [allowNegative, setAllowNegative] = useState(false);
 
@@ -100,13 +113,13 @@ export default function ExpensesScreen() {
             return;
         }
 
-        if (!payMetode) {
-            console.log('Validation failed: payMetode is empty');
-            appAlert('Validasi', 'Mohon pilih metode pembayaran');
+        if (!kasJenis) {
+            appAlert('Validasi', 'Mohon pilih sumber dana (akun)');
             return;
         }
 
         const totalAmount = parseNumber(jumlah);
+        const isSplit = payMetode === 'SPLIT';
 
         const payload: any = {
             tanggal: new Date().toISOString().split('T')[0],
@@ -118,12 +131,13 @@ export default function ExpensesScreen() {
             spare_part_id: selectedSparePart?.id || null,
             jumlah: totalAmount,
             deskripsi,
-            metode_bayar: payMetode,
-            kas_jenis: kasJenis,
+            // SPLIT: akun diatur per baris, jadi tidak diisi di level ini.
+            metode_bayar: isSplit ? 'SPLIT' : metodeDariAkun(kasJenis),
+            kas_jenis: isSplit ? null : kasJenis,
             allow_negative: allowNegative,
         };
 
-        if (payMetode === 'SPLIT') {
+        if (isSplit) {
             const totalSplit = splitPayments.reduce((acc, curr) => acc + parseNumber(curr.jumlah), 0);
             if (totalSplit !== totalAmount) {
                 appAlert(
@@ -132,10 +146,10 @@ export default function ExpensesScreen() {
                 );
                 return;
             }
-            // Filter out empty amounts if needed, or strictly require them. Currently strictly checking sum.
             payload.payments = splitPayments.map(p => ({
-                metode: p.metode,
-                jumlah: parseNumber(p.jumlah)
+                metode: metodeDariAkun(p.kas_jenis),
+                jumlah: parseNumber(p.jumlah),
+                kas_jenis: p.kas_jenis,
             }));
         }
 
@@ -160,8 +174,8 @@ export default function ExpensesScreen() {
                 setSelectedSparePart(null);
                 setPayMetode('');
                 setSplitPayments([
-                    { metode: 'TUNAI', jumlah: '', kas_jenis: null },
-                    { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
+                    { metode: 'TUNAI', jumlah: '', kas_jenis: 'KAS_UTAMA' },
+                    { metode: 'TRANSFER', jumlah: '', kas_jenis: 'BANK_UTAMA' },
                 ]);
                 setAllowNegative(false);
                 appAlert(
@@ -177,8 +191,8 @@ export default function ExpensesScreen() {
             setSelectedSparePart(null);
             setPayMetode('');
             setSplitPayments([
-                { metode: 'TUNAI', jumlah: '', kas_jenis: null },
-                { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
+                { metode: 'TUNAI', jumlah: '', kas_jenis: 'KAS_UTAMA' },
+                { metode: 'TRANSFER', jumlah: '', kas_jenis: 'BANK_UTAMA' },
             ]);
             setAllowNegative(false);
             appAlert('Sukses', 'Pengeluaran berhasil dicatat');
@@ -341,15 +355,9 @@ export default function ExpensesScreen() {
                                     <View className="mb-6">
                                         <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana (Akun)</Typography>
                                         <View className="flex-row flex-wrap">
-                                            {[
-                                                { label: 'Kantor', value: 'KAS_UTAMA' },
-                                                { label: 'Bank', value: 'BANK_UTAMA' },
-                                    { label: 'Unit Jasa Angkut', value: 'KAS_UNIT_JASA_ANGKUT' },
-                                                { label: 'Unit Bengkel', value: 'KAS_UNIT_BENGKEL' },
-                                                { label: 'Unit Mobil', value: 'KAS_UNIT_MOBIL' },
-                                            ].map((opt) => {
+                                            {AKUN.map((opt) => {
                                                 // Highlight relevant unit if business category is selected
-                                                const isRelevant = 
+                                                const isRelevant =
                                                     (bisnisKategori === 'jasa_angkut' && opt.value === 'KAS_UNIT_JASA_ANGKUT') ||
                                                     (bisnisKategori === 'bengkel' && opt.value === 'KAS_UNIT_BENGKEL') ||
                                                     (bisnisKategori === 'jual_beli_mobil' && opt.value === 'KAS_UNIT_MOBIL') ||
@@ -358,7 +366,10 @@ export default function ExpensesScreen() {
                                                 return (
                                                     <Pressable
                                                         key={opt.value}
-                                                        onPress={() => setKasJenis(opt.value)}
+                                                        onPress={() => {
+                                                            setKasJenis(opt.value);
+                                                            setPayMetode(metodeDariAkun(opt.value));
+                                                        }}
                                                         className={`mr-2 mb-2 px-4 py-3 rounded-2xl border items-center ${kasJenis === opt.value
                                                             ? 'bg-primary border-primary shadow-sm'
                                                             : isRelevant ? 'bg-primary/5 border-primary/20' : 'bg-gray-50 border-gray-100'
@@ -369,6 +380,11 @@ export default function ExpensesScreen() {
                                                             className={`text-[10px] tracking-tight ${kasJenis === opt.value ? 'text-white' : isRelevant ? 'text-primary' : 'text-textGray'}`}
                                                         >
                                                             {opt.label}
+                                                        </Typography>
+                                                        <Typography
+                                                            className={`text-[8px] mt-0.5 ${kasJenis === opt.value ? 'text-white/70' : 'text-textGray/50'}`}
+                                                        >
+                                                            {metodeDariAkun(opt.value)}
                                                         </Typography>
                                                     </Pressable>
                                                 );
@@ -396,36 +412,26 @@ export default function ExpensesScreen() {
                                     containerClassName="mb-0"
                                 />
 
-                                {/* Metode Pembayaran */}
-                                <View>
-                                    <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Metode Bayar</Typography>
-                                    <View className="flex-row space-x-4">
-                                        {[
-                                            { id: 'TUNAI', label: 'TUNAI', icon: Wallet },
-                                            { id: 'TRANSFER', label: 'TRANSFER', icon: ArrowRightLeft },
-                                            { id: 'SPLIT', label: 'SPLIT', icon: Split },
-                                        ].map((method) => (
-                                            <Pressable
-                                                key={method.id}
-                                                onPress={() => setPayMetode(method.id as any)}
-                                                className={`flex-1 flex-row items-center justify-center py-4 rounded-3xl border ${payMetode === method.id
-                                                    ? 'bg-primary border-primary shadow-2xl shadow-primary/20'
-                                                    : 'bg-gray-50 border-gray-100'
-                                                    }`}
-                                            >
-                                                <method.icon size={14} color={payMetode === method.id ? 'white' : '#9CA3AF'} className="mr-2" />
-                                                <Typography weight="bold" className={payMetode === method.id ? 'text-white text-[10px]' : 'text-textGray text-[10px]'}>{method.label}</Typography>
-                                            </Pressable>
-                                        ))}
-                                    </View>
-                                </View>
+                                {/* SPLIT: satu-satunya pengecualian, akun diatur per baris di bawah */}
+                                <Pressable
+                                    onPress={() => setPayMetode(payMetode === 'SPLIT' ? metodeDariAkun(kasJenis) : 'SPLIT')}
+                                    className={`flex-row items-center justify-center py-4 rounded-3xl border ${payMetode === 'SPLIT'
+                                        ? 'bg-primary border-primary shadow-2xl shadow-primary/20'
+                                        : 'bg-gray-50 border-gray-100'
+                                        }`}
+                                >
+                                    <Split size={14} color={payMetode === 'SPLIT' ? 'white' : '#9CA3AF'} className="mr-2" />
+                                    <Typography weight="bold" className={payMetode === 'SPLIT' ? 'text-white text-[10px]' : 'text-textGray text-[10px]'}>
+                                        {payMetode === 'SPLIT' ? 'SPLIT AKTIF — ketuk untuk batal' : 'BAYAR SPLIT (opsional)'}
+                                    </Typography>
+                                </Pressable>
 
                                 {payMetode === 'SPLIT' && (
                                     <View className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-3">
                                         <View className="flex-row justify-between items-center mb-1">
                                             <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Detail Pembayaran</Typography>
                                             <Pressable
-                                                onPress={() => setSplitPayments([...splitPayments, { metode: 'TUNAI', jumlah: '', kas_jenis: null }])}
+                                                onPress={() => setSplitPayments([...splitPayments, { metode: 'TUNAI', jumlah: '', kas_jenis: 'KAS_UTAMA' }])}
                                                 className="bg-white border border-gray-200 p-2 rounded-xl"
                                             >
                                                 <Plus size={14} color="#023C69" />
@@ -434,17 +440,31 @@ export default function ExpensesScreen() {
 
                                         {splitPayments.map((split, index) => (
                                             <View key={index} className="flex-row space-x-2 items-center">
-                                                <Pressable
-                                                    onPress={() => {
-                                                        const newSplits = [...splitPayments];
-                                                        newSplits[index].metode = newSplits[index].metode === 'TUNAI' ? 'TRANSFER' : 'TUNAI';
-                                                        setSplitPayments(newSplits);
-                                                    }}
-                                                    className="w-28 h-12 bg-white border border-gray-200 rounded-2xl flex-row items-center justify-center px-2"
-                                                >
-                                                    {split.metode === 'TUNAI' ? <Wallet size={12} color="#023C69" className="mr-2" /> : <ArrowRightLeft size={12} color="#023C69" className="mr-2" />}
-                                                    <Typography className="text-[10px] font-bold text-primary">{split.metode}</Typography>
-                                                </Pressable>
+                                                {/* Akun per baris; metode diturunkan darinya */}
+                                                <View className="flex-row flex-wrap w-40">
+                                                    {AKUN.map((opt) => (
+                                                        <Pressable
+                                                            key={opt.value}
+                                                            onPress={() => {
+                                                                const newSplits = [...splitPayments];
+                                                                newSplits[index].kas_jenis = opt.value;
+                                                                newSplits[index].metode = metodeDariAkun(opt.value);
+                                                                setSplitPayments(newSplits);
+                                                            }}
+                                                            className={`mr-1 mb-1 px-2 py-1.5 rounded-lg border ${split.kas_jenis === opt.value
+                                                                ? 'bg-primary border-primary'
+                                                                : 'bg-white border-gray-200'
+                                                                }`}
+                                                        >
+                                                            <Typography
+                                                                weight="bold"
+                                                                className={`text-[8px] ${split.kas_jenis === opt.value ? 'text-white' : 'text-textGray'}`}
+                                                            >
+                                                                {opt.short}
+                                                            </Typography>
+                                                        </Pressable>
+                                                    ))}
+                                                </View>
 
                                                 <Input
                                                     placeholder="0"

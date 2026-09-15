@@ -111,7 +111,7 @@ class PengeluaranService:
                 kas_source = KasBankSource.PRIVE
 
             for p in data.payments:
-                 create_kas_entry(
+                create_kas_entry(
                     db=self.db,
                     tanggal=data.tanggal,
                     tipe=KasBankType.KELUAR,
@@ -122,7 +122,8 @@ class PengeluaranService:
                     nomor_referensi=pengeluaran.nomor_transaksi,
                     keterangan=f"Pengeluaran {data.kategori.value} (Split {p.metode.value}): {data.deskripsi}",
                     user_id=user_id,
-                    kas_jenis=data.kas_jenis, # Using provided BOP account if any
+                    # Akun per baris split; fallback ke akun level transaksi.
+                    kas_jenis=p.kas_jenis or data.kas_jenis,
                 )
         elif metode_bayar_enum != PaymentMethod.KREDIT:
             # Determine source based on category
