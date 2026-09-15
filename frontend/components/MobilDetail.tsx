@@ -68,19 +68,22 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const [activeIndex, setActiveIndex] = useState(0);
-    const lightboxFlatListRef = useRef<FlatList>(null);
+    const touchStartX = useRef<number>(0);
 
-    const handleNavigateLightbox = (direction: 'prev' | 'next') => {
-        if (lightboxIndex === null || !activeUnit.media) return;
-        const targetIdx = direction === 'prev' ? lightboxIndex - 1 : lightboxIndex + 1;
-        if (targetIdx >= 0 && targetIdx < activeUnit.media.length) {
-            setLightboxIndex(targetIdx);
-            lightboxFlatListRef.current?.scrollToOffset({
-                offset: targetIdx * width,
-                animated: true,
-            });
-        }
-    };
+    useEffect(() => {
+        if (Platform.OS !== 'web' || lightboxIndex === null) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowRight') {
+                setLightboxIndex((prev) => (prev !== null && prev < (activeUnit?.media?.length || 0) - 1 ? prev + 1 : prev));
+            } else if (e.key === 'ArrowLeft') {
+                setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
+            } else if (e.key === 'Escape') {
+                setLightboxIndex(null);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [lightboxIndex, activeUnit?.media]);
 
     useEffect(() => {
         console.log('[DEBUG] MobilDetail mounted for unit:', initialUnit?.id);
@@ -846,110 +849,109 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                 animationType="fade"
                 onRequestClose={() => setLightboxIndex(null)}
             >
-                <View className="flex-1 bg-black/95 justify-center items-center">
-                    {/* Header Controls */}
-                    <View className="absolute top-12 left-6 right-6 z-20 flex-row justify-between items-center">
-                        <View className="bg-white/10 px-4 py-2 rounded-full border border-white/20">
-                            <Typography className="text-white text-xs font-bold">
-                                {((lightboxIndex ?? 0) + 1)} / {activeUnit.media?.length || 0}
-                            </Typography>
-                        </View>
-                        <Pressable
-                            onPress={() => setLightboxIndex(null)}
-                            className="w-12 h-12 bg-white/10 rounded-full items-center justify-center border border-white/20 active:bg-white/20"
+                {(() => {
+                    const currentMedia = (lightboxIndex !== null && activeUnit.media && activeUnit.media[lightboxIndex])
+                        ? activeUnit.media[lightboxIndex]
+                        : null;
+                    const baseUrl = (FILE_URL || '').replace(/\/$/, '');
+                    const mediaUrl = currentMedia
+                        ? `${baseUrl}/uploads/${currentMedia.file_path.replace(/^\//, '')}`
+                        : '';
+
+                    return (
+                        <View
+                            className="flex-1 bg-black/95 justify-center items-center relative"
+                            onTouchStart={(e) => {
+                                touchStartX.current = e.nativeEvent.pageX;
+                            }}
+                            onTouchEnd={(e) => {
+                                const deltaX = e.nativeEvent.pageX - touchStartX.current;
+                                if (deltaX < -50) {
+                                    setLightboxIndex((prev) =>
+                                        prev !== null && prev < (activeUnit.media?.length || 0) - 1 ? prev + 1 : prev
+                                    );
+                                } else if (deltaX > 50) {
+                                    setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
+                                }
+                            }}
                         >
-                            <X size={24} color="white" />
-                        </Pressable>
-                    </View>
+                            {/* Header Controls */}
+                            <View className="absolute top-12 left-6 right-6 z-50 flex-row justify-between items-center">
+                                <View className="bg-white/10 px-4 py-2 rounded-full border border-white/20">
+                                    <Typography className="text-white text-xs font-bold">
+                                        {((lightboxIndex ?? 0) + 1)} / {activeUnit.media?.length || 0}
+                                    </Typography>
+                                </View>
+                                <Pressable
+                                    onPress={() => setLightboxIndex(null)}
+                                    className="w-12 h-12 bg-white/10 rounded-full items-center justify-center border border-white/20 active:bg-white/20"
+                                >
+                                    <X size={24} color="white" />
+                                </Pressable>
+                            </View>
 
-                    {/* Main Slide List */}
-                    {lightboxIndex !== null && activeUnit.media && activeUnit.media.length > 0 && (
-                        <FlatList
-                            ref={lightboxFlatListRef}
-                            data={activeUnit.media}
-                            horizontal
-                            pagingEnabled
-                            showsHorizontalScrollIndicator={false}
-                            initialScrollIndex={lightboxIndex}
-                            getItemLayout={(_, index) => ({
-                                length: width,
-                                offset: width * index,
-                                index,
-                            })}
-                            onScrollToIndexFailed={(info) => {
-                                setTimeout(() => {
-                                    lightboxFlatListRef.current?.scrollToIndex({ index: info.index, animated: false });
-                                }, 100);
-                            }}
-                            onMomentumScrollEnd={(e) => {
-                                const newIdx = Math.round(e.nativeEvent.contentOffset.x / width);
-                                setLightboxIndex(newIdx);
-                            }}
-                            keyExtractor={(item) => `lightbox-${item.id}`}
-                            renderItem={({ item }) => {
-                                const baseUrl = (FILE_URL || '').replace(/\/$/, '');
-                                const filePath = item.file_path.replace(/^\//, '');
-                                const fullUrl = `${baseUrl}/uploads/${filePath}`;
-                                return (
-                                    <View style={{ width, height }} className="items-center justify-center p-4">
-                                        {item.file_type === 'video' ? (
-                                            <View style={{ width: width - 32, height: height * 0.7 }} className="bg-black rounded-2xl overflow-hidden">
-                                                <Video
-                                                    source={{ uri: fullUrl }}
-                                                    rate={1.0}
-                                                    volume={1.0}
-                                                    isMuted={false}
-                                                    resizeMode={ResizeMode.CONTAIN}
-                                                    shouldPlay={true}
-                                                    useNativeControls
-                                                    style={{ width: '100%', height: '100%' }}
-                                                />
-                                            </View>
-                                        ) : (
-                                            <Image
-                                                source={{ uri: fullUrl }}
-                                                style={{ width: width - 32, height: height * 0.75 }}
-                                                resizeMode="contain"
+                            {/* Main Active Media View */}
+                            {currentMedia && (
+                                <View style={{ width, height }} className="items-center justify-center p-4">
+                                    {currentMedia.file_type === 'video' ? (
+                                        <View style={{ width: width - 32, height: height * 0.7 }} className="bg-black rounded-2xl overflow-hidden">
+                                            <Video
+                                                key={`vid-${currentMedia.id}`}
+                                                source={{ uri: mediaUrl }}
+                                                rate={1.0}
+                                                volume={1.0}
+                                                isMuted={false}
+                                                resizeMode={ResizeMode.CONTAIN}
+                                                shouldPlay={true}
+                                                useNativeControls
+                                                style={{ width: '100%', height: '100%' }}
                                             />
-                                        )}
-                                    </View>
-                                );
-                            }}
-                        />
-                    )}
-
-                    {/* Navigation Buttons (Left / Right Arrow) */}
-                    {activeUnit.media && activeUnit.media.length > 1 && (
-                        <>
-                            {(lightboxIndex ?? 0) > 0 && (
-                                <Pressable
-                                    onPress={() => handleNavigateLightbox('prev')}
-                                    hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                                    style={{ zIndex: 99, elevation: 10 }}
-                                    className="absolute left-4 w-12 h-12 bg-white/20 rounded-full items-center justify-center border border-white/30 active:bg-white/40 shadow-lg"
-                                >
-                                    <ChevronLeft size={28} color="white" />
-                                </Pressable>
+                                        </View>
+                                    ) : (
+                                        <Image
+                                            key={`img-${currentMedia.id}`}
+                                            source={{ uri: mediaUrl }}
+                                            style={{ width: width - 32, height: height * 0.75 }}
+                                            resizeMode="contain"
+                                        />
+                                    )}
+                                </View>
                             )}
-                            {(lightboxIndex ?? 0) < activeUnit.media.length - 1 && (
-                                <Pressable
-                                    onPress={() => handleNavigateLightbox('next')}
-                                    hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                                    style={{ zIndex: 99, elevation: 10 }}
-                                    className="absolute right-4 w-12 h-12 bg-white/20 rounded-full items-center justify-center border border-white/30 active:bg-white/40 shadow-lg"
-                                >
-                                    <ChevronRight size={28} color="white" />
-                                </Pressable>
-                            )}
-                        </>
-                    )}
 
-                    <View className="absolute bottom-10 z-10 pointer-events-none">
-                        <Typography className="text-white/50 text-xs font-bold uppercase tracking-widest text-center">
-                            Geser untuk melihat media lain
-                        </Typography>
-                    </View>
-                </View>
+                            {/* Navigation Buttons (Left / Right Arrow) */}
+                            {activeUnit.media && activeUnit.media.length > 1 && (
+                                <>
+                                    {(lightboxIndex ?? 0) > 0 && (
+                                        <Pressable
+                                            onPress={() => setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))}
+                                            hitSlop={{ top: 25, bottom: 25, left: 25, right: 25 }}
+                                            style={{ zIndex: 99, elevation: 10 }}
+                                            className="absolute left-4 w-12 h-12 bg-white/20 rounded-full items-center justify-center border border-white/30 active:bg-white/40 shadow-lg cursor-pointer"
+                                        >
+                                            <ChevronLeft size={28} color="white" />
+                                        </Pressable>
+                                    )}
+                                    {(lightboxIndex ?? 0) < activeUnit.media.length - 1 && (
+                                        <Pressable
+                                            onPress={() => setLightboxIndex((prev) => (prev !== null && prev < activeUnit.media.length - 1 ? prev + 1 : prev))}
+                                            hitSlop={{ top: 25, bottom: 25, left: 25, right: 25 }}
+                                            style={{ zIndex: 99, elevation: 10 }}
+                                            className="absolute right-4 w-12 h-12 bg-white/20 rounded-full items-center justify-center border border-white/30 active:bg-white/40 shadow-lg cursor-pointer"
+                                        >
+                                            <ChevronRight size={28} color="white" />
+                                        </Pressable>
+                                    )}
+                                </>
+                            )}
+
+                            <View className="absolute bottom-10 z-10 pointer-events-none">
+                                <Typography className="text-white/50 text-xs font-bold uppercase tracking-widest text-center">
+                                    Geser atau gunakan panah (← →) / keyboard untuk media lain
+                                </Typography>
+                            </View>
+                        </View>
+                    );
+                })()}
             </Modal>
 
 
