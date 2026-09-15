@@ -204,7 +204,8 @@ export default function PurchaseScreen() {
 
     const setItemQty = (index: number, qty: number) => {
         const newItems = [...items];
-        newItems[index] = { ...newItems[index], qty: String(Math.max(1, qty)) };
+        // Pembelian sparepart boleh pecahan; backend Numeric(15,2) gt=0.
+        newItems[index] = { ...newItems[index], qty: String(Math.max(0.01, Math.round(qty * 100) / 100)) };
         setItems(newItems);
     };
 
@@ -593,8 +594,8 @@ export default function PurchaseScreen() {
                                                             <QtyControl
                                                                 value={Number(currentItem.qty)}
                                                                 color="blue"
-                                                                onMinus={() => setItemQty(itemIdx, Number(currentItem.qty) - 1)}
-                                                                onPlus={() => setItemQty(itemIdx, Number(currentItem.qty) + 1)}
+                                                                onMinus={() => setItemQty(itemIdx, Number(currentItem.qty) - (Number(currentItem.qty) % 1 ? 0.5 : 1))}
+                                                                onPlus={() => setItemQty(itemIdx, Number(currentItem.qty) + (Number(currentItem.qty) % 1 ? 0.5 : 1))}
                                                                 onChangeQty={(qty) => setItemQty(itemIdx, qty)}
                                                             />
                                                         </View>
@@ -1147,14 +1148,13 @@ function QtyControl({ value, color, onMinus, onPlus, onChangeQty }: {
     const borderColor = color === 'blue' ? 'border-blue-100' : 'border-emerald-100';
 
     const commitQty = (raw: string) => {
-        const cleaned = raw.replace(/[^0-9]/g, '');
-        if (cleaned === '') {
-            setText('');
-            return;
-        }
-        const nextQty = Math.max(1, parseInt(cleaned, 10) || 1);
-        setText(String(nextQty));
-        onChangeQty(nextQty);
+        // Pembelian sparepart boleh pecahan (beli 0.5 liter oli).
+        const cleaned = raw.replace(/[^0-9.]/g, '').split('.').slice(0, 2).join('.');
+        setText(cleaned);
+        if (!cleaned || cleaned === '.' || cleaned.endsWith('.')) return;
+        const parsed = Number(cleaned);
+        if (!Number.isFinite(parsed) || parsed < 0.01) return;
+        onChangeQty(Math.round(parsed * 100) / 100);
     };
 
     return (
@@ -1166,13 +1166,14 @@ function QtyControl({ value, color, onMinus, onPlus, onChangeQty }: {
                 value={text}
                 onChangeText={commitQty}
                 onBlur={() => {
-                    if (!text || Number(text) < 1) {
+                    const parsed = Number(text);
+                    if (!Number.isFinite(parsed) || parsed < 0.01) {
                         setText('1');
                         onChangeQty(1);
                     }
                 }}
-                keyboardType="number-pad"
-                inputMode="numeric"
+                keyboardType="decimal-pad"
+                inputMode="decimal"
                 className="w-14 px-2 py-1 text-xs font-bold text-center text-textMain"
                 selectTextOnFocus
             />

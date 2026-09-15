@@ -162,7 +162,7 @@ class DetailPembelianCreate(BaseModel):
     """Schema for purchase detail item."""
 
     spare_part_id: int
-    qty: int = Field(..., gt=0)
+    qty: Decimal = Field(..., gt=0)
     harga_satuan: Decimal = Field(..., ge=0)
 
 
@@ -187,7 +187,7 @@ class DetailPembelianResponse(BaseModel):
     spare_part_id: int
     spare_part_nama: Optional[str] = None
     spare_part: Optional['SparePartResponse'] = None
-    qty: int
+    qty: Decimal
     harga_satuan: Decimal
     subtotal: Decimal
 
@@ -262,7 +262,7 @@ class DetailPartCreate(BaseModel):
     """Schema for transaction part item."""
 
     spare_part_id: int
-    qty: int = Field(..., gt=0)
+    qty: Decimal = Field(..., gt=0)
     harga_jual: Optional[Decimal] = None  # Use default from spare_part if None
 
 
@@ -329,7 +329,7 @@ class DetailPartResponse(BaseModel):
     id: int
     spare_part_id: int
     spare_part_nama: Optional[str] = None
-    qty: int
+    qty: Decimal
     harga_beli: Decimal
     harga_jual: Decimal
     subtotal: Decimal

@@ -585,7 +585,9 @@ export default function BengkelTransaksiScreen() {
     };
 
     const setPartQty = (partId: number, qty: number) => {
-        setSelectedParts(prev => prev[partId] ? { ...prev, [partId]: { ...prev[partId], qty: Math.max(1, qty) } } : prev);
+        // Sparepart boleh pecahan (0.5 liter oli); backend Numeric(15,2) gt=0.
+        const nextQty = roundQty(Math.max(0.01, qty));
+        setSelectedParts(prev => prev[partId] ? { ...prev, [partId]: { ...prev[partId], qty: nextQty } } : prev);
     };
 
     const toggleService = (service: any) => {
@@ -1140,6 +1142,102 @@ export default function BengkelTransaksiScreen() {
             >
                 {step === 1 && (
                     <View className="space-y-6">
+                        {!showParts && selectedPartList.length > 0 && (
+                        <View>
+                            <View className="flex-row items-center justify-between mb-3">
+                                <Typography variant="body1" weight="bold" className="text-textMain">Sparepart Terpilih</Typography>
+                                <Pressable onPress={() => setPartSheetOpen(true)} className="px-3 py-2 rounded-xl bg-blue-50 border border-blue-100">
+                                    <Typography className="text-blue-700 text-xs font-bold">Tambah</Typography>
+                                </Pressable>
+                            </View>
+                            {selectedPartList.map(row => (
+                                <View key={`selected-part-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-blue-50 border-blue-100">
+                                    <View className="flex-row items-start">
+                                        <Package size={18} color="#2563EB" />
+                                        <View className="flex-1 ml-2">
+                                            <Typography weight="bold" className="text-sm text-textMain" numberOfLines={1}>{row.item.nama}</Typography>
+                                            <Typography className="text-gray-500 text-[11px] mt-1">{row.item.kode || '-'}</Typography>
+                                            <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(row.item.harga_jual || 0)}</Typography>
+                                        </View>
+                                        <Pressable onPress={() => togglePart(row.item)} className="w-8 h-8 rounded-full bg-white items-center justify-center">
+                                            <X size={15} color="#64748B" />
+                                        </Pressable>
+                                    </View>
+                                    <QtyControl
+                                        value={row.qty}
+                                        color="blue"
+                                        allowDecimal
+                                        onChangeQty={(qty) => setPartQty(row.item.id, qty)}
+                                    />
+                                </View>
+                            ))}
+                        </View>
+                        )}
+
+                        {!showServiceCatalog && (selectedServiceList.length > 0 || openBillServiceList.length > 0) && (
+                        <View>
+                            <View className="flex-row items-center justify-between mb-3">
+                                <Typography variant="body1" weight="bold" className="text-textMain">Servis Terpilih</Typography>
+                                <Pressable onPress={() => setServiceSheetOpen(true)} className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100">
+                                    <Typography className="text-emerald-700 text-xs font-bold">Tambah</Typography>
+                                </Pressable>
+                            </View>
+                            {selectedServiceList.map(row => (
+                                <View key={`selected-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-emerald-50 border-emerald-100">
+                                    <View className="flex-row items-start">
+                                        <Wrench size={18} color="#059669" />
+                                        <View className="flex-1 ml-2 mr-2">
+                                            <Typography weight="bold" className="text-sm text-textMain" numberOfLines={1}>{row.item.nama}</Typography>
+                                            <Typography className="text-gray-500 text-[11px] mt-1 mb-2">{row.item.kategori || 'Servis'}</Typography>
+                                            <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-emerald-100 self-start">
+                                                <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
+                                                <TextInput
+                                                    value={formatNumber(Number(row.item.harga ?? 0))}
+                                                    onChangeText={(val) => setServicePrice(row.item.id, val)}
+                                                    keyboardType="number-pad"
+                                                    className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
+                                                />
+                                            </View>
+                                        </View>
+                                        <Pressable onPress={() => toggleService(row.item)} className="w-8 h-8 rounded-full bg-white items-center justify-center">
+                                            <X size={15} color="#64748B" />
+                                        </Pressable>
+                                    </View>
+                                    <QtyControl
+                                        value={row.qty}
+                                        color="emerald"
+                                        onChangeQty={(qty) => setServiceQty(row.item.id, qty)}
+                                    />
+                                </View>
+                            ))}
+                            {openBillServiceList.filter((obs: any) => !selectedServices[String(obs.item.id)]).map((row: any) => (
+                                <View key={`open-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-amber-50 border-amber-100">
+                                    <View className="flex-row items-start">
+                                        <Wrench size={18} color="#D97706" />
+                                        <View className="flex-1 ml-2 mr-2">
+                                            <Typography weight="bold" className="text-sm text-textMain" numberOfLines={1}>{row.item.nama}</Typography>
+                                            <Typography className="text-gray-500 text-[11px] mt-1 mb-2">{row.item.kategori || 'Servis'} (dari transaksi)</Typography>
+                                            <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-amber-100 self-start">
+                                                <Typography className="text-amber-700 text-xs font-bold mr-1">Rp</Typography>
+                                                <TextInput
+                                                    value={formatNumber(Number(row.item.harga ?? 0))}
+                                                    onChangeText={(val) => setServicePrice(row.item.id, val, row.item)}
+                                                    keyboardType="number-pad"
+                                                    className="text-amber-700 text-xs font-bold min-w-[80px] p-0"
+                                                />
+                                            </View>
+                                        </View>
+                                    </View>
+                                    <QtyControl
+                                        value={selectedServices[String(row.item.id)]?.qty || row.qty}
+                                        color={"amber" as "blue" | "emerald"}
+                                        onChangeQty={(qty) => setServiceQty(row.item.id, qty)}
+                                    />
+                                </View>
+                            ))}
+                        </View>
+                        )}
+
                         {showParts && editTransactionId && selectedPartList.length > 0 && (
                         <View>
                             <View className="flex-row items-center justify-between mb-3">
@@ -1162,8 +1260,7 @@ export default function BengkelTransaksiScreen() {
                                     <QtyControl
                                         value={row.qty}
                                         color="blue"
-                                        onMinus={() => setPartQty(row.item.id, row.qty - 1)}
-                                        onPlus={() => setPartQty(row.item.id, row.qty + 1)}
+                                        allowDecimal
                                         onChangeQty={(qty) => setPartQty(row.item.id, qty)}
                                     />
                                 </View>
@@ -1196,8 +1293,7 @@ export default function BengkelTransaksiScreen() {
                                             <QtyControl
                                                 value={selected.qty}
                                                 color="blue"
-                                                onMinus={() => setPartQty(part.id, selected.qty - 1)}
-                                                onPlus={() => setPartQty(part.id, selected.qty + 1)}
+                                                allowDecimal
                                                 onChangeQty={(qty) => setPartQty(part.id, qty)}
                                             />
                                         )}
@@ -1247,115 +1343,12 @@ export default function BengkelTransaksiScreen() {
                                             <QtyControl
                                                 value={selected.qty}
                                                 color="emerald"
-                                                onMinus={() => setServiceQty(service.id, selected.qty - 1)}
-                                                onPlus={() => setServiceQty(service.id, selected.qty + 1)}
                                                 onChangeQty={(qty) => setServiceQty(service.id, qty)}
                                             />
                                         )}
                                     </View>
                                 );
                             })}
-                        </View>
-                        )}
-
-                        {!showParts && selectedPartList.length > 0 && (
-                        <View>
-                            <View className="flex-row items-center justify-between mb-3">
-                                <Typography variant="body1" weight="bold" className="text-textMain">Sparepart Terpilih</Typography>
-                                <Pressable onPress={() => setPartSheetOpen(true)} className="px-3 py-2 rounded-xl bg-blue-50 border border-blue-100">
-                                    <Typography className="text-blue-700 text-xs font-bold">Tambah</Typography>
-                                </Pressable>
-                            </View>
-                            {selectedPartList.map(row => (
-                                <View key={`selected-part-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-blue-50 border-blue-100">
-                                    <View className="flex-row items-start">
-                                        <Package size={18} color="#2563EB" />
-                                        <View className="flex-1 ml-2">
-                                            <Typography weight="bold" className="text-sm text-textMain" numberOfLines={1}>{row.item.nama}</Typography>
-                                            <Typography className="text-gray-500 text-[11px] mt-1">{row.item.kode || '-'}</Typography>
-                                            <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(row.item.harga_jual || 0)}</Typography>
-                                        </View>
-                                        <Pressable onPress={() => togglePart(row.item)} className="w-8 h-8 rounded-full bg-white items-center justify-center">
-                                            <X size={15} color="#64748B" />
-                                        </Pressable>
-                                    </View>
-                                    <QtyControl
-                                        value={row.qty}
-                                        color="blue"
-                                        onMinus={() => setPartQty(row.item.id, row.qty - 1)}
-                                        onPlus={() => setPartQty(row.item.id, row.qty + 1)}
-                                        onChangeQty={(qty) => setPartQty(row.item.id, qty)}
-                                    />
-                                </View>
-                            ))}
-                        </View>
-                        )}
-
-                        {!showServiceCatalog && (selectedServiceList.length > 0 || openBillServiceList.length > 0) && (
-                        <View>
-                            <View className="flex-row items-center justify-between mb-3">
-                                <Typography variant="body1" weight="bold" className="text-textMain">Servis Terpilih</Typography>
-                                <Pressable onPress={() => setServiceSheetOpen(true)} className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100">
-                                    <Typography className="text-emerald-700 text-xs font-bold">Tambah</Typography>
-                                </Pressable>
-                            </View>
-                            {selectedServiceList.map(row => (
-                                <View key={`selected-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-emerald-50 border-emerald-100">
-                                    <View className="flex-row items-start">
-                                        <Wrench size={18} color="#059669" />
-                                        <View className="flex-1 ml-2 mr-2">
-                                            <Typography weight="bold" className="text-sm text-textMain" numberOfLines={1}>{row.item.nama}</Typography>
-                                            <Typography className="text-gray-500 text-[11px] mt-1 mb-2">{row.item.kategori || 'Servis'}</Typography>
-                                            <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-emerald-100 self-start">
-                                                <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
-                                                <TextInput
-                                                    value={formatNumber(Number(row.item.harga ?? 0))}
-                                                    onChangeText={(val) => setServicePrice(row.item.id, val)}
-                                                    keyboardType="number-pad"
-                                                    className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
-                                                />
-                                            </View>
-                                        </View>
-                                        <Pressable onPress={() => toggleService(row.item)} className="w-8 h-8 rounded-full bg-white items-center justify-center">
-                                            <X size={15} color="#64748B" />
-                                        </Pressable>
-                                    </View>
-                                    <QtyControl
-                                        value={row.qty}
-                                        color="emerald"
-                                        onMinus={() => setServiceQty(row.item.id, row.qty - 1)}
-                                        onPlus={() => setServiceQty(row.item.id, row.qty + 1)}
-                                        onChangeQty={(qty) => setServiceQty(row.item.id, qty)}
-                                    />
-                                </View>
-                            ))}
-                            {openBillServiceList.filter((obs: any) => !selectedServices[String(obs.item.id)]).map((row: any) => (
-                                <View key={`open-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-amber-50 border-amber-100">
-                                    <View className="flex-row items-start">
-                                        <Wrench size={18} color="#D97706" />
-                                        <View className="flex-1 ml-2 mr-2">
-                                            <Typography weight="bold" className="text-sm text-textMain" numberOfLines={1}>{row.item.nama}</Typography>
-                                            <Typography className="text-gray-500 text-[11px] mt-1 mb-2">{row.item.kategori || 'Servis'} (dari transaksi)</Typography>
-                                            <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-amber-100 self-start">
-                                                <Typography className="text-amber-700 text-xs font-bold mr-1">Rp</Typography>
-                                                <TextInput
-                                                    value={formatNumber(Number(row.item.harga ?? 0))}
-                                                    onChangeText={(val) => setServicePrice(row.item.id, val, row.item)}
-                                                    keyboardType="number-pad"
-                                                    className="text-amber-700 text-xs font-bold min-w-[80px] p-0"
-                                                />
-                                            </View>
-                                        </View>
-                                    </View>
-                                    <QtyControl
-                                        value={selectedServices[String(row.item.id)]?.qty || row.qty}
-                                        color={"amber" as "blue" | "emerald"}
-                                        onMinus={() => setServiceQty(row.item.id, (selectedServices[String(row.item.id)]?.qty || row.qty) - 1)}
-                                        onPlus={() => setServiceQty(row.item.id, (selectedServices[String(row.item.id)]?.qty || row.qty) + 1)}
-                                        onChangeQty={(qty) => setServiceQty(row.item.id, qty)}
-                                    />
-                                </View>
-                            ))}
                         </View>
                         )}
                     </View>
@@ -2167,8 +2160,7 @@ export default function BengkelTransaksiScreen() {
                                             <QtyControl
                                                 value={selected.qty}
                                                 color="blue"
-                                                onMinus={() => setPartQty(part.id, selected.qty - 1)}
-                                                onPlus={() => setPartQty(part.id, selected.qty + 1)}
+                                                allowDecimal
                                                 onChangeQty={(qty) => setPartQty(part.id, qty)}
                                             />
                                         )}
@@ -2238,8 +2230,6 @@ export default function BengkelTransaksiScreen() {
                                             <QtyControl
                                                 value={selected.qty}
                                                 color="emerald"
-                                                onMinus={() => setServiceQty(service.id, selected.qty - 1)}
-                                                onPlus={() => setServiceQty(service.id, selected.qty + 1)}
                                                 onChangeQty={(qty) => setServiceQty(service.id, qty)}
                                             />
                                         )}
@@ -2315,19 +2305,22 @@ function NoticeBanner({ type, title, message, onClose }: { type: NoticeType; tit
     );
 }
 
+const roundQty = (value: number) => Math.round(value * 100) / 100;
+
 function QtyControl({
     value,
     color,
-    onMinus,
-    onPlus,
+    allowDecimal = false,
     onChangeQty,
 }: {
     value: number;
     color: 'blue' | 'emerald';
-    onMinus: () => void;
-    onPlus: () => void;
+    /** Izinkan pecahan (sparepart bersatuan liter/kg). Servis tetap bulat. */
+    allowDecimal?: boolean;
     onChangeQty: (qty: number) => void;
 }) {
+    const minQty = allowDecimal ? 0.01 : 1;
+    const step = allowDecimal ? 0.5 : 1;
     const [text, setText] = useState(String(value));
 
     useEffect(() => {
@@ -2338,37 +2331,41 @@ function QtyControl({
     const borderColor = color === 'blue' ? 'border-blue-100' : 'border-emerald-100';
 
     const commitQty = (raw: string) => {
-        const cleaned = raw.replace(/[^0-9]/g, '');
-        if (cleaned === '') {
-            setText('');
-            return;
-        }
-
-        const nextQty = Math.max(1, parseInt(cleaned, 10) || 1);
-        setText(String(nextQty));
-        onChangeQty(nextQty);
+        const cleaned = allowDecimal
+            ? raw.replace(/[^0-9.]/g, '').split('.').slice(0, 2).join('.')
+            : raw.replace(/[^0-9]/g, '');
+        setText(cleaned);
+        // Biarkan user mengetik "0." atau angka di bawah minimum — onBlur yang merapikan.
+        if (!cleaned || cleaned === '.' || cleaned.endsWith('.')) return;
+        const parsed = Number(cleaned);
+        if (!Number.isFinite(parsed) || parsed < minQty) return;
+        onChangeQty(roundQty(parsed));
     };
+
+    const resetToMin = () => {
+        const parsed = Number(text);
+        const next = Number.isFinite(parsed) && parsed >= minQty ? roundQty(parsed) : minQty;
+        setText(String(next));
+        onChangeQty(next);
+    };
+
+    const adjust = (delta: number) => onChangeQty(roundQty(Math.max(minQty, value + delta)));
 
     return (
         <View className={`flex-row items-center self-end mt-3 bg-white rounded-xl border ${borderColor} overflow-hidden`}>
-            <Pressable onPress={(e) => { e.stopPropagation(); onMinus(); }} className="px-3 py-1.5">
+            <Pressable onPress={(e) => { e.stopPropagation(); adjust(-step); }} className="px-3 py-1.5">
                 <Typography className={`font-bold ${textColor}`}>-</Typography>
             </Pressable>
             <TextInput
                 value={text}
                 onChangeText={commitQty}
-                onBlur={() => {
-                    if (!text || Number(text) < 1) {
-                        setText('1');
-                        onChangeQty(1);
-                    }
-                }}
-                keyboardType="number-pad"
-                inputMode="numeric"
+                onBlur={resetToMin}
+                keyboardType={allowDecimal ? 'decimal-pad' : 'number-pad'}
+                inputMode={allowDecimal ? 'decimal' : 'numeric'}
                 className="w-14 px-2 py-1 text-xs font-bold text-center text-textMain"
                 selectTextOnFocus
             />
-            <Pressable onPress={(e) => { e.stopPropagation(); onPlus(); }} className="px-3 py-1.5">
+            <Pressable onPress={(e) => { e.stopPropagation(); adjust(step); }} className="px-3 py-1.5">
                 <Typography className={`font-bold ${textColor}`}>+</Typography>
             </Pressable>
         </View>

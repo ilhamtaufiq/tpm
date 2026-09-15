@@ -57,7 +57,7 @@ import { id as localeID } from 'date-fns/locale';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
 import { buildBengkelPrintData } from '../../utils/buildPrintReceiptData';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
-import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
+import { formatCurrency, formatNumber, formatQty, parseNumber } from '../../utils/format';
 import {
     buildSoldMobilIdSet,
     formatBengkelWorkStatusLabel,
@@ -902,7 +902,7 @@ export default function BengkelScreen() {
                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>
                                     {p.spare_part_nama || p.spare_part?.nama || 'Sparepart'}
                                 </Typography>
-                                <Typography variant="caption" className="text-textGray/70">Part x{formatNumber(p.qty || 0)}</Typography>
+                                <Typography variant="caption" className="text-textGray/70">Part x{formatQty(p.qty || 0)}</Typography>
                             </View>
                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(p.subtotal || 0)}</Typography>
                         </View>

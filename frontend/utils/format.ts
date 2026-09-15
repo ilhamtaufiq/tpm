@@ -56,6 +56,17 @@ export const parseNumber = (formattedValue: string): number => {
 };
 
 /**
+ * Qty bisa pecahan (0.5 liter oli), jadi jangan pakai formatNumber
+ * yang membuang desimal: formatNumber(0.5) === '0'.
+ * 1 -> "1", 0.50 -> "0.5", "0.5" -> "0.5"
+ */
+export const formatQty = (value: unknown): string => {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '0';
+    return String(Number(num.toFixed(2)));
+};
+
+/**
  * Formats currency for display in financial reports.
  * Negative values are shown in parentheses with no minus sign: (Rp100.000)
  */

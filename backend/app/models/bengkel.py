@@ -138,7 +138,7 @@ class DetailPembelianSparePart(Base):
         ForeignKey("pembelian_spare_parts.id", ondelete="CASCADE")
     )
     spare_part_id: Mapped[int] = mapped_column(ForeignKey("spare_parts.id"))
-    qty: Mapped[int] = mapped_column(Integer, default=1)
+    qty: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=1)
     harga_satuan: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     subtotal: Mapped[Decimal] = mapped_column(Numeric(15, 2))
 
@@ -274,7 +274,7 @@ class DetailTransaksiSpareParts(Base):
         ForeignKey("transaksi_penjualan_bengkel.id", ondelete="CASCADE")
     )
     spare_part_id: Mapped[int] = mapped_column(ForeignKey("spare_parts.id"))
-    qty: Mapped[int] = mapped_column(Integer, default=1)
+    qty: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=1)
     harga_beli: Mapped[Decimal] = mapped_column(Numeric(15, 2))  # HPP
     harga_jual: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     subtotal: Mapped[Decimal] = mapped_column(Numeric(15, 2))

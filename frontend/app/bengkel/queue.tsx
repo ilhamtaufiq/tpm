@@ -46,7 +46,7 @@ import {
     useSparePartsList
 } from '../../hooks/useBengkel';
 import { useMobilList } from '../../hooks/useMobil';
-import { formatCurrency, formatNumber } from '../../utils/format';
+import { formatCurrency, formatNumber, formatQty } from '../../utils/format';
 import {
     buildSoldMobilIdSet,
     formatBengkelWorkStatusLabel,
@@ -859,7 +859,7 @@ export default function QueueScreen() {
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>
                                                     {p.spare_part_nama || p.spare_part?.nama || 'Sparepart'}
                                                 </Typography>
-                                                <Typography variant="caption" className="text-textGray/70">Part x{formatNumber(p.qty || 0)}</Typography>
+                                                <Typography variant="caption" className="text-textGray/70">Part x{formatQty(p.qty || 0)}</Typography>
                                             </View>
                                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(p.subtotal || 0)}</Typography>
                                         </View>
