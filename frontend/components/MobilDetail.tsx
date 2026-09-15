@@ -70,6 +70,18 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     const [activeIndex, setActiveIndex] = useState(0);
     const lightboxFlatListRef = useRef<FlatList>(null);
 
+    const handleNavigateLightbox = (direction: 'prev' | 'next') => {
+        if (lightboxIndex === null || !activeUnit.media) return;
+        const targetIdx = direction === 'prev' ? lightboxIndex - 1 : lightboxIndex + 1;
+        if (targetIdx >= 0 && targetIdx < activeUnit.media.length) {
+            setLightboxIndex(targetIdx);
+            lightboxFlatListRef.current?.scrollToOffset({
+                offset: targetIdx * width,
+                animated: true,
+            });
+        }
+    };
+
     useEffect(() => {
         console.log('[DEBUG] MobilDetail mounted for unit:', initialUnit?.id);
         return () => console.log('[DEBUG] MobilDetail unmounted');
@@ -911,24 +923,20 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         <>
                             {(lightboxIndex ?? 0) > 0 && (
                                 <Pressable
-                                    onPress={() => {
-                                        const nextIdx = (lightboxIndex ?? 0) - 1;
-                                        setLightboxIndex(nextIdx);
-                                        lightboxFlatListRef.current?.scrollToIndex({ index: nextIdx, animated: true });
-                                    }}
-                                    className="absolute left-4 z-20 w-12 h-12 bg-white/15 rounded-full items-center justify-center border border-white/20 active:bg-white/30"
+                                    onPress={() => handleNavigateLightbox('prev')}
+                                    hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                                    style={{ zIndex: 99, elevation: 10 }}
+                                    className="absolute left-4 w-12 h-12 bg-white/20 rounded-full items-center justify-center border border-white/30 active:bg-white/40 shadow-lg"
                                 >
                                     <ChevronLeft size={28} color="white" />
                                 </Pressable>
                             )}
                             {(lightboxIndex ?? 0) < activeUnit.media.length - 1 && (
                                 <Pressable
-                                    onPress={() => {
-                                        const nextIdx = (lightboxIndex ?? 0) + 1;
-                                        setLightboxIndex(nextIdx);
-                                        lightboxFlatListRef.current?.scrollToIndex({ index: nextIdx, animated: true });
-                                    }}
-                                    className="absolute right-4 z-20 w-12 h-12 bg-white/15 rounded-full items-center justify-center border border-white/20 active:bg-white/30"
+                                    onPress={() => handleNavigateLightbox('next')}
+                                    hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                                    style={{ zIndex: 99, elevation: 10 }}
+                                    className="absolute right-4 w-12 h-12 bg-white/20 rounded-full items-center justify-center border border-white/30 active:bg-white/40 shadow-lg"
                                 >
                                     <ChevronRight size={28} color="white" />
                                 </Pressable>
