@@ -1549,6 +1549,10 @@ class TransaksiBengkelService:
 
         # Record kas only up to remaining invoice (never kembalian / overpay)
         if kas_to_record > 0:
+            # PembayaranPiutang = buku pembayaran piutang. Laporan menghitung saldo
+            # piutang sebagai Σ nominal − Σ PembayaranPiutang (base.py), jadi tanpa
+            # baris ini pelunasan tak terlihat: piutang overstated → selisih modal.
+            recorded = []  # (nominal, metode)
             remaining_to_record = kas_to_record
             if payments and len(payments) > 0:
                 for p in payments:
@@ -1570,6 +1574,7 @@ class TransaksiBengkelService:
                         user_id=user_id,
                         kas_jenis=p.kas_jenis,
                     )
+                    recorded.append((rec_amount, p.metode or effective_method))
                     remaining_to_record -= rec_amount
             else:
                 create_kas_entry(
@@ -1585,6 +1590,19 @@ class TransaksiBengkelService:
                     user_id=user_id,
                     kas_jenis=kas_jenis,
                 )
+                recorded.append((kas_to_record, effective_method))
+
+            if piutang:
+                for nominal_rec, metode_rec in recorded:
+                    self.db.add(PembayaranPiutang(
+                        piutang_id=piutang.id,
+                        tanggal=date.today(),
+                        nominal=nominal_rec,
+                        metode_bayar=metode_rec,
+                        catatan=f"Pelunasan bengkel {transaksi.nomor_transaksi}",
+                        created_by=user_id,
+                    ))
+                self.db.commit()
 
         self._emit_change(transaksi, "payment_updated")
         return transaksi
