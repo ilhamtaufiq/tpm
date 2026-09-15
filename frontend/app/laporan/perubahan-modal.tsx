@@ -114,17 +114,18 @@ export default function LaporanPerubahanModalScreen() {
         const setoranKas = r.penambahan?.setoran_modal || 0;
         const penyesuaianHargaBeli = r.penambahan?.penyesuaian_harga_beli_sparepart || 0;
         const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
-        const labaBersih = r.info?.laba_bersih || 0;
+        const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
+        const labaOperasional = r.info?.laba_operasional ?? r.info?.laba_bersih ?? 0;
+        const labaBersih = r.info?.laba_bersih ?? (labaOperasional - prive);
         // Laba investor hanya diakui setelah penjualan mobil LUNAS/TERJUAL (bukan saat DP/booking).
         const labaInvestor = r.info?.laba_investor || 0;
         // Sudah net di laba_bersih; tampilkan untuk rekonsiliasi (bukan baris penambah/pengurang ekuitas).
         const diskonPenjualanBengkel = r.info?.diskon_penjualan_bengkel || 0;
-        const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
         const modalAkhir = r.modal_akhir || 0;
 
         // Investor = hutang (bukan aliran modal) — selaras xlsx & dashboard.
         const perubahanBersihAliran =
-            setoranKas + modalNonKas + labaBersih + labaInvestor - prive;
+            setoranKas + modalNonKas + labaOperasional + labaInvestor - prive;
         const expectedModalAkhirAliran = modalAwal + perubahanBersihAliran;
 
         const validasi = r.info?.validasi;

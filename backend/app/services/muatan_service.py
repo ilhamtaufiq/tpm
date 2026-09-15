@@ -542,6 +542,79 @@ class MuatanService:
             "pages": pages,
         }
 
+    def _sync_related_dates(self, muatan: MuatanJasaAngkut, new_date: date) -> None:
+        """Synchronize date across all financial entities linked to this muatan."""
+        if not new_date or muatan.tanggal == new_date:
+            return
+
+        muatan.tanggal = new_date
+
+        # 1. Update JasaAngkutBiayaLainnya
+        self.db.query(JasaAngkutBiayaLainnya).filter(
+            JasaAngkutBiayaLainnya.muatan_id == muatan.id
+        ).update({"tanggal": new_date}, synchronize_session=False)
+
+        # 2. Update PiutangUsaha
+        piutangs = self.db.query(PiutangUsaha).filter(
+            or_(
+                (PiutangUsaha.referensi_id == muatan.id) & (PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT),
+                PiutangUsaha.nomor_referensi == muatan.nomor_transaksi
+            )
+        ).all()
+
+        piutang_ids = []
+        piutang_nomors = []
+        for p in piutangs:
+            p.tanggal = new_date
+            piutang_ids.append(p.id)
+            if p.nomor_piutang:
+                piutang_nomors.append(p.nomor_piutang)
+
+        # 3. Update PembayaranPiutang
+        pembayaran_ids = []
+        if piutang_ids:
+            payments = self.db.query(PembayaranPiutang).filter(
+                PembayaranPiutang.piutang_id.in_(piutang_ids)
+            ).all()
+            for pymt in payments:
+                pymt.tanggal = new_date
+                pembayaran_ids.append(pymt.id)
+
+        # 4. Update KasBank entries
+        kas_filters = [
+            (KasBank.referensi_id == muatan.id) & (KasBank.sumber == KasBankSource.JASA_ANGKUT),
+            KasBank.nomor_referensi == muatan.nomor_transaksi,
+        ]
+        if pembayaran_ids:
+            kas_filters.append((KasBank.referensi_id.in_(pembayaran_ids)) & (KasBank.sumber.in_([KasBankSource.JASA_ANGKUT, KasBankSource.PIUTANG])))
+        if piutang_nomors:
+            kas_filters.append(KasBank.nomor_referensi.in_(piutang_nomors))
+
+        self.db.query(KasBank).filter(or_(*kas_filters)).update(
+            {"tanggal": new_date},
+            synchronize_session=False
+        )
+
+        # 5. Update TransaksiPenjualanBengkel and related releases if linked
+        from app.models.bengkel import TransaksiPenjualanBengkel, SparePartRevaluationRelease
+        bengkel_txs = self.db.query(TransaksiPenjualanBengkel).filter(
+            TransaksiPenjualanBengkel.muatan_id == muatan.id
+        ).all()
+
+        bengkel_ids = [tx.id for tx in bengkel_txs]
+        for tx in bengkel_txs:
+            tx.tanggal = new_date
+
+        if bengkel_ids:
+            self.db.query(SparePartRevaluationRelease).filter(
+                SparePartRevaluationRelease.transaksi_id.in_(bengkel_ids)
+            ).update({"tanggal": new_date}, synchronize_session=False)
+
+        # 6. Update JasaAngkutPartService
+        self.db.query(JasaAngkutPartService).filter(
+            JasaAngkutPartService.muatan_id == muatan.id
+        ).update({"tanggal": new_date}, synchronize_session=False)
+
     def update(
         self,
         muatan_id: int,
@@ -559,6 +632,9 @@ class MuatanService:
         #     )
 
         update_data = data.model_dump(exclude_unset=True)
+
+        if "tanggal" in update_data and update_data["tanggal"] is not None:
+            self._sync_related_dates(muatan, update_data["tanggal"])
 
         if "armada_id" in update_data:
             self._validate_armada(update_data["armada_id"])
