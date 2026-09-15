@@ -51,7 +51,7 @@ import { RelatedBengkelTransactions } from './RelatedBengkelTransactions';
 import { PaymentModal } from './PaymentModal';
 import { AlertDialog } from './ui/AlertDialog';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 interface MobilDetailProps {
     unit: any;
@@ -827,9 +827,9 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 const filePath = item.file_path.replace(/^\//, '');
                                 const fullUrl = `${baseUrl}/uploads/${filePath}`;
                                 return (
-                                    <View style={{ width }} className="h-full items-center justify-center p-4">
+                                    <View style={{ width, height }} className="items-center justify-center p-4">
                                         {item.file_type === 'video' ? (
-                                            <View className="w-full h-[70%] bg-black rounded-2xl overflow-hidden">
+                                            <View style={{ width: width - 32, height: height * 0.7 }} className="bg-black rounded-2xl overflow-hidden">
                                                 <Video
                                                     source={{ uri: fullUrl }}
                                                     rate={1.0}
@@ -844,7 +844,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                         ) : (
                                             <Image
                                                 source={{ uri: fullUrl }}
-                                                className="w-full h-[75%]"
+                                                style={{ width: width - 32, height: height * 0.75 }}
                                                 resizeMode="contain"
                                             />
                                         )}
