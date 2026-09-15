@@ -76,10 +76,7 @@
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/e9ea627b-eee0-4cc1-9d9e-14268a911a7d",
-      "requestHeaders": {
-        "expo-channel-name": "production"
-      }
+      "url": "https://u.expo.dev/e9ea627b-eee0-4cc1-9d9e-14268a911a7d"
     }
   }
 }
