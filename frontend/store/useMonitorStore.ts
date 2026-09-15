@@ -1,4 +1,25 @@
 import { create } from 'zustand';
+import { Platform } from 'react-native';
+
+const sendClientLogToBackend = (entry: Partial<AppLogEntry>) => {
+    try {
+        const platform = Platform.OS === 'android' ? 'android' : Platform.OS === 'ios' ? 'ios' : 'web';
+        fetch('/api/v1/monitor/client-logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: entry.type || 'ERROR',
+                title: entry.title || 'Client Log',
+                message: entry.message || '',
+                platform,
+                duration: entry.duration || 0,
+                status: entry.status || 0,
+                stack: entry.stack,
+                url: entry.url
+            })
+        }).catch(() => {});
+    } catch (e) {}
+};
 
 export interface RequestLog {
     id: string;

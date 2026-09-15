@@ -4,6 +4,9 @@ const { withNativeWind } = require("nativewind/metro");
 
 const config = getDefaultConfig(__dirname);
 
+// Fix Node 24+ IPC worker pipe crash (write UNKNOWN errno -4094) on Windows
+config.maxWorkers = 2;
+
 if (!config.resolver.assetExts.includes("txt")) {
     config.resolver.assetExts.push("txt");
 }
