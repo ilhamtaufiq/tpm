@@ -63,6 +63,7 @@ interface MobilDetailProps {
 export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: MobilDetailProps) => {
     const queryClient = useQueryClient();
     const { data: unit, isLoading: isRefetching } = useMobilDetail(initialUnit?.id);
+    const activeUnit = unit || initialUnit;
     const uploadMediaAction = useUploadMedia();
     const deleteMediaAction = useDeleteMedia();
 
@@ -115,7 +116,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     const [hutangModalVisible, setHutangModalVisible] = useState(false);
     const [shareSuccess, setShareSuccess] = useState(false);
 
-    const activeUnit = unit || initialUnit;
     const isBooking = activeUnit?.status?.toUpperCase() === 'BOOKING';
     const isTerjual = activeUnit?.status?.toUpperCase() === 'TERJUAL';
 
