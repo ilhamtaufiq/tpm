@@ -13,7 +13,6 @@ import {
     Plus,
     X,
     Wallet,
-    ArrowRightLeft,
     Wrench,
     Package,
     Info,
@@ -31,6 +30,7 @@ import { Header } from '../../../components/ui/Header';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../../services/offlineQueue';
 import { formatNumber, parseNumber, formatCurrency, formatDate } from '../../../utils/format';
+import { AKUN, akunUntukUnit, metodeDariAkun } from '../../../utils/expenseAkun';
 import { ArmadaSelector } from '../../../components/ui/ArmadaSelector';
 import { MobilSelector } from '../../../components/ui/MobilSelector';
 import { SparePartSelector } from '../../../components/ui/SparePartSelector';
@@ -48,18 +48,6 @@ const BISNIS_KATEGORI = [
     { label: 'Jual Beli Mobil', value: 'jual_beli_mobil', icon: Car, color: '#3B82F6' },
 ];
 
-const AKUN = [
-    { label: 'Kantor', short: 'Kantor', value: 'KAS_UTAMA' },
-    { label: 'Bank', short: 'Bank', value: 'BANK_UTAMA' },
-    { label: 'Unit Jasa Angkut', short: 'J. Angkut', value: 'KAS_UNIT_JASA_ANGKUT' },
-    { label: 'Unit Bengkel', short: 'Bengkel', value: 'KAS_UNIT_BENGKEL' },
-    { label: 'Unit Mobil', short: 'Mobil', value: 'KAS_UNIT_MOBIL' },
-];
-
-// Akun menentukan metode bayar. Dijadikan satu pilihan supaya operator tidak
-// bisa memilih kombinasi yang bertentangan (mis. Cash + TRANSFER) yang dulu
-// membuat uang bank tercatat mengurangi kas tunai.
-const metodeDariAkun = (akun: string | null) => (akun === 'BANK_UTAMA' ? 'TRANSFER' : 'TUNAI');
 
 export default function ExpensesScreen() {
     const router = useRouter();
@@ -78,7 +66,7 @@ export default function ExpensesScreen() {
     const [jumlah, setJumlah] = useState('');
     const [deskripsi, setDeskripsi] = useState('');
     const [payMetode, setPayMetode] = useState('');
-    const [kasJenis, setKasJenis] = useState<string | null>(null);
+    const [kasJenis, setKasJenis] = useState<string | null>('KAS_UTAMA');
     const [splitPayments, setSplitPayments] = useState([
         { metode: 'TUNAI', jumlah: '', kas_jenis: 'KAS_UTAMA' },
         { metode: 'TRANSFER', jumlah: '', kas_jenis: 'BANK_UTAMA' },
@@ -113,13 +101,18 @@ export default function ExpensesScreen() {
             return;
         }
 
-        if (!kasJenis) {
+        const totalAmount = parseNumber(jumlah);
+        const isSplit = payMetode === 'SPLIT';
+
+        // SPLIT tidak butuh akun di level transaksi: akun diatur per baris.
+        if (!isSplit && !kasJenis) {
             appAlert('Validasi', 'Mohon pilih sumber dana (akun)');
             return;
         }
-
-        const totalAmount = parseNumber(jumlah);
-        const isSplit = payMetode === 'SPLIT';
+        if (isSplit && splitPayments.some((p) => !p.kas_jenis)) {
+            appAlert('Validasi', 'Mohon pilih akun untuk setiap baris split');
+            return;
+        }
 
         const payload: any = {
             tanggal: new Date().toISOString().split('T')[0],
@@ -166,7 +159,7 @@ export default function ExpensesScreen() {
             setDeskripsi('');
             setKategori('BIAYA_OPERASIONAL');
             setBisnisKategori('umum');
-            setKasJenis(null);
+            setKasJenis('KAS_UTAMA');
             if (result.mode === 'offline') {
                 setSelectedMuatan(null);
                 setSelectedMobil(null);
@@ -300,7 +293,9 @@ export default function ExpensesScreen() {
                                                         setSelectedArmada(null);
                                                         setSelectedSparePart(null);
                                                     }
-                                                    setKasJenis(null); // Reset when business category changes
+                                                    // Akun direset agar operator memilih ulang sesuai unit baru.
+                                                    setKasJenis(null);
+                                                    setPayMetode('');
                                                 }}
                                                 className={`flex-1 p-3 rounded-2xl border items-center ${bisnisKategori === cat.value
                                                     ? 'bg-primary border-primary shadow-sm'
@@ -356,12 +351,10 @@ export default function ExpensesScreen() {
                                         <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana (Akun)</Typography>
                                         <View className="flex-row flex-wrap">
                                             {AKUN.map((opt) => {
-                                                // Highlight relevant unit if business category is selected
-                                                const isRelevant =
-                                                    (bisnisKategori === 'jasa_angkut' && opt.value === 'KAS_UNIT_JASA_ANGKUT') ||
-                                                    (bisnisKategori === 'bengkel' && opt.value === 'KAS_UNIT_BENGKEL') ||
-                                                    (bisnisKategori === 'jual_beli_mobil' && opt.value === 'KAS_UNIT_MOBIL') ||
-                                                    (bisnisKategori === 'umum' && (opt.value === 'KAS_UTAMA' || opt.value === 'BANK_UTAMA'));
+                                                // Sorot akun yang cocok dengan kategori bisnis terpilih.
+                                                const isRelevant = bisnisKategori === 'umum'
+                                                    ? opt.value === 'KAS_UTAMA' || opt.value === 'BANK_UTAMA'
+                                                    : akunUntukUnit(bisnisKategori) === opt.value;
 
                                                 return (
                                                     <Pressable
