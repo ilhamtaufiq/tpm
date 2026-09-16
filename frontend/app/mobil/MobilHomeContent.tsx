@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { appAlert } from '../../utils/appAlert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -57,6 +57,46 @@ import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useDeferredReady } from '../../hooks/useDeferredReady';
+
+const MobilCardMedia = React.memo(({ media }: { media?: any[] }) => {
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        if (!media || media.length <= 1) return;
+        const interval = setInterval(() => {
+            setIndex((prev) => (prev + 1) % media.length);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [media]);
+
+    if (!media || media.length === 0) {
+        return (
+            <View className="absolute w-full h-full items-center justify-center bg-emerald-50">
+                <Car size={32} color="#10B981" opacity={0.2} />
+            </View>
+        );
+    }
+
+    const currentItem = media[index] || media[0];
+    const imageUri = `${(FILE_URL || '').replace(/\/$/, '')}/uploads/${currentItem.file_path.replace(/^\//, '')}`;
+
+    return (
+        <>
+            <Image
+                source={{ uri: imageUri }}
+                className="absolute w-full h-full"
+                resizeMode="cover"
+            />
+            {media.length > 1 && (
+                <View className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md z-10">
+                    <Typography variant="caption" weight="bold" className="text-white text-[8px]">
+                        {index + 1}/{media.length}
+                    </Typography>
+                </View>
+            )}
+        </>
+    );
+});
 
 export default function MobilInventoryScreen() {
     const insets = useSafeAreaInsets();
@@ -1189,19 +1229,7 @@ export default function MobilInventoryScreen() {
                                     <View className="overflow-hidden p-4 flex-row gap-3 items-stretch">
                                         {/* Image Section (40%) */}
                                         <View style={{ flex: 0.4 }} className="rounded-2xl overflow-hidden relative bg-background min-h-[140px]">
-                                            {item.media && item.media.length > 0 ? (
-                                                <Image
-                                                    source={{
-                                                        uri: `${(FILE_URL || '').replace(/\/$/, '')}/uploads/${item.media[0].file_path.replace(/^\//, '')}`
-                                                    }}
-                                                    className="absolute w-full h-full"
-                                                    resizeMode="cover"
-                                                />
-                                            ) : (
-                                                <View className="absolute w-full h-full items-center justify-center bg-emerald-50">
-                                                    <Car size={32} color="#10B981" opacity={0.2} />
-                                                </View>
-                                            )}
+                                            <MobilCardMedia media={item.media} />
                                             
                                             {/* Status Badge Top Left */}
                             <View className="absolute top-2 left-2 right-2 flex-row flex-wrap gap-1">
