@@ -26,6 +26,7 @@ interface HeaderProps {
     leftElement?: React.ReactNode;
     rightElement?: React.ReactNode;
     showProfile?: boolean;
+    showBell?: boolean;
     children?: React.ReactNode;
     variant?: 'home' | 'page';
 }
@@ -42,6 +43,7 @@ export const Header = ({
     leftElement,
     rightElement,
     showProfile = true,
+    showBell = true,
     children,
     variant = 'page'
 }: HeaderProps) => {
@@ -177,6 +179,7 @@ export const Header = ({
                     </View>
 
                     <View className="flex-row items-center gap-2">
+                        {showBell && (
                         <Pressable
                             onPress={() => router.push('/settings/notifications')}
                             className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:opacity-75 relative"
@@ -190,6 +193,7 @@ export const Header = ({
                                 </View>
                             )}
                         </Pressable>
+                        )}
 
                         {isImpersonating && (
                             <Pressable

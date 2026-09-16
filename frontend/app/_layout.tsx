@@ -34,7 +34,7 @@ import { authService } from '../services/auth';
 import { useSecurityStore, SEGMENT_TO_FEATURE } from '../store/useSecurityStore';
 import { useSecurityStatus } from '../hooks/useSecurityAPI';
 import { vars } from 'nativewind';
-import { useUIStore } from '../store/useUIStore';
+import { useUIStore, findPaletteBorder } from '../store/useUIStore';
 import { useOrientationLock } from '../hooks/useOrientationLock';
 import { useDimensionsListener } from '../hooks/useResponsive';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -143,6 +143,9 @@ function RootLayoutContent() {
     const user = useAuthStore(state => state.user);
     const isImpersonating = useAuthStore(state => state.isImpersonating);
 
+    // Garis tepi ikut palet aktif, tapi tidak disimpan di themeColors (lihat useUIStore).
+    const borderColor = useMemo(() => findPaletteBorder(themeColors), [themeColors]);
+
     const theme = useMemo(() => vars({
         '--color-primary': themeColors.primary,
         '--color-secondary': themeColors.secondary,
@@ -150,7 +153,8 @@ function RootLayoutContent() {
         '--color-surface': themeColors.surface,
         '--color-text': themeColors.text,
         '--color-text-gray': themeColors.textGray,
-    }), [themeColors.primary, themeColors.secondary, themeColors.background, themeColors.surface, themeColors.text, themeColors.textGray]);
+        '--color-border': borderColor,
+    }), [themeColors.primary, themeColors.secondary, themeColors.background, themeColors.surface, themeColors.text, themeColors.textGray, borderColor]);
 
     // OTA: cek setelah app siap — jangan block splash / auto-reload terlalu awal
     useEffect(() => {
