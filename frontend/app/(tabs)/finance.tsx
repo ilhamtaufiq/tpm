@@ -292,8 +292,8 @@ export default function FinanceTab() {
 
                 {/* Physical Cashflow Realization Banner (Bento Dark Style) */}
                 <View className="bg-slate-900 p-6 rounded-[32px] shadow-lg mb-10 border border-slate-800">
-                    <View className="flex-row justify-between items-center mb-4">
-                        <View className="flex-row items-center">
+                    <View className="mb-4">
+                        <View className="flex-row items-center mb-2">
                             <View className="w-8 h-8 bg-sky-500/10 rounded-xl items-center justify-center mr-3 border border-sky-500/20">
                                 <ArrowRightLeft size={16} color="#38BDF8" />
                             </View>
@@ -301,8 +301,8 @@ export default function FinanceTab() {
                                 Realisasi Arus Kas
                             </Text>
                         </View>
-                        <View className={`px-3 py-1 rounded-full border ${(totalKasMasukReal - totalKasKeluarReal) >= 0 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'}`}>
-                            <Text style={{ color: (totalKasMasukReal - totalKasKeluarReal) >= 0 ? '#34D399' : '#F87171', fontSize: 10, fontWeight: '700' }}>
+                        <View className={`px-3 py-1.5 rounded-xl border self-start ${(totalKasMasukReal - totalKasKeluarReal) >= 0 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'}`}>
+                            <Text style={{ color: (totalKasMasukReal - totalKasKeluarReal) >= 0 ? '#34D399' : '#F87171', fontSize: 12, fontWeight: '700' }}>
                                 Net: {(totalKasMasukReal - totalKasKeluarReal) >= 0 ? '+ ' : ''}{formatCurrency(totalKasMasukReal - totalKasKeluarReal)}
                             </Text>
                         </View>
