@@ -30,7 +30,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { KasBankTransaction, KasBankAllBalances, KasBankJenis } from '../../services/keuangan';
 import { User } from '../../services/auth';
-import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
+import { formatCurrency, formatNumber, parseNumber, getTodayString } from '../../utils/format';
 import { useKasBankList, useKasBankBalances, useTransfer, useCreateTransaction } from '../../hooks/useKeuangan';
 import { useUserList } from '../../hooks/useUsers';
 import { SkeletonCard } from '../../components/ui/Skeleton';
@@ -272,7 +272,7 @@ export default function MutasiKasScreen() {
         if (!modalForm.nominal || !modalForm.keterangan) return;
         try {
             const modalPayloadBase = {
-                tanggal: new Date().toISOString().split('T')[0],
+                tanggal: getTodayString(),
                 jenis: modalForm.jenis,
                 tipe: 'MASUK' as const,
                 nominal: parseNumber(modalForm.nominal),
