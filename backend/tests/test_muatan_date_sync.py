@@ -7,7 +7,7 @@ import pytest
 from datetime import date
 from decimal import Decimal
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 
 from app.database.connection import SessionLocal
 from app.services.muatan_service import MuatanService
@@ -143,7 +143,13 @@ def test_muatan_date_sync_and_report_accuracy():
         try:
             if 'muatan_id' in locals():
                 if 'piutang' in locals() and piutang:
+                    # WAJIB dibatasi `id > max_kas_id_before`: `referensi_id` bersifat
+                    # polimorfik (tanpa kolom pembeda tipe), jadi `referensi_id ==
+                    # muatan_id` juga menjaring kas milik PENGELUARAN/PIUTANG/PINJAMAN
+                    # yang kebetulan ber-id sama. Tanpa batas ini, cleanup test
+                    # MENGHAPUS DATA PRODUKSI (pernah terjadi: 6 baris id 51,58,81,90,94,114).
                     db.query(KasBank).filter(
+                        KasBank.id > max_kas_id_before,
                         or_(
                             KasBank.nomor_referensi == nomor_transaksi,
                             KasBank.nomor_referensi == piutang.nomor_piutang,

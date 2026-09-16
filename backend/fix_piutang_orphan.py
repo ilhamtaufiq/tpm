@@ -8,8 +8,9 @@ Usage: python fix_piutang_orphan.py [--apply]
 import sys
 from datetime import date
 from app.database.connection import SessionLocal
-from app.models.keuangan import PiutangUsaha, PembayaranPiutang
+from app.models.keuangan import PiutangUsaha, PembayaranPiutang, KasBank
 from app.models.bengkel import TransaksiPenjualanBengkel
+from app.utils.constants import KasBankSource, KasBankType
 from sqlalchemy import func
 
 apply = "--apply" in sys.argv
@@ -36,10 +37,16 @@ try:
             TransaksiPenjualanBengkel.nomor_transaksi == pu.nomor_referensi
         ).first()
         metode = trx.metode_bayar if trx else None
-        # Tanggal kas masuk (bukan tanggal nota): kas pelunasan dicatat saat uang
-        # diterima. Pakai nota → piutang turun sehari sebelum kas naik → selisih
-        # harian baru. tanggal_lunas diisi tepat saat settle.
-        tanggal = pu.tanggal_lunas or (trx.tanggal if trx else pu.tanggal)
+        # Tanggal harus = tanggal kas MASUK, bukan tanggal nota: laporan
+        # membandingkan piutang turun vs kas naik per hari, jadi geser sehari
+        # saja memunculkan selisih harian baru. Gap selalu berasal dari DP yang
+        # dibayar SEBELUM tagihan dibuat → pakai kas masuk paling awal.
+        kas_masuk = db.query(func.min(KasBank.tanggal)).filter(
+            KasBank.sumber == KasBankSource.BENGKEL,
+            KasBank.tipe == KasBankType.MASUK,
+            KasBank.nomor_referensi == pu.nomor_referensi,
+        ).scalar()
+        tanggal = kas_masuk or pu.tanggal_lunas or (trx.tanggal if trx else pu.tanggal)
         print(f"  #{pu.id} {pu.nomor_piutang} gap={gap:,.0f} metode={metode} tgl={tanggal}")
         if apply:
             db.add(PembayaranPiutang(

@@ -241,6 +241,50 @@ class TransaksiBengkelService:
 
         return f"{prefix}{date_str}{new_num:04d}"
 
+    def _sync_piutang_pembayaran(
+        self,
+        piutang: PiutangUsaha,
+        metode: Optional[PaymentMethod] = None,
+        *,
+        user_id: Optional[int] = None,
+        note: str = "",
+    ) -> Decimal:
+        """Jaga invarian: Σ PembayaranPiutang == piutang.total_dibayar.
+
+        Laporan (base.py `piutang_usaha`, dipakai modal_service) menghitung saldo
+        piutang sebagai Σ nominal_piutang − Σ PembayaranPiutang, sedangkan Neraca
+        memakai `sisa_piutang`. Kalau `total_dibayar` naik tanpa baris pembayaran,
+        piutang jadi overstated di laporan → selisih Modal Aktual vs Teoritis.
+
+        Sumber gap yang sudah kejadian: DP saat `grand_total` masih 0 (create,
+        cabang `grand_total == 0`) menulis kas MASUK tanpa baris piutang. Saat
+        tagihan akhirnya jadi dan piutang dibuat, `total_dibayar` diisi DP itu —
+        tapi tak ada baris PembayaranPiutang-nya.
+
+        Dipanggil SETELAH total_dibayar disetel. Idempoten: baris yang sudah
+        cocok tidak menghasilkan apa pun.
+        """
+        # Kembalian bukan pembayaran piutang — batasi di tagihan.
+        target = min(
+            Decimal(str(piutang.total_dibayar or 0)),
+            Decimal(str(piutang.nominal_piutang or 0)),
+        )
+        tercatat = Decimal(str(self.db.query(func.sum(PembayaranPiutang.nominal)).filter(
+            PembayaranPiutang.piutang_id == piutang.id
+        ).scalar() or 0))
+        selisih = target - tercatat
+        if selisih <= 0:
+            return Decimal("0")
+        self.db.add(PembayaranPiutang(
+            piutang_id=piutang.id,
+            tanggal=piutang.tanggal,
+            nominal=selisih,
+            metode_bayar=metode or PaymentMethod.TUNAI,
+            catatan=note or f"Selisih pembayaran piutang {piutang.nomor_referensi}",
+            created_by=user_id,
+        ))
+        return selisih
+
     def settle_internal_debts_for_transaksi(
         self,
         nomor_transaksi: str,
@@ -995,10 +1039,25 @@ class TransaksiBengkelService:
                 created_by=user_id,
             )
             self.db.add(new_piutang)
+            # DP yang masuk saat grand_total masih 0 (cabang create) menulis kas
+            # MASUK tanpa baris PembayaranPiutang — piutang ini lahir membawa
+            # total_dibayar itu. Tulis barisnya supaya Σ pembayaran == total_dibayar.
+            self.db.flush()
+            self._sync_piutang_pembayaran(
+                new_piutang, transaksi.metode_bayar, user_id=user_id,
+                note=f"DP {transaksi.nomor_transaksi} (dibayar sebelum tagihan)",
+            )
         elif existing_piutang:
             existing_piutang.nominal_piutang = grand_total
             existing_piutang.total_dibayar = transaksi.jumlah_bayar
             existing_piutang.sisa_piutang = max(Decimal("0"), grand_total - transaksi.jumlah_bayar)
+            # Edit bisa menaikkan total_dibayar di atas Σ baris pembayaran (mis.
+            # piutang lama yang lahir dari DP tanpa baris pembayaran). Tutup gapnya.
+            self.db.flush()
+            self._sync_piutang_pembayaran(
+                existing_piutang, transaksi.metode_bayar, user_id=user_id,
+                note=f"DP {transaksi.nomor_transaksi} (dibayar sebelum tagihan)",
+            )
             # Update status based on payment completion
             if existing_piutang.sisa_piutang <= 0:
                 existing_piutang.status = PiutangStatus.LUNAS
@@ -1603,6 +1662,17 @@ class TransaksiBengkelService:
                         created_by=user_id,
                     ))
                 self.db.commit()
+
+        # Tutup sisa gap Σ pembayaran vs total_dibayar — mis. DP yang dibayar saat
+        # grand_total masih 0 (lihat _sync_piutang_pembayaran). Tanpa ini piutang
+        # overstated di laporan → selisih Modal Aktual vs Teoritis.
+        if piutang:
+            self.db.flush()
+            self._sync_piutang_pembayaran(
+                piutang, transaksi.metode_bayar, user_id=user_id,
+                note=f"DP {transaksi.nomor_transaksi} (dibayar sebelum tagihan)",
+            )
+            self.db.commit()
 
         self._emit_change(transaksi, "payment_updated")
         return transaksi
