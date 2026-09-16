@@ -376,7 +376,7 @@ export default function MutasiKasScreen() {
                             <Pressable
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, dari: jenis }))}
-                                className={`px-4 py-2 rounded-full mr-2 mb-2 border ${transferForm.dari === jenis ? 'bg-primary border-primary' : 'bg-surface border-border'}`}
+                                className={`px-4 py-2 rounded-full mr-2 mb-2 border ${transferForm.dari === jenis ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
                             >
                                 <Typography
                                     variant="caption"
@@ -395,7 +395,7 @@ export default function MutasiKasScreen() {
                             <Pressable
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, ke: jenis }))}
-                                className={`px-4 py-2 rounded-full mr-2 mb-2 border ${transferForm.ke === jenis ? 'bg-blue-500 border-blue-500' : 'bg-surface border-border'}`}
+                                className={`px-4 py-2 rounded-full mr-2 mb-2 border ${transferForm.ke === jenis ? 'bg-blue-500 border-blue-500' : 'bg-surface border-transparent'}`}
                             >
                                 <Typography
                                     variant="caption"
@@ -426,9 +426,9 @@ export default function MutasiKasScreen() {
                     {/* Force Transaction Toggle */}
                     <Pressable 
                         onPress={() => setTransferForm(p => ({ ...p, allow_negative: !p.allow_negative }))}
-                        className="flex-row items-center mt-2 mb-6 p-4 bg-background rounded-2xl border border-border"
+                        className="flex-row items-center mt-2 mb-6 p-4 bg-background rounded-2xl border border-transparent"
                     >
-                        <View className={`w-6 h-6 rounded-md border-2 items-center justify-center mr-3 ${transferForm.allow_negative ? 'bg-primary border-primary' : 'bg-surface border-border'}`}>
+                        <View className={`w-6 h-6 rounded-md border-2 items-center justify-center mr-3 ${transferForm.allow_negative ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}>
                             {transferForm.allow_negative && <Plus size={14} color="white" strokeWidth={4} />}
                         </View>
                         <View className="flex-1">
@@ -455,7 +455,7 @@ export default function MutasiKasScreen() {
                             <Pressable
                                 key={jenis}
                                 onPress={() => setModalForm((p) => ({ ...p, jenis }))}
-                                className={`px-4 py-2 rounded-full mr-2 mb-2 border ${modalForm.jenis === jenis ? 'bg-emerald-500 border-emerald-500' : 'bg-surface border-border'}`}
+                                className={`px-4 py-2 rounded-full mr-2 mb-2 border ${modalForm.jenis === jenis ? 'bg-emerald-500 border-emerald-500' : 'bg-surface border-transparent'}`}
                             >
                                 <Typography
                                     variant="caption"
@@ -507,7 +507,7 @@ export default function MutasiKasScreen() {
                 rightElement={
                     <Pressable
                         onPress={onRefresh}
-                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
                         <RefreshCw size={20} color="#1F2937" />
                     </Pressable>
@@ -517,7 +517,7 @@ export default function MutasiKasScreen() {
             {/* Account & Search Navigator Overlay */}
             {!isSheetOpen && (
                 <View className="px-6 mt-4">
-                    <View className="bg-surface p-3 rounded-[24px] border border-border shadow-sm flex-col">
+                    <View className="bg-surface p-3 rounded-[24px] border border-transparent shadow-sm flex-col">
                         {!roleAccount && (
                             <Tabs
                                 items={accountFilters}
@@ -529,7 +529,7 @@ export default function MutasiKasScreen() {
                             />
                         )}
 
-                        <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-border">
+                        <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
                             <Search size={16} color="#9CA3AF" />
                             <Typography className="ml-3 text-xs text-textGray font-semibold">Cari riwayat transaksi...</Typography>
                         </View>
@@ -546,7 +546,7 @@ export default function MutasiKasScreen() {
                     return (
                         <Pressable
                             style={({ pressed }) => ({
-                                backgroundColor: 'white',
+                                
                                 padding: 20,
                                 borderRadius: 32,
                                 marginBottom: 24,
@@ -594,10 +594,10 @@ export default function MutasiKasScreen() {
                                 </Typography>
 
                                 {/* Footer Financial Row */}
-                                <View className="flex-row items-center justify-between pt-3 border-t border-border">
+                                <View className="flex-row items-center justify-between pt-3 border-t border-transparent">
                                     <View className="flex-row items-center">
                                         <Calendar size={12} color="#9CA3AF" />
-                                        <Typography className="text-textGray/60 text-[10px] ml-1.5 font-bold uppercase tracking-widest">
+                                        <Typography className="text-textGray text-[10px] ml-1.5 font-bold uppercase tracking-widest">
                                             {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </Typography>
                                     </View>
@@ -614,12 +614,12 @@ export default function MutasiKasScreen() {
                 ListHeaderComponent={
                     <View className="mb-6">
                         {/* Balance Insight Card (White Bento Style) */}
-                        <View className="bg-surface p-6 rounded-[32px] border border-border shadow-sm mb-6">
+                        <View className="bg-surface p-6 rounded-[32px] border border-transparent shadow-sm mb-6">
                             <View className="flex-row justify-between items-center mb-6">
                                 <View className="bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
                                     <Typography className="text-emerald-600 text-[10px] font-bold uppercase tracking-widest">Total Likuiditas</Typography>
                                 </View>
-                                <Typography className="text-textGray/40 text-[10px] font-bold uppercase tracking-widest">Saldo Saat Ini</Typography>
+                                <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">Saldo Saat Ini</Typography>
                             </View>
 
                             <View className="flex-row items-center justify-between">
@@ -627,7 +627,7 @@ export default function MutasiKasScreen() {
                                     <Typography variant="h1" weight="bold" className="text-textMain text-3xl tracking-tighter">
                                         {formatCurrency(balances?.total_saldo || 0)}
                                     </Typography>
-                                    <Typography className="text-textGray/40 text-xs mt-1">Akumulasi Seluruh Akun</Typography>
+                                    <Typography className="text-textGray text-xs mt-1">Akumulasi Seluruh Akun</Typography>
                                 </View>
                                 <Pressable
                                     onPress={() => router.push('/finance/akun')}
@@ -644,14 +644,14 @@ export default function MutasiKasScreen() {
                                 <View className="flex-1">
                                     <View className="flex-row items-center mb-1">
                                         <View className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5" />
-                                        <Typography className="text-textGray/30 text-[9px] uppercase font-bold tracking-widest">Total Masuk</Typography>
+                                        <Typography className="text-textGray text-[9px] uppercase font-bold tracking-widest">Total Masuk</Typography>
                                     </View>
                                     <Typography weight="bold" className="text-textMain text-sm">{formatCurrency(summary.total_masuk)}</Typography>
                                 </View>
-                                <View className="flex-1 items-end pl-4 border-l border-border">
+                                <View className="flex-1 items-end pl-4 border-l border-transparent">
                                     <View className="flex-row items-center mb-1">
                                         <View className="w-2 h-2 rounded-full bg-rose-500 mr-1.5" />
-                                        <Typography className="text-textGray/30 text-[9px] uppercase font-bold tracking-widest">Total Keluar</Typography>
+                                        <Typography className="text-textGray text-[9px] uppercase font-bold tracking-widest">Total Keluar</Typography>
                                     </View>
                                     <Typography weight="bold" className="text-rose-600 text-sm">{formatCurrency(summary.total_keluar)}</Typography>
                                 </View>
@@ -731,7 +731,7 @@ export default function MutasiKasScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 48,  }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}

@@ -234,7 +234,7 @@ export default function SupirFormScreen() {
                                     onPress={() => updateField('armada_default_id', a.id.toString())}
                                     className={`px-3 py-1.5 rounded-full mr-2 mb-2 border ${formData.armada_default_id === a.id.toString()
                                         ? 'bg-primary border-primary'
-                                        : 'bg-white border-gray-200'
+                                        : 'bg-surface border-gray-200'
                                         }`}
                                 >
                                     <View className="flex-row items-center">
@@ -252,7 +252,7 @@ export default function SupirFormScreen() {
                                 onPress={() => updateField('armada_default_id', '')}
                                 className={`px-3 py-1.5 rounded-full mr-2 mb-2 border ${!formData.armada_default_id
                                     ? 'bg-gray-600 border-gray-600'
-                                    : 'bg-white border-gray-200'
+                                    : 'bg-surface border-gray-200'
                                     }`}
                             >
                                 <Typography

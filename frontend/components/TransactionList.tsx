@@ -112,7 +112,7 @@ function TransactionListInner() {
             </View>
 
             {list.length === 0 ? (
-                <View className="items-center py-10 bg-surface rounded-3xl border border-border border-dashed">
+                <View className="items-center py-10 bg-surface rounded-3xl border border-transparent border-dashed">
                     <Typography className="text-textGray font-medium">Belum ada aktivitas</Typography>
                 </View>
             ) : (
@@ -126,7 +126,7 @@ function TransactionListInner() {
                             style={({ pressed }) => ({
                                 opacity: pressed ? 0.8 : 1
                             })}
-                            className="flex-row items-center bg-surface p-4 rounded-[24px] mb-3 shadow-sm shadow-gray-100 border border-border"
+                            className="flex-row items-center bg-surface p-4 rounded-[24px] mb-3 shadow-sm shadow-gray-100 border border-transparent"
                             onPress={() => handleItemPress(item)}
                         >
                             <View
@@ -156,7 +156,7 @@ function TransactionListInner() {
                                     className={
                                         item.type === 'financial'
                                             ? (item.is_incoming ? 'text-emerald-500' : 'text-rose-500')
-                                            : 'text-gray-800'
+                                            : 'text-text'
                                     }
                                 >
                                     {/* Match history: +/- only for kas (financial). Workshop/transport = nominal transaksi. */}

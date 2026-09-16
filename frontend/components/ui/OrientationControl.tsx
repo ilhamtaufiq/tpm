@@ -24,7 +24,7 @@ export const OrientationControl = ({ compact = false }: OrientationControlProps)
         return (
             <Pressable
                 onPress={cycleOrientation}
-                className="flex-row items-center bg-background rounded-2xl px-4 py-3 border border-border active:bg-background"
+                className="flex-row items-center bg-background rounded-2xl px-4 py-3 border border-transparent active:bg-background"
             >
                 <View className="w-10 h-10 bg-indigo-50 rounded-xl items-center justify-center mr-3">
                     <RotateCw size={20} color="#6366F1" />
@@ -33,7 +33,7 @@ export const OrientationControl = ({ compact = false }: OrientationControlProps)
                     <Typography variant="body2" weight="bold" className="text-text">
                         Orientasi: {OPTIONS.find((o) => o.id === orientationLock)?.label}
                     </Typography>
-                    <Typography variant="caption" className="text-text/40">
+                    <Typography variant="caption" className="text-textGray">
                         Saat ini {isLandscape ? 'landscape' : 'portrait'} • Ketuk untuk ganti
                     </Typography>
                 </View>
@@ -42,7 +42,7 @@ export const OrientationControl = ({ compact = false }: OrientationControlProps)
     }
 
     return (
-        <View className="bg-surface p-5 rounded-[40px] border border-border shadow-sm">
+        <View className="bg-surface p-5 rounded-[40px] border border-transparent shadow-sm">
             <View className="flex-row items-center mb-4">
                 <View className="w-12 h-12 bg-indigo-50 rounded-[20px] items-center justify-center mr-4">
                     <MonitorSmartphone size={24} color="#6366F1" />
@@ -51,7 +51,7 @@ export const OrientationControl = ({ compact = false }: OrientationControlProps)
                     <Typography variant="body1" weight="bold" className="text-text mb-0.5">
                         Orientasi Layar
                     </Typography>
-                    <Typography variant="caption" className="text-text/40">
+                    <Typography variant="caption" className="text-textGray">
                         Aktif: {orientation === 'landscape' ? 'Landscape' : 'Portrait'}
                     </Typography>
                 </View>
@@ -65,7 +65,7 @@ export const OrientationControl = ({ compact = false }: OrientationControlProps)
                             key={option.id}
                             onPress={() => setOrientationLock(option.id)}
                             className={`flex-1 rounded-2xl px-3 py-3 border items-center ${
-                                active ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-100'
+                                active ? 'bg-indigo-50 border-indigo-200' : 'bg-surface border-gray-100'
                             }`}
                         >
                             <View style={option.id === 'landscape' ? { transform: [{ rotate: '90deg' }] } : undefined}>
@@ -74,7 +74,7 @@ export const OrientationControl = ({ compact = false }: OrientationControlProps)
                             <Typography
                                 variant="caption"
                                 weight={active ? 'bold' : 'medium'}
-                                className={`mt-1.5 ${active ? 'text-indigo-600' : 'text-text/50'}`}
+                                className={`mt-1.5 ${active ? 'text-indigo-600' : 'text-textGray'}`}
                             >
                                 {option.label}
                             </Typography>
@@ -83,7 +83,7 @@ export const OrientationControl = ({ compact = false }: OrientationControlProps)
                 })}
             </View>
 
-            <Typography variant="caption" className="text-text/30 mt-3 text-center">
+            <Typography variant="caption" className="text-textGray mt-3 text-center">
                 {OPTIONS.find((o) => o.id === orientationLock)?.hint}
             </Typography>
         </View>

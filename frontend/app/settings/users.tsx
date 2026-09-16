@@ -284,14 +284,14 @@ export default function UserManagementScreen() {
 
         return (
             <Pressable onPress={() => openDetail(item)}>
-                <View className="bg-surface p-4 rounded-[24px] mb-4 border border-border shadow-sm flex-row items-center">
-                    <View style={{ backgroundColor: `${roleInfo.color}10` }} className="w-14 h-14 rounded-2xl border border-border items-center justify-center mr-4">
+                <View className="bg-surface p-4 rounded-[24px] mb-4 border border-transparent shadow-sm flex-row items-center">
+                    <View style={{ backgroundColor: `${roleInfo.color}10` }} className="w-14 h-14 rounded-2xl border border-transparent items-center justify-center mr-4">
                         <RoleIcon size={24} color={roleInfo.color} />
                     </View>
                     <View className="flex-1">
                         <View className="flex-row items-center justify-between mb-0.5">
                             <Typography variant="body1" weight="bold" className="text-textMain text-[16px] tracking-tight">{item.full_name}</Typography>
-                            <View className="px-2 py-0.5 rounded-lg bg-background flex-row items-center border border-border">
+                            <View className="px-2 py-0.5 rounded-lg bg-background flex-row items-center border border-transparent">
                                 <View style={{ backgroundColor: item.is_active ? '#10B981' : '#EF4444' }} className="w-1.5 h-1.5 rounded-full mr-1.5" />
                                 <Typography className="text-textGray text-[8px] font-black uppercase tracking-wider">
                                     {item.is_active ? 'Aktif' : 'Mati'}
@@ -304,7 +304,7 @@ export default function UserManagementScreen() {
                             <Typography variant="caption" style={{ color: roleInfo.color }} className="font-bold tracking-wider uppercase text-[9px]">{roleInfo.label}</Typography>
                         </View>
                     </View>
-                    <View className="ml-2 w-9 h-9 rounded-xl bg-background items-center justify-center border border-border">
+                    <View className="ml-2 w-9 h-9 rounded-xl bg-background items-center justify-center border border-transparent">
                         <MoreVertical size={16} color="#4B5563" />
                     </View>
                 </View>
@@ -327,7 +327,7 @@ export default function UserManagementScreen() {
                     </View>
 
                     <View className="items-center mb-8">
-                        <View className="w-24 h-24 rounded-[32px] bg-background border border-border items-center justify-center mb-4">
+                        <View className="w-24 h-24 rounded-[32px] bg-background border border-transparent items-center justify-center mb-4">
                             <RoleIcon size={48} color={roleInfo.color} />
                         </View>
                         <Typography variant="h2" weight="bold" className="text-center mb-1">{selectedUser.full_name}</Typography>
@@ -344,9 +344,9 @@ export default function UserManagementScreen() {
                         </View>
                     </View>
 
-                    <Card className="p-5 mb-8 border border-border rounded-[32px]">
+                    <Card className="p-5 mb-8 border border-transparent rounded-[32px]">
                         <View className="space-y-4">
-                            <View className="flex-row items-center bg-gray-50/50 p-4 rounded-2xl border border-border">
+                            <View className="flex-row items-center bg-surface/50 p-4 rounded-2xl border border-transparent">
                                 <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-4">
                                     <User size={20} color="#6B7280" />
                                 </View>
@@ -356,7 +356,7 @@ export default function UserManagementScreen() {
                                 </View>
                             </View>
 
-                            <View className="flex-row items-center bg-gray-50/50 p-4 rounded-2xl border border-border">
+                            <View className="flex-row items-center bg-surface/50 p-4 rounded-2xl border border-transparent">
                                 <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-4">
                                     <Mail size={20} color="#6B7280" />
                                 </View>
@@ -367,7 +367,7 @@ export default function UserManagementScreen() {
                             </View>
 
                             {selectedUser.phone && (
-                                <View className="flex-row items-center bg-gray-50/50 p-4 rounded-2xl border border-border">
+                                <View className="flex-row items-center bg-surface/50 p-4 rounded-2xl border border-transparent">
                                     <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-4">
                                         <Phone size={20} color="#6B7280" />
                                     </View>
@@ -425,7 +425,7 @@ export default function UserManagementScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Username *</Typography>
                         <TextInput
-                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary"
                             placeholder="username"
                             value={formData.username}
                             onChangeText={(text) => setFormData({ ...formData, username: text.toLowerCase() })}
@@ -436,7 +436,7 @@ export default function UserManagementScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Lengkap *</Typography>
                         <TextInput
-                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary"
                             placeholder="Budi Santoso"
                             value={formData.full_name}
                             onChangeText={(text) => setFormData({ ...formData, full_name: text })}
@@ -446,7 +446,7 @@ export default function UserManagementScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Password {selectedUser ? '(Kosongkan jika tidak ganti)' : '*'}</Typography>
                         <TextInput
-                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary"
                             placeholder="******"
                             secureTextEntry
                             value={formData.password}
@@ -457,7 +457,7 @@ export default function UserManagementScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Email *</Typography>
                         <TextInput
-                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary"
                             placeholder="budi@example.com"
                             keyboardType="email-address"
                             value={formData.email}
@@ -474,7 +474,7 @@ export default function UserManagementScreen() {
                                     key={role.value}
                                     onPress={() => setFormData({ ...formData, role: role.value })}
                                     style={formData.role === role.value ? { backgroundColor: themeColors.primary, borderColor: themeColors.primary } : {}}
-                                    className={`mr-3 px-4 py-3 rounded-2xl border ${formData.role === role.value ? '' : 'bg-background border-border'}`}
+                                    className={`mr-3 px-4 py-3 rounded-2xl border ${formData.role === role.value ? '' : 'bg-background border-transparent'}`}
                                 >
                                     <View className="flex-row items-center">
                                         <role.icon size={16} color={formData.role === role.value ? 'white' : role.color} />
@@ -510,7 +510,7 @@ export default function UserManagementScreen() {
                 rightElement={
                     <Pressable 
                         onPress={onRefresh} 
-                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
                         {refreshing ? <ActivityIndicator size="small" color="#1F2937" /> : <RefreshCw size={20} color="#1F2937" />}
                     </Pressable>
@@ -519,7 +519,7 @@ export default function UserManagementScreen() {
 
             {/* Search Bar */}
             <View className="px-6 mt-4">
-                <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-border shadow-sm">
+                <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-transparent shadow-sm">
                     <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-background">
                         <Search size={18} color="#9CA3AF" />
                         <TextInput
@@ -542,16 +542,16 @@ export default function UserManagementScreen() {
 
             {/* Bento Stats Row */}
             <View className="px-6 mt-4 mb-2 flex-row justify-between">
-                <View className="flex-1 bg-surface p-4 rounded-[20px] border border-border shadow-sm mr-3">
-                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold tracking-[1.5px] mb-1">Total</Typography>
+                <View className="flex-1 bg-surface p-4 rounded-[20px] border border-transparent shadow-sm mr-3">
+                    <Typography className="text-textGray text-[9px] uppercase font-bold tracking-[1.5px] mb-1">Total</Typography>
                     <Typography className="text-primary text-2xl font-black">{stats.total}</Typography>
                 </View>
-                <View className="flex-1 bg-surface p-4 rounded-[20px] border border-border shadow-sm mr-3">
-                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold tracking-[1.5px] mb-1">Aktif</Typography>
+                <View className="flex-1 bg-surface p-4 rounded-[20px] border border-transparent shadow-sm mr-3">
+                    <Typography className="text-textGray text-[9px] uppercase font-bold tracking-[1.5px] mb-1">Aktif</Typography>
                     <Typography className="text-emerald-600 text-2xl font-black">{stats.active}</Typography>
                 </View>
-                <View className="flex-1 bg-surface p-4 rounded-[20px] border border-border shadow-sm">
-                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold tracking-[1.5px] mb-1">Nonaktif</Typography>
+                <View className="flex-1 bg-surface p-4 rounded-[20px] border border-transparent shadow-sm">
+                    <Typography className="text-textGray text-[9px] uppercase font-bold tracking-[1.5px] mb-1">Nonaktif</Typography>
                     <Typography className="text-rose-500 text-2xl font-black">{stats.inactive}</Typography>
                 </View>
             </View>
@@ -594,7 +594,7 @@ export default function UserManagementScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 48,  }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48 }}
                     topInset={insets.top}
                     onChange={(index) => setSheetVisible(index !== -1)}

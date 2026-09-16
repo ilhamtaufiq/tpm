@@ -176,11 +176,11 @@ export default function ReportsScreen() {
             <Pressable
                 key={report.path}
                 onPress={() => router.push(report.path as any)}
-                className="w-[48%] bg-surface p-4 rounded-[24px] mb-4 border border-border active:scale-[0.98]"
+                className="w-[48%] bg-surface p-4 rounded-[24px] mb-4 border border-transparent active:scale-[0.98]"
             >
                 <View
                     style={{ backgroundColor: `${report.color}12` }}
-                    className="w-12 h-12 rounded-2xl items-center justify-center mb-3 border border-border"
+                    className="w-12 h-12 rounded-2xl items-center justify-center mb-3 border border-transparent"
                 >
                     <Icon size={22} color={report.color} strokeWidth={2.5} />
                 </View>
@@ -203,11 +203,11 @@ export default function ReportsScreen() {
             <Pressable
                 key={report.path}
                 onPress={() => router.push(report.path as any)}
-                className="w-full bg-surface p-5 rounded-[28px] mb-4 border border-border flex-row items-center active:scale-[0.98]"
+                className="w-full bg-surface p-5 rounded-[28px] mb-4 border border-transparent flex-row items-center active:scale-[0.98]"
             >
                 <View
                     style={{ backgroundColor: `${report.color}12` }}
-                    className="w-14 h-14 rounded-2xl items-center justify-center mr-4 border border-border"
+                    className="w-14 h-14 rounded-2xl items-center justify-center mr-4 border border-transparent"
                 >
                     <Icon size={24} color={report.color} strokeWidth={2.5} />
                 </View>
@@ -232,13 +232,13 @@ export default function ReportsScreen() {
             <Pressable
                 key={report.path}
                 onPress={() => router.push(report.path as any)}
-                className="w-full rounded-[28px] mb-4 border border-border overflow-hidden active:scale-[0.98]"
+                className="w-full rounded-[28px] mb-4 border border-transparent overflow-hidden active:scale-[0.98]"
             >
                 <View className="bg-surface p-5">
                     <View className="flex-row items-start justify-between">
                         <View
                             style={{ backgroundColor: `${report.color}15` }}
-                            className="w-14 h-14 rounded-2xl items-center justify-center border border-border"
+                            className="w-14 h-14 rounded-2xl items-center justify-center border border-transparent"
                         >
                             <Icon size={24} color={report.color} strokeWidth={2.5} />
                         </View>
@@ -256,7 +256,7 @@ export default function ReportsScreen() {
                             {report.desc}
                         </Typography>
                     ) : null}
-                    <View className="flex-row items-center mt-4 pt-4 border-t border-border">
+                    <View className="flex-row items-center mt-4 pt-4 border-t border-transparent">
                         <Typography className="text-primary text-xs font-bold flex-1">Buka Laporan</Typography>
                         <ChevronRight size={18} color="#023C69" />
                     </View>
@@ -269,7 +269,7 @@ export default function ReportsScreen() {
         <SafeAreaView className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
 
-            <View className="px-6 py-4 flex-row items-center justify-between border-b border-border bg-surface">
+            <View className="px-6 py-4 flex-row items-center justify-between border-b border-transparent bg-surface">
                 <View className="flex-row items-center">
                     <Pressable onPress={handleGoBack} className="mr-4">
                         <ChevronLeft size={24} color="#1C1C1C" />
@@ -296,7 +296,7 @@ export default function ReportsScreen() {
                     ].map((stat) => {
                         const StatIcon = stat.icon;
                         return (
-                            <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-border`}>
+                            <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-transparent`}>
                                 <View className="flex-row items-center mb-2">
                                     <StatIcon size={14} color={stat.color} />
                                     <Typography className="text-[9px] font-bold text-textGray ml-1.5 uppercase tracking-wide">
@@ -311,7 +311,7 @@ export default function ReportsScreen() {
                     })}
                 </View>
 
-                <View className="flex-row items-center bg-background border border-border rounded-2xl px-4 h-12 mb-3">
+                <View className="flex-row items-center bg-background border border-transparent rounded-2xl px-4 h-12 mb-3">
                     <Search size={18} color="#9CA3AF" />
                     <TextInput
                         value={search}
@@ -339,7 +339,7 @@ export default function ReportsScreen() {
                                 className={`px-4 py-2 rounded-full border mr-2 ${
                                     isActive
                                         ? 'bg-primary border-primary'
-                                        : 'bg-white border-gray-200'
+                                        : 'bg-surface border-gray-200'
                                 }`}
                             >
                                 <Typography
@@ -355,7 +355,7 @@ export default function ReportsScreen() {
                 </ScrollView>
 
                 {filteredGroups.length === 0 ? (
-                    <View className="bg-surface border border-border rounded-[28px] p-8 items-center">
+                    <View className="bg-surface border border-transparent rounded-[28px] p-8 items-center">
                         <FileText size={32} color="#CBD5E1" />
                         <Typography weight="bold" className="text-textMain mt-4">
                             Laporan tidak ditemukan

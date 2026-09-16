@@ -253,7 +253,7 @@ export default function BluetoothSettingsScreen() {
                         </View>
                         <Pressable
                             onPress={handleTestPrint}
-                            className="mt-3 bg-surface border border-border py-3 rounded-xl items-center"
+                            className="mt-3 bg-surface border border-transparent py-3 rounded-xl items-center"
                         >
                             <Typography weight="semibold" className="text-text">Test Print</Typography>
                         </Pressable>
@@ -276,7 +276,7 @@ export default function BluetoothSettingsScreen() {
                                 key={device.inner_mac_address || index}
                                 onPress={() => handleConnect(device)}
                                 disabled={connecting === device.inner_mac_address}
-                                className="bg-surface p-4 rounded-2xl border border-border flex-row items-center justify-between active:bg-background"
+                                className="bg-surface p-4 rounded-2xl border border-transparent flex-row items-center justify-between active:bg-background"
                             >
                                 <View className="flex-row items-center">
                                     <View className="w-10 h-10 bg-background rounded-full items-center justify-center mr-3">

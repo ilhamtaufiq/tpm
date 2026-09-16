@@ -99,7 +99,7 @@ export default function MasterDataScreen() {
                     <View className="flex-row flex-wrap">
                         {statsPills.map(({ label, key, color, icon: Icon, value }) => (
                             <View key={key} className="w-1/3 px-1 mb-2">
-                                <View className="bg-surface px-3 py-2.5 rounded-2xl border border-border">
+                                <View className="bg-surface px-3 py-2.5 rounded-2xl border border-transparent">
                                     <View className="flex-row items-center justify-between mb-1">
                                         <View style={{ backgroundColor: color + '15' }} className="w-5 h-5 rounded-full items-center justify-center">
                                             <Icon size={10} color={color} />
@@ -108,7 +108,7 @@ export default function MasterDataScreen() {
                                             {value}
                                         </Typography>
                                     </View>
-                                    <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest">
+                                    <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest">
                                         {label}
                                     </Typography>
                                 </View>
@@ -120,7 +120,7 @@ export default function MasterDataScreen() {
                 {/* Menu Items */}
                 <View className="pt-2 pb-10">
                     <Pressable onPress={() => router.push('/master-data/customer')}>
-                        <View className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center">
+                        <View className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center">
                             <View className="w-16 h-16 bg-blue-50 rounded-[20px] items-center justify-center mr-4 border border-blue-100/50">
                                 <Users size={32} color="#3B82F6" />
                             </View>
@@ -142,7 +142,7 @@ export default function MasterDataScreen() {
                     </Pressable>
 
                     <Pressable onPress={() => router.push('/master-data/supplier')}>
-                        <View className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center">
+                        <View className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center">
                             <View className="w-16 h-16 bg-amber-50 rounded-[20px] items-center justify-center mr-4 border border-amber-100/50">
                                 <Building2 size={32} color="#F59E0B" />
                             </View>
@@ -164,7 +164,7 @@ export default function MasterDataScreen() {
                     </Pressable>
 
                     <Pressable onPress={() => router.push('/master-data/sparepart')}>
-                        <View className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center">
+                        <View className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center">
                             <View className="w-16 h-16 bg-emerald-50 rounded-[20px] items-center justify-center mr-4 border border-emerald-100/50">
                                 <Wrench size={32} color="#059669" />
                             </View>
@@ -186,7 +186,7 @@ export default function MasterDataScreen() {
                     </Pressable>
 
                     <Pressable onPress={() => router.push('/master-data/jasa-servis')}>
-                        <View className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center">
+                        <View className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center">
                             <View className="w-16 h-16 bg-purple-50 rounded-[20px] items-center justify-center mr-4 border border-purple-100/50">
                                 <Tag size={32} color="#8B5CF6" />
                             </View>
@@ -209,7 +209,7 @@ export default function MasterDataScreen() {
 
                     {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
                         <Pressable onPress={() => router.push('/master-data/asset')}>
-                            <View className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center">
+                            <View className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center">
                                 <View className="w-16 h-16 bg-rose-50 rounded-[20px] items-center justify-center mr-4 border border-rose-100/50">
                                     <Box size={32} color="#E11D48" />
                                 </View>

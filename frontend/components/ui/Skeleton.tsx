@@ -66,7 +66,7 @@ export const SkeletonCard: React.FC<{ className?: string }> = ({ className }) =>
 );
 
 export const SkeletonListItem: React.FC = () => (
-    <View className="flex-row items-center py-4 border-b border-border">
+    <View className="flex-row items-center py-4 border-b border-transparent">
         <Skeleton width={40} height={40} borderRadius={20} />
         <View className="flex-1 ml-3">
             <Skeleton width="70%" height={14} style={{ marginBottom: 6 }} />

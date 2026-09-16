@@ -58,7 +58,7 @@ export default function LandingPage() {
                 />
 
                 <View className="px-6 items-center">
-                    <View className="bg-white/10 px-4 py-2 rounded-full border border-white/20 mb-8 backdrop-blur-md">
+                    <View className="bg-surface/10 px-4 py-2 rounded-full border border-white/20 mb-8 backdrop-blur-md">
                         <Typography className="text-white text-xs font-bold tracking-widest uppercase">The Next Gen Super App</Typography>
                     </View>
 
@@ -93,7 +93,7 @@ export default function LandingPage() {
                             <ChevronRight size={18} color="#4338CA" />
                         </Pressable>
 
-                        <Pressable className="bg-white/10 border border-white/20 px-8 py-4 rounded-2xl backdrop-blur-md active:scale-95 transition-transform">
+                        <Pressable className="bg-surface/10 border border-white/20 px-8 py-4 rounded-2xl backdrop-blur-md active:scale-95 transition-transform">
                             <Typography weight="bold" className="text-white">Pelajari Fitur</Typography>
                         </Pressable>
                     </View>
@@ -107,7 +107,7 @@ export default function LandingPage() {
                         <View
                             key={i}
                             style={{ width: width > 768 ? '48%' : '100%' }}
-                            className="bg-surface p-8 rounded-[40px] shadow-sm border border-border mb-2"
+                            className="bg-surface p-8 rounded-[40px] shadow-sm border border-transparent mb-2"
                         >
                             <View className={`w-14 h-14 ${feature.bgColor} rounded-2xl items-center justify-center mb-6`}>
                                 {feature.icon}

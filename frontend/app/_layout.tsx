@@ -366,7 +366,7 @@ function RootLayoutContent() {
         const loadingMessage = "Memuat TPM Super App...";
 
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center',  }}>
                 <ActivityIndicator size="large" color="#3b82f6" />
                 <Text style={{ marginTop: 16, fontSize: 14, color: '#666', fontWeight: '600' }}>
                     {loadingMessage}
@@ -450,7 +450,7 @@ function RootLayoutContent() {
                                 height: previewHeight,
                                 maxWidth: '96vw' as any,
                                 maxHeight: '92vh' as any,
-                                backgroundColor: '#ffffff',
+                                
                                 overflow: 'hidden',
                                 position: 'relative',
                                 borderRadius: previewIsLandscape ? 20 : 32,

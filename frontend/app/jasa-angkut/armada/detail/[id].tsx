@@ -27,12 +27,12 @@ export default function ArmadaDetailScreen() {
             <StatusBar barStyle="dark-content" />
 
             {/* Header */}
-            <SafeAreaView edges={['top']} className="bg-surface border-b border-border">
+            <SafeAreaView edges={['top']} className="bg-surface border-b border-transparent">
                 <View className="px-6 py-4 flex-row items-center justify-between">
                     <View className="flex-row items-center">
                         <TouchableOpacity
                             onPress={handleBack}
-                            className="w-10 h-10 bg-background rounded-xl items-center justify-center mr-4 border border-border"
+                            className="w-10 h-10 bg-background rounded-xl items-center justify-center mr-4 border border-transparent"
                         >
                             <ChevronLeft size={24} color="#1C1C1C" />
                         </TouchableOpacity>

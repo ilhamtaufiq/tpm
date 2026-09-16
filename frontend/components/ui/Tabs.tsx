@@ -41,7 +41,7 @@ export const Tabs = ({
             {...containerProps}
             className={cn(
                 "flex-row items-center",
-                variant === 'segmented' ? "bg-gray-100/80 p-1.5 rounded-[24px] border border-gray-200/50" : "gap-x-2",
+                variant === 'segmented' ? "bg-surface/80 p-1.5 rounded-[24px] border border-gray-200/50" : "gap-x-2",
                 className
             )}
         >
@@ -63,9 +63,9 @@ export const Tabs = ({
                         className={cn(
                             "py-2.5",
                             variant === 'segmented' ? "flex-1 px-2" : "px-5",
-                            isActive && variant === 'segmented' ? "bg-white shadow-sm border border-gray-100" : "",
+                            isActive && variant === 'segmented' ? "bg-surface shadow-sm border border-gray-100" : "",
                             isActive && variant === 'pill' ? "bg-primary border border-primary" : "",
-                            !isActive && variant === 'pill' ? "bg-white border border-gray-100" : "",
+                            !isActive && variant === 'pill' ? "bg-surface border border-gray-100" : "",
                             scrollable ? "flex-none" : ""
                         )}
                     >

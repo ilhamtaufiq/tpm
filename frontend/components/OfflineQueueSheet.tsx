@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     sheet: {
-        backgroundColor: '#fff',
+        
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         maxHeight: Platform.OS === 'web' ? '85vh' as any : '88%',

@@ -37,8 +37,7 @@ const ServiceCard = React.memo(function ServiceCard({
                 className="items-center w-full active:opacity-70"
             >
                 <View
-                    style={{ backgroundColor: 'white', borderRadius: 20 }}
-                    className="w-14 h-14 items-center justify-center mb-1.5 border border-border shadow-sm"
+                    className="w-14 h-14 items-center justify-center mb-1.5 border border-transparent shadow-sm bg-surface rounded-[20px]"
                 >
                     <View
                         style={{ backgroundColor: `${menu.color}15` }}

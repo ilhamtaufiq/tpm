@@ -238,7 +238,7 @@ export default function AssetScreen() {
 
     const renderAssetItem = ({ item }: { item: Asset }) => (
         <Pressable onPress={() => openDetail(item)}>
-            <View className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center">
+            <View className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center">
                 <View className="w-16 h-16 rounded-[20px] bg-rose-50 border border-rose-100/50 items-center justify-center mr-4">
                     <Box size={32} color="#E11D48" />
                 </View>
@@ -281,7 +281,7 @@ export default function AssetScreen() {
                         <Badge label={selectedAsset.status} variant={selectedAsset.status === 'AKTIF' ? 'success' : 'warning'} />
                     </View>
 
-                    <Card className="p-5 mb-6 border border-border rounded-[24px]">
+                    <Card className="p-5 mb-6 border border-transparent rounded-[24px]">
                         <Typography variant="h3" weight="bold" className="mb-4 text-base">Informasi Aset</Typography>
 
                         <View className="flex-row items-center mb-4 bg-background p-3 rounded-2xl">
@@ -327,7 +327,7 @@ export default function AssetScreen() {
                     </Card>
 
                     {selectedAsset.catatan && (
-                        <Card className="p-5 mb-6 border border-border rounded-[24px]">
+                        <Card className="p-5 mb-6 border border-transparent rounded-[24px]">
                             <Typography variant="h3" weight="bold" className="mb-2 text-base">Catatan</Typography>
                             <Typography className="text-textGray leading-relaxed">{selectedAsset.catatan}</Typography>
                         </Card>
@@ -354,7 +354,7 @@ export default function AssetScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Aset *</Typography>
                         <TextInput
-                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="Contoh: Komputer Kantor"
                             value={formData.nama}
                             onChangeText={(text) => setFormData({ ...formData, nama: text })}
@@ -369,7 +369,7 @@ export default function AssetScreen() {
                                     <Pressable
                                         key={f.key}
                                         onPress={() => setFormData({ ...formData, kategori: f.key })}
-                                        className={`mr-2 px-3 py-2 rounded-xl border ${formData.kategori === f.key ? 'bg-primary border-primary' : 'bg-surface border-border'}`}
+                                        className={`mr-2 px-3 py-2 rounded-xl border ${formData.kategori === f.key ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
                                     >
                                         <Typography className={`text-[10px] font-bold ${formData.kategori === f.key ? 'text-white' : 'text-textGray'}`}>{f.label}</Typography>
                                     </Pressable>
@@ -382,7 +382,7 @@ export default function AssetScreen() {
                         <View className="flex-1">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Tanggal Beli *</Typography>
                             <TextInput
-                                className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium"
+                                className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium"
                                 placeholder="YYYY-MM-DD"
                                 value={formData.tanggal_beli}
                                 onChangeText={(text) => setFormData({ ...formData, tanggal_beli: text })}
@@ -390,7 +390,7 @@ export default function AssetScreen() {
                         </View>
                         <View className="flex-1">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Harga Beli *</Typography>
-                            <View className="flex-row items-center bg-background border border-border rounded-2xl px-4 py-3.5 focus-within:border-primary">
+                            <View className="flex-row items-center bg-background border border-transparent rounded-2xl px-4 py-3.5 focus-within:border-primary">
                                 <Typography className="text-textGray mr-2 font-bold text-xs">Rp</Typography>
                                 <TextInput
                                     className="flex-1 text-textMain font-medium"
@@ -407,7 +407,7 @@ export default function AssetScreen() {
                         <View className="flex-1">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Umur (Tahun)</Typography>
                             <TextInput
-                                className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium"
+                                className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium"
                                 value={formData.umur_ekonomis}
                                 onChangeText={(text) => setFormData({ ...formData, umur_ekonomis: text })}
                                 keyboardType="numeric"
@@ -416,7 +416,7 @@ export default function AssetScreen() {
                         <View className="flex-1">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Lokasi</Typography>
                             <TextInput
-                                className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium"
+                                className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium"
                                 placeholder="Cabang / Ruangan"
                                 value={formData.lokasi}
                                 onChangeText={(text) => setFormData({ ...formData, lokasi: text })}
@@ -427,7 +427,7 @@ export default function AssetScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Catatan</Typography>
                         <TextInput
-                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium min-h-[80px]"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium min-h-[80px]"
                             placeholder="Detail aset..."
                             value={formData.catatan}
                             onChangeText={(text) => setFormData({ ...formData, catatan: text })}
@@ -460,7 +460,7 @@ export default function AssetScreen() {
                 showProfile={true}
             >
                 {!sheetVisible && (
-                    <View className="flex-row items-center bg-background h-11 rounded-2xl border border-border">
+                    <View className="flex-row items-center bg-background h-11 rounded-2xl border border-transparent">
                         <Search size={18} color="#9CA3AF" className="ml-4" />
                         <TextInput
                             placeholder="Cari nama atau kode..."
@@ -480,7 +480,7 @@ export default function AssetScreen() {
                             <Pressable
                                 key={filter.key}
                                 onPress={() => setSelectedFilter(filter.key)}
-                                className={`mr-3 px-5 py-2.5 rounded-2xl border ${selectedFilter === filter.key ? 'bg-primary border-primary' : 'bg-surface border-border'}`}
+                                className={`mr-3 px-5 py-2.5 rounded-2xl border ${selectedFilter === filter.key ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
                             >
                                 <Typography className={selectedFilter === filter.key ? 'text-white' : 'text-textGray'} weight={selectedFilter === filter.key ? 'bold' : 'medium'} variant="caption">
                                     {filter.label}

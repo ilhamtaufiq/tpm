@@ -78,7 +78,7 @@ export default function Index() {
                     flex: 1,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    backgroundColor: '#ffffff',
+                    
                     padding: 24,
                 }}
             >

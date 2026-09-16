@@ -152,7 +152,7 @@ export default function ProfileSettingsScreen() {
             {/* Pattern 1: Premium Curved Header */}
             <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
                 {/* Decorative Elements */}
-                <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
+                <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-surface/10 rounded-full blur-[80px]" />
 
                 <Header
                     title="Ubah Profil"
@@ -202,13 +202,13 @@ export default function ProfileSettingsScreen() {
                     <Animated.View entering={FadeInDown.delay(400)} className="space-y-6">
 
                         {/* Section: Personal Info */}
-                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-border">
-                            <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] mb-6">Informasi Personal</Typography>
+                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-transparent">
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[4px] mb-6">Informasi Personal</Typography>
 
                             {/* Name Input */}
                             <View className="mb-5">
-                                <Typography variant="caption" className="text-text/40 mb-2 ml-1">Nama Lengkap</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
+                                <Typography variant="caption" className="text-textGray mb-2 ml-1">Nama Lengkap</Typography>
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
                                     <User size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -221,8 +221,8 @@ export default function ProfileSettingsScreen() {
 
                             {/* Email Input */}
                             <View className="mb-5">
-                                <Typography variant="caption" className="text-text/40 mb-2 ml-1">Alamat Email</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
+                                <Typography variant="caption" className="text-textGray mb-2 ml-1">Alamat Email</Typography>
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
                                     <Mail size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -237,8 +237,8 @@ export default function ProfileSettingsScreen() {
 
                             {/* Phone Input */}
                             <View className="mb-5">
-                                <Typography variant="caption" className="text-text/40 mb-2 ml-1">Nomor Telepon</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
+                                <Typography variant="caption" className="text-textGray mb-2 ml-1">Nomor Telepon</Typography>
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
                                     <Phone size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -252,8 +252,8 @@ export default function ProfileSettingsScreen() {
 
                             {/* Role Input */}
                             <View>
-                                <Typography variant="caption" className="text-text/40 mb-2 ml-1">Jabatan / Divisi</Typography>
-                                <View className={`flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border ${!isAdmin ? 'opacity-50' : ''}`}>
+                                <Typography variant="caption" className="text-textGray mb-2 ml-1">Jabatan / Divisi</Typography>
+                                <View className={`flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent ${!isAdmin ? 'opacity-50' : ''}`}>
                                     <Briefcase size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -267,8 +267,8 @@ export default function ProfileSettingsScreen() {
                         </View>
 
                         {/* Additional Info / Settings Card */}
-                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-border">
-                            <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] mb-4">Informasi Tambahan</Typography>
+                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-transparent">
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[4px] mb-4">Informasi Tambahan</Typography>
                             <View className="flex-row items-center justify-between p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                                 <View className="flex-row items-center">
                                     <CheckCircle2 size={18} color="#10B981" />

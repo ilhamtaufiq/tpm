@@ -136,7 +136,7 @@ export default function BrandingSettingsScreen() {
                             value={name}
                             onChangeText={setName}
                             maxLength={10}
-                            className="bg-background border border-border rounded-2xl px-4 py-4 text-center font-bold text-lg text-primary"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-4 text-center font-bold text-lg text-primary"
                             placeholder="Contoh: TPM / JPM / TOKO"
                         />
                     </View>
@@ -151,7 +151,7 @@ export default function BrandingSettingsScreen() {
 
                     {logo ? (
                         <View className="items-center">
-                            <View className="p-4 bg-background rounded-[32px] mb-4 border border-border shadow-inner">
+                            <View className="p-4 bg-background rounded-[32px] mb-4 border border-transparent shadow-inner">
                                 <Image
                                     source={{ uri: logo }}
                                     style={{ width: 100, height: 100 }}
@@ -168,13 +168,13 @@ export default function BrandingSettingsScreen() {
                     ) : (
                         <Pressable
                             onPress={pickLogo}
-                            className="bg-background border-2 border-dashed border-border rounded-[32px] p-10 items-center"
+                            className="bg-background border-2 border-dashed border-transparent rounded-[32px] p-10 items-center"
                         >
                             <View className="w-16 h-16 bg-background rounded-full items-center justify-center mb-3">
                                 <ImageIcon size={32} color="#9CA3AF" />
                             </View>
                             <Typography weight="medium" className="text-textGray">Gunakan Logo Kustom</Typography>
-                            <Typography variant="caption" className="text-textGray/40 mt-1">Format PNG/JPG transparan (Maks 1MB)</Typography>
+                            <Typography variant="caption" className="text-textGray mt-1">Format PNG/JPG transparan (Maks 1MB)</Typography>
                         </Pressable>
                     )}
                 </Card>

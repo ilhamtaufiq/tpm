@@ -206,7 +206,7 @@ export default function ProfileScreen() {
                 subtitle="Konfigurasi & Manajemen Sistem"
                 showProfile={false}
                 leftElement={
-                    <View className="w-11 h-11 bg-background rounded-2xl p-0.5 border border-border overflow-hidden relative">
+                    <View className="w-11 h-11 bg-background rounded-2xl p-0.5 border border-transparent overflow-hidden relative">
                         <View className="w-full h-full bg-surface rounded-2xl items-center justify-center overflow-hidden">
                             {user?.profile_picture ? (
                                 <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
@@ -219,7 +219,7 @@ export default function ProfileScreen() {
                 rightElement={
                     <Pressable
                         onPress={() => router.push('/settings/profile')}
-                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
                         <Settings size={20} color="#1F2937" />
                     </Pressable>
@@ -232,7 +232,7 @@ export default function ProfileScreen() {
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 88) }}
                 showsVerticalScrollIndicator={false}
             >
-                <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Tampilan & Layar</Typography>
+                <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[4px] ml-4 mb-4">Tampilan & Layar</Typography>
                 <View className="mb-8">
                     <OrientationControl />
                 </View>
@@ -240,7 +240,7 @@ export default function ProfileScreen() {
                 {/* ACCOUNT & SECURITY - BENTO GRID ROW */}
                 <View className="flex-row gap-4 mb-4">
                     <Pressable
-                        className="flex-1 bg-surface p-5 rounded-[32px] border border-border shadow-sm items-start justify-between min-h-[140px]"
+                        className="flex-1 bg-surface p-5 rounded-[32px] border border-transparent shadow-sm items-start justify-between min-h-[140px]"
                         onPress={() => router.push('/settings/profile')}
                     >
                         <View className="w-10 h-10 bg-blue-50 rounded-[14px] items-center justify-center mb-3">
@@ -248,13 +248,13 @@ export default function ProfileScreen() {
                         </View>
                         <View>
                             <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Ubah Profil</Typography>
-                            <Typography variant="caption" className="text-text/40 text-[10px]">Nama & Biodata</Typography>
+                            <Typography variant="caption" className="text-textGray text-[10px]">Nama & Biodata</Typography>
                         </View>
                     </Pressable>
 
                     {isAdmin && (
                         <Pressable
-                            className="flex-1 bg-surface p-5 rounded-[32px] border border-border shadow-sm items-start justify-between min-h-[140px]"
+                            className="flex-1 bg-surface p-5 rounded-[32px] border border-transparent shadow-sm items-start justify-between min-h-[140px]"
                             onPress={() => {
                                 if (isPinEnabled) {
                                     setPinActionVisible(true);
@@ -270,7 +270,7 @@ export default function ProfileScreen() {
                                 <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">
                                     PIN {isPinEnabled ? 'Aktif' : 'Nonaktif'}
                                 </Typography>
-                                <Typography variant="caption" className="text-text/40 text-[10px]">
+                                <Typography variant="caption" className="text-textGray text-[10px]">
                                     {isPinEnabled ? 'Ubah atau Matikan' : 'Kunci Aplikasi'}
                                 </Typography>
                             </View>
@@ -283,7 +283,7 @@ export default function ProfileScreen() {
                         {/* ACCESSIBILITY - BENTO GRID ROW */}
                         <View className="flex-row gap-4 mb-4">
                             <Pressable
-                                className="flex-1 bg-surface p-5 rounded-[32px] border border-border shadow-sm items-start justify-between min-h-[140px]"
+                                className="flex-1 bg-surface p-5 rounded-[32px] border border-transparent shadow-sm items-start justify-between min-h-[140px]"
                                 onPress={() => router.push('/settings/print')}
                             >
                                 <View className="w-10 h-10 bg-emerald-50 rounded-[14px] items-center justify-center mb-3">
@@ -291,12 +291,12 @@ export default function ProfileScreen() {
                                 </View>
                                 <View>
                                     <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Struk</Typography>
-                                    <Typography variant="caption" className="text-text/40 text-[10px]">Konfigurasi Printer</Typography>
+                                    <Typography variant="caption" className="text-textGray text-[10px]">Konfigurasi Printer</Typography>
                                 </View>
                             </Pressable>
 
                             <Pressable
-                                className="flex-1 bg-surface p-5 rounded-[32px] border border-border shadow-sm items-start justify-between min-h-[140px]"
+                                className="flex-1 bg-surface p-5 rounded-[32px] border border-transparent shadow-sm items-start justify-between min-h-[140px]"
                                 onPress={() => router.push('/settings/scanner')}
                             >
                                 <View className="w-10 h-10 bg-indigo-50 rounded-[14px] items-center justify-center mb-3">
@@ -304,12 +304,12 @@ export default function ProfileScreen() {
                                 </View>
                                 <View>
                                     <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Scanner</Typography>
-                                    <Typography variant="caption" className="text-text/40 text-[10px]">Barcode 2D</Typography>
+                                    <Typography variant="caption" className="text-textGray text-[10px]">Barcode 2D</Typography>
                                 </View>
                             </Pressable>
 
                             <Pressable
-                                className="flex-1 bg-surface p-5 rounded-[32px] border border-border shadow-sm items-start justify-between min-h-[140px]"
+                                className="flex-1 bg-surface p-5 rounded-[32px] border border-transparent shadow-sm items-start justify-between min-h-[140px]"
                                 onPress={() => router.push('/settings/bluetooth')}
                             >
                                 <View className="w-10 h-10 bg-blue-50 rounded-[14px] items-center justify-center mb-3">
@@ -317,7 +317,7 @@ export default function ProfileScreen() {
                                 </View>
                                 <View>
                                     <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Pairing</Typography>
-                                    <Typography variant="caption" className="text-text/40 text-[10px]">Sync Perangkat</Typography>
+                                    <Typography variant="caption" className="text-textGray text-[10px]">Sync Perangkat</Typography>
                                 </View>
                             </Pressable>
                         </View>
@@ -325,7 +325,7 @@ export default function ProfileScreen() {
                         {/* THEME SETTINGS - NEW SECTION */}
                         <View className="flex-row gap-4 mb-8">
                             <Pressable
-                                className="flex-1 bg-surface p-5 rounded-[32px] border border-border shadow-sm items-start justify-between min-h-[140px]"
+                                className="flex-1 bg-surface p-5 rounded-[32px] border border-transparent shadow-sm items-start justify-between min-h-[140px]"
                                 onPress={async () => {
                                     if (!isPinEnabled) {
                                         appAlert('Peringatan', 'Aktifkan PIN terlebih dahulu untuk menggunakan Biometrik');
@@ -346,12 +346,12 @@ export default function ProfileScreen() {
                                 </View>
                                 <View>
                                     <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Biometrik</Typography>
-                                    <Typography variant="caption" className="text-text/40 text-[10px]">{useBiometrics ? 'Aktif' : 'Klik Aktifkan'}</Typography>
+                                    <Typography variant="caption" className="text-textGray text-[10px]">{useBiometrics ? 'Aktif' : 'Klik Aktifkan'}</Typography>
                                 </View>
                             </Pressable>
 
                             <Pressable
-                                className="flex-1 bg-surface p-5 rounded-[32px] border border-border shadow-sm items-start justify-between min-h-[140px]"
+                                className="flex-1 bg-surface p-5 rounded-[32px] border border-transparent shadow-sm items-start justify-between min-h-[140px]"
                                 onPress={() => router.push('/settings/branding')}
                             >
                                 <View className="w-10 h-10 bg-rose-50 rounded-[14px] items-center justify-center mb-3">
@@ -359,12 +359,12 @@ export default function ProfileScreen() {
                                 </View>
                                 <View>
                                     <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Branding</Typography>
-                                    <Typography variant="caption" className="text-text/40 text-[10px]">Logo & Nama App</Typography>
+                                    <Typography variant="caption" className="text-textGray text-[10px]">Logo & Nama App</Typography>
                                 </View>
                             </Pressable>
 
                             <Pressable
-                                className="flex-1 bg-surface p-5 rounded-[32px] border border-border shadow-sm items-start justify-between min-h-[140px]"
+                                className="flex-1 bg-surface p-5 rounded-[32px] border border-transparent shadow-sm items-start justify-between min-h-[140px]"
                                 onPress={() => router.push('/settings/theme')}
                             >
                                 <View className="w-10 h-10 bg-indigo-50 rounded-[14px] items-center justify-center mb-3">
@@ -372,7 +372,7 @@ export default function ProfileScreen() {
                                 </View>
                                 <View>
                                     <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Tampilan</Typography>
-                                    <Typography variant="caption" className="text-text/40 text-[10px]">Kustom UI</Typography>
+                                    <Typography variant="caption" className="text-textGray text-[10px]">Kustom UI</Typography>
                                 </View>
                             </Pressable>
                         </View>
@@ -380,10 +380,10 @@ export default function ProfileScreen() {
                         {isSuperAdmin && (
                             <>
                                 {/* BOTTOM NAVIGATION SETTINGS - DYNAMIC NAV SLOT */}
-                                <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Navigasi Utama</Typography>
+                                <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[4px] ml-4 mb-4">Navigasi Utama</Typography>
 
                                 <Pressable
-                                    className="bg-surface p-5 rounded-[40px] border border-border shadow-sm flex-row items-center mb-8"
+                                    className="bg-surface p-5 rounded-[40px] border border-transparent shadow-sm flex-row items-center mb-8"
                                     onPress={() => router.push('/settings/navigation')}
                                 >
                                     <View className="w-12 h-12 bg-blue-50 rounded-[20px] items-center justify-center mr-4">
@@ -391,7 +391,7 @@ export default function ProfileScreen() {
                                     </View>
                                     <View className="flex-1">
                                         <Typography variant="body1" weight="bold" className="text-text mb-0.5">Bottom Navigasi</Typography>
-                                        <Typography variant="caption" className="text-text/40">Kustomisasi 5 slot menu utama, FAB, dan ikon halaman</Typography>
+                                        <Typography variant="caption" className="text-textGray">Kustomisasi 5 slot menu utama, FAB, dan ikon halaman</Typography>
                                     </View>
                                     <ChevronRight size={20} color={themeColors.textGray} />
                                 </Pressable>
@@ -399,10 +399,10 @@ export default function ProfileScreen() {
                         )}
 
                         {/* FEATURE PROTECTION SETTINGS - NEW SECTION */}
-                        <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Pengaturan Keamanan</Typography>
+                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[4px] ml-4 mb-4">Pengaturan Keamanan</Typography>
 
                         <Pressable
-                            className="bg-surface p-5 rounded-[40px] border border-border shadow-sm flex-row items-center mb-8"
+                            className="bg-surface p-5 rounded-[40px] border border-transparent shadow-sm flex-row items-center mb-8"
                             onPress={() => router.push('/settings/security-features')}
                         >
                             <View className="w-12 h-12 bg-blue-50 rounded-[20px] items-center justify-center mr-4">
@@ -410,13 +410,13 @@ export default function ProfileScreen() {
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">Keamanan Halaman</Typography>
-                                <Typography variant="caption" className="text-text/40">Atur proteksi PIN per menu</Typography>
+                                <Typography variant="caption" className="text-textGray">Atur proteksi PIN per menu</Typography>
                             </View>
                             <ChevronRight size={20} color={themeColors.textGray} />
                         </Pressable>
 
                         <Pressable
-                            className="bg-surface p-5 rounded-[40px] border border-border shadow-sm flex-row items-center mb-8"
+                            className="bg-surface p-5 rounded-[40px] border border-transparent shadow-sm flex-row items-center mb-8"
                             onPress={() => router.push('/settings/smtp')}
                         >
                             <View className="w-12 h-12 bg-indigo-50 rounded-[20px] items-center justify-center mr-4">
@@ -424,18 +424,18 @@ export default function ProfileScreen() {
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">Server Email (SMTP)</Typography>
-                                <Typography variant="caption" className="text-text/40">Konfigurasi Gmail Server</Typography>
+                                <Typography variant="caption" className="text-textGray">Konfigurasi Gmail Server</Typography>
                             </View>
                             <ChevronRight size={20} color={themeColors.textGray} />
                         </Pressable>
 
-                        <View className="bg-surface p-5 rounded-[40px] border border-border shadow-sm flex-row items-center mb-8">
+                        <View className="bg-surface p-5 rounded-[40px] border border-transparent shadow-sm flex-row items-center mb-8">
                             <View className="w-12 h-12 bg-rose-50 rounded-[20px] items-center justify-center mr-4">
                                 <MonitorOff size={24} color="#F43F5E" />
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">Batasi Akses Web</Typography>
-                                <Typography variant="caption" className="text-text/40">Paksa akses hanya dari Mobile</Typography>
+                                <Typography variant="caption" className="text-textGray">Paksa akses hanya dari Mobile</Typography>
                             </View>
                             <Switch
                                 value={protectedFeatures.disable_web_access}
@@ -448,10 +448,10 @@ export default function ProfileScreen() {
 
 
                         {/* USER MANAGEMENT & ACCESS - NEW SECTION */}
-                        <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Pengguna & Akses</Typography>
+                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[4px] ml-4 mb-4">Pengguna & Akses</Typography>
 
                         <Pressable
-                            className="bg-surface p-5 rounded-[40px] border border-border shadow-sm flex-row items-center mb-8"
+                            className="bg-surface p-5 rounded-[40px] border border-transparent shadow-sm flex-row items-center mb-8"
                             onPress={() => router.push('/settings/users')}
                         >
                             <View className="w-12 h-12 bg-blue-50 rounded-[20px] items-center justify-center mr-4">
@@ -459,17 +459,17 @@ export default function ProfileScreen() {
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">Manajemen Pengguna</Typography>
-                                <Typography variant="caption" className="text-text/40">Kelola akun, role, dan hak akses staf</Typography>
+                                <Typography variant="caption" className="text-textGray">Kelola akun, role, dan hak akses staf</Typography>
                             </View>
                             <ChevronRight size={20} color={themeColors.textGray} />
                         </Pressable>
 
 
                         {/* DANGER ZONE & SESSION */}
-                        <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Sesi & Data</Typography>
+                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[4px] ml-4 mb-4">Sesi & Data</Typography>
 
                         <Pressable
-                            className="bg-surface p-5 rounded-[40px] border border-border shadow-sm flex-row items-center mb-4"
+                            className="bg-surface p-5 rounded-[40px] border border-transparent shadow-sm flex-row items-center mb-4"
                             onPress={() => router.push('/settings/backup')}
                         >
                             <View className="w-12 h-12 bg-indigo-50 rounded-[24px] items-center justify-center mr-4">
@@ -477,13 +477,13 @@ export default function ProfileScreen() {
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">Backup & Restore</Typography>
-                                <Typography variant="caption" className="text-text/40">Amankan data sistem ke ZIP/SQL</Typography>
+                                <Typography variant="caption" className="text-textGray">Amankan data sistem ke ZIP/SQL</Typography>
                             </View>
                             <ChevronRight size={20} color={themeColors.textGray} />
                         </Pressable>
 
                         <Pressable
-                            className="bg-surface p-5 rounded-[40px] border border-border shadow-sm flex-row items-center mb-4"
+                            className="bg-surface p-5 rounded-[40px] border border-transparent shadow-sm flex-row items-center mb-4"
                             onPress={() => router.push('/settings/data-import')}
                         >
                             <View className="w-12 h-12 bg-emerald-50 rounded-[24px] items-center justify-center mr-4">
@@ -491,13 +491,13 @@ export default function ProfileScreen() {
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">Import Data (Excel)</Typography>
-                                <Typography variant="caption" className="text-text/40">Template multi-sheet · master & saldo opening</Typography>
+                                <Typography variant="caption" className="text-textGray">Template multi-sheet · master & saldo opening</Typography>
                             </View>
                             <ChevronRight size={20} color={themeColors.textGray} />
                         </Pressable>
 
                         <Pressable
-                            className="bg-surface p-5 rounded-[40px] border border-border shadow-sm flex-row items-center mb-4"
+                            className="bg-surface p-5 rounded-[40px] border border-transparent shadow-sm flex-row items-center mb-4"
                             onPress={() => router.push('/settings/trash')}
                         >
                             <View className="w-12 h-12 bg-red-50 rounded-[24px] items-center justify-center mr-4">
@@ -505,13 +505,13 @@ export default function ProfileScreen() {
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">Tempat Sampah</Typography>
-                                <Typography variant="caption" className="text-text/40">Restore atau hapus permanen data</Typography>
+                                <Typography variant="caption" className="text-textGray">Restore atau hapus permanen data</Typography>
                             </View>
                             <ChevronRight size={20} color={themeColors.textGray} />
                         </Pressable>
 
                         <Pressable
-                            className="bg-surface p-5 rounded-[40px] border border-border shadow-sm flex-row items-center mb-4"
+                            className="bg-surface p-5 rounded-[40px] border border-transparent shadow-sm flex-row items-center mb-4"
                             onPress={handleReset}
                             disabled={isResetting}
                         >
@@ -522,7 +522,7 @@ export default function ProfileScreen() {
                                 <Typography variant="body1" weight="bold" className="text-red-500 mb-0.5">
                                     {isResetting ? "Sedang Memproses..." : "Reset Riwayat Transaksi"}
                                 </Typography>
-                                <Typography variant="caption" className="text-text/40">Hapus database lokal (Danger)</Typography>
+                                <Typography variant="caption" className="text-textGray">Hapus database lokal (Danger)</Typography>
                             </View>
                             <ChevronRight size={18} color="#EF4444" opacity={0.5} />
                         </Pressable>
@@ -530,7 +530,7 @@ export default function ProfileScreen() {
                 )}
 
                 <Pressable
-                    className="bg-surface/50 p-5 rounded-[32px] border border-border flex-row items-center mb-4"
+                    className="bg-surface/50 p-5 rounded-[32px] border border-transparent flex-row items-center mb-4"
                     onPress={handleLogout}
                 >
                     <View className="w-12 h-12 bg-background rounded-[18px] items-center justify-center mr-4">
@@ -538,13 +538,13 @@ export default function ProfileScreen() {
                     </View>
                     <View className="flex-1">
                         <Typography variant="body1" weight="bold" className="text-text">Keluar Akun</Typography>
-                        <Typography variant="caption" className="text-text/40">Akhiri sesi aplikasi</Typography>
+                        <Typography variant="caption" className="text-textGray">Akhiri sesi aplikasi</Typography>
                     </View>
                     <ChevronRight size={18} color="#9CA3AF" />
                 </Pressable>
 
                 <Pressable
-                    className="bg-surface/50 p-5 rounded-[32px] border border-border flex-row items-center mb-8"
+                    className="bg-surface/50 p-5 rounded-[32px] border border-transparent flex-row items-center mb-8"
                     onPress={handleCheckUpdate}
                     disabled={isCheckingUpdate}
                 >
@@ -553,7 +553,7 @@ export default function ProfileScreen() {
                     </View>
                     <View className="flex-1">
                         <Typography variant="body1" weight="bold" className="text-text">Cek Update Sistem</Typography>
-                        <Typography variant="caption" className="text-text/40">Paksa update manual ke server</Typography>
+                        <Typography variant="caption" className="text-textGray">Paksa update manual ke server</Typography>
                     </View>
                     <ChevronRight size={18} color="#9CA3AF" />
                 </Pressable>

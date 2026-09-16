@@ -270,7 +270,7 @@ export default function DataImportScreen() {
                     </Typography>
                     <Pressable
                         onPress={handlePick}
-                        className="border border-dashed border-border rounded-2xl p-6 items-center bg-surface active:bg-background"
+                        className="border border-dashed border-transparent rounded-2xl p-6 items-center bg-surface active:bg-background"
                     >
                         <FileSpreadsheet size={28} color={themeColors.primary} />
                         <Typography weight="bold" className="mt-2 text-sm">
@@ -322,7 +322,7 @@ export default function DataImportScreen() {
                             {Object.entries(preview.sheets || {}).map(([name, s]) => (
                                 <View
                                     key={name}
-                                    className="bg-background rounded-2xl p-3 mb-2 border border-border"
+                                    className="bg-background rounded-2xl p-3 mb-2 border border-transparent"
                                 >
                                     <View className="flex-row items-center justify-between">
                                         <Typography weight="bold" className="text-sm">
@@ -367,7 +367,7 @@ export default function DataImportScreen() {
                                 </Card>
                             ) : null}
                             {preview.neraca_verification ? (
-                                <Card className="mt-3 p-3 border-border bg-surface">
+                                <Card className="mt-3 p-3 border-transparent bg-surface">
                                     <View className="flex-row items-center justify-between mb-2">
                                         <View className="flex-row items-center">
                                             {preview.neraca_verification.is_balanced ? (
@@ -384,7 +384,7 @@ export default function DataImportScreen() {
                                             variant={preview.neraca_verification.is_balanced ? 'success' : 'error'}
                                         />
                                     </View>
-                                    <View className="bg-background rounded-xl p-3 border border-border">
+                                    <View className="bg-background rounded-xl p-3 border border-transparent">
                                         <View className="flex-row justify-between items-center py-1">
                                             <Typography className="text-[11px] text-textGray">Kas</Typography>
                                             <Typography className="text-[11px] text-text font-semibold">

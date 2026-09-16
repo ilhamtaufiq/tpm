@@ -87,7 +87,7 @@ export default function MonitorScreen() {
                     <View className="flex-row items-center">
                         <Pressable 
                             onPress={() => router.back()} 
-                            className="w-10 h-10 bg-white/10 rounded-xl items-center justify-center mr-4"
+                            className="w-10 h-10 bg-surface/10 rounded-xl items-center justify-center mr-4"
                         >
                             <ArrowLeft size={20} color="white" />
                         </Pressable>
@@ -112,7 +112,7 @@ export default function MonitorScreen() {
                 <View className="flex-row px-6 mt-4">
                     <Pressable
                         onPress={() => setActiveSection('logs')}
-                        className={`px-4 py-2 rounded-full mr-2 ${activeSection === 'logs' ? 'bg-amber-600' : 'bg-white/5'}`}
+                        className={`px-4 py-2 rounded-full mr-2 ${activeSection === 'logs' ? 'bg-amber-600' : 'bg-surface/5'}`}
                     >
                         <Typography weight="bold" className={`text-xs ${activeSection === 'logs' ? 'text-white' : 'text-white/40'}`}>
                             LOG MONITOR ({appLogs.length})
@@ -120,13 +120,13 @@ export default function MonitorScreen() {
                     </Pressable>
                     <Pressable
                         onPress={() => setActiveSection('network')}
-                        className={`px-4 py-2 rounded-full mr-2 ${activeSection === 'network' ? 'bg-blue-600' : 'bg-white/5'}`}
+                        className={`px-4 py-2 rounded-full mr-2 ${activeSection === 'network' ? 'bg-blue-600' : 'bg-surface/5'}`}
                     >
                         <Typography weight="bold" className={`text-xs ${activeSection === 'network' ? 'text-white' : 'text-white/40'}`}>NETWORK</Typography>
                     </Pressable>
                     <Pressable
                         onPress={() => setActiveSection('database')}
-                        className={`px-4 py-2 rounded-full ${activeSection === 'database' ? 'bg-purple-600' : 'bg-white/5'}`}
+                        className={`px-4 py-2 rounded-full ${activeSection === 'database' ? 'bg-purple-600' : 'bg-surface/5'}`}
                     >
                         <Typography weight="bold" className={`text-xs ${activeSection === 'database' ? 'text-white' : 'text-white/40'}`}>DATABASE</Typography>
                     </Pressable>
@@ -165,8 +165,8 @@ export default function MonitorScreen() {
                                         onPress={() => setLogFilter(filter)}
                                         className={`px-3 py-1.5 rounded-xl border ${
                                             logFilter === filter
-                                                ? 'bg-white/20 border-white/40'
-                                                : 'bg-white/5 border-white/5'
+                                                ? 'bg-surface/20 border-white/40'
+                                                : 'bg-surface/5 border-white/5'
                                         }`}
                                     >
                                         <Typography
@@ -182,7 +182,7 @@ export default function MonitorScreen() {
                             </View>
 
                             {/* App Logs List */}
-                            <View className="bg-white/5 rounded-[32px] border border-white/10 overflow-hidden mb-12">
+                            <View className="bg-surface/5 rounded-[32px] border border-white/10 overflow-hidden mb-12">
                                 {appLogs.filter(l => logFilter === 'ALL' || l.type === logFilter).length === 0 ? (
                                     <View className="py-16 items-center">
                                         <AlertCircle size={28} color="#9CA3AF" />
@@ -235,14 +235,14 @@ export default function MonitorScreen() {
                             {/* Network Metrics Dashboard */}
                             <View className="flex-row flex-wrap -mx-2">
                                 <View className="w-1/2 px-2 mb-4">
-                                    <View className="bg-white/5 p-4 rounded-3xl border border-white/10">
+                                    <View className="bg-surface/5 p-4 rounded-3xl border border-white/10">
                                         <Activity size={16} color="#3B82F6" />
                                         <Typography className="text-white/40 text-[9px] font-bold uppercase mt-2">Requests</Typography>
                                         <Typography weight="bold" className="text-white text-xl">{requestCount}</Typography>
                                     </View>
                                 </View>
                                 <View className="w-1/2 px-2 mb-4">
-                                    <View className="bg-white/5 p-4 rounded-3xl border border-white/10">
+                                    <View className="bg-surface/5 p-4 rounded-3xl border border-white/10">
                                         <Clock size={16} color="#10B981" />
                                         <Typography className="text-white/40 text-[9px] font-bold uppercase mt-2">Avg Latency</Typography>
                                         <Typography weight="bold" className="text-white text-xl">{Math.round(avgLatency)}<Typography className="text-xs text-white/50">ms</Typography></Typography>
@@ -251,7 +251,7 @@ export default function MonitorScreen() {
                             </View>
 
                             {/* Load Indicator */}
-                            <View className="bg-white/5 p-6 rounded-[32px] border border-white/10 mb-6">
+                            <View className="bg-surface/5 p-6 rounded-[32px] border border-white/10 mb-6">
                                 <View className="flex-row justify-between items-center mb-4">
                                     <View className="flex-row items-center">
                                         <Zap size={18} color={getLoadColor(loadIndex)} />
@@ -259,7 +259,7 @@ export default function MonitorScreen() {
                                     </View>
                                     <Typography weight="bold" style={{ color: getLoadColor(loadIndex) }}>{Math.round(loadIndex)}%</Typography>
                                 </View>
-                                <View className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <View className="h-1.5 bg-surface/10 rounded-full overflow-hidden">
                                     <View 
                                         style={{ width: `${loadIndex}%`, backgroundColor: getLoadColor(loadIndex) }} 
                                         className="h-full rounded-full" 
@@ -268,7 +268,7 @@ export default function MonitorScreen() {
                             </View>
 
                             {/* Logs List */}
-                            <View className="bg-white/5 rounded-[32px] border border-white/10 overflow-hidden mb-12">
+                            <View className="bg-surface/5 rounded-[32px] border border-white/10 overflow-hidden mb-12">
                                 {logs.length === 0 ? (
                                     <View className="py-20 items-center">
                                         <View style={{ opacity: 0.3 }}>
@@ -296,7 +296,7 @@ export default function MonitorScreen() {
                     ) : (
                         <>
                             {/* Database Stats Section */}
-                            <View className="bg-white/5 p-6 rounded-[32px] border border-purple-500/30 mb-6">
+                            <View className="bg-surface/5 p-6 rounded-[32px] border border-purple-500/30 mb-6">
                                 <View className="flex-row items-center mb-4">
                                     <Database size={20} color="#A855F7" />
                                     <Typography weight="bold" className="text-white ml-2 text-lg">System Intelligence</Typography>
@@ -321,7 +321,7 @@ export default function MonitorScreen() {
                                             <Typography weight="bold" className="text-white/90 text-xs">{table.name}</Typography>
                                             <Typography className="text-purple-400 text-[10px] font-bold">{table.rows.toLocaleString()} ROWS</Typography>
                                         </View>
-                                        <View className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <View className="h-1 bg-surface/5 rounded-full overflow-hidden">
                                             <View 
                                                 style={{ width: `${Math.min(100, (table.rows / 1000) * 100)}%` }} 
                                                 className="h-full bg-purple-500/50 rounded-full" 

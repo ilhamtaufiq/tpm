@@ -445,7 +445,7 @@ export default function PencairanInvestorScreen() {
                                         setPayments(prev => prev.map(p => ({ ...p, metode: 'TUNAI', kas_jenis: 'KAS_UNIT_MOBIL' })));
                                     }
                                 }}
-                                className={`flex-1 h-14 items-center justify-center rounded-2xl border ${metode === m ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-background border-border'}`}
+                                className={`flex-1 h-14 items-center justify-center rounded-2xl border ${metode === m ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-background border-transparent'}`}
                             >
                                 <Typography className={`text-xs font-bold ${metode === m ? 'text-white' : 'text-textGray'}`}>{m}</Typography>
                             </Pressable>
@@ -467,7 +467,7 @@ export default function PencairanInvestorScreen() {
                         </View>
 
                         {payments.map((p, index) => (
-                            <Card key={index} variant="outlined" className="p-5 mb-4 border-border rounded-[24px]">
+                            <Card key={index} variant="outlined" className="p-5 mb-4 border-transparent rounded-[24px]">
                                 <View className="flex-row items-center justify-between mb-4">
                                     <View className="bg-background px-2 py-1 rounded-lg">
                                         <Typography weight="bold" className="text-textGray text-[9px] uppercase tracking-widest">Entry #{index + 1}</Typography>
@@ -487,7 +487,7 @@ export default function PencairanInvestorScreen() {
                                         <Pressable
                                             key={m}
                                             onPress={() => handleUpdatePayment(index, 'metode', m as 'TUNAI' | 'TRANSFER')}
-                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary shadow-md shadow-primary/20' : 'bg-background border-border'}`}
+                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary shadow-md shadow-primary/20' : 'bg-background border-transparent'}`}
                                         >
                                             <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-white' : 'text-textGray'}>{m}</Typography>
                                         </Pressable>
@@ -513,7 +513,7 @@ export default function PencairanInvestorScreen() {
                                                 <Pressable
                                                     key={acc.value}
                                                     onPress={() => handleUpdatePayment(index, 'kas_jenis', acc.value)}
-                                                    className={`mr-2 mb-2 px-4 py-3 rounded-2xl border ${(p.kas_jenis || 'KAS_UNIT_MOBIL') === acc.value ? 'bg-primary border-primary' : 'bg-background border-border'}`}
+                                                    className={`mr-2 mb-2 px-4 py-3 rounded-2xl border ${(p.kas_jenis || 'KAS_UNIT_MOBIL') === acc.value ? 'bg-primary border-primary' : 'bg-background border-transparent'}`}
                                                 >
                                                     <Typography
                                                         weight={(p.kas_jenis || 'KAS_UNIT_MOBIL') === acc.value ? 'bold' : 'medium'}
@@ -553,7 +553,7 @@ export default function PencairanInvestorScreen() {
                                     <Pressable
                                         key={acc.value}
                                         onPress={() => handleUpdatePayment(0, 'kas_jenis', acc.value)}
-                                        className={`mr-2 mb-2 px-4 py-3 rounded-2xl border ${active ? 'bg-primary border-primary' : 'bg-background border-border'}`}
+                                        className={`mr-2 mb-2 px-4 py-3 rounded-2xl border ${active ? 'bg-primary border-primary' : 'bg-background border-transparent'}`}
                                     >
                                         <Typography weight={active ? 'bold' : 'medium'} className={`text-[10px] ${active ? 'text-white' : 'text-textGray'}`}>
                                             {acc.label}
@@ -633,13 +633,13 @@ export default function PencairanInvestorScreen() {
                         <Pressable
                             onPress={handleDownloadReport}
                             disabled={printing}
-                            className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background mr-2"
+                            className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background mr-2"
                         >
                             {printing ? <ActivityIndicator size="small" color="#1F2937" /> : <Download size={20} color="#1F2937" />}
                         </Pressable>
                         <Pressable
                             onPress={onRefresh}
-                            className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
+                            className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                         >
                             <RefreshCw size={20} color="#1F2937" />
                         </Pressable>
@@ -649,26 +649,26 @@ export default function PencairanInvestorScreen() {
 
             {/* Insight Card (Bento Light Style) */}
             <View className="flex-row justify-between mt-4 px-6">
-                <View className="flex-1 bg-surface p-5 rounded-[24px] border border-border shadow-sm mr-2">
-                    <Typography className="text-textGray/40 text-[10px] uppercase font-bold tracking-[1px] mb-2">Total Pending</Typography>
+                <View className="flex-1 bg-surface p-5 rounded-[24px] border border-transparent shadow-sm mr-2">
+                    <Typography className="text-textGray text-[10px] uppercase font-bold tracking-[1px] mb-2">Total Pending</Typography>
                     <Typography variant="h2" weight="bold" className="text-rose-600 text-lg tracking-tighter">
                         {formatCurrency(summary?.pending_total || 0)}
                     </Typography>
-                    <Typography className="text-textGray/30 text-[9px] font-bold mt-1 uppercase tracking-wider">{summary?.pending_count || 0} Unit Mobil</Typography>
+                    <Typography className="text-textGray text-[9px] font-bold mt-1 uppercase tracking-wider">{summary?.pending_count || 0} Unit Mobil</Typography>
                 </View>
                 
-                <View className="flex-1 bg-surface p-5 rounded-[24px] border border-border shadow-sm ml-2">
-                    <Typography className="text-textGray/40 text-[10px] uppercase font-bold tracking-[1px] mb-2">Bulan Ini</Typography>
+                <View className="flex-1 bg-surface p-5 rounded-[24px] border border-transparent shadow-sm ml-2">
+                    <Typography className="text-textGray text-[10px] uppercase font-bold tracking-[1px] mb-2">Bulan Ini</Typography>
                     <Typography variant="h2" weight="bold" className="text-emerald-600 text-lg tracking-tighter">
                         {formatCurrency(summary?.disbursed_total || 0)}
                     </Typography>
-                    <Typography className="text-textGray/30 text-[9px] font-bold mt-1 uppercase tracking-wider">{summary?.disbursed_count || 0} Pencairan</Typography>
+                    <Typography className="text-textGray text-[9px] font-bold mt-1 uppercase tracking-wider">{summary?.disbursed_count || 0} Pencairan</Typography>
                 </View>
             </View>
 
             {/* Tab Navigation */}
             <View className="px-6 mt-4 z-10">
-                <View className="bg-surface p-2 rounded-[24px] shadow-sm flex-row items-center border border-border">
+                <View className="bg-surface p-2 rounded-[24px] shadow-sm flex-row items-center border border-transparent">
                     <Pressable 
                         onPress={() => setActiveTab('PENDING')}
                         className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'PENDING' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
@@ -695,7 +695,7 @@ export default function PencairanInvestorScreen() {
 
             {/* Search Bar Bento Style */}
             <View className="px-6 mt-4">
-                <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-border shadow-sm">
+                <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-transparent shadow-sm">
                     <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-background">
                         <Search size={18} color="#9CA3AF" />
                         <TextInput 
@@ -731,7 +731,7 @@ export default function PencairanInvestorScreen() {
                             </View>
                         ) : pendingList && pendingList.length > 0 ? (
                             pendingList.map((item: any) => (
-                                <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-border shadow-sm">
+                                <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-transparent shadow-sm">
                                     <View className="flex-row justify-between items-start mb-4">
                                         <View className="flex-1 mr-3">
                                             <View className="flex-row items-center mb-1">
@@ -748,7 +748,7 @@ export default function PencairanInvestorScreen() {
                                         </View>
                                     </View>
 
-                                    <View className="bg-gray-50/50 rounded-3xl p-4 mb-4 border border-gray-100/50">
+                                    <View className="bg-surface/50 rounded-3xl p-4 mb-4 border border-gray-100/50">
                                         <View className="flex-row justify-between mb-2">
                                             <Typography className="text-textGray text-[10px] font-bold">MODAL INVESTOR</Typography>
                                             <Typography variant="caption" weight="semibold" className="text-textGray">{formatCurrency(item.nominal_investor)}</Typography>
@@ -802,7 +802,7 @@ export default function PencairanInvestorScreen() {
                             </View>
                         ) : unsoldCars && unsoldCars.length > 0 ? (
                             unsoldCars.map((item: InvestorWithdrawalCar) => (
-                                <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-border shadow-sm">
+                                <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-transparent shadow-sm">
                                     <View className="flex-row justify-between items-start mb-4">
                                         <View className="flex-1 mr-3">
                                             <View className="flex-row items-center mb-1">
@@ -821,7 +821,7 @@ export default function PencairanInvestorScreen() {
                                         </View>
                                     </View>
 
-                                    <View className="bg-gray-50/50 rounded-3xl p-4 mb-4 border border-gray-100/50">
+                                    <View className="bg-surface/50 rounded-3xl p-4 mb-4 border border-gray-100/50">
                                         <View className="flex-row justify-between mb-2">
                                             <Typography className="text-textGray text-[10px] font-bold">DANA INVESTOR</Typography>
                                             <Typography variant="caption" weight="semibold" className="text-textGray">{formatCurrency(item.nominal_investor)}</Typography>
@@ -869,7 +869,7 @@ export default function PencairanInvestorScreen() {
 
                         {withdrawalHistory && withdrawalHistory.length > 0 ? (
                             withdrawalHistory.map((item: any) => (
-                                <Card key={`w-${item.id}`} className="mb-4 p-5 rounded-[32px] border-border shadow-sm">
+                                <Card key={`w-${item.id}`} className="mb-4 p-5 rounded-[32px] border-transparent shadow-sm">
                                     <View className="flex-row justify-between items-start mb-3">
                                         <View className="flex-1 mr-3">
                                             <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(item.nominal)}</Typography>
@@ -937,7 +937,7 @@ export default function PencairanInvestorScreen() {
                             </View>
                         ) : historyData && historyData.length > 0 ? (
                             historyData.map((item: any) => (
-                                <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-border shadow-sm">
+                                <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-transparent shadow-sm">
                                     <View className="flex-row justify-between items-start mb-3">
                                         <View className="flex-1 mr-3">
                                             <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(item.nominal)}</Typography>
@@ -1020,7 +1020,7 @@ export default function PencairanInvestorScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 48,  }}
                     topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >

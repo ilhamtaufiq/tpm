@@ -8,7 +8,7 @@ export function UnitScreenSkeleton({ title = 'Memuat…' }: { title?: string }) 
     return (
         <SafeAreaView className="flex-1 bg-surface" edges={['top']}>
             <StatusBar barStyle="dark-content" />
-            <View className="px-5 pt-4 pb-3 border-b border-border">
+            <View className="px-5 pt-4 pb-3 border-b border-transparent">
                 <Typography weight="bold" className="text-lg text-text">
                     {title}
                 </Typography>

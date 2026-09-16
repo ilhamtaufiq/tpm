@@ -289,19 +289,19 @@ export default function PenjualanMobilReportScreen() {
                         <ActivityIndicator size="large" color="#023C69" />
                     </View>
                 ) : transaksis.length === 0 ? (
-                    <View className="items-center justify-center py-16 bg-surface rounded-[40px] border border-dashed border-border">
+                    <View className="items-center justify-center py-16 bg-surface rounded-[40px] border border-dashed border-transparent">
                         <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-4 opacity-50">
                             <BarChart3 size={32} color="#9CA3AF" />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[4px]">Data Kosong</Typography>
-                        <Typography variant="caption" className="text-textGray/40 mt-2">Tidak ada transaksi penjualan ditemukan</Typography>
+                        <Typography variant="caption" className="text-textGray mt-2">Tidak ada transaksi penjualan ditemukan</Typography>
                     </View>
                 ) : (
                     transaksis.map((item, index) => (
                         <Pressable
                             key={item.id}
                             onPress={() => handlePressTransaction(item)}
-                            className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm"
+                            className="bg-surface p-5 rounded-[32px] mb-6 border border-transparent shadow-sm"
                         >
                             <View className="flex-row items-center mb-4">
                                 <View className="w-14 h-14 bg-emerald-50 rounded-2xl items-center justify-center mr-4">
@@ -318,7 +318,7 @@ export default function PenjualanMobilReportScreen() {
                                             </Typography>
                                         </View>
                                     </View>
-                                    <Typography variant="caption" className="text-textGray/60 mt-0.5">
+                                    <Typography variant="caption" className="text-textGray mt-0.5">
                                         {format(new Date(item.tanggal), 'dd MMMM yyyy', { locale: localeID })} • {item.nomor_transaksi}
                                     </Typography>
                                 </View>
@@ -326,11 +326,11 @@ export default function PenjualanMobilReportScreen() {
 
                             <View className="flex-row justify-between items-end pt-4 border-t border-gray-50/50">
                                 <View>
-                                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-0.5">Pembeli</Typography>
+                                    <Typography className="text-textGray text-[9px] uppercase font-bold mb-0.5">Pembeli</Typography>
                                     <Typography variant="body2" weight="bold" className="text-textMain">{item.nama_pembeli}</Typography>
                                 </View>
                                 <View className="items-end">
-                                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-0.5">Nilai Jual</Typography>
+                                    <Typography className="text-textGray text-[9px] uppercase font-bold mb-0.5">Nilai Jual</Typography>
                                     <Typography variant="h3" weight="bold" className="text-primary">
                                         {formatCurrency(item.harga_jual || 0)}
                                     </Typography>
@@ -381,7 +381,7 @@ export default function PenjualanMobilReportScreen() {
                     ) : selectedTransaction ? (
                         <BottomSheetScrollView showsVerticalScrollIndicator={false}>
                             {/* Vehicle Info Card */}
-                            <View className="bg-background p-5 rounded-2xl mb-6 border border-border">
+                            <View className="bg-background p-5 rounded-2xl mb-6 border border-transparent">
                                 <View className="flex-row justify-between mb-4">
                                     <View>
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Kendaraan</Typography>
@@ -417,7 +417,7 @@ export default function PenjualanMobilReportScreen() {
                                     </View>
                                     <Typography variant="body1" weight="bold">Informasi Pembeli</Typography>
                                 </View>
-                                <View className="bg-surface p-4 rounded-2xl border border-border">
+                                <View className="bg-surface p-4 rounded-2xl border border-transparent">
                                     <View className="flex-row justify-between mb-2">
                                         <Typography className="text-textGray text-xs">Nama Pembeli</Typography>
                                         <Typography weight="bold" className="text-text text-sm">{selectedTransaction.nama_pembeli}</Typography>
@@ -445,7 +445,7 @@ export default function PenjualanMobilReportScreen() {
                                     </View>
                                     <Typography variant="body1" weight="bold">Rincian Pembayaran</Typography>
                                 </View>
-                                <View className="bg-surface p-4 rounded-2xl border border-border">
+                                <View className="bg-surface p-4 rounded-2xl border border-transparent">
                                     <View className="flex-row justify-between mb-2">
                                         <Typography className="text-textGray text-xs">Harga Jual</Typography>
                                         <Typography weight="bold" className="text-text text-sm">{formatCurrency(selectedTransaction.harga_jual || 0)}</Typography>
@@ -471,7 +471,7 @@ export default function PenjualanMobilReportScreen() {
                                     </View>
                                     <Typography variant="body1" weight="bold">Pembagian Laba</Typography>
                                 </View>
-                                <View className="bg-surface p-4 rounded-2xl border border-border">
+                                <View className="bg-surface p-4 rounded-2xl border border-transparent">
                                     <View className="flex-row justify-between mb-2">
                                         <Typography className="text-textGray text-xs">Laba Kotor</Typography>
                                         <Typography weight="bold" className="text-text text-sm">{formatCurrency(selectedTransaction.laba_kotor || 0)}</Typography>

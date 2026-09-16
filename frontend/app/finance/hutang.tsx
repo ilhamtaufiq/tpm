@@ -402,7 +402,7 @@ export default function HutangUsahaScreen() {
                         <Pressable
                             key={key}
                             onPress={() => setCreateSource(key)}
-                            className={`px-4 py-2.5 rounded-2xl border ${createSource === key ? 'border-primary bg-primary/5' : 'border-border bg-gray-50/50'}`}
+                            className={`px-4 py-2.5 rounded-2xl border ${createSource === key ? 'border-primary bg-primary/5' : 'border-transparent bg-surface/50'}`}
                         >
                             <Typography
                                 className={createSource === key ? 'text-primary' : 'text-textGray'}
@@ -421,7 +421,7 @@ export default function HutangUsahaScreen() {
                     <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest">Metode Penerimaan (Opsional)</Typography>
                     <Pressable
                         onPress={() => setIsCreateSplitPayment(!isCreateSplitPayment)}
-                        className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-background border-border'}`}
+                        className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-background border-transparent'}`}
                     >
                         <Typography className={`text-[9px] font-bold ${isCreateSplitPayment ? 'text-amber-600' : 'text-textGray'}`}>
                             {isCreateSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
@@ -433,7 +433,7 @@ export default function HutangUsahaScreen() {
                     <View className="flex-row space-x-2 gap-2">
                         <Pressable
                             onPress={() => setCreateMethod(undefined)}
-                            className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-background' : 'border-border bg-gray-50/50'}`}
+                            className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-background' : 'border-transparent bg-surface/50'}`}
                         >
                             <Typography className={!createMethod ? 'text-text font-bold' : 'text-textGray'} variant="caption">Tidak Ada</Typography>
                         </Pressable>
@@ -441,7 +441,7 @@ export default function HutangUsahaScreen() {
                             <Pressable
                                 key={m}
                                 onPress={() => setCreateMethod(m as 'TUNAI' | 'TRANSFER')}
-                                className={`flex-1 py-3.5 items-center rounded-2xl border ${createMethod === m ? 'border-primary bg-primary/5' : 'border-border bg-gray-50/50'}`}
+                                className={`flex-1 py-3.5 items-center rounded-2xl border ${createMethod === m ? 'border-primary bg-primary/5' : 'border-transparent bg-surface/50'}`}
                             >
                                 <Typography
                                     className={createMethod === m ? 'text-primary font-bold' : 'text-textGray'}
@@ -455,7 +455,7 @@ export default function HutangUsahaScreen() {
                 ) : (
                     <View className="space-y-4">
                         {createPayments.map((p, idx) => (
-                            <Card key={p.id} variant="outlined" className="p-5 border-border rounded-[24px] bg-gray-50/30">
+                            <Card key={p.id} variant="outlined" className="p-5 border-transparent rounded-[24px] bg-surface/30">
                                 <View className="flex-row items-center justify-between mb-4">
                                     <View className="bg-primary/10 px-2 py-1 rounded-lg">
                                         <Typography variant="caption" weight="bold" className="text-primary text-[9px] uppercase tracking-widest">Metode #{idx + 1}</Typography>
@@ -475,7 +475,7 @@ export default function HutangUsahaScreen() {
                                         <Pressable
                                             key={m}
                                             onPress={() => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, metode: m } : item))}
-                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'border-primary bg-primary' : 'border-border bg-surface'}`}
+                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'border-primary bg-primary' : 'border-transparent bg-surface'}`}
                                         >
                                             <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-white' : 'text-textGray'}>{m}</Typography>
                                         </Pressable>
@@ -494,7 +494,7 @@ export default function HutangUsahaScreen() {
 
                         <Pressable
                             onPress={() => setCreatePayments([...createPayments, { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }])}
-                            className="flex-row items-center justify-center p-4 border border-dashed border-border rounded-[24px] bg-surface"
+                            className="flex-row items-center justify-center p-4 border border-dashed border-transparent rounded-[24px] bg-surface"
                         >
                             <Plus size={18} color="#64748B" className="mr-2" />
                             <Typography weight="bold" className="text-textGray text-xs">Tambah Metode Penerimaan</Typography>
@@ -560,7 +560,7 @@ export default function HutangUsahaScreen() {
                     />
                 </View>
 
-                <Card variant="outlined" className="p-4 mb-4 border-border">
+                <Card variant="outlined" className="p-4 mb-4 border-transparent">
                     <View className="flex-row justify-between mb-2">
                         <Typography variant="caption" className="text-textGray">Total Hutang</Typography>
                         <Typography variant="body2" weight="bold">{formatCurrency(selectedHutang.nominal_hutang)}</Typography>
@@ -577,7 +577,7 @@ export default function HutangUsahaScreen() {
                 </Card>
 
                 {/* Informasi hutang untuk verifikasi sebelum pembayaran */}
-                <Card variant="outlined" className="p-4 mb-4 border-border">
+                <Card variant="outlined" className="p-4 mb-4 border-transparent">
                     <Typography variant="caption" weight="bold" className="text-textGray mb-3">
                         INFORMASI HUTANG
                     </Typography>
@@ -663,7 +663,7 @@ export default function HutangUsahaScreen() {
                     <View className="mb-4">
                         <Typography variant="caption" weight="bold" className="text-textGray mb-2">RIWAYAT PEMBAYARAN</Typography>
                         {selectedHutang.pembayaran.map((p: PembayaranHutang) => (
-                            <View key={p.id} className="flex-row justify-between py-2.5 border-b border-border items-center">
+                            <View key={p.id} className="flex-row justify-between py-2.5 border-b border-transparent items-center">
                                 <View>
                                     <Typography variant="caption" weight="bold" className="text-textMain">{formatDate(p.tanggal)}</Typography>
                                     <View className="bg-background px-1.5 py-0.5 rounded-md self-start mt-0.5">
@@ -713,7 +713,7 @@ export default function HutangUsahaScreen() {
                 rightElement={canCreate ? (
                     <Pressable
                         onPress={handleOpenCreate}
-                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
                         <Plus size={20} color="#1F2937" />
                     </Pressable>
@@ -723,13 +723,13 @@ export default function HutangUsahaScreen() {
             {/* Filters & Search */}
             {!isSheetOpen && (
                 <View className="px-6 mt-4">
-                    <View className="bg-surface p-3 rounded-[24px] border border-border shadow-sm flex-col">
+                    <View className="bg-surface p-3 rounded-[24px] border border-transparent shadow-sm flex-col">
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-3 space-x-2 pb-1">
                             {STATUS_FILTERS.map((filter) => (
                                 <Pressable
                                     key={filter.value}
                                     onPress={() => setSelectedFilter(filter.value)}
-                                    className={`px-4 py-2 rounded-xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-primary shadow-sm' : 'bg-background border border-border'}`}
+                                    className={`px-4 py-2 rounded-xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-primary shadow-sm' : 'bg-background border border-transparent'}`}
                                 >
                                     <Typography
                                         variant="caption"
@@ -742,7 +742,7 @@ export default function HutangUsahaScreen() {
                             ))}
                         </ScrollView>
 
-                        <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-border">
+                        <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
                             <Search size={16} color="#9CA3AF" />
                             <TextInput
                                 className="flex-1 ml-3 text-xs text-textMain font-semibold h-full"
@@ -770,7 +770,7 @@ export default function HutangUsahaScreen() {
                     renderItem={({ item }) => (
                         <Pressable
                             onPress={() => handleOpenDetail(item)}
-                            className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm"
+                            className="bg-surface p-5 rounded-[32px] mb-6 border border-transparent shadow-sm"
                         >
                             <View className="flex-row justify-between items-start mb-4">
                                 <View className="flex-1 mr-3">
@@ -802,12 +802,12 @@ export default function HutangUsahaScreen() {
                     ListHeaderComponent={
                         <View className="mb-6">
                             {/* Summary Card (White Bento Style) */}
-                            <View className="bg-surface p-6 rounded-[32px] border border-border shadow-sm mb-6">
+                            <View className="bg-surface p-6 rounded-[32px] border border-transparent shadow-sm mb-6">
                                 <View className="flex-row justify-between items-center mb-6">
                                     <View className="bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100">
                                         <Typography className="text-rose-600 text-[10px] font-bold uppercase tracking-widest">Global Overview</Typography>
                                     </View>
-                                    <Typography className="text-textGray/40 text-[10px] font-bold uppercase tracking-widest">Saldo Hutang</Typography>
+                                    <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">Saldo Hutang</Typography>
                                 </View>
 
                                 <View className="flex-row items-center justify-between">
@@ -815,7 +815,7 @@ export default function HutangUsahaScreen() {
                                         <Typography variant="h1" weight="bold" className="text-textMain text-3xl tracking-tighter">
                                             {formatCurrency(localSummary?.total_sisa || 0)}
                                         </Typography>
-                                        <Typography className="text-textGray/40 text-xs mt-1">Total Dari {localSummary?.jumlah_belum_lunas || 0} Invoice</Typography>
+                                        <Typography className="text-textGray text-xs mt-1">Total Dari {localSummary?.jumlah_belum_lunas || 0} Invoice</Typography>
                                     </View>
                                     <View className="bg-rose-50 p-4 rounded-2xl border border-rose-100">
                                         <CircleDollarSign size={24} color="#E11D48" />
@@ -880,7 +880,7 @@ export default function HutangUsahaScreen() {
                         index={-1}
                         backdropComponent={renderBackdrop}
                         handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
-                        backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        backgroundStyle={{ borderRadius: 48,  }}
                         topInset={insets.top}
                         onClose={() => setIsSheetOpen(false)}
                     >
@@ -903,7 +903,7 @@ export default function HutangUsahaScreen() {
                         index={-1}
                         backdropComponent={renderBackdrop}
                         handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
-                        backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        backgroundStyle={{ borderRadius: 48,  }}
                         topInset={insets.top}
                         onClose={() => setIsSheetOpen(false)}
                     >
@@ -945,7 +945,7 @@ export default function HutangUsahaScreen() {
 
 const styles = StyleSheet.create({
     sheetContent: {
-        backgroundColor: 'white',
+        
         width: '100%',
         maxWidth: 640,
         height: '95%',

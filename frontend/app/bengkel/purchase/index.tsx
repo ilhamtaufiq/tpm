@@ -98,8 +98,8 @@ export default function PurchaseIndexScreen() {
             />
 
             {/* Search Box */}
-            <View className="p-6 bg-surface border-b border-border">
-                <View className="flex-row items-center px-4 bg-background h-12 rounded-2xl border border-border">
+            <View className="p-6 bg-surface border-b border-transparent">
+                <View className="flex-row items-center px-4 bg-background h-12 rounded-2xl border border-transparent">
                     <Search size={18} color="#9CA3AF" />
                     <TextInput
                         placeholder="Cari supplier, nomor faktur, atau nota..."
@@ -123,22 +123,22 @@ export default function PurchaseIndexScreen() {
                 {isLoading ? (
                     <View className="py-20 items-center">
                         <ActivityIndicator size="large" color="#023C69" />
-                        <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
+                        <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                     </View>
                 ) : purchases.length === 0 ? (
-                    <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-border">
+                    <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-transparent">
                         <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
                             <ShoppingCart size={40} color="#9CA3AF" />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[6px]">Belum Ada Data</Typography>
-                        <Typography variant="caption" className="text-textGray/40 mt-2">Tidak ditemukan transaksi pembelian</Typography>
+                        <Typography variant="caption" className="text-textGray mt-2">Tidak ditemukan transaksi pembelian</Typography>
                     </View>
                 ) : (
                     purchases.map((item: any) => (
                         <Pressable
                             key={item.id}
                             onPress={() => setSelectedPurchase(item)}
-                            className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm active:scale-[0.98] transition-transform"
+                            className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm active:scale-[0.98] transition-transform"
                         >
                             <View className="flex-row items-center mb-4">
                                 <View className="w-14 h-14 bg-blue-50 rounded-2xl items-center justify-center mr-4">
@@ -155,7 +155,7 @@ export default function PurchaseIndexScreen() {
                                             </Typography>
                                         </View>
                                     </View>
-                                    <Typography variant="caption" className="text-textGray/60 mt-0.5" numberOfLines={1}>
+                                    <Typography variant="caption" className="text-textGray mt-0.5" numberOfLines={1}>
                                         {format(new Date(item.tanggal), 'dd MMMM yyyy', { locale: localeID })} • {item.nomor_transaksi}
                                     </Typography>
                                 </View>
@@ -172,7 +172,7 @@ export default function PurchaseIndexScreen() {
                                     </Typography>
                                 </View>
                                 <View className="items-end">
-                                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-0.5">Grand Total</Typography>
+                                    <Typography className="text-textGray text-[9px] uppercase font-bold mb-0.5">Grand Total</Typography>
                                     <Typography variant="h3" weight="bold" className="text-primary tracking-tighter">
                                         {formatCurrency(item.total_biaya || item.grand_total || 0)}
                                     </Typography>
@@ -200,7 +200,7 @@ export default function PurchaseIndexScreen() {
                         <Button
                             title="Tutup"
                             variant="outline"
-                            className="border-border"
+                            className="border-transparent"
                             onPress={() => setSelectedPurchase(null)}
                         />
                     }
@@ -227,7 +227,7 @@ export default function PurchaseIndexScreen() {
                             showsVerticalScrollIndicator={false}
                         >
                             {/* Summary Card */}
-                            <Card variant="outlined" className="p-5 border-border bg-gray-50/30 mb-6">
+                            <Card variant="outlined" className="p-5 border-transparent bg-surface/30 mb-6">
                                 <View className="space-y-4">
                                     <View className="flex-row items-center">
                                         <User size={18} color="#64748B" />
@@ -257,7 +257,7 @@ export default function PurchaseIndexScreen() {
                                                     label={selectedPurchase?.status_bayar || 'UNPAID'}
                                                     variant={selectedPurchase?.status_bayar?.toUpperCase() === 'LUNAS' ? 'success' : 'error'}
                                                 />
-                                                <Typography className="text-textGray/60 text-xs ml-2">
+                                                <Typography className="text-textGray text-xs ml-2">
                                                     Via: {selectedPurchase?.metode_bayar || '-'}
                                                 </Typography>
                                             </View>
@@ -269,7 +269,7 @@ export default function PurchaseIndexScreen() {
                             {/* Items List */}
                             <Typography weight="bold" className="text-primary text-xs uppercase mb-3 px-1 tracking-widest">Daftar Barang ({selectedPurchase?.detail?.length || 0})</Typography>
                             {selectedPurchase?.detail?.map((detail: any, index: number) => (
-                                <View key={index} className="flex-row items-center p-4 bg-surface border border-border rounded-2xl mb-2">
+                                <View key={index} className="flex-row items-center p-4 bg-surface border border-transparent rounded-2xl mb-2">
                                     <View className="w-10 h-10 bg-blue-50 rounded-xl items-center justify-center mr-3">
                                         <Package size={20} color="#3B82F6" />
                                     </View>

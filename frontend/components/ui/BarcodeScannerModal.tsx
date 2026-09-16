@@ -440,7 +440,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#6EE7B7', marginRight: 8 }} />
                                                 <Typography weight="bold" style={{ color: 'white', fontSize: 11 }}>ITEM SCAN</Typography>
                                                 {scanLog.length > 0 && (
-                                                    <View style={{ backgroundColor: 'white', borderRadius: 10, marginLeft: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                                                    <View style={{  borderRadius: 10, marginLeft: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
                                                         <Typography weight="bold" style={{ color: '#059669', fontSize: 11 }}>{scanLog.length}</Typography>
                                                     </View>
                                                 )}
@@ -492,8 +492,8 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                                 <View className="w-[90%] bg-black/40 rounded-3xl p-4 border border-white/10 mt-2">
                                                     <Typography variant="caption" weight="bold" className="text-white/60 mb-3 ml-1 uppercase" style={{ letterSpacing: 1 }}>History Scan Terakhir</Typography>
                                                     {scanLog.slice(0, 3).map((item, idx) => (
-                                                        <View key={item.id} className={`flex-row items-center py-2.5 px-3 mb-2 rounded-2xl ${idx === 0 ? 'bg-blue-600/30 border border-blue-500/30' : 'bg-white/5 border border-white/5'}`}>
-                                                            <View className={`w-2 h-2 rounded-full mr-3 ${idx === 0 ? 'bg-blue-400' : 'bg-white/20'}`} />
+                                                        <View key={item.id} className={`flex-row items-center py-2.5 px-3 mb-2 rounded-2xl ${idx === 0 ? 'bg-blue-600/30 border border-blue-500/30' : 'bg-surface/5 border border-white/5'}`}>
+                                                            <View className={`w-2 h-2 rounded-full mr-3 ${idx === 0 ? 'bg-blue-400' : 'bg-surface/20'}`} />
                                                             <View className="flex-1">
                                                                 <Typography weight="bold" className="text-white text-sm" numberOfLines={1}>{item.title}</Typography>
                                                                 {item.subtitle && <Typography variant="caption" className="text-white/50 text-[10px]">{item.subtitle}</Typography>}
@@ -531,7 +531,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#6EE7B7', marginRight: 8 }} />
                                         <Typography weight="bold" style={{ color: 'white', fontSize: 11 }}>ITEM SCAN</Typography>
                                         {scanLog.length > 0 && (
-                                            <View style={{ backgroundColor: 'white', borderRadius: 10, marginLeft: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                                            <View style={{  borderRadius: 10, marginLeft: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
                                                 <Typography weight="bold" style={{ color: '#059669', fontSize: 11 }}>{scanLog.length}</Typography>
                                             </View>
                                         )}
@@ -550,7 +550,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
                                 <Pressable
                                     onPress={() => hwInputRef.current?.focus()}
-                                    className="bg-white/5 border border-white/10 px-6 py-4 rounded-3xl items-center w-full"
+                                    className="bg-surface/5 border border-white/10 px-6 py-4 rounded-3xl items-center w-full"
                                 >
                                     <Typography className="text-blue-400 font-bold">Siap Menerima Scan...</Typography>
                                 </Pressable>
@@ -558,7 +558,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                 {scanLog.length > 0 && (
                                     <View className="mt-8 w-full">
                                         <Typography variant="caption" weight="bold" className="text-white/40 text-center uppercase mb-4 tracking-widest">Item Terakhir</Typography>
-                                        <View className="bg-white/5 border border-white/10 p-4 rounded-3xl mb-4">
+                                        <View className="bg-surface/5 border border-white/10 p-4 rounded-3xl mb-4">
                                             <Typography weight="bold" className="text-white text-center">{scanLog[0].title}</Typography>
                                             <Typography variant="caption" className="text-white/50 text-center">{scanLog[0].subtitle}</Typography>
                                         </View>
@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
-        backgroundColor: 'white',
+        
     },
     cameraContainer: {
         flex: 1,

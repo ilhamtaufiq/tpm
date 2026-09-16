@@ -49,7 +49,7 @@ export const Barcode: React.FC<BarcodeProps> = ({
     const barWidth = width / encoded.length;
 
     return (
-        <View style={{ alignItems: 'center', backgroundColor: 'white', padding: 10 }}>
+        <View style={{ alignItems: 'center',  padding: 10 }}>
             <Svg width={width} height={height}>
                 {encoded.split('').map((bit, index) => (
                     bit === '1' ? (

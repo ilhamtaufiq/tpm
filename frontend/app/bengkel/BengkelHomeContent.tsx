@@ -94,8 +94,8 @@ const BengkelServiceCard = React.memo(function BengkelServiceCard({
         <View style={{ width: '25%' }} className="items-center mb-5 px-1">
             <Pressable onPress={onPress} className="items-center w-full active:opacity-70">
                 <View
-                    style={{ backgroundColor: 'white', borderRadius: 20 }}
-                    className="w-14 h-14 items-center justify-center mb-1.5 border border-border shadow-sm"
+                    style={{  borderRadius: 20 }}
+                    className="w-14 h-14 items-center justify-center mb-1.5 border border-transparent shadow-sm"
                 >
                     <View
                         style={{ backgroundColor: `${menu.color}15` }}
@@ -754,7 +754,7 @@ export default function BengkelScreen() {
                 <View>
                     <Typography variant="caption" className="text-textGray mb-1 ml-1">Dari Tanggal</Typography>
                     <TextInput
-                        className="bg-background h-12 px-4 rounded-xl border border-border text-sm font-bold text-primary"
+                        className="bg-background h-12 px-4 rounded-xl border border-transparent text-sm font-bold text-primary"
                         value={tempDateRange.dari}
                         onChangeText={(v) => setTempDateRange({ ...tempDateRange, dari: v })}
                         placeholder="YYYY-MM-DD"
@@ -763,7 +763,7 @@ export default function BengkelScreen() {
                 <View>
                     <Typography variant="caption" className="text-textGray mb-1 ml-1">Sampai Tanggal</Typography>
                     <TextInput
-                        className="bg-background h-12 px-4 rounded-xl border border-border text-sm font-bold text-primary"
+                        className="bg-background h-12 px-4 rounded-xl border border-transparent text-sm font-bold text-primary"
                         value={tempDateRange.sampai}
                         onChangeText={(v) => setTempDateRange({ ...tempDateRange, sampai: v })}
                         placeholder="YYYY-MM-DD"
@@ -877,7 +877,7 @@ export default function BengkelScreen() {
                     </View>
                 )}
 
-                <Card variant="outlined" className="p-4 border-border mb-4 bg-gray-50/60 rounded-2xl">
+                <Card variant="outlined" className="p-4 border-transparent mb-4 bg-surface/60 rounded-2xl">
                     <View className="flex-row items-center justify-between mb-3">
                         <View className="flex-row items-center">
                             <Receipt size={15} color="#023C69" />
@@ -887,22 +887,22 @@ export default function BengkelScreen() {
                     </View>
 
                     {detailServices.map((s: any, idx: number) => (
-                        <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-border">
+                        <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
                             <View className="flex-1 mr-3">
                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{s.nama_jasa}</Typography>
-                                <Typography variant="caption" className="text-textGray/70">Jasa</Typography>
+                                <Typography variant="caption" className="text-textGray">Jasa</Typography>
                             </View>
                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(s.harga)}</Typography>
                         </View>
                     ))}
 
                     {detailParts.map((p: any, idx: number) => (
-                        <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-border">
+                        <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
                             <View className="flex-1 mr-3">
                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>
                                     {p.spare_part_nama || p.spare_part?.nama || 'Sparepart'}
                                 </Typography>
-                                <Typography variant="caption" className="text-textGray/70">Part x{formatQty(p.qty || 0)}</Typography>
+                                <Typography variant="caption" className="text-textGray">Part x{formatQty(p.qty || 0)}</Typography>
                             </View>
                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(p.subtotal || 0)}</Typography>
                         </View>
@@ -913,7 +913,7 @@ export default function BengkelScreen() {
                     ) : null}
 
                     {selectedItem.catatan ? (
-                        <View className="mt-2 pt-3 border-t border-border">
+                        <View className="mt-2 pt-3 border-t border-transparent">
                             <Typography variant="caption" className="text-textGray mb-1">Catatan</Typography>
                             <Typography variant="body2" className="italic text-textMain" numberOfLines={3}>{selectedItem.catatan}</Typography>
                         </View>
@@ -1000,7 +1000,7 @@ export default function BengkelScreen() {
                                     onPress={() => updateStatus(selectedItem.id, s.id)}
                                     disabled={updateStatsMutation.isPending}
                                     style={isActive ? { backgroundColor: s.activeBg, borderColor: s.activeBorder } : {}}
-                                    className={`flex-1 py-3 rounded-xl border items-center justify-center ${isActive ? 'shadow-sm' : 'bg-surface border-border'}`}
+                                    className={`flex-1 py-3 rounded-xl border items-center justify-center ${isActive ? 'shadow-sm' : 'bg-surface border-transparent'}`}
                                 >
                                     <Typography
                                         weight="bold"
@@ -1144,18 +1144,18 @@ export default function BengkelScreen() {
                 <View className="flex-row items-center">
                     <Pressable
                         onPress={() => setQueueSearchOpen(prev => !prev)}
-                        className={`w-10 h-10 rounded-full items-center justify-center border mr-2 ${queueSearchOpen ? 'bg-primary border-primary' : 'bg-background border-border'}`}
+                        className={`w-10 h-10 rounded-full items-center justify-center border mr-2 ${queueSearchOpen ? 'bg-primary border-primary' : 'bg-background border-transparent'}`}
                     >
                         <Search size={18} color={queueSearchOpen ? 'white' : '#6B7280'} />
                     </Pressable>
-                    <Pressable onPress={closeQueueSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center border border-border">
+                    <Pressable onPress={closeQueueSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent">
                         <X size={20} color="#6B7280" />
                     </Pressable>
                 </View>
             </View>
 
             {queueSearchOpen && (
-                <View className="flex-row items-center mb-3 bg-background border border-border rounded-2xl px-3 h-11">
+                <View className="flex-row items-center mb-3 bg-background border border-transparent rounded-2xl px-3 h-11">
                     <Search size={16} color="#9CA3AF" />
                     <TextInput
                         value={queueSearchQuery}
@@ -1177,10 +1177,10 @@ export default function BengkelScreen() {
 
             <Pressable
                 onPress={openQueueDateFilter}
-                className="flex-row items-center justify-between mb-4 bg-background border border-border rounded-[20px] px-4 py-3"
+                className="flex-row items-center justify-between mb-4 bg-background border border-transparent rounded-[20px] px-4 py-3"
             >
                 <View className="flex-row items-center flex-1">
-                    <View className="w-9 h-9 rounded-2xl bg-surface items-center justify-center border border-border mr-3">
+                    <View className="w-9 h-9 rounded-2xl bg-surface items-center justify-center border border-transparent mr-3">
                         <Calendar size={16} color="#0F766E" />
                     </View>
                     <View className="flex-1">
@@ -1195,7 +1195,7 @@ export default function BengkelScreen() {
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
                 {[
-                    { id: 'ALL', label: 'Semua', count: queueWorkStatusStats.total, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
+                    { id: 'ALL', label: 'Semua', count: queueWorkStatusStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-gray-200', text: 'text-gray-600' },
                     { id: 'antre', label: 'Antre', count: queueWorkStatusStats.antre, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                     { id: 'proses', label: 'Proses', count: queueWorkStatusStats.proses, active: 'bg-blue-500 border-blue-500', inactive: 'bg-blue-50 border-blue-100', text: 'text-blue-700' },
                     { id: 'selesai', label: 'Selesai', count: queueWorkStatusStats.selesai, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
@@ -1221,7 +1221,7 @@ export default function BengkelScreen() {
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
                 {[
-                    { id: 'ALL', label: 'Semua', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
+                    { id: 'ALL', label: 'Semua', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-gray-200', text: 'text-gray-600' },
                     { id: 'LUNAS', label: 'Lunas', count: queuePaymentStats.LUNAS, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
                     { id: 'BELUM_LUNAS', label: 'Belum Lunas', count: queuePaymentStats.BELUM_LUNAS, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                     { id: 'BELUM_BAYAR', label: 'Belum Bayar', count: queuePaymentStats.BELUM_BAYAR, active: 'bg-orange-500 border-orange-500', inactive: 'bg-orange-50 border-orange-100', text: 'text-orange-700' },
@@ -1261,7 +1261,7 @@ export default function BengkelScreen() {
                                 closeQueueSheet();
                                 handlePresentModalPress('detail', item);
                             }}
-                            className="bg-surface p-4 rounded-[24px] border border-border shadow-sm mb-3 flex-row items-center"
+                            className="bg-surface p-4 rounded-[24px] border border-transparent shadow-sm mb-3 flex-row items-center"
                         >
                             <View className="w-14 h-14 bg-emerald-50 rounded-2xl items-center justify-center mr-3 border border-emerald-100/70">
                                 <Typography weight="bold" className="text-primary text-[10px] uppercase tracking-tighter">
@@ -1291,7 +1291,7 @@ export default function BengkelScreen() {
                                         variant={item.status_pengerjaan === 'proses' ? 'info' : item.status_pengerjaan === 'selesai' ? 'success' : 'neutral'}
                                     />
                                 </View>
-                                <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-border">
+                                <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-transparent">
                                     <Typography className="text-textGray text-[10px] font-semibold">
                                         {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID }) : '-'}
                                     </Typography>
@@ -1307,7 +1307,7 @@ export default function BengkelScreen() {
                                     </View>
                                 </View>
                                 {['antre', 'proses'].includes(String(item.status_pengerjaan || '').toLowerCase()) ? (
-                                    <View className="flex-row items-center mt-3 pt-3 border-t border-border">
+                                    <View className="flex-row items-center mt-3 pt-3 border-t border-transparent">
                                         {[
                                             { label: 'Sparepart', mode: 'sparepart', icon: Package, color: '#059669' },
                                             { label: 'Servis', mode: 'servis', icon: Settings, color: '#2563EB' },
@@ -1320,7 +1320,7 @@ export default function BengkelScreen() {
                                                         event?.stopPropagation?.();
                                                         openQueueTransactionMode(action.mode as 'sparepart' | 'servis', item);
                                                     }}
-                                                    className="flex-1 mr-2 h-9 rounded-xl bg-background border border-border flex-row items-center justify-center"
+                                                    className="flex-1 mr-2 h-9 rounded-xl bg-background border border-transparent flex-row items-center justify-center"
                                                 >
                                                     <ActionIcon size={13} color={action.color} />
                                                     <Typography weight="bold" className="text-[9px] text-textMain ml-1" numberOfLines={1}>
@@ -1345,11 +1345,11 @@ export default function BengkelScreen() {
             <View className="flex-row justify-between items-center mb-8">
                 <View>
                     <Typography variant="h3" weight="bold" className="text-primary text-2xl tracking-tight">Dompet Bengkel</Typography>
-                    <Typography className="text-textGray/40 text-[10px] uppercase font-black tracking-widest">Workshop Cash Liquidity</Typography>
+                    <Typography className="text-textGray text-[10px] uppercase font-black tracking-widest">Workshop Cash Liquidity</Typography>
                 </View>
                 <Pressable
                     onPress={handleCloseWallet}
-                    className="w-10 h-10 bg-background rounded-full items-center justify-center border border-border"
+                    className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent"
                 >
                     <X size={20} color="#6B7280" />
                 </Pressable>
@@ -1408,7 +1408,7 @@ export default function BengkelScreen() {
 
                     {/* Quick Actions Container */}
                     <View className="mb-8">
-                        <Typography variant="caption" weight="bold" className="text-textGray/30 uppercase tracking-[2px] ml-1 mb-4 text-center">Penyesuaian, Hutang & Piutang Bengkel</Typography>
+                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[2px] ml-1 mb-4 text-center">Penyesuaian, Hutang & Piutang Bengkel</Typography>
 
                         <View className="flex-row flex-wrap -m-1 mb-6">
                             {[
@@ -1497,13 +1497,13 @@ export default function BengkelScreen() {
                                 <View key={action.key} className="w-1/3 p-1">
                                     <Pressable
                                         onPress={action.onPress}
-                                        className="bg-surface p-3 rounded-2xl border border-border items-center justify-center shadow-sm active:bg-background min-h-[110px]"
+                                        className="bg-surface p-3 rounded-2xl border border-transparent items-center justify-center shadow-sm active:bg-background min-h-[110px]"
                                     >
                                         <View className={`w-8 h-8 ${action.iconBg} rounded-xl items-center justify-center mb-2`}>
                                             {action.icon}
                                         </View>
                                         <Typography weight="bold" className={`${action.text} text-[8px] uppercase tracking-wider text-center`}>{action.label}</Typography>
-                                        <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5 text-center">{action.sublabel}</Typography>
+                                        <Typography className="text-textGray text-[6px] font-bold mt-0.5 text-center">{action.sublabel}</Typography>
                                     </Pressable>
                                 </View>
                             ))}
@@ -1521,7 +1521,7 @@ export default function BengkelScreen() {
                     {/* Cash Activity History */}
                     <View className="mb-8">
                         <View className="flex-row justify-between items-center mb-4 px-1">
-                            <Typography variant="caption" weight="bold" className="text-textGray/40 uppercase tracking-[2px]">History Aktivitas Kas & Setoran</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[2px]">History Aktivitas Kas & Setoran</Typography>
                             <Pressable
                                 onPress={() => {
                                     handleCloseWallet();
@@ -1533,13 +1533,13 @@ export default function BengkelScreen() {
                         </View>
 
                         {historyData?.data?.length === 0 ? (
-                            <View className="bg-gray-50/50 p-8 rounded-[32px] border border-dashed border-border items-center justify-center">
+                            <View className="bg-surface/50 p-8 rounded-[32px] border border-dashed border-transparent items-center justify-center">
                                 <Typography className="text-textGray text-xs italic">Belum ada aktivitas kas</Typography>
                             </View>
                         ) : (
                             <View className="space-y-3">
                                 {historyData?.data?.slice(0, 2)?.map((item: any) => (
-                                    <View key={item.id} className="bg-surface p-4 rounded-3xl border border-border flex-row items-center shadow-sm">
+                                    <View key={item.id} className="bg-surface p-4 rounded-3xl border border-transparent flex-row items-center shadow-sm">
                                         <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'
                                             }`}>
                                             {item.tipe === 'MASUK' ? (
@@ -1550,7 +1550,7 @@ export default function BengkelScreen() {
                                         </View>
                                         <View className="flex-1">
                                             <Typography weight="bold" className="text-textMain text-sm">{item.keterangan || item.sumber}</Typography>
-                                            <Typography variant="caption" className="text-textGray/60 mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                            <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
                                         </View>
                                         <View className="items-end">
                                             <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'
@@ -1591,13 +1591,13 @@ export default function BengkelScreen() {
 
                     <View className="space-y-6">
                         <View>
-                            <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Jumlah Nominal (Rp)</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Jumlah Nominal (Rp)</Typography>
                             <TextInput
                                 placeholder="0"
                                 keyboardType="numeric"
                                 value={expenseAmount}
                                 onChangeText={(val) => setExpenseAmount(formatNumber(val))}
-                                className={`bg-background p-5 rounded-3xl text-2xl font-bold ${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} border border-border`}
+                                className={`bg-background p-5 rounded-3xl text-2xl font-bold ${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} border border-transparent`}
                             />
                         </View>
 
@@ -1613,7 +1613,7 @@ export default function BengkelScreen() {
                                             <Typography variant="caption" className="text-amber-700/60 font-medium">Beri ke Karyawan?</Typography>
                                         </View>
                                     </View>
-                                    <View className="flex-row items-center bg-white/50 p-1 rounded-2xl border border-amber-100">
+                                    <View className="flex-row items-center bg-surface/50 p-1 rounded-2xl border border-amber-100">
                                         <Pressable
                                             onPress={() => setExpensePiutangType('UMUM')}
                                             className={`px-4 py-2 rounded-xl ${expensePiutangType === 'UMUM' ? 'bg-amber-500 shadow-md' : ''}`}
@@ -1642,12 +1642,12 @@ export default function BengkelScreen() {
                                         />
                                     ) : (
                                         <>
-                                            <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Nama Penerima/Debitur</Typography>
+                                            <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Nama Penerima/Debitur</Typography>
                                             <TextInput
                                                 placeholder="Contoh: Andi, Staff, dll..."
                                                 value={debiturName}
                                                 onChangeText={setDebiturName}
-                                                className="bg-background p-5 rounded-3xl text-sm font-bold text-primary border border-border"
+                                                className="bg-background p-5 rounded-3xl text-sm font-bold text-primary border border-transparent"
                                             />
                                         </>
                                     )}
@@ -1657,18 +1657,18 @@ export default function BengkelScreen() {
 
 
                         <View>
-                            <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Keterangan / Keperluan</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Keterangan / Keperluan</Typography>
                             <TextInput
                                 placeholder="Contoh: Beli bensin, Aqua, dll..."
                                 value={expenseNote}
                                 onChangeText={setExpenseNote}
-                                className="bg-background p-5 rounded-3xl text-sm font-bold text-primary border border-border"
+                                className="bg-background p-5 rounded-3xl text-sm font-bold text-primary border border-transparent"
                             />
                         </View>
 
                         {(expenseMode === 'PIUTANG' || expenseMode === 'KELUAR') && (
                             <View>
-                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana / Potong Dari</Typography>
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Sumber Dana / Potong Dari</Typography>
                                 <View className="flex-row -m-1">
                                     {[
                                         { id: 'KAS_UNIT_BENGKEL', label: 'Dompet', icon: Wallet, color: '#D97706' },
@@ -1683,7 +1683,7 @@ export default function BengkelScreen() {
                                                     onPress={() => setExpensePaymentMethod(opt.id)}
                                                     className={`p-3 rounded-2xl border items-center justify-center ${active
                                                         ? 'bg-amber-600 border-amber-600 shadow-sm'
-                                                        : 'bg-white border-gray-100'
+                                                        : 'bg-surface border-gray-100'
                                                         }`}
                                                 >
                                                     <OptIcon size={20} color={active ? 'white' : opt.color} />
@@ -1700,7 +1700,7 @@ export default function BengkelScreen() {
 
                         {expenseMode === 'SETORAN' && (
                             <View>
-                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Tujuan Transfer / Mutasi</Typography>
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Tujuan Transfer / Mutasi</Typography>
                                 <View className="flex-row flex-wrap -m-1">
                                     {[
                                         { id: 'KAS_UTAMA', label: 'Cash Utama' },
@@ -1711,7 +1711,7 @@ export default function BengkelScreen() {
                                                 onPress={() => setExpensePaymentMethod(opt.id)}
                                                 className={`p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
                                                     ? 'bg-blue-600 border-blue-600 shadow-sm'
-                                                    : 'bg-white border-gray-100'
+                                                    : 'bg-surface border-gray-100'
                                                     }`}
                                             >
                                                 <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${expensePaymentMethod === opt.id ? 'text-white' : 'text-textGray'}`}>
@@ -1910,7 +1910,7 @@ export default function BengkelScreen() {
                     </View>
 
                     <View className="flex-row items-center">
-                        <View className="flex-1 flex-row items-center px-4 bg-background h-11 rounded-2xl border border-border">
+                        <View className="flex-1 flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
                             <Search size={16} color="#9CA3AF" />
                             <TextInput
                                 className="flex-1 ml-3 text-xs font-semibold text-textMain"
@@ -1943,13 +1943,13 @@ export default function BengkelScreen() {
                                     walletSheetRef.current?.expand();
                                 }
                             }}
-                            className="ml-2 w-11 h-11 bg-background items-center justify-center rounded-2xl border border-border active:scale-95"
+                            className="ml-2 w-11 h-11 bg-background items-center justify-center rounded-2xl border border-transparent active:scale-95"
                         >
                             <Wallet size={18} color="#023C69" />
                         </Pressable>
                     </View>
 
-                    <View className="mt-3 pt-3 border-t border-border">
+                    <View className="mt-3 pt-3 border-t border-transparent">
                         <View className="flex-row items-center justify-between mb-2 px-1">
                             <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">
                                 Status Pembayaran
@@ -1968,7 +1968,7 @@ export default function BengkelScreen() {
                         </View>
                         <View className="flex-row flex-wrap">
                             {[
-                                { key: 'ALL', label: 'Semua', count: stats.total, active: 'bg-slate-900 border-slate-900', inactive: 'bg-white border-gray-200 text-gray-600' },
+                                { key: 'ALL', label: 'Semua', count: stats.total, active: 'bg-slate-900 border-slate-900', inactive: 'bg-surface border-gray-200 text-gray-600' },
                                 { key: 'LUNAS', label: 'Lunas', count: stats.lunas, active: 'bg-emerald-600 border-emerald-600', inactive: 'bg-emerald-50 border-emerald-100 text-emerald-700' },
                                 { key: 'PARTIAL', label: 'Belum Lunas', count: stats.partial, active: 'bg-blue-600 border-blue-600', inactive: 'bg-blue-50 border-blue-100 text-blue-700' },
                                 { key: 'UNPAID', label: 'Belum Bayar', count: stats.unpaid, active: 'bg-amber-600 border-amber-600', inactive: 'bg-amber-50 border-amber-100 text-amber-700' },
@@ -1988,7 +1988,7 @@ export default function BengkelScreen() {
                                         >
                                             {item.label}
                                         </Typography>
-                                        <View className={`ml-2 rounded-full px-2 py-0.5 ${active ? 'bg-white/15' : 'bg-black/5'}`}>
+                                        <View className={`ml-2 rounded-full px-2 py-0.5 ${active ? 'bg-surface/15' : 'bg-black/5'}`}>
                                             <Typography
                                                 variant="caption"
                                                 weight="bold"
@@ -2011,7 +2011,7 @@ export default function BengkelScreen() {
                             { label: 'Proses', key: 'proses', color: '#3B82F6', icon: Activity },
                             { label: 'Selesai', key: 'selesai', color: '#10B981', icon: CheckCircle2 },
                         ].map((stat) => (
-                            <View key={stat.key} className="flex-1 bg-surface px-3 py-2.5 rounded-2xl border border-border">
+                            <View key={stat.key} className="flex-1 bg-surface px-3 py-2.5 rounded-2xl border border-transparent">
                                 <View className="flex-row items-center justify-between mb-1">
                                     <View style={{ backgroundColor: stat.color + '15' }} className="w-5 h-5 rounded-full items-center justify-center">
                                         <stat.icon size={10} color={stat.color} />
@@ -2020,7 +2020,7 @@ export default function BengkelScreen() {
                                         {summary ? summary[stat.key] : 0}
                                     </Typography>
                                 </View>
-                                <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest">
+                                <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest">
                                     {stat.label}
                                 </Typography>
                             </View>
@@ -2101,7 +2101,7 @@ export default function BengkelScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 48,  }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onChange={setSheetIndex}
                 >
@@ -2115,7 +2115,7 @@ export default function BengkelScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 48,  }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onClose={handleCloseWallet}
                 >
@@ -2162,7 +2162,7 @@ export default function BengkelScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 48,  }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onClose={() => setIsDateModalVisible(false)}
                 >
@@ -2217,7 +2217,7 @@ export default function BengkelScreen() {
                 animationType="slide"
                 onRequestClose={() => setShowHistoryModal(false)}
             >
-                <View style={{ flex: 1, backgroundColor: 'white' }}>
+                <View style={{ flex: 1,  }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
                             <View className="w-10 h-1 bg-gray-300 rounded-full" />
@@ -2235,7 +2235,7 @@ export default function BengkelScreen() {
                         <ScrollView showsVerticalScrollIndicator={false}>
                             <View className="space-y-4">
                                 {historyData?.data?.map((item: any) => (
-                                    <View key={item.id} className="bg-gray-50/50 p-5 rounded-[32px] border border-border flex-row items-center">
+                                    <View key={item.id} className="bg-surface/50 p-5 rounded-[32px] border border-transparent flex-row items-center">
                                         <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-100' : 'bg-rose-100'
                                             }`}>
                                             {item.tipe === 'MASUK' ? (
@@ -2246,7 +2246,7 @@ export default function BengkelScreen() {
                                         </View>
                                         <View className="flex-1">
                                             <Typography weight="bold" className="text-textMain text-base">{item.keterangan || item.sumber}</Typography>
-                                            <Typography variant="caption" className="text-textGray/60 mt-0.5">{format(new Date(item.tanggal), 'EEEE, dd MMMM yyyy', { locale: localeID })}</Typography>
+                                            <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'EEEE, dd MMMM yyyy', { locale: localeID })}</Typography>
                                             <View className="flex-row mt-2">
                                                 <Badge label={item.metode_pembayaran || 'TUNAI'} variant="neutral" />
                                                 <View className="w-2" />

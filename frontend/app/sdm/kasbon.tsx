@@ -252,7 +252,7 @@ export default function KasbonScreen() {
                     />
                 </View>
 
-                <Card variant="outlined" className="p-6 mb-8 border-border bg-gray-50/50 rounded-[32px]">
+                <Card variant="outlined" className="p-6 mb-8 border-transparent bg-surface/50 rounded-[32px]">
                     <View className="flex-row justify-between mb-4">
                         <Typography variant="caption" className="text-textGray font-bold uppercase tracking-widest">Total Pinjaman</Typography>
                         <Typography variant="body1" weight="bold" className="text-textMain">{formatCurrency(selectedKasbon.nominal)}</Typography>
@@ -273,7 +273,7 @@ export default function KasbonScreen() {
                 {selectedKasbon.keterangan && (
                     <View className="mb-8">
                         <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest mb-3 ml-1">Keterangan / Alasan</Typography>
-                        <View className="bg-background p-6 rounded-[24px] border border-border">
+                        <View className="bg-background p-6 rounded-[24px] border border-transparent">
                             <Typography className="text-textMain leading-relaxed italic">"{selectedKasbon.keterangan}"</Typography>
                         </View>
                     </View>
@@ -332,11 +332,11 @@ export default function KasbonScreen() {
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Karyawan Penerima *</Typography>
                     <Pressable
                         onPress={() => setShowKaryawanPicker(!showKaryawanPicker)}
-                        className="bg-background rounded-2xl border border-border px-5 py-4 flex-row items-center justify-between"
+                        className="bg-background rounded-2xl border border-transparent px-5 py-4 flex-row items-center justify-between"
                     >
                         <View className="flex-row items-center">
                             <User size={18} color={formData.karyawan_nama ? "#023C69" : "#9CA3AF"} />
-                            <Typography className={`ml-3 font-medium ${formData.karyawan_nama ? 'text-textMain' : 'text-textGray/40'}`}>
+                            <Typography className={`ml-3 font-medium ${formData.karyawan_nama ? 'text-textMain' : 'text-textGray'}`}>
                                 {formData.karyawan_nama || 'Pilih Karyawan'}
                             </Typography>
                         </View>
@@ -344,7 +344,7 @@ export default function KasbonScreen() {
                     </Pressable>
 
                     {showKaryawanPicker && (
-                        <View className="mt-2 bg-surface border border-border rounded-2xl shadow-lg max-h-48 overflow-hidden z-20">
+                        <View className="mt-2 bg-surface border border-transparent rounded-2xl shadow-lg max-h-48 overflow-hidden z-20">
                             <ScrollView nestedScrollEnabled>
                                 {karyawanList.map((k) => (
                                     <Pressable
@@ -353,7 +353,7 @@ export default function KasbonScreen() {
                                             setFormData({ ...formData, karyawan_id: k.id, karyawan_nama: k.nama });
                                             setShowKaryawanPicker(false);
                                         }}
-                                        className="px-5 py-4 border-b border-border flex-row items-center"
+                                        className="px-5 py-4 border-b border-transparent flex-row items-center"
                                     >
                                         <View className="w-8 h-8 bg-primary/5 rounded-full items-center justify-center mr-3">
                                             <Typography className="text-primary font-bold text-[10px]">{k.nama.charAt(0)}</Typography>
@@ -399,7 +399,7 @@ export default function KasbonScreen() {
                     {isSplitDisbursement ? (
                         <View className="space-y-6 gap-6">
                             {disbursements.map((d, index) => (
-                                <View key={d.id} className="bg-surface p-6 rounded-[32px] border border-border shadow-sm relative overflow-hidden">
+                                <View key={d.id} className="bg-surface p-6 rounded-[32px] border border-transparent shadow-sm relative overflow-hidden">
                                     <View className="flex-row justify-between items-center mb-5">
                                         <Typography className="text-primary font-bold text-xs tracking-tight">Pembayaran #{index + 1}</Typography>
                                         {disbursements.length > 1 && (
@@ -426,10 +426,10 @@ export default function KasbonScreen() {
                                                     newD[index].metode = m;
                                                     setDisbursements(newD);
                                                 }}
-                                                className={`flex-1 py-4 items-center rounded-[20px] border ${d.metode === m ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-surface border-border'}`}
+                                                className={`flex-1 py-4 items-center rounded-[20px] border ${d.metode === m ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-surface border-transparent'}`}
                                             >
                                                 <Typography
-                                                    className={`text-[10px] font-bold tracking-widest ${d.metode === m ? 'text-white' : 'text-textGray/40'}`}
+                                                    className={`text-[10px] font-bold tracking-widest ${d.metode === m ? 'text-white' : 'text-textGray'}`}
                                                 >
                                                     {m.toUpperCase()}
                                                 </Typography>
@@ -438,8 +438,8 @@ export default function KasbonScreen() {
                                     </View>
 
                                     <View>
-                                        <Typography className="text-textGray/60 text-[10px] font-bold uppercase tracking-widest mb-2.5 ml-1">Nominal (Rp)</Typography>
-                                        <View className="bg-gray-50/80 rounded-2xl border border-gray-100/50 px-5 py-4">
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest mb-2.5 ml-1">Nominal (Rp)</Typography>
+                                        <View className="bg-surface/80 rounded-2xl border border-gray-100/50 px-5 py-4">
                                             <TextInput
                                                 className="font-bold text-textMain text-base h-7 p-0"
                                                 placeholder="0"
@@ -461,10 +461,10 @@ export default function KasbonScreen() {
                             ))}
                             <Pressable
                                 onPress={() => setDisbursements([...disbursements, { id: Date.now() + Math.random(), metode: 'tunai', nominal: '' }])}
-                                className="flex-row items-center justify-center py-6 border border-dashed border-border rounded-[32px] bg-gray-50/30"
+                                className="flex-row items-center justify-center py-6 border border-dashed border-transparent rounded-[32px] bg-surface/30"
                             >
                                 <Plus size={18} color="#9CA3AF" />
-                                <Typography className="text-textGray/40 font-bold text-xs ml-2 tracking-wide">Tambah Metode Pembayaran Lain</Typography>
+                                <Typography className="text-textGray font-bold text-xs ml-2 tracking-wide">Tambah Metode Pembayaran Lain</Typography>
                             </Pressable>
                         </View>
                     ) : (
@@ -473,7 +473,7 @@ export default function KasbonScreen() {
                                 <Pressable
                                     key={m}
                                     onPress={() => setFormData({ ...formData, metode_bayar: m })}
-                                    className={`flex-1 py-4 items-center rounded-2xl border ${formData.metode_bayar === m ? 'border-primary bg-primary shadow-lg shadow-primary/20' : 'border-border bg-surface'}`}
+                                    className={`flex-1 py-4 items-center rounded-2xl border ${formData.metode_bayar === m ? 'border-primary bg-primary shadow-lg shadow-primary/20' : 'border-transparent bg-surface'}`}
                                 >
                                     <Typography
                                         className={formData.metode_bayar === m ? 'text-white' : 'text-textGray'}
@@ -534,13 +534,13 @@ export default function KasbonScreen() {
                             </Typography>
                             <Typography className="text-white/60 text-xs mt-1">Total Belum Tertagih</Typography>
                         </View>
-                        <View className="bg-white/10 p-4 rounded-2xl border border-white/10">
+                        <View className="bg-surface/10 p-4 rounded-2xl border border-white/10">
                             <Wallet size={24} color="white" />
                         </View>
                     </View>
 
                     {/* Bento Stats Inside Header */}
-                    <View className="h-[1px] bg-white/10 my-6" />
+                    <View className="h-[1px] bg-surface/10 my-6" />
                     <View className="flex-row justify-between">
                         <View className="flex-1">
                             <Typography className="text-white/50 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Record</Typography>
@@ -560,7 +560,7 @@ export default function KasbonScreen() {
 
             {/* Filter & Search — pull up to sit tighter under header stats */}
             <View className="px-6 -mt-14 z-10">
-                <View className="bg-surface p-2 rounded-3xl shadow-xl border border-border flex-col">
+                <View className="bg-surface p-2 rounded-3xl shadow-xl border border-transparent flex-col">
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
                         {STATUS_FILTERS.map((filter) => (
                             <Pressable
@@ -569,12 +569,12 @@ export default function KasbonScreen() {
                                     setSelectedFilter(filter.key as any);
                                     // loadData is called in useEffect when filter changes
                                 }}
-                                className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.key ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-background border border-border'}`}
+                                className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.key ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-background border border-transparent'}`}
                             >
                                 <Typography
                                     variant="caption"
                                     weight="bold"
-                                    className={selectedFilter === filter.key ? 'text-white' : 'text-textGray/60'}
+                                    className={selectedFilter === filter.key ? 'text-white' : 'text-textGray'}
                                 >
                                     {filter.label}
                                 </Typography>
@@ -582,7 +582,7 @@ export default function KasbonScreen() {
                         ))}
                     </ScrollView>
 
-                    <View className="flex-row items-center px-4 bg-background h-14 rounded-2xl border border-border">
+                    <View className="flex-row items-center px-4 bg-background h-14 rounded-2xl border border-transparent">
                         <Search size={18} color="#9CA3AF" />
                         <TextInput
                             className="flex-1 ml-3 text-sm text-textMain font-medium h-full"
@@ -612,7 +612,7 @@ export default function KasbonScreen() {
                             <Pressable
                                 
                                 onPress={() => handleOpenDetail(item)}
-                                className="bg-surface p-6 rounded-[32px] mb-6 border border-border shadow-sm"
+                                className="bg-surface p-6 rounded-[32px] mb-6 border border-transparent shadow-sm"
                             >
                                 <View className="flex-row items-center justify-between mb-4">
                                     <View className="flex-row items-center flex-1">
@@ -623,7 +623,7 @@ export default function KasbonScreen() {
                                             <Typography variant="body1" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
                                                 {item.karyawan_nama}
                                             </Typography>
-                                            <Typography className="text-textGray/60 text-[10px] font-bold uppercase tracking-widest mt-0.5">
+                                            <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest mt-0.5">
                                                 {formatDate(item.tanggal)} • {item.nomor_kasbon}
                                             </Typography>
                                         </View>
@@ -636,9 +636,9 @@ export default function KasbonScreen() {
                                     </View>
                                 </View>
 
-                                <View className="bg-gray-50/50 p-4 rounded-2xl border border-border flex-row justify-between mb-4">
+                                <View className="bg-surface/50 p-4 rounded-2xl border border-transparent flex-row justify-between mb-4">
                                     <View>
-                                        <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest mb-1">Pinjaman</Typography>
+                                        <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest mb-1">Pinjaman</Typography>
                                         <Typography weight="semibold" className="text-textMain text-sm">{formatCurrency(item.nominal)}</Typography>
                                     </View>
                                     <View className="items-end">
@@ -650,7 +650,7 @@ export default function KasbonScreen() {
                                 {/* Progress Bar */}
                                 <View>
                                     <View className="flex-row justify-between items-center mb-1.5">
-                                        <Typography className="text-textGray/40 text-[9px] font-bold uppercase tracking-widest">Progress Pelunasan</Typography>
+                                        <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest">Progress Pelunasan</Typography>
                                         <Typography className="text-primary text-[10px] font-bold">{Math.round(progressPercent)}%</Typography>
                                     </View>
                                     <View className="h-1.5 bg-background rounded-full overflow-hidden">
@@ -727,7 +727,7 @@ export default function KasbonScreen() {
                         keyboardBlurBehavior="restore"
                         android_keyboardInputMode="adjustResize"
                         backdropComponent={renderBackdrop}
-                        backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        backgroundStyle={{ borderRadius: 48,  }}
                         // List cards use shadow (Android elevation); raise sheet above them.
                         containerStyle={{ zIndex: 1000, elevation: 24 }}
                         style={{ zIndex: 1000, elevation: 24 }}
@@ -754,7 +754,7 @@ export default function KasbonScreen() {
                         keyboardBlurBehavior="restore"
                         android_keyboardInputMode="adjustResize"
                         backdropComponent={renderBackdrop}
-                        backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        backgroundStyle={{ borderRadius: 48,  }}
                         containerStyle={{ zIndex: 1000, elevation: 24 }}
                         style={{ zIndex: 1000, elevation: 24 }}
                         topInset={insets.top}

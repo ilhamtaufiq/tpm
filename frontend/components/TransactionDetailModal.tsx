@@ -83,7 +83,7 @@ interface TransactionDetailModalProps {
 }
 
 const DetailRow = ({ label, value, icon: Icon, color = '#6B7280' }: { label: string, value: string, icon?: any, color?: string }) => (
-    <View className="flex-row items-center justify-between py-4 border-b border-border">
+    <View className="flex-row items-center justify-between py-4 border-b border-transparent">
         <View className="flex-row items-center space-x-3">
             {Icon && (
                 <View style={{ backgroundColor: `${color}10` }} className="w-8 h-8 rounded-xl items-center justify-center mr-3">
@@ -485,7 +485,7 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
             {(details?.detail_parts?.length > 0 || details?.detail_services?.length > 0) && (
                 <BentoSection title="Item & Jasa">
                     {details?.detail_parts?.map((part: any, idx: number) => (
-                        <View key={`part-${idx}`} className="flex-row justify-between items-start py-3 border-b border-border">
+                        <View key={`part-${idx}`} className="flex-row justify-between items-start py-3 border-b border-transparent">
                             <View className="flex-1">
                                 <Typography variant="body2" weight="bold">{part.spare_part?.nama || 'Sparepart'}</Typography>
                                 <Typography variant="caption" className="text-textGray mt-0.5">{part.qty} x {formatCurrency(part.harga_jual)}</Typography>
@@ -494,7 +494,7 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                         </View>
                     ))}
                     {details?.detail_services?.map((service: any, idx: number) => (
-                        <View key={`service-${idx}`} className="flex-row justify-between items-start py-3 border-b border-border last:border-0">
+                        <View key={`service-${idx}`} className="flex-row justify-between items-start py-3 border-b border-transparent last:border-0">
                             <View className="flex-1">
                                 <Typography variant="body2" weight="bold">{service.nama_jasa}</Typography>
                                 <Typography variant="caption" className="text-textGray mt-0.5">{service.qty} x {formatCurrency(service.harga)}</Typography>
@@ -552,7 +552,7 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                 <DetailRow label="Pendapatan Kotor" value={formatCurrency(details?.pendapatan_kotor)} color="#3B82F6" />
                 <DetailRow label="Total Biaya Ops" value={formatCurrency(details?.total_biaya)} color="#EF4444" />
                 <DetailRow label="Laba Driver" value={formatCurrency(details?.laba_supir)} color="#F59E0B" />
-                <View className="mt-4 pt-4 border-t border-border flex-row justify-between items-center">
+                <View className="mt-4 pt-4 border-t border-transparent flex-row justify-between items-center">
                     <Typography weight="bold" className="text-primary">Margin Usaha (TPM)</Typography>
                     <Typography weight="bold" className="text-emerald-600 text-xl tracking-tighter">
                         {formatCurrency(details?.laba_tpm)}
@@ -601,7 +601,7 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                         </View>
                         <Pressable
                             onPress={onClose}
-                            className="bg-surface w-12 h-12 rounded-2xl items-center justify-center shadow-sm border border-border"
+                            className="bg-surface w-12 h-12 rounded-2xl items-center justify-center shadow-sm border border-transparent"
                         >
                             <X size={20} color="#121212" />
                         </Pressable>
@@ -617,13 +617,13 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                         {loading ? (
                             <View className="py-20 items-center justify-center">
                                 <ActivityIndicator size="large" color="#023C69" />
-                                <Typography className="mt-4 text-textGray/40 font-bold tracking-[4px] uppercase text-[10px]">Menarik Data...</Typography>
+                                <Typography className="mt-4 text-textGray font-bold tracking-[4px] uppercase text-[10px]">Menarik Data...</Typography>
                             </View>
                         ) : (
                             <View>
                                 {/* Summary Card */}
                                 <View className="bg-primary rounded-[40px] p-8 mb-6 shadow-2xl relative overflow-hidden">
-                                    <View className="absolute -right-10 -top-10 bg-white/5 w-48 h-48 rounded-full" />
+                                    <View className="absolute -right-10 -top-10 bg-surface/5 w-48 h-48 rounded-full" />
                                     <View className="flex-row justify-between items-start mb-8">
                                         <View>
                                             <Typography className="text-white/50 text-[10px] font-bold tracking-widest uppercase mb-1">Jumlah Transaksi</Typography>
@@ -658,7 +658,7 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                                     <View className="flex-row gap-4 mt-4">
                                         <Pressable
                                             onPress={handleShareLink}
-                                            className="flex-1 flex-row items-center justify-center bg-surface h-14 rounded-2xl border border-border shadow-sm"
+                                            className="flex-1 flex-row items-center justify-center bg-surface h-14 rounded-2xl border border-transparent shadow-sm"
                                         >
                                             <Share2 size={18} color="#00ADEF" />
                                             <Typography weight="bold" className="text-[#00ADEF] ml-2">Bagikan Link</Typography>

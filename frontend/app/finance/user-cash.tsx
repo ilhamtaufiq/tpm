@@ -234,7 +234,7 @@ export default function UserCashManagementScreen() {
 
             {/* Tabs */}
             <View className="px-6 mt-4 z-10">
-                <View className="bg-surface p-2 rounded-[24px] shadow-sm flex-row items-center border border-border">
+                <View className="bg-surface p-2 rounded-[24px] shadow-sm flex-row items-center border border-transparent">
                     <Pressable 
                         onPress={() => setActiveTab('list')}
                         className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'list' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
@@ -256,7 +256,7 @@ export default function UserCashManagementScreen() {
                 <>
                     {/* Search Bar */}
                     <View className="px-6 mt-4">
-                        <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-border shadow-sm">
+                        <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-transparent shadow-sm">
                             <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-background">
                                 <Search size={18} color="#9CA3AF" />
                                 <TextInput 

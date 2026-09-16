@@ -100,27 +100,27 @@ export const StatsSlider = () => {
                         >
                             <View className="flex-row justify-between items-start">
                                 <View className="flex-1 mr-2">
-                                    <View className="bg-white/20 self-start px-2 py-0.5 rounded-lg mb-2">
+                                    <View className="bg-surface/20 self-start px-2 py-0.5 rounded-lg mb-2">
                                         <Typography className="text-white text-[10px] font-bold uppercase tracking-wider">{slide.title}</Typography>
                                     </View>
                                     <Typography variant="h3" weight="bold" className="text-white mb-1" numberOfLines={1}>
                                         {slide.value}
                                     </Typography>
                                 </View>
-                                <View className="bg-white/20 p-3 rounded-2xl">
+                                <View className="bg-surface/20 p-3 rounded-2xl">
                                     <Icon size={24} color="white" strokeWidth={2.5} />
                                 </View>
                             </View>
 
                             <View className="flex-row items-center justify-between">
                                 <Typography className="text-white/80 text-xs font-medium">{slide.subtitle}</Typography>
-                                <View className="bg-white/10 px-3 py-1.5 rounded-xl">
+                                <View className="bg-surface/10 px-3 py-1.5 rounded-xl">
                                     <Typography className="text-white text-[10px] font-bold">LIHAT</Typography>
                                 </View>
                             </View>
 
                             {/* Abstract background shape */}
-                            <View className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/5 rounded-full" />
+                            <View className="absolute -bottom-10 -right-10 w-40 h-40 bg-surface/5 rounded-full" />
                         </Pressable>
                     );
                 })}

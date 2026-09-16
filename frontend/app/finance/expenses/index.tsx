@@ -263,7 +263,7 @@ export default function ExpensesScreen() {
                             <View className="space-y-6">
                                 {/* Kategori Selection */}
                                 <View>
-                                    <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Kategori</Typography>
+                                    <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Kategori</Typography>
                                     <View className="flex-row space-x-2">
                                         {CATEGORIES.map((cat) => (
                                             <Pressable
@@ -271,7 +271,7 @@ export default function ExpensesScreen() {
                                                 onPress={() => setKategori(cat.value)}
                                                 className={`flex-1 p-3 rounded-2xl border items-center ${kategori === cat.value
                                                     ? 'bg-primary/5 border-primary shadow-sm'
-                                                    : 'bg-gray-50 border-gray-100'
+                                                    : 'bg-surface border-gray-100'
                                                     }`}
                                             >
                                                 <cat.icon size={18} color={kategori === cat.value ? '#023C69' : '#9CA3AF'} />
@@ -290,7 +290,7 @@ export default function ExpensesScreen() {
                                 {/* Kaitan Bisnis */}
                                 <View>
                                     <View className="flex-row justify-between items-center mb-3">
-                                        <Typography variant="caption" weight="bold" className="text-textGray/40 px-1 uppercase tracking-widest">Kaitan Bisnis</Typography>
+                                        <Typography variant="caption" weight="bold" className="text-textGray px-1 uppercase tracking-widest">Kaitan Bisnis</Typography>
                                         <Badge label={bisnisKategori === 'umum' ? 'General' : bisnisKategori.replace('_', ' ')} variant="neutral" className="px-1.5 py-0" />
                                     </View>
                                     <View className="flex-row space-x-2 mb-4">
@@ -311,7 +311,7 @@ export default function ExpensesScreen() {
                                                 }}
                                                 className={`flex-1 p-3 rounded-2xl border items-center ${bisnisKategori === cat.value
                                                     ? 'bg-primary border-primary shadow-sm'
-                                                    : 'bg-gray-50 border-gray-100'
+                                                    : 'bg-surface border-gray-100'
                                                     }`}
                                             >
                                                 <cat.icon size={18} color={bisnisKategori === cat.value ? '#FFFFFF' : '#9CA3AF'} />
@@ -327,7 +327,7 @@ export default function ExpensesScreen() {
                                     </View>
 
                                     {bisnisKategori === 'jasa_angkut' && (
-                                        <View className="bg-background p-4 rounded-3xl border border-border space-y-2">
+                                        <View className="bg-background p-4 rounded-3xl border border-transparent space-y-2">
                                             <ArmadaSelector
                                                 label="ARMADA (TRUK)"
                                                 placeholder="Pilih Armada..."
@@ -338,7 +338,7 @@ export default function ExpensesScreen() {
                                     )}
                                     
                                     {bisnisKategori === 'bengkel' && (
-                                        <View className="bg-background p-4 rounded-3xl border border-border">
+                                        <View className="bg-background p-4 rounded-3xl border border-transparent">
                                             <SparePartSelector
                                                 label="SPAREPART (JIKA ADA)"
                                                 placeholder="Pilih Sparepart..."
@@ -349,7 +349,7 @@ export default function ExpensesScreen() {
                                     )}
 
                                     {bisnisKategori === 'jual_beli_mobil' && (
-                                        <View className="bg-background p-4 rounded-3xl border border-border">
+                                        <View className="bg-background p-4 rounded-3xl border border-transparent">
                                             <MobilSelector
                                                 label="UNIT MOBIL"
                                                 placeholder="Pilih Unit Mobil..."
@@ -360,7 +360,7 @@ export default function ExpensesScreen() {
                                     )}
                                     {/* Account Selection - Always Show */}
                                     <View className="mb-6">
-                                        <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana (Akun)</Typography>
+                                        <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Sumber Dana (Akun)</Typography>
                                         <View className="flex-row flex-wrap">
                                             {AKUN.map((opt) => {
                                                 // Sorot akun yang cocok dengan kategori bisnis terpilih.
@@ -377,7 +377,7 @@ export default function ExpensesScreen() {
                                                         }}
                                                         className={`mr-2 mb-2 px-4 py-3 rounded-2xl border items-center ${kasJenis === opt.value
                                                             ? 'bg-primary border-primary shadow-sm'
-                                                            : isRelevant ? 'bg-primary/5 border-primary/20' : 'bg-gray-50 border-gray-100'
+                                                            : isRelevant ? 'bg-primary/5 border-primary/20' : 'bg-surface border-gray-100'
                                                             }`}
                                                     >
                                                         <Typography
@@ -387,7 +387,7 @@ export default function ExpensesScreen() {
                                                             {opt.label}
                                                         </Typography>
                                                         <Typography
-                                                            className={`text-[8px] mt-0.5 ${kasJenis === opt.value ? 'text-white/70' : 'text-textGray/50'}`}
+                                                            className={`text-[8px] mt-0.5 ${kasJenis === opt.value ? 'text-white/70' : 'text-textGray'}`}
                                                         >
                                                             {metodeDariAkun(opt.value)}
                                                         </Typography>
@@ -422,7 +422,7 @@ export default function ExpensesScreen() {
                                     onPress={() => setPayMetode(payMetode === 'SPLIT' ? metodeDariAkun(kasJenis) : 'SPLIT')}
                                     className={`flex-row items-center justify-center py-4 rounded-3xl border ${payMetode === 'SPLIT'
                                         ? 'bg-primary border-primary shadow-2xl shadow-primary/20'
-                                        : 'bg-gray-50 border-gray-100'
+                                        : 'bg-surface border-gray-100'
                                         }`}
                                 >
                                     <Split size={14} color={payMetode === 'SPLIT' ? 'white' : '#9CA3AF'} className="mr-2" />
@@ -432,12 +432,12 @@ export default function ExpensesScreen() {
                                 </Pressable>
 
                                 {payMetode === 'SPLIT' && (
-                                    <View className="bg-background p-4 rounded-3xl border border-border space-y-3">
+                                    <View className="bg-background p-4 rounded-3xl border border-transparent space-y-3">
                                         <View className="flex-row justify-between items-center mb-1">
                                             <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Detail Pembayaran</Typography>
                                             <Pressable
                                                 onPress={() => setSplitPayments([...splitPayments, { metode: 'TUNAI', jumlah: '', kas_jenis: 'KAS_UTAMA' }])}
-                                                className="bg-surface border border-border p-2 rounded-xl"
+                                                className="bg-surface border border-transparent p-2 rounded-xl"
                                             >
                                                 <Plus size={14} color="#023C69" />
                                             </Pressable>
@@ -458,7 +458,7 @@ export default function ExpensesScreen() {
                                                             }}
                                                             className={`mr-1 mb-1 px-2 py-1.5 rounded-lg border ${split.kas_jenis === opt.value
                                                                 ? 'bg-primary border-primary'
-                                                                : 'bg-white border-gray-200'
+                                                                : 'bg-surface border-gray-200'
                                                                 }`}
                                                         >
                                                             <Typography
@@ -498,7 +498,7 @@ export default function ExpensesScreen() {
                                             </View>
                                         ))}
 
-                                        <View className="flex-row justify-between items-center mt-2 pt-3 border-t border-border border-dashed">
+                                        <View className="flex-row justify-between items-center mt-2 pt-3 border-t border-transparent border-dashed">
                                             <Typography className="text-xs text-textGray">Total Terinput:</Typography>
                                             <Typography weight="bold" className={`text-sm ${splitPayments.reduce((acc, curr) => acc + parseNumber(curr.jumlah), 0) === parseNumber(jumlah)
                                                 ? 'text-green-600'
@@ -513,9 +513,9 @@ export default function ExpensesScreen() {
                                 {/* Force Transaction Toggle */}
                                 <Pressable 
                                     onPress={() => setAllowNegative(!allowNegative)}
-                                    className="flex-row items-center mt-2 mb-2 p-4 bg-background rounded-[28px] border border-border"
+                                    className="flex-row items-center mt-2 mb-2 p-4 bg-background rounded-[28px] border border-transparent"
                                 >
-                                    <View className={`w-6 h-6 rounded-md border-2 items-center justify-center mr-3 ${allowNegative ? 'bg-primary border-primary' : 'bg-surface border-border'}`}>
+                                    <View className={`w-6 h-6 rounded-md border-2 items-center justify-center mr-3 ${allowNegative ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}>
                                         {allowNegative && <Plus size={14} color="white" strokeWidth={4} />}
                                     </View>
                                     <View className="flex-1">
@@ -547,12 +547,12 @@ export default function ExpensesScreen() {
 
             {/* Main Summary Stat Overlay Card */}
             <View className="px-6 mt-4 z-10">
-                <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-border flex-row items-center">
+                <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-transparent flex-row items-center">
                     <View className="w-14 h-14 bg-rose-50 rounded-[18px] items-center justify-center mr-4 border border-rose-100">
                         <TrendingDown size={28} color="#EF4444" />
                     </View>
                     <View className="flex-1">
-                        <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest mb-1">Total Pengeluaran Bulan Ini</Typography>
+                        <Typography className="text-textGray text-[9px] font-black uppercase tracking-widest mb-1">Total Pengeluaran Bulan Ini</Typography>
                         <Typography variant="h2" weight="bold" className="text-rose-500 font-bold text-xl tracking-tighter">
                             {formatCurrency(summaryData?.total_jumlah || 0)}
                         </Typography>
@@ -576,7 +576,7 @@ export default function ExpensesScreen() {
                                 setPeriod(p.id);
                                 setRefDate(new Date());
                             }}
-                            className={`px-4 py-2 rounded-xl border ${period === p.id ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-border active:bg-background'}`}
+                            className={`px-4 py-2 rounded-xl border ${period === p.id ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-transparent active:bg-background'}`}
                         >
                             <Typography weight="bold" className={`text-xs ${period === p.id ? 'text-white' : 'text-textGray'}`}>
                                 {p.label}
@@ -588,10 +588,10 @@ export default function ExpensesScreen() {
                 {/* Date Navigator — hanya muncul saat periode bukan "Semua" */}
                 {period !== 'all' && (
                     <View className="px-6 mt-2">
-                        <View className="bg-surface border border-border rounded-2xl p-2 flex-row justify-between items-center shadow-sm">
+                        <View className="bg-surface border border-transparent rounded-2xl p-2 flex-row justify-between items-center shadow-sm">
                             <Pressable
                                 onPress={() => shiftDate(-1)}
-                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-border active:scale-95"
+                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-transparent active:scale-95"
                             >
                                 <ChevronLeft size={18} color="#1C1C1C" />
                             </Pressable>
@@ -609,7 +609,7 @@ export default function ExpensesScreen() {
 
                             <Pressable
                                 onPress={() => shiftDate(1)}
-                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-border active:scale-95"
+                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-transparent active:scale-95"
                             >
                                 <ChevronRight size={18} color="#1C1C1C" />
                             </Pressable>
@@ -632,7 +632,7 @@ export default function ExpensesScreen() {
                             <ActivityIndicator size="large" color="#023C69" />
                         </View>
                     ) : filteredExpenses.length === 0 ? (
-                        <View className="py-20 items-center bg-surface rounded-[32px] border border-border shadow-sm p-6">
+                        <View className="py-20 items-center bg-surface rounded-[32px] border border-transparent shadow-sm p-6">
                             <View className="w-16 h-16 bg-background rounded-[28px] items-center justify-center mb-6">
                                 <Receipt size={32} color="#D1D5DB" />
                             </View>
@@ -643,7 +643,7 @@ export default function ExpensesScreen() {
                         filteredExpenses.map((item: any) => {
                             const catInfo = CATEGORIES.find(c => c.value === item.kategori) || CATEGORIES[2];
                             return (
-                                <Card key={item.id} className="mb-4 p-5 border border-border shadow-sm bg-surface rounded-[32px]">
+                                <Card key={item.id} className="mb-4 p-5 border border-transparent shadow-sm bg-surface rounded-[32px]">
                                     <View className="flex-row items-center justify-between">
                                         <View className="flex-row items-center flex-1 mr-4">
                                             <View className="w-12 h-12 rounded-2xl items-center justify-center mr-3 bg-background">
@@ -652,9 +652,9 @@ export default function ExpensesScreen() {
                                             <View className="flex-1">
                                                 <Typography weight="bold" className="text-textMain text-sm mb-0.5" numberOfLines={1}>{item.deskripsi || item.nama}</Typography>
                                                 <View className="flex-row items-center">
-                                                    <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest">{catInfo.label}</Typography>
+                                                    <Typography className="text-textGray text-[9px] font-black uppercase tracking-widest">{catInfo.label}</Typography>
                                                     <Typography className="text-textGray/20 text-[9px] mx-1.5">•</Typography>
-                                                    <Typography className="text-textGray/40 text-[9px] font-bold">{formatDate(item.tanggal)}</Typography>
+                                                    <Typography className="text-textGray text-[9px] font-bold">{formatDate(item.tanggal)}</Typography>
                                                 </View>
                                                 {item.bisnis_kategori !== 'umum' && (
                                                     <View className="flex-row items-center mt-1">
@@ -723,7 +723,7 @@ export default function ExpensesScreen() {
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 48,  }}
                     topInset={insets.top}
                     onClose={() => setShowForm(false)}
                 >

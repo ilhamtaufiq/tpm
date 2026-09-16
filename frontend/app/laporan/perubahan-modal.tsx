@@ -199,7 +199,7 @@ export default function LaporanPerubahanModalScreen() {
 
     const StatCard = ({ label, value, icon: Icon, subLabel, bgColor }: any) => (
         <View className="flex-1 p-5 rounded-[28px] shadow-sm border border-white/10 mr-2" style={{ backgroundColor: bgColor || '#1e293b' }}>
-            <View className="w-9 h-9 rounded-xl bg-white/20 items-center justify-center mb-3">
+            <View className="w-9 h-9 rounded-xl bg-surface/20 items-center justify-center mb-3">
                 <Icon size={18} color="white" />
             </View>
             <Typography variant="caption" weight="bold" className="text-white/70 mb-1 uppercase tracking-wider">{label}</Typography>
@@ -256,7 +256,7 @@ export default function LaporanPerubahanModalScreen() {
                         )}
 
                         <View className="w-full rounded-[36px] p-7 shadow-2xl overflow-hidden relative" style={{ backgroundColor: '#4f46e5' }}>
-                            <View className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full" />
+                            <View className="absolute -top-16 -right-16 w-56 h-56 bg-surface/10 rounded-full" />
                             <View className="absolute top-20 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full" />
 
                             <View className="flex-row items-start justify-between mb-6">
@@ -264,7 +264,7 @@ export default function LaporanPerubahanModalScreen() {
                                     <Typography variant="caption" weight="bold" className="text-indigo-100 uppercase tracking-[2.5px]">Modal Akhir Periode</Typography>
                                     <Typography variant="h1" weight="bold" className="text-white mt-1" style={{ fontSize: 32 }}>{formatCurrency(equity.modalAkhir)}</Typography>
                                 </View>
-                                <View className="w-16 h-16 bg-white/20 rounded-2xl items-center justify-center border border-white/30">
+                                <View className="w-16 h-16 bg-surface/20 rounded-2xl items-center justify-center border border-white/30">
                                     <Wallet size={32} color="white" />
                                 </View>
                             </View>
@@ -354,11 +354,11 @@ export default function LaporanPerubahanModalScreen() {
 
                         {/* KESEIMBANGAN MODAL (BALANCE CHECK) */}
                         <View className={`mt-4 rounded-[28px] overflow-hidden p-6 ${equity.isBalanced ? 'bg-indigo-600' : 'bg-amber-600'} shadow-md relative w-full`}>
-                            <View className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full" />
+                            <View className="absolute -top-10 -right-10 w-40 h-40 bg-surface/5 rounded-full" />
                             <View className="absolute -bottom-10 -left-10 w-20 h-20 bg-black/5 rounded-full" />
 
                             <View className="flex-row items-center mb-5">
-                                <View className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center mr-3">
+                                <View className="w-10 h-10 rounded-xl bg-surface/20 items-center justify-center mr-3">
                                     <Scale size={20} color="white" />
                                 </View>
                                 <View>
@@ -367,10 +367,10 @@ export default function LaporanPerubahanModalScreen() {
                                 </View>
                             </View>
 
-                            <View className="bg-white/10 rounded-2xl p-4 border border-white/10 mb-4 w-full">
+                            <View className="bg-surface/10 rounded-2xl p-4 border border-white/10 mb-4 w-full">
                                 <FinancialRow label="Modal Akhir (Aktual - Neraca)" value={equity.modalAkhir} isDark small />
                                 <FinancialRow label="Modal Akhir (Teoritis - Backend)" value={equity.expectedModalAkhir} isDark small />
-                                <View className="h-[1px] bg-white/20 w-full my-2" />
+                                <View className="h-[1px] bg-surface/20 w-full my-2" />
                                 <View className="flex-row justify-between items-center w-full">
                                     <Typography className="text-white/60 text-xs flex-1">Selisih Rekonsiliasi</Typography>
                                     <Typography variant="h4" weight="bold" className={equity.isBalanced ? "text-emerald-300" : "text-amber-300"}>

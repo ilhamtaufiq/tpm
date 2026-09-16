@@ -191,7 +191,7 @@ ThermalReceiptView.displayName = 'ThermalReceiptView';
 
 const styles = StyleSheet.create({
     root: {
-        backgroundColor: '#ffffff',
+        
     },
     center: {
         alignItems: 'center',

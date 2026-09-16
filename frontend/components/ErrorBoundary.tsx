@@ -56,7 +56,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                     justifyContent: 'center',
                     alignItems: 'center',
                     padding: 24,
-                    backgroundColor: '#ffffff'
+                    
                 }}>
                     {/* Error Icon */}
                     <View style={{

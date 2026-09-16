@@ -137,7 +137,7 @@ export default function TrashScreen() {
                         onPress={handleEmptyTrash}
                         disabled={!items || items.length === 0 || emptyTrashMutation.isPending}
                         className={`w-12 h-12 rounded-2xl items-center justify-center ${
-                            (!items || items.length === 0) ? 'bg-gray-50 opacity-50' : 'bg-red-50'
+                            (!items || items.length === 0) ? 'bg-surface opacity-50' : 'bg-red-50'
                         }`}
                     >
                         <Trash2 size={24} color={(!items || items.length === 0) ? "#9CA3AF" : "#EF4444"} />
@@ -157,7 +157,7 @@ export default function TrashScreen() {
                             className={`px-4 py-2.5 rounded-xl mr-2 border ${
                                 activeCategory === cat.id
                                 ? 'bg-primary border-primary'
-                                : 'bg-gray-50 border-gray-100'
+                                : 'bg-surface border-gray-100'
                             }`}
                         >
                             <Typography
@@ -181,7 +181,7 @@ export default function TrashScreen() {
                 ) : items?.length > 0 ? (
                     <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
                         {items.map((item: any) => (
-                            <Card key={item.id} className="p-4 mb-4 rounded-2xl border border-border shadow-none bg-surface">
+                            <Card key={item.id} className="p-4 mb-4 rounded-2xl border border-transparent shadow-none bg-surface">
                                 <View className="flex-row justify-between items-start">
                                     <View className="flex-1 mr-4">
                                         <Typography variant="caption" weight="bold" className="text-primary mb-0.5">
@@ -190,7 +190,7 @@ export default function TrashScreen() {
                                         <Typography weight="bold" className="text-textMain text-base mb-1">
                                             {item.nama}
                                         </Typography>
-                                        <Typography className="text-[10px] text-textGray/60 italic">
+                                        <Typography className="text-[10px] text-textGray italic">
                                             Dihapus: {format(new Date(item.deleted_at), 'dd MMM yyyy, HH:mm', { locale: id })}
                                         </Typography>
                                     </View>
@@ -220,7 +220,7 @@ export default function TrashScreen() {
                             <ShieldCheck size={40} color="#9CA3AF" strokeWidth={1.5} />
                         </View>
                         <Typography weight="bold" className="text-textGray">Tempat Sampah Kosong</Typography>
-                        <Typography variant="caption" className="text-textGray/60 mt-1 px-10 text-center">
+                        <Typography variant="caption" className="text-textGray mt-1 px-10 text-center">
                             Tidak ada data {CATEGORIES.find(c => c.id === activeCategory)?.label} yang telah dihapus baru-baru ini.
                         </Typography>
                     </View>

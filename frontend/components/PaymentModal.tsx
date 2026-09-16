@@ -225,7 +225,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </View>
                 <Pressable
                     onPress={() => setIsSplitPayment(!isSplitPayment)}
-                    className={`px-4 py-2 rounded-2xl border ${isSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-background border-border'}`}
+                    className={`px-4 py-2 rounded-2xl border ${isSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-background border-transparent'}`}
                 >
                     <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-textGray'} uppercase tracking-widest`}>
                         {isSplitPayment ? 'Split On' : 'Split Off'}
@@ -275,7 +275,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </View>
 
                 {payments.map((p, idx) => (
-                    <Card key={p.id} variant="outlined" className="p-6 mb-4 border-border rounded-[28px]">
+                    <Card key={p.id} variant="outlined" className="p-6 mb-4 border-transparent rounded-[28px]">
                         <View className="flex-row items-center justify-between mb-5">
                             <View className="bg-background px-3 py-1 rounded-lg">
                                 <Typography weight="bold" className="text-textGray text-[9px] uppercase tracking-widest">Entry #{idx + 1}</Typography>
@@ -331,11 +331,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                         key={m}
                                         onPress={() => updatePayment(p.id, 'metode', m)}
                                         className={`flex-row items-center py-3.5 px-4 rounded-2xl border ${
-                                            isActive ? `${cfg.activeBg} ${cfg.activeBorder} shadow-md` : 'border-gray-100 bg-gray-50'
+                                            isActive ? `${cfg.activeBg} ${cfg.activeBorder} shadow-md` : 'border-gray-100 bg-surface'
                                         }`}
                                     >
                                         <View className={`w-8 h-8 rounded-xl items-center justify-center mr-3 ${
-                                            isActive ? 'bg-white/20' : 'bg-white'
+                                            isActive ? 'bg-surface/20' : 'bg-surface'
                                         }`}>
                                             {cfg.icon}
                                         </View>
@@ -354,7 +354,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                             </Typography>
                                         </View>
                                         {isActive && (
-                                            <View className="w-5 h-5 bg-white/30 rounded-full items-center justify-center">
+                                            <View className="w-5 h-5 bg-surface/30 rounded-full items-center justify-center">
                                                 <View className="w-2.5 h-2.5 bg-surface rounded-full" />
                                             </View>
                                         )}
@@ -425,7 +425,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 {!isSplitPayment && (
                     <Pressable
                         onPress={addPayment}
-                        className="w-full py-5 border-2 border-dashed border-border rounded-3xl items-center justify-center flex-row bg-gray-50/30"
+                        className="w-full py-5 border-2 border-dashed border-transparent rounded-3xl items-center justify-center flex-row bg-surface/30"
                     >
                         <Plus size={18} color="#9CA3AF" />
                         <Typography className="text-textGray font-bold ml-2 text-xs uppercase tracking-widest">Gunakan Split Payment</Typography>
@@ -449,7 +449,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     variant="outline"
                     title="Batal"
                     onPress={onClose}
-                    className="flex-1 h-14 rounded-2xl border-border"
+                    className="flex-1 h-14 rounded-2xl border-transparent"
                 />
                 <Button
                     title={loading ? 'Memproses...' : 'Konfirmasi & Simpan'}
@@ -498,7 +498,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             keyboardBlurBehavior="restore"
             android_keyboardInputMode="adjustResize"
             onClose={onClose}
-            backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+            backgroundStyle={{ borderRadius: 48,  }}
         >
             <BottomSheetScrollView
                 showsVerticalScrollIndicator

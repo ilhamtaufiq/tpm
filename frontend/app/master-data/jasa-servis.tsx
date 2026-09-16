@@ -196,7 +196,7 @@ export default function JasaServisScreen() {
     const renderItem = ({ item }: { item: any }) => {
         return (
             <Pressable onPress={() => handleOpenSheet(item)}>
-                <View className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center">
+                <View className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center">
                     <View className="w-16 h-16 bg-purple-50 rounded-[20px] items-center justify-center mr-4 border border-purple-100/50">
                         <Tag size={32} color="#8B5CF6" />
                     </View>
@@ -240,7 +240,7 @@ export default function JasaServisScreen() {
                 <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Jasa *</Typography>
                     <TextInput
-                        className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                        className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                         placeholder="Contoh: Ganti Oli"
                         placeholderTextColor="#9CA3AF"
                         value={form.nama}
@@ -252,7 +252,7 @@ export default function JasaServisScreen() {
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Harga Jasa *</Typography>
                         <TextInput
-                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="0"
                             placeholderTextColor="#9CA3AF"
                             keyboardType="numeric"
@@ -263,7 +263,7 @@ export default function JasaServisScreen() {
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Kategori</Typography>
                         <TextInput
-                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="Servis"
                             placeholderTextColor="#9CA3AF"
                             value={form.kategori}
@@ -275,7 +275,7 @@ export default function JasaServisScreen() {
                 <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Deskripsi (Opsional)</Typography>
                     <TextInput
-                        className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]"
+                        className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]"
                         placeholder="Keterangan tambahan jasa..."
                         placeholderTextColor="#9CA3AF"
                         value={form.deskripsi}
@@ -320,7 +320,7 @@ export default function JasaServisScreen() {
                 showProfile={true}
             >
                 {!sheetVisible && (
-                    <View className="flex-row items-center bg-background h-11 rounded-2xl border border-border">
+                    <View className="flex-row items-center bg-background h-11 rounded-2xl border border-transparent">
                         <Search size={18} color="#9CA3AF" className="ml-4" />
                         <TextInput
                             placeholder="Cari jasa..."
@@ -411,7 +411,7 @@ export default function JasaServisScreen() {
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 48,  }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     topInset={insets.top}
                     onChange={(index) => setSheetVisible(index !== -1)}

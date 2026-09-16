@@ -37,7 +37,7 @@ export const ProfitSplitCard = ({
             </Typography>
 
             {/* Summary Row */}
-            <View className="flex-row justify-between mb-4 pb-4 border-b border-border">
+            <View className="flex-row justify-between mb-4 pb-4 border-b border-transparent">
                 <View>
                     <Typography variant="caption" className="text-textGray">Total Pendapatan</Typography>
                     <Typography variant="body2" weight="bold">{formatCurrency(revenue)}</Typography>
@@ -82,7 +82,7 @@ export const ProfitSplitCard = ({
             </View>
 
             {/* Costs Info */}
-            <View className="mt-3 pt-2 border-t border-dashed border-border">
+            <View className="mt-3 pt-2 border-t border-dashed border-transparent">
                 <Typography variant="caption" className="text-textGray text-center">
                     *Biaya operasional dibebankan ke TPM (tidak mengurangi hak supir)
                 </Typography>

@@ -140,9 +140,9 @@ export default function SecurityFeaturesScreen() {
                 {/* Section: Platform Access (Independent of PIN) */}
                 <View className="mb-8">
                     <Typography weight="bold" className="text-slate-400 text-[10px] uppercase tracking-widest mb-4 px-2">Akses Platform</Typography>
-                    <View className="bg-surface rounded-[32px] overflow-hidden border border-border shadow-sm relative">
+                    <View className="bg-surface rounded-[32px] overflow-hidden border border-transparent shadow-sm relative">
                         {updateSettingsMutation.isPending && (
-                            <View className="absolute inset-0 z-10 bg-white/50 items-center justify-center">
+                            <View className="absolute inset-0 z-10 bg-surface/50 items-center justify-center">
                                 <ActivityIndicator size="small" color={themeColors.primary} />
                             </View>
                         )}
@@ -194,16 +194,16 @@ export default function SecurityFeaturesScreen() {
                     </View>
                 )}
 
-                <View className="bg-surface rounded-[32px] overflow-hidden border border-border mb-20 shadow-sm relative">
+                <View className="bg-surface rounded-[32px] overflow-hidden border border-transparent mb-20 shadow-sm relative">
                     {updateSettingsMutation.isPending && (
-                        <View className="absolute inset-0 z-10 bg-white/50 items-center justify-center">
+                        <View className="absolute inset-0 z-10 bg-surface/50 items-center justify-center">
                             <ActivityIndicator size="large" color={themeColors.primary} />
                         </View>
                     )}
                     {featureList.filter(f => f.id !== 'disable_web_access').map((item, index, filteredArr) => (
                         <View
                             key={item.id}
-                            className={`p-5 flex-row items-center justify-between ${index !== filteredArr.length - 1 ? 'border-b border-border' : ''}`}
+                            className={`p-5 flex-row items-center justify-between ${index !== filteredArr.length - 1 ? 'border-b border-transparent' : ''}`}
                         >
                             <View className="flex-row items-center flex-1">
                                 <View className={`w-10 h-10 ${item.color} rounded-xl items-center justify-center mr-4`}>

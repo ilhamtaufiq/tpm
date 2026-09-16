@@ -480,7 +480,7 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                         <TextInput
                             value={settings.companyName}
                             onChangeText={(text) => setSettings({ ...settings, companyName: text })}
-                            className="bg-background border border-border rounded-2xl px-4 py-3 text-base"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3 text-base"
                             placeholder="Nama usaha Anda"
                         />
                     </View>
@@ -492,7 +492,7 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                         <TextInput
                             value={settings.companyAddress}
                             onChangeText={(text) => setSettings({ ...settings, companyAddress: text })}
-                            className="bg-background border border-border rounded-2xl px-4 py-3 text-base"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3 text-base"
                             placeholder="Alamat lengkap"
                             multiline
                             numberOfLines={2}
@@ -506,7 +506,7 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                         <TextInput
                             value={settings.companyPhone}
                             onChangeText={(text) => setSettings({ ...settings, companyPhone: text })}
-                            className="bg-background border border-border rounded-2xl px-4 py-3 text-base"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3 text-base"
                             placeholder="(021) 1234-5678"
                             keyboardType="phone-pad"
                         />
@@ -538,7 +538,7 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                     ) : (
                         <Pressable
                             onPress={pickLogo}
-                            className="bg-background border-2 border-dashed border-border rounded-2xl p-8 items-center"
+                            className="bg-background border-2 border-dashed border-transparent rounded-2xl p-8 items-center"
                         >
                             <View className="w-16 h-16 bg-background rounded-full items-center justify-center mb-3">
                                 <ImageIcon size={28} color="#9CA3AF" />
@@ -546,7 +546,7 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                             <Typography weight="medium" className="text-textGray">
                                 Pilih Logo
                             </Typography>
-                            <Typography variant="caption" className="text-textGray/60 mt-1">
+                            <Typography variant="caption" className="text-textGray mt-1">
                                 Ukuran maksimal 1MB
                             </Typography>
                         </Pressable>
@@ -566,7 +566,7 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                         <TextInput
                             value={settings.header}
                             onChangeText={(text) => setSettings({ ...settings, header: text })}
-                            className="bg-background border border-border rounded-2xl px-4 py-3 text-base"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3 text-base"
                             placeholder="Contoh: STRUK PEMBELIAN"
                         />
                     </View>
@@ -578,7 +578,7 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                         <TextInput
                             value={settings.footer}
                             onChangeText={(text) => setSettings({ ...settings, footer: text })}
-                            className="bg-background border border-border rounded-2xl px-4 py-3 text-base"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3 text-base"
                             placeholder="Contoh: Terima kasih atas kunjungan Anda"
                             multiline
                             numberOfLines={2}
@@ -599,7 +599,7 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                         <TextInput
                             value={settings.webPrinterName ?? ''}
                             onChangeText={(text) => setSettings({ ...settings, webPrinterName: text })}
-                            className="bg-background border border-border rounded-2xl px-4 py-3 text-base"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-3 text-base"
                             placeholder="Kosongkan untuk printer default host"
                             autoCapitalize="none"
                             autoCorrect={false}
@@ -782,7 +782,7 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
 
                         <Pressable
                             onPress={() => selectPrinter('')}
-                            className={`p-4 rounded-2xl border mb-3 ${settings.webPrinterName ? 'border-border bg-surface' : 'border-primary bg-primary/5'}`}
+                            className={`p-4 rounded-2xl border mb-3 ${settings.webPrinterName ? 'border-transparent bg-surface' : 'border-primary bg-primary/5'}`}
                         >
                             <Typography weight="semibold">
                                 Printer default host
@@ -821,7 +821,7 @@ p { font-size: ${paper.fontBase}px; margin: 4px 0; }
                                         <Pressable
                                             key={printer}
                                             onPress={() => selectPrinter(printer)}
-                                            className={`p-4 rounded-2xl border mb-3 ${selected ? 'border-primary bg-primary/5' : 'border-border bg-surface'}`}
+                                            className={`p-4 rounded-2xl border mb-3 ${selected ? 'border-primary bg-primary/5' : 'border-transparent bg-surface'}`}
                                         >
                                             <View className="flex-row items-center justify-between">
                                                 <View className="flex-1 pr-3">

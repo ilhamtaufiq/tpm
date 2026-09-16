@@ -104,13 +104,13 @@ export default function ScannerSettingsScreen() {
                     <View className="mb-6">
                         <TextInput
                             ref={testInputRef}
-                            className="bg-background border border-border rounded-2xl px-4 py-4 text-center font-bold text-lg text-primary"
+                            className="bg-background border border-transparent rounded-2xl px-4 py-4 text-center font-bold text-lg text-primary"
                             placeholder="Klik di sini sblm scan"
                             placeholderTextColor="#9CA3AF"
                             showSoftInputOnFocus={false} // Prevent soft keyboard from popping up
                             onSubmitEditing={(e) => handleTestScan(e.nativeEvent.text)}
                         />
-                        <Typography variant="caption" className="text-center text-textGray/60 mt-2 italic">
+                        <Typography variant="caption" className="text-center text-textGray mt-2 italic">
                             Soft keyboard dinonaktifkan di area test ini
                         </Typography>
                     </View>
@@ -126,13 +126,13 @@ export default function ScannerSettingsScreen() {
                         </View>
 
                         {testResult.length === 0 ? (
-                            <View className="py-8 items-center justify-center border border-dashed border-border rounded-2xl">
-                                <Typography className="text-textGray/40 italic">Belum ada data scan</Typography>
+                            <View className="py-8 items-center justify-center border border-dashed border-transparent rounded-2xl">
+                                <Typography className="text-textGray italic">Belum ada data scan</Typography>
                             </View>
                         ) : (
                             <View className="space-y-2">
                                 {testResult.map((code, index) => (
-                                    <View key={index} className="bg-background p-3 rounded-xl flex-row justify-between items-center border border-border">
+                                    <View key={index} className="bg-background p-3 rounded-xl flex-row justify-between items-center border border-transparent">
                                         <Typography weight="bold" className="text-primary">{code}</Typography>
                                         <CheckCircle2 size={16} color="#10B981" />
                                     </View>
@@ -150,7 +150,7 @@ export default function ScannerSettingsScreen() {
                         { icon: <Keyboard size={18} color="#6B7280" />, text: "App akan mendeteksi scanner sebagai input eksternal." },
                         { icon: <CheckCircle2 size={18} color="#6B7280" />, text: "Scanner harus mengirimkan 'Enter' (Carriage Return) setelah setiap scan." }
                     ].map((item, i) => (
-                        <View key={i} className="flex-row items-center space-x-3 bg-surface p-4 rounded-2xl border border-border">
+                        <View key={i} className="flex-row items-center space-x-3 bg-surface p-4 rounded-2xl border border-transparent">
                             {item.icon}
                             <Typography variant="body2" className="text-textGray flex-1">{item.text}</Typography>
                         </View>

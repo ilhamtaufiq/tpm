@@ -15,9 +15,9 @@ export function ReportStatsBento({ stats, className = 'mb-4' }: ReportStatsBento
         <View className={`flex-row gap-3 ${className}`}>
             {stats.map((stat) => {
                 const StatIcon = stat.icon;
-                const bg = stat.bg || 'bg-white';
+                const bg = stat.bg || 'bg-surface';
                 return (
-                    <View key={stat.label} className={`flex-1 ${bg} rounded-2xl p-3 border border-border`}>
+                    <View key={stat.label} className={`flex-1 ${bg} rounded-2xl p-3 border border-transparent`}>
                         <View className="flex-row items-center mb-2">
                             <StatIcon size={14} color={stat.color} />
                             <Typography className="text-[9px] font-bold text-textGray ml-1.5 uppercase tracking-wide">

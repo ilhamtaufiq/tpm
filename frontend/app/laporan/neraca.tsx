@@ -377,11 +377,11 @@ export default function NeracaScreen() {
 
         return (
             <View className={`mb-24 rounded-[32px] overflow-hidden p-6 ${isBalanced ? 'bg-primary' : 'bg-amber-600'} shadow-2xl relative w-full`}>
-                <View className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full" />
+                <View className="absolute -top-10 -right-10 w-40 h-40 bg-surface/5 rounded-full" />
                 <View className="absolute -bottom-10 -left-10 w-20 h-20 bg-black/5 rounded-full" />
 
                 <View className="flex-row items-center mb-6">
-                    <View className="w-12 h-12 rounded-[20px] bg-white/20 items-center justify-center mr-4">
+                    <View className="w-12 h-12 rounded-[20px] bg-surface/20 items-center justify-center mr-4">
                         <Scale size={24} color="white" />
                     </View>
                     <View>
@@ -390,10 +390,10 @@ export default function NeracaScreen() {
                     </View>
                 </View>
 
-                <View className="bg-white/10 rounded-2xl p-5 border border-white/10 mb-4 w-full">
+                <View className="bg-surface/10 rounded-2xl p-5 border border-white/10 mb-4 w-full">
                     <FinancialRow label="Total Aktiva" value={report.total_aktiva || 0} isDark small />
                     <FinancialRow label="Total Pasiva (Hutang + Modal)" value={report.total_pasiva || 0} isDark small />
-                    <View className="h-[1px] bg-white/20 w-full my-3" />
+                    <View className="h-[1px] bg-surface/20 w-full my-3" />
                     <View className="flex-row justify-between items-center w-full">
                         <Typography className="text-white/60 text-xs flex-1">Selisih Neraca</Typography>
                         {(() => {
@@ -599,7 +599,7 @@ export default function NeracaScreen() {
                         </View>
                         <View className="flex-1 bg-background">
                             {Platform.OS === 'web' ? (
-                                <iframe srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }} title="Neraca Preview" />
+                                <iframe srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none',  }} title="Neraca Preview" />
                             ) : (
                                 <WebView originWhitelist={['*']} source={{ html: previewHtml }} style={{ flex: 1 }} />
                             )}

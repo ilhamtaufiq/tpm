@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: '#E2E8F0',
-        backgroundColor: '#FFFFFF',
+        
     },
     actionButton: {
         width: '100%',

@@ -164,7 +164,7 @@ export function PublicReceiptCard({ receipt, receiptType, shareUrl, captureMode 
     }, [receipt.date]);
 
     return (
-        <View className="bg-white rounded-[28px] overflow-hidden border border-gray-100 shadow-sm">
+        <View className="bg-surface rounded-[28px] overflow-hidden border border-gray-100 shadow-sm">
             <View className="bg-primary px-5 py-4 flex-row items-center justify-between">
                 <View>
                     <Typography className="text-white/70 text-[10px] font-bold uppercase tracking-[2px]">
@@ -174,7 +174,7 @@ export function PublicReceiptCard({ receipt, receiptType, shareUrl, captureMode 
                         {typeLabel}
                     </Typography>
                 </View>
-                <View className="px-3 py-1 rounded-full bg-white/20">
+                <View className="px-3 py-1 rounded-full bg-surface/20">
                     <Typography weight="bold" className="text-[10px] text-white uppercase tracking-wider">
                         {isPaid ? 'LUNAS' : 'BELUM LUNAS'}
                     </Typography>

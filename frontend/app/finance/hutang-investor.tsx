@@ -65,7 +65,7 @@ export default function HutangInvestorScreen() {
                 rightElement={
                     <Pressable
                         onPress={onRefresh}
-                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
                         <RefreshCw size={20} color="#1F2937" />
                     </Pressable>
@@ -78,7 +78,7 @@ export default function HutangInvestorScreen() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
                 <View className="px-6 mt-4">
-                    <Card className="p-6 rounded-[32px] border-border shadow-sm bg-primary">
+                    <Card className="p-6 rounded-[32px] border-transparent shadow-sm bg-primary">
                         <View className="flex-row items-center mb-2">
                             <TrendingUp size={16} color="rgba(255,255,255,0.7)" />
                             <Typography className="text-white/70 text-[10px] uppercase font-bold tracking-widest ml-2">
@@ -94,25 +94,25 @@ export default function HutangInvestorScreen() {
                     </Card>
 
                     <View className="flex-row justify-between mt-4">
-                        <View className="flex-1 bg-surface p-5 rounded-[24px] border border-border shadow-sm mr-2">
-                            <Typography className="text-textGray/40 text-[10px] uppercase font-bold tracking-[1px] mb-2">
+                        <View className="flex-1 bg-surface p-5 rounded-[24px] border border-transparent shadow-sm mr-2">
+                            <Typography className="text-textGray text-[10px] uppercase font-bold tracking-[1px] mb-2">
                                 Dana Tertanam
                             </Typography>
                             <Typography variant="h2" weight="bold" className="text-sky-700 text-lg tracking-tighter">
                                 {formatCurrency(totalDanaTertanam)}
                             </Typography>
-                            <Typography className="text-textGray/30 text-[9px] font-bold mt-1 uppercase tracking-wider">
+                            <Typography className="text-textGray text-[9px] font-bold mt-1 uppercase tracking-wider">
                                 {unsoldCars?.length || 0} Unit Belum Terjual
                             </Typography>
                         </View>
-                        <View className="flex-1 bg-surface p-5 rounded-[24px] border border-border shadow-sm ml-2">
-                            <Typography className="text-textGray/40 text-[10px] uppercase font-bold tracking-[1px] mb-2">
+                        <View className="flex-1 bg-surface p-5 rounded-[24px] border border-transparent shadow-sm ml-2">
+                            <Typography className="text-textGray text-[10px] uppercase font-bold tracking-[1px] mb-2">
                                 Wajib Cair
                             </Typography>
                             <Typography variant="h2" weight="bold" className="text-emerald-600 text-lg tracking-tighter">
                                 {formatCurrency(totalWajibCair)}
                             </Typography>
-                            <Typography className="text-textGray/30 text-[9px] font-bold mt-1 uppercase tracking-wider">
+                            <Typography className="text-textGray text-[9px] font-bold mt-1 uppercase tracking-wider">
                                 Laba: {formatCurrency(totalLabaBelumCair)}
                             </Typography>
                         </View>
@@ -120,7 +120,7 @@ export default function HutangInvestorScreen() {
                 </View>
 
                 <View className="px-6 mt-4">
-                    <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-border shadow-sm">
+                    <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-transparent shadow-sm">
                         <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-background">
                             <Search size={18} color="#9CA3AF" />
                             <TextInput
@@ -151,7 +151,7 @@ export default function HutangInvestorScreen() {
                         </View>
                     ) : unsoldCars && unsoldCars.length > 0 ? (
                         unsoldCars.map((item) => (
-                            <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-border shadow-sm">
+                            <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-transparent shadow-sm">
                                 <View className="flex-row justify-between items-start mb-3">
                                     <View className="flex-1 mr-3">
                                         <View className="flex-row items-center mb-1">
@@ -168,7 +168,7 @@ export default function HutangInvestorScreen() {
                                     </View>
                                 </View>
 
-                                <View className="bg-gray-50/50 rounded-3xl p-4 border border-gray-100/50">
+                                <View className="bg-surface/50 rounded-3xl p-4 border border-gray-100/50">
                                     <View className="flex-row justify-between mb-2">
                                         <Typography className="text-textGray text-[10px] font-bold">DANA INVESTOR</Typography>
                                         <Typography variant="caption" weight="semibold" className="text-textGray">{formatCurrency(item.nominal_investor)}</Typography>
@@ -206,7 +206,7 @@ export default function HutangInvestorScreen() {
 
                     {pending && pending.length > 0 ? (
                         pending.map((item) => (
-                            <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-border shadow-sm">
+                            <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-transparent shadow-sm">
                                 <View className="flex-row justify-between items-start mb-3">
                                     <View className="flex-1 mr-3">
                                         <View className="flex-row items-center mb-1">
@@ -221,7 +221,7 @@ export default function HutangInvestorScreen() {
                                     <Badge label="READY TO PAY" variant="success" />
                                 </View>
 
-                                <View className="bg-gray-50/50 rounded-3xl p-4 border border-gray-100/50">
+                                <View className="bg-surface/50 rounded-3xl p-4 border border-gray-100/50">
                                     <View className="flex-row justify-between mb-2">
                                         <Typography className="text-textGray text-[10px] font-bold">MODAL INVESTOR</Typography>
                                         <Typography variant="caption" weight="semibold" className="text-textGray">{formatCurrency(item.nominal_investor)}</Typography>
@@ -259,7 +259,7 @@ export default function HutangInvestorScreen() {
 
                     {manualRows.length > 0 ? (
                         manualRows.map((item) => (
-                            <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-border shadow-sm">
+                            <Card key={item.id} className="mb-4 p-5 rounded-[32px] border-transparent shadow-sm">
                                 <View className="flex-row justify-between items-start mb-2">
                                     <View className="flex-1 mr-3">
                                         <Typography variant="body2" weight="bold" numberOfLines={1}>{item.nama_kreditur}</Typography>
@@ -273,7 +273,7 @@ export default function HutangInvestorScreen() {
                                     />
                                 </View>
 
-                                <View className="bg-gray-50/50 rounded-3xl p-4 border border-gray-100/50">
+                                <View className="bg-surface/50 rounded-3xl p-4 border border-gray-100/50">
                                     <View className="flex-row justify-between mb-2">
                                         <Typography className="text-textGray text-[10px] font-bold">NOMINAL</Typography>
                                         <Typography variant="caption" weight="semibold" className="text-textGray">{formatCurrency(Number(item.nominal_hutang || 0))}</Typography>

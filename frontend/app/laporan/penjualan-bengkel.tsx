@@ -280,22 +280,22 @@ export default function PenjualanBengkelReportScreen() {
                 {isLoading ? (
                     <View className="py-20 items-center">
                         <ActivityIndicator size="large" color="#023C69" />
-                        <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
+                        <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                     </View>
                 ) : transactions.length === 0 ? (
-                    <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-border">
+                    <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-transparent">
                         <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
                             <ClipboardList size={40} color="#9CA3AF" />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[6px]">Belum Ada Data</Typography>
-                        <Typography variant="caption" className="text-textGray/40 mt-2">Tidak ditemukan transaksi pada periode ini</Typography>
+                        <Typography variant="caption" className="text-textGray mt-2">Tidak ditemukan transaksi pada periode ini</Typography>
                     </View>
                 ) : (
                     transactions.map((item, index) => (
                         <Pressable
                             key={item.id}
                             onPress={() => handlePressTransaction(item)}
-                            className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm"
+                            className="bg-surface p-5 rounded-[32px] mb-6 border border-transparent shadow-sm"
                         >
                             <View className="flex-row items-center mb-4">
                                 <View className={`w-14 h-14 bg-emerald-50 rounded-2xl items-center justify-center mr-4`}>
@@ -312,7 +312,7 @@ export default function PenjualanBengkelReportScreen() {
                                             </Typography>
                                         </View>
                                     </View>
-                                    <Typography variant="caption" className="text-textGray/60 mt-0.5" numberOfLines={1}>
+                                    <Typography variant="caption" className="text-textGray mt-0.5" numberOfLines={1}>
                                         {format(new Date(item.tanggal), 'dd MMMM yyyy', { locale: localeID })} • {item.nomor_transaksi}
                                     </Typography>
                                 </View>
@@ -329,7 +329,7 @@ export default function PenjualanBengkelReportScreen() {
                                     </Typography>
                                 </View>
                                 <View className="items-end">
-                                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-0.5">Grand Total</Typography>
+                                    <Typography className="text-textGray text-[9px] uppercase font-bold mb-0.5">Grand Total</Typography>
                                     <Typography variant="h3" weight="bold" className="text-primary tracking-tighter">
                                         {formatCurrency(item.grand_total || 0)}
                                     </Typography>
@@ -373,7 +373,7 @@ export default function PenjualanBengkelReportScreen() {
                     ) : selectedTransaction ? (
                         <BottomSheetScrollView showsVerticalScrollIndicator={false}>
                             {/* Summary Card */}
-                            <View className="bg-background p-5 rounded-2xl mb-6 border border-border">
+                            <View className="bg-background p-5 rounded-2xl mb-6 border border-transparent">
                                 <View className="flex-row justify-between mb-4">
                                     <View>
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Customer</Typography>
@@ -411,16 +411,16 @@ export default function PenjualanBengkelReportScreen() {
                                 </View>
                                 {selectedTransaction.detail_parts && selectedTransaction.detail_parts.length > 0 ? (
                                     selectedTransaction.detail_parts.map((item: any, index: number) => (
-                                        <View key={`part-${index}`} className="flex-row justify-between items-start py-3 border-b border-border last:border-0">
+                                        <View key={`part-${index}`} className="flex-row justify-between items-start py-3 border-b border-transparent last:border-0">
                                             <View className="flex-1 pr-4">
-                                                <Typography weight="bold" className="text-gray-800 text-sm">
+                                                <Typography weight="bold" className="text-text text-sm">
                                                     {item.spare_part_nama || item.spare_part?.nama}
                                                 </Typography>
                                                 <Typography variant="caption" className="text-textGray">
                                                     {item.qty} x {formatCurrency(item.harga_jual)}
                                                 </Typography>
                                             </View>
-                                            <Typography weight="bold" className="text-gray-900 text-sm">
+                                            <Typography weight="bold" className="text-text text-sm">
                                                 {formatCurrency(item.subtotal)}
                                             </Typography>
                                         </View>
@@ -440,16 +440,16 @@ export default function PenjualanBengkelReportScreen() {
                                 </View>
                                 {selectedTransaction.detail_services && selectedTransaction.detail_services.length > 0 ? (
                                     selectedTransaction.detail_services.map((item: any, index: number) => (
-                                        <View key={`service-${index}`} className="flex-row justify-between items-start py-3 border-b border-border last:border-0">
+                                        <View key={`service-${index}`} className="flex-row justify-between items-start py-3 border-b border-transparent last:border-0">
                                             <View className="flex-1 pr-4">
-                                                <Typography weight="bold" className="text-gray-800 text-sm">
+                                                <Typography weight="bold" className="text-text text-sm">
                                                     {item.nama_jasa}
                                                 </Typography>
                                                 <Typography variant="caption" className="text-textGray">
                                                     {item.qty || 1} x {formatCurrency(item.harga)}
                                                 </Typography>
                                             </View>
-                                            <Typography weight="bold" className="text-gray-900 text-sm">
+                                            <Typography weight="bold" className="text-text text-sm">
                                                 {formatCurrency(item.subtotal)}
                                             </Typography>
                                         </View>
@@ -464,11 +464,11 @@ export default function PenjualanBengkelReportScreen() {
                                 <View className="space-y-2 mb-4">
                                     <View className="flex-row justify-between">
                                         <Typography className="text-textGray text-xs">Total Parts</Typography>
-                                        <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedTransaction.total_parts || 0)}</Typography>
+                                        <Typography weight="bold" className="text-text text-sm">{formatCurrency(selectedTransaction.total_parts || 0)}</Typography>
                                     </View>
                                     <View className="flex-row justify-between">
                                         <Typography className="text-textGray text-xs">Total Jasa</Typography>
-                                        <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedTransaction.total_jasa || 0)}</Typography>
+                                        <Typography weight="bold" className="text-text text-sm">{formatCurrency(selectedTransaction.total_jasa || 0)}</Typography>
                                     </View>
                                     {Number(selectedTransaction.diskon) > 0 && (
                                         <View className="flex-row justify-between">
@@ -485,7 +485,7 @@ export default function PenjualanBengkelReportScreen() {
                                         </Typography>
 
                                         {Number(selectedTransaction.laba_kotor) > 0 && (
-                                            <View className="mt-1 bg-white/50 p-1 rounded-lg">
+                                            <View className="mt-1 bg-surface/50 p-1 rounded-lg">
                                                 <Typography className="text-emerald-600 text-[9px] font-bold uppercase">
                                                     Margin: {formatCurrency(selectedTransaction.laba_kotor)}
                                                 </Typography>

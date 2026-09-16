@@ -41,7 +41,7 @@ export const RelatedBengkelTransactions = ({ muatan_id, mobil_id }: RelatedBengk
             <Typography variant="h3" weight="bold" className="mb-4 text-textMain tracking-tight">Riwayat Bengkel Terkait</Typography>
             <View className="space-y-3">
                 {transactions.map((item: any) => (
-                    <Card key={item.id} className="p-4 border-border bg-gray-50/50 rounded-[24px]">
+                    <Card key={item.id} className="p-4 border-transparent bg-surface/50 rounded-[24px]">
                         <View className="flex-row justify-between items-start mb-2">
                             <View className="flex-row items-center">
                                 <View className="w-10 h-10 bg-blue-100/50 rounded-2xl items-center justify-center mr-3">
@@ -65,7 +65,7 @@ export const RelatedBengkelTransactions = ({ muatan_id, mobil_id }: RelatedBengk
                         </View>
 
                         {/* Details List */}
-                        <View className="ml-1 mr-2 mt-3 p-3 bg-white/50 rounded-2xl border border-gray-100/50">
+                        <View className="ml-1 mr-2 mt-3 p-3 bg-surface/50 rounded-2xl border border-gray-100/50">
                             {(item.detail_services || []).map((s: any, idx: number) => (
                                 <View key={`s-${idx}`} className="flex-row items-center mb-1.5">
                                     <View className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2.5" />

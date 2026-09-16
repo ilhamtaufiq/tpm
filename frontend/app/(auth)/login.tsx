@@ -118,10 +118,10 @@ export default function LoginScreen() {
                     {/* Premium Header - Bento Style Rounding */}
                     <View className="bg-primary pt-24 pb-32 px-8 rounded-b-[48px] shadow-2xl items-center justify-center relative overflow-hidden">
                         {/* Decorative Background Elements */}
-                        <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-white/5 rounded-full" />
-                        <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-white/5 rounded-full" />
+                        <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-surface/5 rounded-full" />
+                        <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-surface/5 rounded-full" />
 
-                        <View className="w-24 h-24 bg-white/10 rounded-[32px] items-center justify-center mb-6 border border-white/20 overflow-hidden">
+                        <View className="w-24 h-24 bg-surface/10 rounded-[32px] items-center justify-center mb-6 border border-white/20 overflow-hidden">
                             {appLogo ? (
                                 <Image source={{ uri: appLogo }} className="w-full h-full" resizeMode="contain" />
                             ) : (
@@ -139,7 +139,7 @@ export default function LoginScreen() {
 
                     {/* Login Card - Bento Style Overlap */}
                     <View className="px-6 -mt-16 mb-8">
-                        <View className="bg-surface p-8 rounded-[40px] shadow-2xl border border-border">
+                        <View className="bg-surface p-8 rounded-[40px] shadow-2xl border border-transparent">
                             <View className="mb-8">
                                 <Typography variant="h2" weight="bold" className="text-primary">Masuk</Typography>
                                 <Typography variant="body2" className="text-textGray mt-1">

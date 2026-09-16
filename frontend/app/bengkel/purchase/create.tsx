@@ -466,7 +466,7 @@ export default function PurchaseScreen() {
             <StatusBar barStyle="dark-content" />
 
             {/* Header */}
-            <View className="px-5 py-4 border-b border-border flex-row items-center justify-between">
+            <View className="px-5 py-4 border-b border-transparent flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                     <Pressable onPress={handleBack} className="w-10 h-10 bg-background rounded-full items-center justify-center mr-3">
                         <ChevronLeft size={20} color="#475569" />
@@ -480,7 +480,7 @@ export default function PurchaseScreen() {
 
             {/* Step 1 Action Bar */}
             {step === 1 && (
-                <View className="px-5 py-3 bg-surface border-b border-border">
+                <View className="px-5 py-3 bg-surface border-b border-transparent">
                     <View className="flex-row items-center justify-between">
                         <ActionIcon
                             active={showPartSearch}
@@ -562,10 +562,10 @@ export default function PurchaseScreen() {
                                     return (
                                         <View
                                             key={part.id}
-                                            className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-blue-50 border-blue-200' : 'bg-surface border-border'}`}
+                                            className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-blue-50 border-blue-200' : 'bg-surface border-transparent'}`}
                                         >
                                             <Pressable onPress={() => toggleItem(part)} className="flex-row items-start">
-                                                <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : 'border-border'}`}>
+                                                <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : 'border-transparent'}`}>
                                                     {selected && <Check size={16} color="white" />}
                                                 </View>
                                                 <View className="flex-1">
@@ -635,7 +635,7 @@ export default function PurchaseScreen() {
                 {/* STEP 2: Supplier Info */}
                 {step === 2 && (
                     <View>
-                        <Card variant="outlined" className="p-4 mb-6 border-border bg-gray-50/30">
+                        <Card variant="outlined" className="p-4 mb-6 border-transparent bg-surface/30">
                             <MasterDataSelector
                                 type="supplier"
                                 label="Informasi Supplier"
@@ -722,7 +722,7 @@ export default function PurchaseScreen() {
             </ScrollView>
 
             {/* Bottom Bar */}
-            <View className="absolute left-0 right-0 bg-surface border-t border-border px-5 py-4" style={{ bottom: tabBarBottom }}>
+            <View className="absolute left-0 right-0 bg-surface border-t border-transparent px-5 py-4" style={{ bottom: tabBarBottom }}>
                 <View className="flex-row items-center justify-between mb-3">
                     <Typography className="text-textGray text-xs font-bold uppercase">{step === 3 ? 'Total Pembelian' : ''}</Typography>
                     {step === 3 && (
@@ -780,7 +780,7 @@ export default function PurchaseScreen() {
                             placeholderTextColor="#94A3B8"
                             autoCapitalize="none"
                             keyboardType="numbers-and-punctuation"
-                            className="bg-background rounded-2xl px-4 h-11 text-sm text-textMain border border-border"
+                            className="bg-background rounded-2xl px-4 h-11 text-sm text-textMain border border-transparent"
                         />
                         {tanggalError ? (
                             <Typography className="text-rose-500 text-xs mt-2">{tanggalError}</Typography>
@@ -842,7 +842,7 @@ export default function PurchaseScreen() {
                                                 setMetodeBayar(m.value);
                                                 setStatusBayar(m.value === 'KREDIT' ? 'BELUM_LUNAS' : 'LUNAS');
                                             }}
-                                            className={`flex-1 min-w-[45%] mb-2 py-3 rounded-2xl border items-center ${metodeBayar === m.value ? 'bg-primary border-primary' : 'bg-surface border-border'}`}
+                                            className={`flex-1 min-w-[45%] mb-2 py-3 rounded-2xl border items-center ${metodeBayar === m.value ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
                                         >
                                             <Typography weight="bold" className={metodeBayar === m.value ? 'text-white' : 'text-textGray'}>{m.label}</Typography>
                                         </Pressable>
@@ -915,7 +915,7 @@ export default function PurchaseScreen() {
                             <View className="mb-4">
                                 <Pressable
                                     onPress={() => setIsSplitPayment(!isSplitPayment)}
-                                    className={`self-end px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-background border border-border'}`}
+                                    className={`self-end px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-background border border-transparent'}`}
                                 >
                                     <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-textGray'}`}>
                                         {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
@@ -926,8 +926,8 @@ export default function PurchaseScreen() {
                             {isSplitPayment && (
                                 <View className="space-y-3 mb-4">
                                     {payments.map((p, idx) => (
-                                        <View key={p.id} className="bg-gray-50/50 p-3 rounded-2xl border border-border">
-                                            <View className="flex-row flex-wrap bg-surface border border-border rounded-xl overflow-hidden mb-2">
+                                        <View key={p.id} className="bg-surface/50 p-3 rounded-2xl border border-transparent">
+                                            <View className="flex-row flex-wrap bg-surface border border-transparent rounded-xl overflow-hidden mb-2">
                                                 {[
                                                     { label: 'Tunai Bengkel', value: 'BENGKEL_TUNAI' },
                                                     { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
@@ -936,7 +936,7 @@ export default function PurchaseScreen() {
                                                     <Pressable
                                                         key={m.value}
                                                         onPress={() => handleUpdatePaymentRow(p.id, 'sumber', m.value)}
-                                                        className={`flex-1 min-w-[30%] py-2 items-center justify-center border-r border-border ${p.sumber === m.value ? 'bg-primary' : 'bg-transparent'}`}
+                                                        className={`flex-1 min-w-[30%] py-2 items-center justify-center border-r border-transparent ${p.sumber === m.value ? 'bg-primary' : 'bg-transparent'}`}
                                                     >
                                                         <Typography weight="bold" className={`text-[9px] ${p.sumber === m.value ? 'text-white' : 'text-textGray'}`}>{m.label}</Typography>
                                                     </Pressable>
@@ -952,7 +952,7 @@ export default function PurchaseScreen() {
                                                         placeholderTextColor="#94A3B8"
                                                         keyboardType="number-pad"
                                                         inputMode="numeric"
-                                                        className="bg-surface rounded-xl px-3 h-10 text-sm text-textMain border border-border"
+                                                        className="bg-surface rounded-xl px-3 h-10 text-sm text-textMain border border-transparent"
                                                     />
                                                 </View>
                                                 <Pressable
@@ -1026,7 +1026,7 @@ export default function PurchaseScreen() {
                             <SummaryRow label="Total" value={formatCurrency(total)} />
                         </View>
                     </BoundedSheetScrollView>
-                    <View className="flex-row gap-3 px-5 pb-5 pt-3 border-t border-border">
+                    <View className="flex-row gap-3 px-5 pb-5 pt-3 border-t border-transparent">
                         <Button title="Batal" variant="outline" size="sm" className="flex-1 min-w-0" onPress={() => setConfirmSubmitOpen(false)} />
                         <Button title={isEditMode ? 'Update' : 'Simpan'} size="sm" className="flex-1 min-w-0" onPress={handleSubmit} loading={createPembelianMutation.isPending || updatePembelianMutation.isPending} />
                     </View>
@@ -1057,7 +1057,7 @@ export default function PurchaseScreen() {
                                 : 'Data pembelian sparepart berhasil disimpan.'}
                         </Typography>
                     </BoundedSheetScrollView>
-                    <View className="w-full px-6 pb-6 pt-2 border-t border-border">
+                    <View className="w-full px-6 pb-6 pt-2 border-t border-transparent">
                         <Button
                             title="OK"
                             variant="outline"
@@ -1081,7 +1081,7 @@ export default function PurchaseScreen() {
 
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
     return (
-        <View className="flex-row items-center bg-background rounded-2xl px-3 h-11 mb-3 border border-border">
+        <View className="flex-row items-center bg-background rounded-2xl px-3 h-11 mb-3 border border-transparent">
             <Search size={16} color="#94A3B8" />
             <TextInput placeholder={placeholder} placeholderTextColor="#94A3B8" className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} />
             {value.length > 0 && (
@@ -1096,7 +1096,7 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
 function ActionIcon({ active, icon, label, onPress }: { active?: boolean; icon: React.ReactNode; label: string; onPress: () => void }) {
     return (
         <Pressable onPress={onPress} className="items-center flex-1">
-            <View className={`w-12 h-12 rounded-2xl items-center justify-center border ${active ? 'bg-primary border-primary' : 'bg-background border-border'}`}>
+            <View className={`w-12 h-12 rounded-2xl items-center justify-center border ${active ? 'bg-primary border-primary' : 'bg-background border-transparent'}`}>
                 {icon}
             </View>
             <Typography className={`text-[10px] font-bold mt-1 ${active ? 'text-primary' : 'text-textGray'}`}>{label}</Typography>

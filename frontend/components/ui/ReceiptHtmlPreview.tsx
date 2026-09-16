@@ -45,7 +45,7 @@ export const ReceiptHtmlPreview: React.FC<ReceiptHtmlPreviewProps> = ({
             <WebView
                 originWhitelist={['*']}
                 source={{ html }}
-                style={{ width, minHeight: 480, backgroundColor: '#fff' }}
+                style={{ width, minHeight: 480,  }}
                 scrollEnabled
                 showsVerticalScrollIndicator={false}
             />
@@ -55,7 +55,7 @@ export const ReceiptHtmlPreview: React.FC<ReceiptHtmlPreviewProps> = ({
 
 const styles = StyleSheet.create({
     frame: {
-        backgroundColor: '#fff',
+        
         borderRadius: 8,
         overflow: 'hidden',
     },

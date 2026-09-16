@@ -17,7 +17,7 @@ export const Badge = ({ label, variant = 'neutral', className, textClassName, ..
                 variant === 'warning' && 'bg-amber-100',
                 variant === 'error' && 'bg-red-100',
                 variant === 'info' && 'bg-blue-100',
-                variant === 'neutral' && 'bg-gray-100',
+                variant === 'neutral' && 'bg-surface',
                 variant === 'infinity' && 'bg-indigo-100',
                 className
             )}
@@ -30,7 +30,7 @@ export const Badge = ({ label, variant = 'neutral', className, textClassName, ..
                     variant === 'warning' && 'text-amber-700',
                     variant === 'error' && 'text-red-700',
                     variant === 'info' && 'text-blue-700',
-                    variant === 'neutral' && 'text-gray-700',
+                    variant === 'neutral' && 'text-text',
                     variant === 'infinity' && 'text-indigo-700',
                     textClassName
                 )}

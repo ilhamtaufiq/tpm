@@ -272,22 +272,22 @@ export default function PembelianSparepartReportScreen() {
                 {isLoading ? (
                     <View className="py-20 items-center">
                         <ActivityIndicator size="large" color="#023C69" />
-                        <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
+                        <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                     </View>
                 ) : purchases.length === 0 ? (
-                    <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-border">
+                    <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-transparent">
                         <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
                             <ShoppingCart size={40} color="#9CA3AF" />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[6px]">Belum Ada Data</Typography>
-                        <Typography variant="caption" className="text-textGray/40 mt-2">Tidak ditemukan transaksi pada periode ini</Typography>
+                        <Typography variant="caption" className="text-textGray mt-2">Tidak ditemukan transaksi pada periode ini</Typography>
                     </View>
                 ) : (
                     purchases.map((item) => (
                         <Pressable
                             key={item.id}
                             onPress={() => handlePressTransaction(item)}
-                            className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm"
+                            className="bg-surface p-5 rounded-[32px] mb-6 border border-transparent shadow-sm"
                         >
                             <View className="flex-row items-center mb-4">
                                 <View className="w-14 h-14 bg-blue-50 rounded-2xl items-center justify-center mr-4">
@@ -304,7 +304,7 @@ export default function PembelianSparepartReportScreen() {
                                             </Typography>
                                         </View>
                                     </View>
-                                    <Typography variant="caption" className="text-textGray/60 mt-0.5" numberOfLines={1}>
+                                    <Typography variant="caption" className="text-textGray mt-0.5" numberOfLines={1}>
                                         {format(new Date(item.tanggal), 'dd MMMM yyyy', { locale: localeID })} • {item.nomor_transaksi}
                                     </Typography>
                                 </View>
@@ -321,7 +321,7 @@ export default function PembelianSparepartReportScreen() {
                                     </Typography>
                                 </View>
                                 <View className="items-end">
-                                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-0.5">Grand Total</Typography>
+                                    <Typography className="text-textGray text-[9px] uppercase font-bold mb-0.5">Grand Total</Typography>
                                     <Typography variant="h3" weight="bold" className="text-primary tracking-tighter">
                                         {formatCurrency(item.total_biaya || item.grand_total || 0)}
                                     </Typography>
@@ -365,7 +365,7 @@ export default function PembelianSparepartReportScreen() {
                     ) : selectedTransaction ? (
                         <BottomSheetScrollView showsVerticalScrollIndicator={false}>
                             {/* Summary Card */}
-                            <View className="bg-background p-5 rounded-2xl mb-6 border border-border">
+                            <View className="bg-background p-5 rounded-2xl mb-6 border border-transparent">
                                 <View className="flex-row justify-between mb-4">
                                     <View>
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Supplier</Typography>
@@ -410,16 +410,16 @@ export default function PembelianSparepartReportScreen() {
                                 </View>
                                 {selectedTransaction.detail && selectedTransaction.detail.length > 0 ? (
                                     selectedTransaction.detail.map((item: any, index: number) => (
-                                        <View key={`part-${index}`} className="flex-row justify-between items-start py-3 border-b border-border last:border-0">
+                                        <View key={`part-${index}`} className="flex-row justify-between items-start py-3 border-b border-transparent last:border-0">
                                             <View className="flex-1 pr-4">
-                                                <Typography weight="bold" className="text-gray-800 text-sm">
+                                                <Typography weight="bold" className="text-text text-sm">
                                                     {item.spare_part?.nama || item.spare_part_nama || 'Item'}
                                                 </Typography>
                                                 <Typography variant="caption" className="text-textGray">
                                                     {item.qty} {item.spare_part?.satuan || 'pcs'} x {formatCurrency(item.harga_satuan)}
                                                 </Typography>
                                             </View>
-                                            <Typography weight="bold" className="text-gray-900 text-sm">
+                                            <Typography weight="bold" className="text-text text-sm">
                                                 {formatCurrency(item.subtotal || (item.qty * item.harga_satuan))}
                                             </Typography>
                                         </View>
@@ -434,7 +434,7 @@ export default function PembelianSparepartReportScreen() {
                                 <View className="space-y-2 mb-4">
                                     <View className="flex-row justify-between">
                                         <Typography className="text-textGray text-xs">Total Nilai</Typography>
-                                        <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedTransaction.total || 0)}</Typography>
+                                        <Typography weight="bold" className="text-text text-sm">{formatCurrency(selectedTransaction.total || 0)}</Typography>
                                     </View>
                                     {Number(selectedTransaction.diskon) > 0 && (
                                         <View className="flex-row justify-between">

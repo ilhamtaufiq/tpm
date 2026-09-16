@@ -173,7 +173,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
 
     return (
         <ScrollView
-            className="flex-1 bg-gray-50/30"
+            className="flex-1 bg-surface/30"
             showsVerticalScrollIndicator={false}
             refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -183,13 +183,13 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                 {/* Header Card */}
                 <View className="bg-primary p-6 rounded-[32px] mb-6 shadow-lg shadow-primary/20">
                     <View className="flex-row justify-between items-start mb-4">
-                        <View className="w-14 h-14 bg-white/20 rounded-2xl items-center justify-center">
+                        <View className="w-14 h-14 bg-surface/20 rounded-2xl items-center justify-center">
                             <Truck size={28} color="#FFFFFF" strokeWidth={2.5} />
                         </View>
                         <Badge
                             variant={armada.is_active ? 'success' : 'neutral'}
                             label={armada.is_active ? 'Aktif' : 'Non-Aktif'}
-                            className="bg-white/20 border-white/10"
+                            className="bg-surface/20 border-white/10"
                         />
                     </View>
                     <Typography variant="h2" weight="bold" className="text-white mb-1">
@@ -199,7 +199,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                         <Typography className="text-white/80 font-bold tracking-widest text-base">
                             {armada.nopol}
                         </Typography>
-                        <View className="mx-2 w-1.5 h-1.5 bg-white/30 rounded-full" />
+                        <View className="mx-2 w-1.5 h-1.5 bg-surface/30 rounded-full" />
                         <Typography className="text-white/60">
                             {armada.jenis || 'Armada Umum'}
                         </Typography>
@@ -210,7 +210,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                 <View className="flex-row flex-wrap -mx-2 mb-6">
                     {/* Trips Count */}
                     <View className="w-1/2 p-2">
-                        <View className="bg-surface p-4 rounded-[24px] border border-border shadow-sm">
+                        <View className="bg-surface p-4 rounded-[24px] border border-transparent shadow-sm">
                             <View className="w-10 h-10 bg-blue-50 rounded-xl items-center justify-center mb-3">
                                 <Activity size={20} color="#3B82F6" />
                             </View>
@@ -221,7 +221,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
 
                     {/* Revenue */}
                     <View className="w-1/2 p-2">
-                        <View className="bg-surface p-4 rounded-[24px] border border-border shadow-sm">
+                        <View className="bg-surface p-4 rounded-[24px] border border-transparent shadow-sm">
                             <View className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center mb-3">
                                 <TrendingUp size={20} color="#10B981" />
                             </View>
@@ -232,7 +232,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
 
                     {/* Operational Costs */}
                     <View className="w-1/2 p-2">
-                        <View className="bg-surface p-4 rounded-[24px] border border-border shadow-sm">
+                        <View className="bg-surface p-4 rounded-[24px] border border-transparent shadow-sm">
                             <View className="w-10 h-10 bg-orange-50 rounded-xl items-center justify-center mb-3">
                                 <TrendingDown size={20} color="#F59E0B" />
                             </View>
@@ -243,7 +243,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
 
                     {/* Workshop Repairs */}
                     <View className="w-1/2 p-2">
-                        <View className="bg-surface p-4 rounded-[24px] border border-border shadow-sm">
+                        <View className="bg-surface p-4 rounded-[24px] border border-transparent shadow-sm">
                             <View className="w-10 h-10 bg-red-50 rounded-xl items-center justify-center mb-3">
                                 <Wrench size={20} color="#EF4444" />
                             </View>
@@ -262,7 +262,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                 {formatCurrency(stats.total_pendapatan_kotor - stats.total_biaya_operasional - stats.total_perbaikan_bengkel)}
                             </Typography>
                         </View>
-                        <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center">
+                        <View className="w-12 h-12 bg-surface/20 rounded-full items-center justify-center">
                             <ArrowUpRight size={24} color="#FFFFFF" />
                         </View>
                     </View>
@@ -313,7 +313,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                             <Pressable
                                                 key={trip.id}
                                                 onPress={() => setSelectedTrip(trip)}
-                                                className="bg-surface p-5 rounded-[24px] border border-border shadow-sm flex-row items-center"
+                                                className="bg-surface p-5 rounded-[24px] border border-transparent shadow-sm flex-row items-center"
                                                 style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
                                             >
                                                 <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center mr-4">
@@ -331,7 +331,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                                     <Typography variant="caption" className="text-textGray mb-2">
                                                         {formatDate(trip.tanggal)} • {trip.supir_nama || 'Supir'} • {trip.jenis_muatan || 'Muatan Umum'}
                                                     </Typography>
-                                                    <View className="flex-row justify-between items-center pt-2 border-t border-border">
+                                                    <View className="flex-row justify-between items-center pt-2 border-t border-transparent">
                                                         <View className="flex-row space-x-2">
                                                             <Badge label={formatCurrency(trip.pendapatan_kotor - trip.laba_supir)} variant="info" className="scale-75 origin-left" />
                                                         </View>
@@ -358,7 +358,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                             <Pressable
                                                 key={item.id}
                                                 onPress={() => setSelectedRepair(item)}
-                                                className="bg-surface p-5 rounded-[24px] border border-border shadow-sm"
+                                                className="bg-surface p-5 rounded-[24px] border border-transparent shadow-sm"
                                                 style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
                                             >
                                                 <View className="flex-row justify-between mb-3">
@@ -386,7 +386,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                                     ))}
                                                 </View>
 
-                                                <View className="flex-row justify-between items-center pt-3 border-t border-border">
+                                                <View className="flex-row justify-between items-center pt-3 border-t border-transparent">
                                                     <Typography variant="caption" weight="bold" className="text-textGray">Total Biaya Perbaikan</Typography>
                                                     <Typography weight="bold" className="text-red-600">
                                                         {formatCurrency(item.grand_total)}
@@ -489,7 +489,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                                 <Pressable
                                                     key={expense.id}
                                                     onPress={() => setSelectedExpense(expense)}
-                                                    className="bg-surface p-5 rounded-[24px] border border-border shadow-sm flex-row items-center"
+                                                    className="bg-surface p-5 rounded-[24px] border border-transparent shadow-sm flex-row items-center"
                                                     style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
                                                 >
                                                     <View className={`w-10 h-10 ${bgColor} rounded-xl items-center justify-center mr-4`}>
@@ -561,7 +561,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                     </Pressable>
                                 </View>
 
-                                <Card variant="outlined" className="p-5 mb-4 border-border rounded-[24px]">
+                                <Card variant="outlined" className="p-5 mb-4 border-transparent rounded-[24px]">
                                     <Typography variant="caption" weight="bold" className="text-primary mb-4 uppercase tracking-widest">
                                         Informasi Rute
                                     </Typography>
@@ -604,7 +604,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                     </View>
                                 </Card>
 
-                                <Card variant="outlined" className="p-5 mb-4 border-border rounded-[24px]">
+                                <Card variant="outlined" className="p-5 mb-4 border-transparent rounded-[24px]">
                                     <Typography variant="caption" weight="bold" className="text-textGray mb-4 uppercase tracking-widest">
                                         Ringkasan Keuangan
                                     </Typography>
@@ -636,7 +636,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                     </View>
                                 </Card>
 
-                                <Card variant="outlined" className="p-5 border-border rounded-[24px]">
+                                <Card variant="outlined" className="p-5 border-transparent rounded-[24px]">
                                     <Typography variant="caption" weight="bold" className="text-textGray mb-4 uppercase tracking-widest">
                                         Status
                                     </Typography>
@@ -700,7 +700,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                     </Pressable>
                                 </View>
 
-                                <Card variant="outlined" className="p-5 mb-4 border-border rounded-[24px]">
+                                <Card variant="outlined" className="p-5 mb-4 border-transparent rounded-[24px]">
                                     <Typography variant="caption" weight="bold" className="text-red-500 mb-4 uppercase tracking-widest">
                                         Informasi Perbaikan
                                     </Typography>
@@ -731,12 +731,12 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                 </Card>
 
                                 {selectedRepair.detail_services?.length > 0 && (
-                                    <Card variant="outlined" className="p-5 mb-4 border-border rounded-[24px]">
+                                    <Card variant="outlined" className="p-5 mb-4 border-transparent rounded-[24px]">
                                         <Typography variant="caption" weight="bold" className="text-textGray mb-4 uppercase tracking-widest">
                                             Jasa
                                         </Typography>
                                         {selectedRepair.detail_services.map((service: any, idx: number) => (
-                                            <View key={`service-${idx}`} className="flex-row justify-between py-2 border-b border-border last:border-b-0">
+                                            <View key={`service-${idx}`} className="flex-row justify-between py-2 border-b border-transparent last:border-b-0">
                                                 <Typography variant="body2" className="flex-1 mr-4">
                                                     {service.nama_jasa}
                                                 </Typography>
@@ -749,12 +749,12 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                 )}
 
                                 {selectedRepair.detail_parts?.length > 0 && (
-                                    <Card variant="outlined" className="p-5 mb-4 border-border rounded-[24px]">
+                                    <Card variant="outlined" className="p-5 mb-4 border-transparent rounded-[24px]">
                                         <Typography variant="caption" weight="bold" className="text-textGray mb-4 uppercase tracking-widest">
                                             Sparepart
                                         </Typography>
                                         {selectedRepair.detail_parts.map((part: any, idx: number) => (
-                                            <View key={`part-${idx}`} className="flex-row justify-between py-2 border-b border-border last:border-b-0">
+                                            <View key={`part-${idx}`} className="flex-row justify-between py-2 border-b border-transparent last:border-b-0">
                                                 <View className="flex-1 mr-4">
                                                     <Typography variant="body2">{part.spare_part_nama}</Typography>
                                                     <Typography variant="caption" className="text-textGray">
@@ -770,7 +770,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                 )}
 
                                 {selectedRepair.catatan ? (
-                                    <Card variant="outlined" className="p-5 border-border rounded-[24px]">
+                                    <Card variant="outlined" className="p-5 border-transparent rounded-[24px]">
                                         <Typography variant="caption" weight="bold" className="text-textGray mb-3 uppercase tracking-widest">
                                             Catatan
                                         </Typography>
@@ -824,7 +824,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                     </Pressable>
                                 </View>
 
-                                <Card variant="outlined" className="p-5 mb-4 border-border rounded-[24px]">
+                                <Card variant="outlined" className="p-5 mb-4 border-transparent rounded-[24px]">
                                     <Typography variant="caption" weight="bold" className="text-textGray mb-4 uppercase tracking-widest">
                                         Informasi Biaya
                                     </Typography>
@@ -860,7 +860,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                 </Card>
 
                                 {selectedExpense.type === 'WORKSHOP' && (
-                                    <Card variant="outlined" className="p-5 mb-4 border-border rounded-[24px]">
+                                    <Card variant="outlined" className="p-5 mb-4 border-transparent rounded-[24px]">
                                         <Typography variant="caption" weight="bold" className="text-red-500 mb-4 uppercase tracking-widest">
                                             Sumber Bengkel
                                         </Typography>
@@ -880,7 +880,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                 )}
 
                                 {selectedExpense.type === 'TRIP' && (
-                                    <Card variant="outlined" className="p-5 mb-4 border-border rounded-[24px]">
+                                    <Card variant="outlined" className="p-5 mb-4 border-transparent rounded-[24px]">
                                         <Typography variant="caption" weight="bold" className="text-blue-500 mb-4 uppercase tracking-widest">
                                             Sumber Trip
                                         </Typography>
@@ -905,7 +905,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                 )}
 
                                 {selectedExpense.type === 'GENERAL' && (
-                                    <Card variant="outlined" className="p-5 border-border rounded-[24px]">
+                                    <Card variant="outlined" className="p-5 border-transparent rounded-[24px]">
                                         <Typography variant="caption" weight="bold" className="text-orange-500 mb-4 uppercase tracking-widest">
                                             Catatan
                                         </Typography>
@@ -939,7 +939,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                             <Typography variant="h3" weight="bold">Input Biaya Operasional</Typography>
                             <Pressable
                                 onPress={toggleSplitPayment}
-                                className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-background border border-border'}`}
+                                className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-background border border-transparent'}`}
                             >
                                 <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-textGray'}`}>
                                     {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
@@ -972,7 +972,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                         </View>
 
                                         {payments.map((p, idx) => (
-                                            <View key={p.id} className="mb-3 p-4 border border-border rounded-2xl bg-gray-50/50">
+                                            <View key={p.id} className="mb-3 p-4 border border-transparent rounded-2xl bg-surface/50">
                                                 <View className="flex-row justify-between items-center mb-3">
                                                     <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
                                                     <Pressable onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
@@ -989,7 +989,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                                         <Pressable
                                                             key={m.value}
                                                             onPress={() => updatePaymentRow(p.id, 'sumber', m.value)}
-                                                            className={`px-3 py-1.5 rounded-xl border ${p.sumber === m.value ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
+                                                            className={`px-3 py-1.5 rounded-xl border ${p.sumber === m.value ? 'border-primary bg-primary/10' : 'border-transparent bg-surface'}`}
                                                         >
                                                             <Typography variant="caption" weight={p.sumber === m.value ? 'bold' : 'medium'} className={p.sumber === m.value ? 'text-primary' : 'text-textGray'}>{m.label}</Typography>
                                                         </Pressable>
@@ -1024,7 +1024,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                                     <Pressable
                                                         key={m.value}
                                                         onPress={() => setExpenseForm(prev => ({ ...prev, metode_bayar: m.value }))}
-                                                        className={`px-4 py-2 rounded-xl border ${expenseForm.metode_bayar === m.value ? 'border-primary bg-primary/5' : 'border-border bg-surface'}`}
+                                                        className={`px-4 py-2 rounded-xl border ${expenseForm.metode_bayar === m.value ? 'border-primary bg-primary/5' : 'border-transparent bg-surface'}`}
                                                     >
                                                         <Typography variant="caption" weight="bold" className={expenseForm.metode_bayar === m.value ? 'text-primary' : 'text-textGray'}>{m.label}</Typography>
                                                     </Pressable>

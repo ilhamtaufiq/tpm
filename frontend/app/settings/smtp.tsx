@@ -163,7 +163,7 @@ export default function SMTPSettingsScreen() {
 
             {/* Header */}
             <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
-                <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
+                <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-surface/10 rounded-full blur-[80px]" />
 
                 <Header
                     title="Server Email"
@@ -187,12 +187,12 @@ export default function SMTPSettingsScreen() {
                     <Animated.View entering={FadeInDown.delay(200)} className="pt-4">
                         
                         {/* SMTP Config Card */}
-                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-border mb-6">
-                            <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] mb-6">Konfigurasi Server</Typography>
+                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-transparent mb-6">
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[4px] mb-6">Konfigurasi Server</Typography>
 
                             <View className="mb-5">
-                                <Typography variant="caption" className="text-text/40 mb-2 ml-1">SMTP Server</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
+                                <Typography variant="caption" className="text-textGray mb-2 ml-1">SMTP Server</Typography>
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
                                     <Server size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -205,8 +205,8 @@ export default function SMTPSettingsScreen() {
 
                             <View className="flex-row gap-x-4 mb-5">
                                 <View className="flex-1">
-                                    <Typography variant="caption" className="text-text/40 mb-2 ml-1">Port</Typography>
-                                    <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
+                                    <Typography variant="caption" className="text-textGray mb-2 ml-1">Port</Typography>
+                                    <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
                                         <TextInput
                                             className="flex-1 text-text font-bold text-center"
                                             placeholder="587"
@@ -219,10 +219,10 @@ export default function SMTPSettingsScreen() {
                                 <View className="flex-[2] justify-center">
                                     <Pressable 
                                         onPress={() => setUseTLS(!useTLS)}
-                                        className={`h-14 rounded-2xl flex-row items-center justify-center border ${useTLS ? 'bg-emerald-50 border-emerald-100' : 'bg-background border-border'}`}
+                                        className={`h-14 rounded-2xl flex-row items-center justify-center border ${useTLS ? 'bg-emerald-50 border-emerald-100' : 'bg-background border-transparent'}`}
                                     >
                                         <ShieldCheck size={18} color={useTLS ? '#10B981' : '#9CA3AF'} />
-                                        <Typography weight="bold" className={`ml-2 ${useTLS ? 'text-emerald-700' : 'text-text/40'}`}>
+                                        <Typography weight="bold" className={`ml-2 ${useTLS ? 'text-emerald-700' : 'text-textGray'}`}>
                                             {useTLS ? 'TLS Aktif' : 'Non-TLS'}
                                         </Typography>
                                     </Pressable>
@@ -230,8 +230,8 @@ export default function SMTPSettingsScreen() {
                             </View>
 
                             <View className="mb-5">
-                                <Typography variant="caption" className="text-text/40 mb-2 ml-1">Username (Email Gmail)</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
+                                <Typography variant="caption" className="text-textGray mb-2 ml-1">Username (Email Gmail)</Typography>
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
                                     <Mail size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -245,8 +245,8 @@ export default function SMTPSettingsScreen() {
                             </View>
 
                             <View className="mb-5">
-                                <Typography variant="caption" className="text-text/40 mb-2 ml-1">App Password</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
+                                <Typography variant="caption" className="text-textGray mb-2 ml-1">App Password</Typography>
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
                                     <Lock size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -260,8 +260,8 @@ export default function SMTPSettingsScreen() {
                             </View>
 
                             <View className="mb-2">
-                                <Typography variant="caption" className="text-text/40 mb-2 ml-1">Nama Pengirim</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
+                                <Typography variant="caption" className="text-textGray mb-2 ml-1">Nama Pengirim</Typography>
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
                                     <User size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"

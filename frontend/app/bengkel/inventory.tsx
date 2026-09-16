@@ -302,7 +302,7 @@ export default function InventoryScreen() {
                 ].map((stat) => {
                     const StatIcon = stat.icon;
                     return (
-                        <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-border`}>
+                        <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-transparent`}>
                             <View className="flex-row items-center mb-2">
                                 <StatIcon size={14} color={stat.color} />
                                 <Typography className="text-[9px] font-bold text-textGray ml-1.5 uppercase tracking-wide">{stat.label}</Typography>
@@ -313,7 +313,7 @@ export default function InventoryScreen() {
                 })}
             </View>
 
-            <View className="flex-row items-center bg-background border border-border rounded-2xl px-4 h-12 mb-3">
+            <View className="flex-row items-center bg-background border border-transparent rounded-2xl px-4 h-12 mb-3">
                 <Search size={18} color="#9CA3AF" />
                 <TextInput
                     placeholder="Cari nama, kode, atau kategori..."
@@ -331,7 +331,7 @@ export default function InventoryScreen() {
                 )}
                 <Pressable
                     onPress={handlePresentSortSheet}
-                    className={`w-9 h-9 rounded-xl items-center justify-center ${sortBy !== 'nama' || sortOrder !== 'asc' ? 'bg-primary/10' : 'bg-surface border border-border'}`}
+                    className={`w-9 h-9 rounded-xl items-center justify-center ${sortBy !== 'nama' || sortOrder !== 'asc' ? 'bg-primary/10' : 'bg-surface border border-transparent'}`}
                 >
                     <ArrowUpDown size={16} color={sortBy !== 'nama' || sortOrder !== 'asc' ? '#023C69' : '#6B7280'} />
                 </Pressable>
@@ -339,7 +339,7 @@ export default function InventoryScreen() {
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3 -mx-1">
                 {([
-                    { id: 'ALL' as StockFilter, label: 'Semua', count: totalProducts, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
+                    { id: 'ALL' as StockFilter, label: 'Semua', count: totalProducts, active: 'bg-primary border-primary', inactive: 'bg-surface border-gray-200', text: 'text-gray-600' },
                     { id: 'low' as StockFilter, label: 'Menipis', count: lowStockCount, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                     { id: 'available' as StockFilter, label: 'Tersedia', count: stockFilterStats.available, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
                     { id: 'empty' as StockFilter, label: 'Habis', count: stockFilterStats.empty, active: 'bg-rose-500 border-rose-500', inactive: 'bg-rose-50 border-rose-100', text: 'text-rose-700' },
@@ -372,7 +372,7 @@ export default function InventoryScreen() {
                         <Pressable
                             key={action.label}
                             onPress={action.onPress}
-                            className="flex-1 bg-surface border border-border rounded-2xl py-3 items-center active:opacity-80"
+                            className="flex-1 bg-surface border border-transparent rounded-2xl py-3 items-center active:opacity-80"
                         >
                             <ActionIcon size={18} color={action.color} />
                             <Typography className="text-[9px] font-bold text-textGray mt-1">{action.label}</Typography>
@@ -398,10 +398,10 @@ export default function InventoryScreen() {
             )}
 
             {filteredParts.length > 0 && (
-                <View className="bg-surface p-3 rounded-2xl border border-border flex-row items-center justify-between mb-4">
+                <View className="bg-surface p-3 rounded-2xl border border-transparent flex-row items-center justify-between mb-4">
                     <View className="flex-row items-center">
                         <Pressable onPress={toggleSelectAll} className="flex-row items-center mr-3">
-                            <View className={`w-6 h-6 rounded-lg border items-center justify-center ${selectedIds.length === filteredParts.length && filteredParts.length > 0 ? 'bg-primary border-primary' : 'border-border'}`}>
+                            <View className={`w-6 h-6 rounded-lg border items-center justify-center ${selectedIds.length === filteredParts.length && filteredParts.length > 0 ? 'bg-primary border-primary' : 'border-transparent'}`}>
                                 {selectedIds.length === filteredParts.length && filteredParts.length > 0 && <Check size={14} color="white" />}
                             </View>
                             <Typography className="ml-2 text-xs font-bold text-textGray">Pilih Semua</Typography>
@@ -428,7 +428,7 @@ export default function InventoryScreen() {
                             <Pressable
                                 key={`top-${item.id}`}
                                 onPress={() => handleOpenDetail(item)}
-                                className="bg-surface border border-border rounded-2xl p-3 mr-3 min-w-[140px] active:opacity-90"
+                                className="bg-surface border border-transparent rounded-2xl p-3 mr-3 min-w-[140px] active:opacity-90"
                             >
                                 <Typography weight="bold" className="text-textMain text-xs" numberOfLines={2}>{item.nama}</Typography>
                                 <Typography className="text-emerald-600 text-[10px] font-bold mt-2">{item.total_sales} terjual</Typography>
@@ -487,7 +487,7 @@ export default function InventoryScreen() {
                                 <ActivityIndicator size="small" color="#023C69" />
                             </View>
                         ) : hasNextPage ? null : filteredParts.length > 0 ? (
-                            <View className="py-8 items-center border-t border-border border-dashed mt-4">
+                            <View className="py-8 items-center border-t border-transparent border-dashed mt-4">
                                 <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">Semua data telah dimuat</Typography>
                             </View>
                         ) : null
@@ -502,7 +502,7 @@ export default function InventoryScreen() {
                         return (
                             <Pressable
                                 onPress={() => handleOpenDetail(part)}
-                                className="bg-surface p-4 rounded-[28px] mb-4 border border-border shadow-sm active:scale-[0.98]"
+                                className="bg-surface p-4 rounded-[28px] mb-4 border border-transparent shadow-sm active:scale-[0.98]"
                             >
                                 <View className="flex-row items-center">
                                     <Pressable
@@ -548,7 +548,7 @@ export default function InventoryScreen() {
                                         <Typography className="text-textGray text-[11px] mt-1" numberOfLines={1}>
                                             {[part.kode_part, part.kode_ean, part.kode].filter(Boolean).join(' • ') || '-'} • {part.kategori || 'Suku Cadang'}
                                         </Typography>
-                                        <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-border">
+                                        <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-transparent">
                                             <Typography className="text-textGray text-[10px] font-semibold">
                                                 {!isAlwaysReadyStock(part.stok) ? `Min: ${part.stok_minimum} ${part.satuan || 'pcs'}` : 'Katalog referensi'}
                                             </Typography>
@@ -623,7 +623,7 @@ export default function InventoryScreen() {
                                 showsVerticalScrollIndicator={false}
                             >
                                 <View className="items-center mb-5">
-                                    <View className="w-32 h-32 bg-background rounded-3xl items-center justify-center overflow-hidden border border-border">
+                                    <View className="w-32 h-32 bg-background rounded-3xl items-center justify-center overflow-hidden border border-transparent">
                                         {formData.gambar ? (
                                             <Image
                                                 source={{ uri: `${FILE_URL}/uploads/${formData.gambar}` }}
@@ -754,7 +754,7 @@ export default function InventoryScreen() {
                 title="Update Stok Cepat"
             >
                 <View className="p-1">
-                    <Card className="bg-background border-border p-4 mb-6">
+                    <Card className="bg-background border-transparent p-4 mb-6">
                         <Typography variant="body1" weight="bold">{scannedPart?.nama}</Typography>
                         <Typography variant="caption" className="text-textGray mt-1">
                             Kode: {scannedPart?.kode} • Stok Saat Ini: {isAlwaysReadyStock(scannedPart?.stok) ? 'Always Ready' : `${scannedPart?.stok} ${scannedPart?.satuan || 'pcs'}`}
@@ -764,14 +764,14 @@ export default function InventoryScreen() {
                     <View className="flex-row space-x-3 mb-6">
                         <Pressable
                             onPress={() => setStockOp('add')}
-                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'add' ? 'bg-emerald-50 border-emerald-500' : 'bg-surface border-border'}`}
+                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'add' ? 'bg-emerald-50 border-emerald-500' : 'bg-surface border-transparent'}`}
                         >
                             <Plus size={20} color={stockOp === 'add' ? '#10B981' : '#94A3B8'} />
                             <Typography className={`ml-2 font-bold ${stockOp === 'add' ? 'text-emerald-700' : 'text-textGray'}`}>Tambah</Typography>
                         </Pressable>
                         <Pressable
                             onPress={() => setStockOp('subtract')}
-                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'subtract' ? 'bg-rose-50 border-rose-500' : 'bg-surface border-border'}`}
+                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'subtract' ? 'bg-rose-50 border-rose-500' : 'bg-surface border-transparent'}`}
                         >
                             <Minus size={20} color={stockOp === 'subtract' ? '#F43F5E' : '#94A3B8'} />
                             <Typography className={`ml-2 font-bold ${stockOp === 'subtract' ? 'text-rose-700' : 'text-textGray'}`}>Kurang</Typography>
@@ -791,7 +791,7 @@ export default function InventoryScreen() {
                                 keyboardType="numeric"
                                 value={stockChange}
                                 onChangeText={setStockChange}
-                                className="h-12 bg-background border border-border rounded-xl text-center text-xl font-bold font-outfit"
+                                className="h-12 bg-background border border-transparent rounded-xl text-center text-xl font-bold font-outfit"
                             />
                         </View>
                         <Pressable
@@ -919,7 +919,7 @@ export default function InventoryScreen() {
                     snapPoints={['65%', '85%']}
                     enablePanDownToClose
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 48,  }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onChange={setSheetIndex}
                 >
@@ -1004,18 +1004,18 @@ export default function InventoryScreen() {
                         </View>
                     </View>
 
-                    <View className="pt-4 border-t border-border">
+                    <View className="pt-4 border-t border-transparent">
                         <Typography variant="caption" weight="bold" className="text-textGray mb-4 ml-1 uppercase tracking-widest text-[10px]">Arah Urutan</Typography>
                         <View className="flex-row space-x-3">
                             <Pressable
                                 onPress={() => setSortOrder('asc')}
-                                className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${sortOrder === 'asc' ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-surface border-border shadow-sm'}`}
+                                className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${sortOrder === 'asc' ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-surface border-transparent shadow-sm'}`}
                             >
                                 <Typography weight="bold" className={sortOrder === 'asc' ? 'text-white' : 'text-textMain'}>Terkecil/A-Z</Typography>
                             </Pressable>
                             <Pressable
                                 onPress={() => setSortOrder('desc')}
-                                className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${sortOrder === 'desc' ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-surface border-border shadow-sm'}`}
+                                className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${sortOrder === 'desc' ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-surface border-transparent shadow-sm'}`}
                             >
                                 <Typography weight="bold" className={sortOrder === 'desc' ? 'text-white' : 'text-textMain'}>Terbesar/Z-A</Typography>
                             </Pressable>

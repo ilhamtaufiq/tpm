@@ -50,17 +50,17 @@ export const MobilSelector = ({
 
     return (
         <View className="mb-4 w-full">
-            {label && <Typography weight="bold" className="text-textGray/40 text-[10px] uppercase tracking-widest mb-2 px-1">{label}</Typography>}
+            {label && <Typography weight="bold" className="text-textGray text-[10px] uppercase tracking-widest mb-2 px-1">{label}</Typography>}
 
             <Pressable onPress={handleOpen}>
-                <View className="bg-background rounded-2xl px-4 py-4 border border-border flex-row items-center">
+                <View className="bg-background rounded-2xl px-4 py-4 border border-transparent flex-row items-center">
                     <Car size={20} color={value ? '#3B82F6' : '#9CA3AF'} />
 
                     <View className="flex-1 ml-3">
                         {value ? (
                             <>
                                 <Typography weight="bold" className="text-textMain text-sm">{value.merek} {value.model}</Typography>
-                                <Typography variant="caption" className="text-textGray/60">
+                                <Typography variant="caption" className="text-textGray">
                                     {value.nomor_plat} • {value.warna}
                                 </Typography>
                             </>
@@ -84,7 +84,7 @@ export const MobilSelector = ({
                 onRequestClose={handleClose}
                 statusBarTranslucent
             >
-                <View style={{ flex: 1, backgroundColor: 'white' }}>
+                <View style={{ flex: 1,  }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-4">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full" />
@@ -97,7 +97,7 @@ export const MobilSelector = ({
                             </Pressable>
                         </View>
 
-                        <View className="flex-row items-center bg-background border border-border rounded-2xl px-4 py-3.5 mb-6">
+                        <View className="flex-row items-center bg-background border border-transparent rounded-2xl px-4 py-3.5 mb-6">
                             <Search size={20} color="#9CA3AF" />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-textMain font-medium"
@@ -118,14 +118,14 @@ export const MobilSelector = ({
                                 showsVerticalScrollIndicator={false}
                                 renderItem={({ item }) => (
                                     <Pressable onPress={() => handleSelect(item)}>
-                                        <Card className="mb-4 p-5 border border-border shadow-sm bg-surface rounded-[32px] flex-row items-center justify-between">
+                                        <Card className="mb-4 p-5 border border-transparent shadow-sm bg-surface rounded-[32px] flex-row items-center justify-between">
                                             <View className="flex-1 mr-4">
                                                 <Typography weight="bold" className="text-textMain text-base tracking-tight">{item.merek} {item.model}</Typography>
                                                 <View className="flex-row items-center mt-1.5">
                                                     <View className="bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 mr-2">
                                                         <Typography className="text-blue-700 text-[10px] font-bold">{item.nomor_plat}</Typography>
                                                     </View>
-                                                    <Typography variant="caption" className="text-textGray/60 font-medium">
+                                                    <Typography variant="caption" className="text-textGray font-medium">
                                                         {item.tahun} • {item.warna}
                                                     </Typography>
                                                 </View>

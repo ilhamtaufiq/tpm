@@ -48,7 +48,7 @@ export default function ArmadaScreen() {
                 rightElement={
                     <Pressable
                         onPress={() => router.push('/jasa-angkut/armada/form')}
-                        className="w-10 h-10 bg-white/20 rounded-xl items-center justify-center border border-white/10"
+                        className="w-10 h-10 bg-surface/20 rounded-xl items-center justify-center border border-white/10"
                     >
                         <Plus size={20} color="white" />
                     </Pressable>
@@ -56,7 +56,7 @@ export default function ArmadaScreen() {
             />
 
             {/* Search & Filter */}
-            <View className="p-4 bg-surface border-b border-border">
+            <View className="p-4 bg-surface border-b border-transparent">
                 <Input
                     placeholder="Cari armada (nama/nopol)..."
                     value={searchQuery}
@@ -123,7 +123,7 @@ export default function ArmadaScreen() {
 const FilterTab = ({ label, active, onPress }: { label: string, active: boolean, onPress: () => void }) => (
     <Pressable
         onPress={onPress}
-        className={`px-4 py-1.5 rounded-full border ${active ? 'bg-primary border-primary' : 'bg-transparent border-border'}`}
+        className={`px-4 py-1.5 rounded-full border ${active ? 'bg-primary border-primary' : 'bg-transparent border-transparent'}`}
     >
         <Typography
             variant="caption"

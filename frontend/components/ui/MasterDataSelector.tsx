@@ -155,7 +155,7 @@ export const MasterDataSelector = ({
                     {allowGuest && onGuestNameChange && searchQuery.length > 0 && (
                         <Pressable
                             onPress={handleGuestSelect}
-                            className={`mb-3 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-background border-border'}`}
+                            className={`mb-3 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-background border-transparent'}`}
                         >
                             <View className="flex-row items-center flex-1">
                                 <User size={18} color={selectedGuestName === searchQuery.trim() && !value ? '#10B981' : '#4B5563'} />
@@ -188,7 +188,7 @@ export const MasterDataSelector = ({
                                 <Pressable
                                     key={item.id}
                                     onPress={() => handleSelect(item)}
-                                    className={`mb-3 p-4 rounded-2xl border flex-row items-center justify-between shadow-sm ${value?.id === item.id ? 'bg-emerald-50 border-emerald-200' : 'bg-surface border-border'}`}
+                                    className={`mb-3 p-4 rounded-2xl border flex-row items-center justify-between shadow-sm ${value?.id === item.id ? 'bg-emerald-50 border-emerald-200' : 'bg-surface border-transparent'}`}
                                 >
                                         <View className="flex-1 mr-2">
                                             <Typography weight="semibold">{item.nama}</Typography>
@@ -223,7 +223,7 @@ export const MasterDataSelector = ({
                             {inlineMode && (searchResults || []).length >= visibleLimit && (
                                 <Pressable
                                     onPress={() => setVisibleLimit(prev => prev + inlineLimit)}
-                                    className="mt-1 mb-3 py-3 rounded-2xl bg-background border border-border items-center"
+                                    className="mt-1 mb-3 py-3 rounded-2xl bg-background border border-transparent items-center"
                                 >
                                     <Typography className="text-primary text-xs font-bold">Muat lagi</Typography>
                                 </Pressable>
@@ -241,7 +241,7 @@ export const MasterDataSelector = ({
                 onRequestClose={handleClose}
                 statusBarTranslucent
             >
-                <View style={{ flex: 1, backgroundColor: 'white' }}>
+                <View style={{ flex: 1,  }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
                             <View className="w-10 h-1 bg-gray-300 rounded-full" />
@@ -270,7 +270,7 @@ export const MasterDataSelector = ({
                             {allowGuest && searchQuery.length > 0 && (
                                 <Pressable
                                     onPress={handleGuestSelect}
-                                    className={`flex-1 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-background border-border'}`}
+                                    className={`flex-1 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-background border-transparent'}`}
                                 >
                                     <View className="flex-row items-center flex-1">
                                         <User size={18} color={selectedGuestName === searchQuery.trim() && !value ? '#10B981' : '#4B5563'} />
@@ -305,7 +305,7 @@ export const MasterDataSelector = ({
                                 showsVerticalScrollIndicator={false}
                                 renderItem={({ item }) => (
                                     <Pressable onPress={() => handleSelect(item)}>
-                                        <Card className="mb-3 p-4 border border-border flex-row items-center justify-between">
+                                        <Card className="mb-3 p-4 border border-transparent flex-row items-center justify-between">
                                             <View className="flex-1 mr-2">
                                                 <Typography weight="semibold">{item.nama}</Typography>
                                                 <Typography variant="caption" className="text-textGray">

@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     },
     panel: {
         width: '100%',
-        backgroundColor: '#FFFFFF',
+        
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
         paddingHorizontal: 20,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     },
     boundedPanel: {
         width: '100%',
-        backgroundColor: '#FFFFFF',
+        
         borderTopLeftRadius: 48,
         borderTopRightRadius: 48,
         overflow: 'hidden',
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     footer: {
         flexShrink: 0,
         paddingTop: 12,
-        backgroundColor: '#FFFFFF',
+        
         zIndex: 3,
         elevation: 24,
     },
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     },
     centerContent: {
         width: '100%',
-        backgroundColor: '#FFFFFF',
+        
         borderRadius: 28,
         overflow: 'hidden',
         flexDirection: 'column',

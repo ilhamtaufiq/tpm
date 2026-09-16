@@ -435,21 +435,21 @@ export default function MobilInventoryScreen() {
             <Typography className="text-textGray text-[10px] uppercase font-bold mb-4 ml-1">Rentang Tanggal</Typography>
             <Pressable
                 onPress={handleSetAllTime}
-                className={`mb-4 rounded-2xl border px-4 py-3 ${useAllTime ? 'bg-amber-50 border-amber-200' : 'bg-surface border-border'}`}
+                className={`mb-4 rounded-2xl border px-4 py-3 ${useAllTime ? 'bg-amber-50 border-amber-200' : 'bg-surface border-transparent'}`}
             >
                 <View className="flex-row items-center justify-between">
                     <View>
-                        <Typography weight="bold" className="text-sm text-gray-800">All Time</Typography>
+                        <Typography weight="bold" className="text-sm text-text">All Time</Typography>
                         <Typography className="text-[11px] text-textGray">Tampilkan semua data mobil tanpa batas tanggal.</Typography>
                     </View>
-                    <View className={`w-5 h-5 rounded-full border-2 ${useAllTime ? 'bg-amber-500 border-amber-500' : 'bg-transparent border-border'}`} />
+                    <View className={`w-5 h-5 rounded-full border-2 ${useAllTime ? 'bg-amber-500 border-amber-500' : 'bg-transparent border-transparent'}`} />
                 </View>
             </Pressable>
             <View className="space-y-4">
                 <View>
                     <Typography variant="caption" className="text-textGray mb-1 ml-1">Dari Tanggal</Typography>
                     <TextInput
-                        className="bg-background h-12 px-4 rounded-xl border border-border text-sm font-bold text-primary"
+                        className="bg-background h-12 px-4 rounded-xl border border-transparent text-sm font-bold text-primary"
                         value={tempDateRange.dari}
                         onChangeText={(v) => setTempDateRange({ ...tempDateRange, dari: v })}
                         placeholder="YYYY-MM-DD"
@@ -458,7 +458,7 @@ export default function MobilInventoryScreen() {
                 <View>
                     <Typography variant="caption" className="text-textGray mb-1 ml-1">Sampai Tanggal</Typography>
                     <TextInput
-                        className="bg-background h-12 px-4 rounded-xl border border-border text-sm font-bold text-primary"
+                        className="bg-background h-12 px-4 rounded-xl border border-transparent text-sm font-bold text-primary"
                         value={tempDateRange.sampai}
                         onChangeText={(v) => setTempDateRange({ ...tempDateRange, sampai: v })}
                         placeholder="YYYY-MM-DD"
@@ -509,11 +509,11 @@ export default function MobilInventoryScreen() {
             <View className="flex-row justify-between items-center mb-8">
                 <View>
                     <Typography variant="h3" weight="bold" className="text-primary text-2xl tracking-tight">Dompet Unit Mobil</Typography>
-                    <Typography className="text-textGray/40 text-[10px] uppercase font-black tracking-widest">Inventory Cash Liquidity</Typography>
+                    <Typography className="text-textGray text-[10px] uppercase font-black tracking-widest">Inventory Cash Liquidity</Typography>
                 </View>
                 <Pressable
                     onPress={handleCloseWallet}
-                    className="w-10 h-10 bg-background rounded-full items-center justify-center border border-border"
+                    className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent"
                 >
                     <X size={20} color="#6B7280" />
                 </Pressable>
@@ -573,7 +573,7 @@ export default function MobilInventoryScreen() {
                     {/* Cash Activity History */}
                     <View className="mb-8">
                         <View className="flex-row justify-between items-center mb-4 px-1">
-                            <Typography variant="caption" weight="bold" className="text-textGray/40 uppercase tracking-[2px]">History Aktivitas Kas & Setoran</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[2px]">History Aktivitas Kas & Setoran</Typography>
                             <Pressable
                                 onPress={() => {
                                     handleCloseWallet();
@@ -585,18 +585,18 @@ export default function MobilInventoryScreen() {
                         </View>
 
                         {isHistoryLoading ? (
-                            <View className="bg-gray-50/50 p-8 rounded-[32px] border border-border items-center justify-center">
+                            <View className="bg-surface/50 p-8 rounded-[32px] border border-transparent items-center justify-center">
                                 <ActivityIndicator color="#023C69" />
                                 <Typography className="text-textGray text-xs italic mt-3">Memuat aktivitas kas...</Typography>
                             </View>
                         ) : historyData?.data?.length === 0 ? (
-                            <View className="bg-gray-50/50 p-8 rounded-[32px] border border-dashed border-border items-center justify-center">
+                            <View className="bg-surface/50 p-8 rounded-[32px] border border-dashed border-transparent items-center justify-center">
                                 <Typography className="text-textGray text-xs italic">Belum ada aktivitas kas</Typography>
                             </View>
                         ) : (
                             <View className="space-y-3">
                                 {historyData?.data?.slice(0, 2).map((item: any) => (
-                                    <View key={item.id} className="bg-surface p-4 rounded-3xl border border-border flex-row items-center shadow-sm">
+                                    <View key={item.id} className="bg-surface p-4 rounded-3xl border border-transparent flex-row items-center shadow-sm">
                                         <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'
                                             }`}>
                                             {item.tipe === 'MASUK' ? (
@@ -607,7 +607,7 @@ export default function MobilInventoryScreen() {
                                         </View>
                                         <View className="flex-1">
                                             <Typography weight="bold" className="text-textMain text-sm">{item.keterangan || item.sumber}</Typography>
-                                            <Typography variant="caption" className="text-textGray/60 mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                            <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
                                         </View>
                                         <View className="items-end">
                                             <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'
@@ -623,7 +623,7 @@ export default function MobilInventoryScreen() {
 
                     {/* Quick Actions */}
                     <View>
-                        <Typography variant="caption" weight="bold" className="text-textGray/30 uppercase tracking-[2px] ml-1 mb-4 text-center">Penyesuaian, Hutang, Piutang</Typography>
+                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[2px] ml-1 mb-4 text-center">Penyesuaian, Hutang, Piutang</Typography>
                         <View className="flex-row flex-wrap -mx-1 mb-6">
                             {[
                                 {
@@ -735,13 +735,13 @@ export default function MobilInventoryScreen() {
                                 <View key={action.key} className="w-1/3 p-1">
                                     <Pressable
                                         onPress={action.onPress}
-                                        className="bg-surface p-3 rounded-2xl border border-border items-center justify-center shadow-sm active:bg-background min-h-[110px]"
+                                        className="bg-surface p-3 rounded-2xl border border-transparent items-center justify-center shadow-sm active:bg-background min-h-[110px]"
                                     >
                                         <View className={`w-8 h-8 ${action.iconBg} rounded-xl items-center justify-center mb-2`}>
                                             {action.icon}
                                         </View>
                                         <Typography weight="bold" className={`${action.text} text-[8px] uppercase tracking-wider text-center`}>{action.label}</Typography>
-                                        <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5 text-center">{action.sublabel}</Typography>
+                                        <Typography className="text-textGray text-[6px] font-bold mt-0.5 text-center">{action.sublabel}</Typography>
                                     </Pressable>
                                 </View>
                             ))}
@@ -783,13 +783,13 @@ export default function MobilInventoryScreen() {
 
                     <View className="space-y-6">
                         <View>
-                            <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Jumlah Nominal (Rp)</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Jumlah Nominal (Rp)</Typography>
                             <TextInput
                                 placeholder="0"
                                 keyboardType="numeric"
                                 value={expenseAmount}
                                 onChangeText={(val) => setExpenseAmount(formatNumber(val))}
-                                className={`bg-background p-5 rounded-3xl text-2xl font-bold ${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} border border-border`}
+                                className={`bg-background p-5 rounded-3xl text-2xl font-bold ${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} border border-transparent`}
                             />
                         </View>
 
@@ -805,7 +805,7 @@ export default function MobilInventoryScreen() {
                                             <Typography variant="caption" className="text-amber-700/60 font-medium">Beri ke Karyawan?</Typography>
                                         </View>
                                     </View>
-                                    <View className="flex-row items-center bg-white/50 p-1 rounded-2xl border border-amber-100">
+                                    <View className="flex-row items-center bg-surface/50 p-1 rounded-2xl border border-amber-100">
                                         <Pressable
                                             onPress={() => setExpensePiutangType('UMUM')}
                                             className={`px-4 py-2 rounded-xl ${expensePiutangType === 'UMUM' ? 'bg-amber-500 shadow-md' : ''}`}
@@ -822,7 +822,7 @@ export default function MobilInventoryScreen() {
                                 </View>
 
                                 <View>
-                                    <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">
+                                    <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">
                                         {expensePiutangType === 'KASBON' ? 'Pilih Karyawan' : 'Nama Penerima/Debitur'}
                                     </Typography>
 
@@ -841,7 +841,7 @@ export default function MobilInventoryScreen() {
                                             placeholder="Contoh: Andi, Staff, dll..."
                                             value={debiturName}
                                             onChangeText={setDebiturName}
-                                            className="bg-background p-5 rounded-3xl text-sm font-bold text-primary border border-border"
+                                            className="bg-background p-5 rounded-3xl text-sm font-bold text-primary border border-transparent"
                                         />
                                     )}
                                 </View>
@@ -850,18 +850,18 @@ export default function MobilInventoryScreen() {
 
 
                         <View>
-                            <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Keterangan / Keperluan</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Keterangan / Keperluan</Typography>
                             <TextInput
                                 placeholder="Contoh: Beli bensin, Aqua, dll..."
                                 value={expenseNote}
                                 onChangeText={setExpenseNote}
-                                className="bg-background p-5 rounded-3xl text-sm font-bold text-primary border border-border"
+                                className="bg-background p-5 rounded-3xl text-sm font-bold text-primary border border-transparent"
                             />
                         </View>
 
                         {(expenseMode === 'PIUTANG' || expenseMode === 'KELUAR') && (
                             <View>
-                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana / Potong Dari</Typography>
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Sumber Dana / Potong Dari</Typography>
                                 <View className="flex-row -m-1">
                                     {[
                                         { id: 'KAS_UNIT_MOBIL', label: 'Dompet', icon: Wallet, color: '#D97706' },
@@ -876,7 +876,7 @@ export default function MobilInventoryScreen() {
                                                     onPress={() => setExpensePaymentMethod(opt.id)}
                                                     className={`p-3 rounded-2xl border items-center justify-center ${active
                                                         ? 'bg-amber-600 border-amber-600 shadow-sm'
-                                                        : 'bg-white border-gray-100'
+                                                        : 'bg-surface border-gray-100'
                                                         }`}
                                                 >
                                                     <OptIcon size={20} color={active ? 'white' : opt.color} />
@@ -893,7 +893,7 @@ export default function MobilInventoryScreen() {
 
                         {expenseMode === 'SETORAN' && (
                             <View>
-                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Tujuan Transfer / Mutasi</Typography>
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Tujuan Transfer / Mutasi</Typography>
                                 <View className="flex-row flex-wrap -m-1">
                                     {[
                                         { id: 'KAS_UTAMA', label: 'Cash Utama' },
@@ -906,7 +906,7 @@ export default function MobilInventoryScreen() {
                                                 onPress={() => setExpensePaymentMethod(opt.id)}
                                                 className={`p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
                                                     ? 'bg-blue-600 border-blue-600 shadow-sm'
-                                                    : 'bg-white border-gray-100'
+                                                    : 'bg-surface border-gray-100'
                                                     }`}
                                             >
                                                 <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${expensePaymentMethod === opt.id ? 'text-white' : 'text-textGray'}`}>
@@ -1063,7 +1063,7 @@ export default function MobilInventoryScreen() {
                 />
 
                 {/* Header Section (Search & Filter Card) */}
-                <View className="bg-surface p-3 rounded-[24px] border border-border shadow-sm mt-4 mx-6 flex-col">
+                <View className="bg-surface p-3 rounded-[24px] border border-transparent shadow-sm mt-4 mx-6 flex-col">
                     {/* Search Bar */}
                     <View className="flex-row items-center space-x-2 mb-3">
                         <View className="flex-1 relative">
@@ -1071,7 +1071,7 @@ export default function MobilInventoryScreen() {
                                 <Search size={18} color="#9CA3AF" />
                             </View>
                             <TextInput
-                                className="w-full h-11 pl-11 pr-10 bg-background border border-border rounded-2xl text-textMain font-medium text-xs"
+                                className="w-full h-11 pl-11 pr-10 bg-background border border-transparent rounded-2xl text-textMain font-medium text-xs"
                                 placeholder="Cari mobil impian Anda..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
@@ -1096,7 +1096,7 @@ export default function MobilInventoryScreen() {
                                     walletSheetRef.current?.present();
                                 }
                             }}
-                            className="w-11 h-11 bg-background items-center justify-center rounded-2xl border border-border active:scale-95"
+                            className="w-11 h-11 bg-background items-center justify-center rounded-2xl border border-transparent active:scale-95"
                         >
                             <Wallet size={18} color="#023C69" />
                         </Pressable>
@@ -1113,7 +1113,7 @@ export default function MobilInventoryScreen() {
                             <Pressable 
                                 key={chip.id}
                                 onPress={() => setActiveTab(chip.id as 'semua' | 'tersedia' | 'booking' | 'terjual')}
-                                className={`px-4 py-2 rounded-xl mr-2 ${activeTab === chip.id ? 'bg-primary' : 'bg-background border border-border'}`}
+                                className={`px-4 py-2 rounded-xl mr-2 ${activeTab === chip.id ? 'bg-primary' : 'bg-background border border-transparent'}`}
                             >
                                 <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${activeTab === chip.id ? 'text-white font-bold' : 'text-textGray'}`}>
                                     {chip.label}
@@ -1140,7 +1140,7 @@ export default function MobilInventoryScreen() {
                                     dateSheetRef.current?.present();
                                 }
                             }}
-                            className="flex-row items-center justify-between mb-6 bg-surface p-4 rounded-[24px] shadow-sm border border-border active:bg-background mx-6"
+                            className="flex-row items-center justify-between mb-6 bg-surface p-4 rounded-[24px] shadow-sm border border-transparent active:bg-background mx-6"
                         >
                     <View className="flex-row items-center">
                         <Calendar size={18} color="#023C69" />
@@ -1184,7 +1184,7 @@ export default function MobilInventoryScreen() {
                                 <Pressable
                                     key={item.id}
                                     onPress={() => handlePresentDetailModal(item)}
-                                    className="border-b border-border bg-surface"
+                                    className="border-b border-transparent bg-surface"
                                 >
                                     <View className="overflow-hidden p-4 flex-row gap-3 items-stretch">
                                         {/* Image Section (40%) */}
@@ -1226,7 +1226,7 @@ export default function MobilInventoryScreen() {
                                                     {item.nomor_plat}
                                                 </Typography>
                                             </View>
-                                            <View className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg">
+                                            <View className="absolute bottom-2 right-2 bg-surface/90 backdrop-blur-md px-2 py-1 rounded-lg">
                                                 <Typography variant="caption" weight="bold" className="text-primary text-[9px]">
                                                     {item.tahun}
                                                 </Typography>
@@ -1260,18 +1260,18 @@ export default function MobilInventoryScreen() {
                                                 </Typography>
 
                                                 <View className="flex-row flex-wrap gap-2 mb-2">
-                                                    <View className="flex-row items-center bg-background px-2 py-1 rounded-md border border-border">
+                                                    <View className="flex-row items-center bg-background px-2 py-1 rounded-md border border-transparent">
                                                         <GaugeCircle size={10} color="#6B7280" />
                                                         <Typography className="text-textGray text-[9px] font-medium ml-1.5">{(item.kilometer || 0).toLocaleString()} km</Typography>
                                                     </View>
-                                                    <View className="flex-row items-center bg-background px-2 py-1 rounded-md border border-border">
+                                                    <View className="flex-row items-center bg-background px-2 py-1 rounded-md border border-transparent">
                                                         <Settings size={10} color="#6B7280" />
                                                         <Typography className="text-textGray text-[9px] font-medium ml-1.5">{item.transmisi || 'AT'}</Typography>
                                                     </View>
                                                 </View>
                                             </View>
 
-                                            <View className="flex-row justify-end space-x-2 border-t border-border pt-3 mt-1">
+                                            <View className="flex-row justify-end space-x-2 border-t border-transparent pt-3 mt-1">
                                                 <Pressable
                                                     className="w-8 h-8 bg-emerald-50 rounded-lg items-center justify-center border border-emerald-100 active:bg-emerald-100"
                                                     onPress={() => handleShareGallery(item)}
@@ -1293,7 +1293,7 @@ export default function MobilInventoryScreen() {
                                                     <TrendingUp size={14} color="#3B82F6" />
                                                 </Pressable>
                                                 <Pressable
-                                                    className="w-8 h-8 bg-background rounded-lg items-center justify-center border border-border active:bg-gray-200"
+                                                    className="w-8 h-8 bg-background rounded-lg items-center justify-center border border-transparent active:bg-gray-200"
                                                     onPress={() => handleDeleteMobil(item)}
                                                 >
                                                     <Trash2 size={14} color="#EF4444" />
@@ -1350,7 +1350,7 @@ export default function MobilInventoryScreen() {
                         <Modal visible={showHistoryModal} transparent animationType="fade" onRequestClose={() => setShowHistoryModal(false)}>
                             <View className="flex-1 bg-black/60 justify-center items-center p-6">
                                 <View className="bg-surface rounded-[40px] w-full max-w-md h-[80%] overflow-hidden shadow-2xl">
-                                    <View className="p-6 border-b border-border flex-row justify-between items-center">
+                                    <View className="p-6 border-b border-transparent flex-row justify-between items-center">
                                         <Typography variant="h3" weight="bold">Riwayat Kas & Setoran</Typography>
                                         <Pressable onPress={() => setShowHistoryModal(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
                                             <X size={18} color="#64748B" />
@@ -1364,13 +1364,13 @@ export default function MobilInventoryScreen() {
                                             </View>
                                         )}
                                         {!isHistoryLoading && historyData?.data?.map((item: any) => (
-                                            <View key={item.id} className="bg-gray-50/50 p-4 rounded-3xl border border-border flex-row items-center mb-4">
+                                            <View key={item.id} className="bg-surface/50 p-4 rounded-3xl border border-transparent flex-row items-center mb-4">
                                                 <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
                                                     {item.tipe === 'MASUK' ? <TrendingUp size={20} color="#10B981" /> : <TrendingDown size={20} color="#E11D48" />}
                                                 </View>
                                                 <View className="flex-1">
                                                     <Typography weight="bold" className="text-textMain text-sm">{item.keterangan || item.sumber}</Typography>
-                                                    <Typography variant="caption" className="text-textGray/60 mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                                    <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
                                                 </View>
                                                 <View className="items-end">
                                                     <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -1527,7 +1527,7 @@ export default function MobilInventoryScreen() {
                             <View className="flex-1 bg-black/60 justify-end">
                                 <Pressable className="flex-1" onPress={() => setShowHistoryModal(false)} />
                                 <View className="bg-surface rounded-t-[48px] h-[85%] overflow-hidden">
-                                    <View className="p-8 border-b border-border flex-row justify-between items-center">
+                                    <View className="p-8 border-b border-transparent flex-row justify-between items-center">
                                         <View>
                                             <Typography variant="h2" weight="bold">Riwayat Aktivitas Kas</Typography>
                                             <Typography variant="caption" className="text-textGray">20 transaksi dompet terbaru</Typography>
@@ -1544,13 +1544,13 @@ export default function MobilInventoryScreen() {
                                             </View>
                                         )}
                                         {!isHistoryLoading && historyData?.data?.map((item: any) => (
-                                            <View key={item.id} className="bg-gray-50/50 p-5 rounded-[32px] border border-border flex-row items-center mb-4">
+                                            <View key={item.id} className="bg-surface/50 p-5 rounded-[32px] border border-transparent flex-row items-center mb-4">
                                                 <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
                                                     {item.tipe === 'MASUK' ? <TrendingUp size={24} color="#10B981" /> : <TrendingDown size={24} color="#E11D48" />}
                                                 </View>
                                                 <View className="flex-1">
                                                     <Typography weight="bold" className="text-textMain text-base">{item.keterangan || item.sumber}</Typography>
-                                                    <Typography variant="caption" className="text-textGray/60 mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                                    <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
                                                 </View>
                                                 <View className="items-end">
                                                     <Typography weight="bold" className={`text-base ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>

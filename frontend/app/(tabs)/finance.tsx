@@ -183,7 +183,7 @@ export default function FinanceTab() {
                 rightElement={
                     <Pressable
                         onPress={onRefresh}
-                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
                         <RefreshCw size={20} color="#1F2937" />
                     </Pressable>
@@ -197,7 +197,7 @@ export default function FinanceTab() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
                 {/* Period Filter Bar */}
-                <View className="bg-surface border border-border rounded-3xl p-4 mb-6 shadow-sm">
+                <View className="bg-surface border border-transparent rounded-3xl p-4 mb-6 shadow-sm">
                     <View className="flex-row bg-background p-1 rounded-2xl mb-3">
                         {[
                             { key: 'daily', label: 'Hari' },
@@ -210,7 +210,7 @@ export default function FinanceTab() {
                                 <Pressable
                                     key={item.key}
                                     onPress={() => setFilterType(item.key as FinanceFilterType)}
-                                    className={`flex-1 py-2 items-center rounded-xl ${isActive ? 'bg-surface border border-border' : ''}`}
+                                    className={`flex-1 py-2 items-center rounded-xl ${isActive ? 'bg-surface border border-transparent' : ''}`}
                                 >
                                     <Typography
                                         variant="caption"
@@ -228,7 +228,7 @@ export default function FinanceTab() {
                         <View className="flex-row justify-between items-center px-1">
                             <Pressable
                                 onPress={handlePrev}
-                                className="w-9 h-9 bg-background rounded-full items-center justify-center border border-border active:bg-background"
+                                className="w-9 h-9 bg-background rounded-full items-center justify-center border border-transparent active:bg-background"
                             >
                                 <ChevronLeft size={18} color="#1C1C1C" />
                             </Pressable>
@@ -242,7 +242,7 @@ export default function FinanceTab() {
 
                             <Pressable
                                 onPress={handleNext}
-                                className="w-9 h-9 bg-background rounded-full items-center justify-center border border-border active:bg-background"
+                                className="w-9 h-9 bg-background rounded-full items-center justify-center border border-transparent active:bg-background"
                             >
                                 <ChevronRight size={18} color="#1C1C1C" />
                             </Pressable>
@@ -257,9 +257,9 @@ export default function FinanceTab() {
                 </View>
 
                 {/* Main Profit Card (Standard Bento Style) */}
-                <View className="bg-surface p-6 rounded-[32px] border border-border shadow-sm mb-6">
+                <View className="bg-surface p-6 rounded-[32px] border border-transparent shadow-sm mb-6">
                     <View className="flex-row justify-between items-center mb-1">
-                        <Typography className="text-textGray/40 text-[10px] uppercase font-bold tracking-[2px]">Estimasi Laba Bersih Operasional</Typography>
+                        <Typography className="text-textGray text-[10px] uppercase font-bold tracking-[2px]">Estimasi Laba Bersih Operasional</Typography>
                         <View className="bg-primary/10 px-2 py-0.5 rounded-full">
                             <Typography className="text-primary text-[9px] font-bold">Laba Rugi</Typography>
                         </View>
@@ -268,9 +268,9 @@ export default function FinanceTab() {
                         {formatCurrency(totalLabaBersih)}
                     </Typography>
 
-                    <View className="flex-row justify-between pt-5 border-t border-border">
+                    <View className="flex-row justify-between pt-5 border-t border-transparent">
                         <View className="flex-1">
-                            <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-1">Pendapatan Omset</Typography>
+                            <Typography className="text-textGray text-[9px] uppercase font-bold mb-1">Pendapatan Omset</Typography>
                             <View className="flex-row items-center">
                                 <View className="w-6 h-6 bg-emerald-50 rounded-lg items-center justify-center mr-2">
                                     <TrendingUp size={12} color="#10B981" />
@@ -278,8 +278,8 @@ export default function FinanceTab() {
                                 <Typography className="text-textMain text-xs font-bold">{formatCurrency(totalPendapatan)}</Typography>
                             </View>
                         </View>
-                        <View className="flex-1 ml-4 pl-4 border-l border-border">
-                            <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-1">Pengeluaran (HPP, Ops & SDM)</Typography>
+                        <View className="flex-1 ml-4 pl-4 border-l border-transparent">
+                            <Typography className="text-textGray text-[9px] uppercase font-bold mb-1">Pengeluaran (HPP, Ops & SDM)</Typography>
                             <View className="flex-row items-center">
                                 <View className="w-6 h-6 bg-rose-50 rounded-lg items-center justify-center mr-2">
                                     <TrendingDown size={12} color="#EF4444" />
@@ -351,7 +351,7 @@ export default function FinanceTab() {
 
                     {/* Cash & Bank Row */}
                     <View className="flex-row justify-between mb-3">
-                        <View className="w-[48%] bg-surface p-4 rounded-[24px] border border-border shadow-sm">
+                        <View className="w-[48%] bg-surface p-4 rounded-[24px] border border-transparent shadow-sm">
                             <View className="flex-row items-center mb-3">
                                 <View className="w-9 h-9 bg-emerald-50 rounded-xl items-center justify-center mr-2.5">
                                     <Wallet size={18} color="#10B981" />
@@ -365,20 +365,20 @@ export default function FinanceTab() {
                             {/* Detailed Cash Breakdown */}
                             <View className="mt-2 space-y-1">
                                 <View className="flex-row justify-between">
-                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Pusat</Typography>
+                                    <Typography className="text-textGray text-[8px] uppercase font-bold">Pusat</Typography>
                                     <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.kas_utama?.saldo || 0)}</Typography>
                                 </View>
                                 <View className="flex-row justify-between">
-                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Bengkel</Typography>
+                                    <Typography className="text-textGray text-[8px] uppercase font-bold">Bengkel</Typography>
                                     <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.kas_unit_bengkel?.saldo || 0)}</Typography>
                                 </View>
                                 <View className="flex-row justify-between">
-                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Mobil / Jasa Angkut</Typography>
+                                    <Typography className="text-textGray text-[8px] uppercase font-bold">Mobil / Jasa Angkut</Typography>
                                     <Typography className="text-textMain text-[8px] font-bold">{formatCurrency((dashboard?.kas_bank?.kas_unit_mobil?.saldo || 0) + (dashboard?.kas_bank?.kas_unit_jasa_angkut?.saldo || 0))}</Typography>
                                 </View>
                             </View>
 
-                            <View className="flex-row items-center mt-2 pt-2 border-t border-border">
+                            <View className="flex-row items-center mt-2 pt-2 border-t border-transparent">
                                 <TrendingUp size={10} color="#10B981" />
                                 <Typography className="text-emerald-500 text-[9px] font-bold ml-1">
                                     {formatCurrency(aggregateCashIn)}
@@ -386,7 +386,7 @@ export default function FinanceTab() {
                             </View>
                         </View>
 
-                        <View className="w-[48%] bg-surface p-4 rounded-[24px] border border-border shadow-sm">
+                        <View className="w-[48%] bg-surface p-4 rounded-[24px] border border-transparent shadow-sm">
                             <View className="flex-row items-center mb-3">
                                 <View className="w-9 h-9 bg-blue-50 rounded-xl items-center justify-center mr-2.5">
                                     <ArrowRightLeft size={18} color="#3B82F6" />
@@ -400,12 +400,12 @@ export default function FinanceTab() {
                             {/* Detailed Bank Breakdown */}
                             <View className="mt-2 space-y-1">
                                 <View className="flex-row justify-between">
-                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">BCA</Typography>
+                                    <Typography className="text-textGray text-[8px] uppercase font-bold">BCA</Typography>
                                     <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.bank_utama?.saldo || 0)}</Typography>
                                 </View>
                             </View>
 
-                            <View className="flex-row items-center mt-2 pt-2 border-t border-border">
+                            <View className="flex-row items-center mt-2 pt-2 border-t border-transparent">
                                 <TrendingUp size={10} color="#3B82F6" />
                                 <Typography className="text-blue-500 text-[9px] font-bold ml-1">
                                     {formatCurrency(aggregateBankIn)}
@@ -437,7 +437,7 @@ export default function FinanceTab() {
                     <View className="flex-row justify-between">
                         <Pressable
                             onPress={() => router.push('/finance/piutang')}
-                            className="w-[48%] bg-surface p-4 rounded-[24px] border border-border shadow-sm"
+                            className="w-[48%] bg-surface p-4 rounded-[24px] border border-transparent shadow-sm"
                         >
                             <View className="flex-row items-center mb-3">
                                 <View className="w-9 h-9 bg-amber-50 rounded-xl items-center justify-center mr-2.5">
@@ -448,7 +448,7 @@ export default function FinanceTab() {
                             <Typography weight="bold" className="text-amber-600 text-sm tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
                                 {formatCurrency(piutangSummary?.total_sisa || 0)}
                             </Typography>
-                            <View className="flex-row items-center mt-2 pt-2 border-t border-border">
+                            <View className="flex-row items-center mt-2 pt-2 border-t border-transparent">
                                 <Typography className="text-rose-500 text-[9px] font-bold">
                                     {piutangSummary?.jumlah_belum_lunas || 0} akun
                                 </Typography>
@@ -457,7 +457,7 @@ export default function FinanceTab() {
 
                         <Pressable
                             onPress={() => router.push('/finance/hutang')}
-                            className="w-[48%] bg-surface p-4 rounded-[24px] border border-border shadow-sm"
+                            className="w-[48%] bg-surface p-4 rounded-[24px] border border-transparent shadow-sm"
                         >
                             <View className="flex-row items-center mb-3">
                                 <View className="w-9 h-9 bg-rose-50 rounded-xl items-center justify-center mr-2.5">
@@ -468,7 +468,7 @@ export default function FinanceTab() {
                             <Typography weight="bold" className="text-rose-600 text-sm tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
                                 {formatCurrency(hutangSummary?.total_sisa || dashboard?.hutang?.total_sisa || 0)}
                             </Typography>
-                            <View className="flex-row items-center mt-2 pt-2 border-t border-border">
+                            <View className="flex-row items-center mt-2 pt-2 border-t border-transparent">
                                 <Typography className="text-rose-500 text-[9px] font-bold">
                                     {hutangSummary?.jumlah_belum_lunas || dashboard?.hutang?.jumlah_belum_lunas || 0} akun
                                 </Typography>
@@ -556,7 +556,7 @@ export default function FinanceTab() {
                     {/* Bengkel */}
                     <Pressable
                         onPress={() => router.push('/bengkel')}
-                        className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm flex-row items-center"
+                        className="bg-surface p-5 rounded-[32px] mb-6 border border-transparent shadow-sm flex-row items-center"
                     >
                         <View className="w-16 h-16 bg-amber-50 rounded-[20px] items-center justify-center mr-4 border border-amber-100/50">
                             <Typography weight="bold" className="text-amber-600 text-lg">B</Typography>
@@ -582,7 +582,7 @@ export default function FinanceTab() {
                     {/* Jual Beli Mobil */}
                     <Pressable
                         onPress={() => router.push('/mobil')}
-                        className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm flex-row items-center"
+                        className="bg-surface p-5 rounded-[32px] mb-6 border border-transparent shadow-sm flex-row items-center"
                     >
                         <View className="w-16 h-16 bg-blue-50 rounded-[20px] items-center justify-center mr-4 border border-blue-100/50">
                             <Typography weight="bold" className="text-blue-600 text-lg">M</Typography>
@@ -603,11 +603,11 @@ export default function FinanceTab() {
                                 </View>
                             </View>
                             {((dashboard?.mobil?.investor_dana_tertanam || 0) > 0 || (dashboard?.mobil?.investor_total_ditarik || 0) > 0) && (
-                                <View className="mt-2 pt-2 border-t border-border flex-row justify-between items-center">
+                                <View className="mt-2 pt-2 border-t border-transparent flex-row justify-between items-center">
                                     <Typography className="text-purple-600 text-[9px] font-bold uppercase">
                                         Modal Investor: {formatCurrency(dashboard?.mobil?.investor_sisa_hutang || 0)}
                                     </Typography>
-                                    <Typography className="text-textGray/60 text-[9px]">
+                                    <Typography className="text-textGray text-[9px]">
                                         Ditarik: {formatCurrency(dashboard?.mobil?.investor_total_ditarik || 0)}
                                     </Typography>
                                 </View>
@@ -618,7 +618,7 @@ export default function FinanceTab() {
                     {/* Jasa Angkut */}
                     <Pressable
                         onPress={() => router.push('/jasa-angkut')}
-                        className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm flex-row items-center"
+                        className="bg-surface p-5 rounded-[32px] mb-6 border border-transparent shadow-sm flex-row items-center"
                     >
                         <View className="w-16 h-16 bg-emerald-50 rounded-[20px] items-center justify-center mr-4 border border-emerald-100/50">
                             <Typography weight="bold" className="text-emerald-600 text-lg">A</Typography>

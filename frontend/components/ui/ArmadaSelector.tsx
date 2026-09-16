@@ -85,7 +85,7 @@ export const ArmadaSelector = ({
                 onRequestClose={handleClose}
                 statusBarTranslucent
             >
-                <View style={{ flex: 1, backgroundColor: 'white' }}>
+                <View style={{ flex: 1,  }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
                             <View className="w-10 h-1 bg-gray-300 rounded-full" />
@@ -120,7 +120,7 @@ export const ArmadaSelector = ({
                                 showsVerticalScrollIndicator={false}
                                 renderItem={({ item }) => (
                                     <Pressable onPress={() => handleSelect(item)}>
-                                        <Card className="mb-3 p-4 border border-border flex-row items-center justify-between">
+                                        <Card className="mb-3 p-4 border border-transparent flex-row items-center justify-between">
                                             <View className="flex-1 mr-4">
                                                 <Typography weight="semibold" className="text-base">{item.nama}</Typography>
                                                 <View className="flex-row items-center mt-1">

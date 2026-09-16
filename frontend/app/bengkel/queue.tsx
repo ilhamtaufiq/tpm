@@ -457,7 +457,7 @@ export default function QueueScreen() {
                     setSelectedItem(item);
                     setDetailModalOpen(true);
                 }}
-                className="bg-surface p-4 rounded-[28px] mb-4 border border-border shadow-sm active:scale-[0.98]"
+                className="bg-surface p-4 rounded-[28px] mb-4 border border-transparent shadow-sm active:scale-[0.98]"
             >
                 <View className="flex-row items-start">
                     <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-3 border ${workTheme.bg} ${workTheme.border}`}>
@@ -496,7 +496,7 @@ export default function QueueScreen() {
                             </View>
                         </View>
 
-                        <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-border">
+                        <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-transparent">
                             <View className="flex-row items-center flex-1 mr-2">
                                 <Clock size={12} color="#9CA3AF" />
                                 <Typography className="text-textGray text-[10px] font-semibold ml-1">
@@ -531,7 +531,7 @@ export default function QueueScreen() {
                         </View>
 
                         {!isBengkelTransactionLocked(item) && !isBengkelTransactionVoided(item) && (
-                            <View className="flex-row items-center mt-3 pt-3 border-t border-border gap-2">
+                            <View className="flex-row items-center mt-3 pt-3 border-t border-transparent gap-2">
                                 {[
                                     { label: 'Sparepart', mode: 'sparepart', icon: Package, color: '#059669' },
                                     { label: 'Servis', mode: 'servis', icon: Wrench, color: '#2563EB' },
@@ -544,7 +544,7 @@ export default function QueueScreen() {
                                                 event?.stopPropagation?.();
                                                 openQueueTransactionMode(action.mode as 'sparepart' | 'servis', item);
                                             }}
-                                            className="flex-1 h-9 rounded-xl bg-background border border-border flex-row items-center justify-center active:scale-95"
+                                            className="flex-1 h-9 rounded-xl bg-background border border-transparent flex-row items-center justify-center active:scale-95"
                                         >
                                             <ActionIcon size={13} color={action.color} />
                                             <Typography weight="bold" className="text-[9px] text-textMain ml-1" numberOfLines={1}>
@@ -571,7 +571,7 @@ export default function QueueScreen() {
                 ].map((stat) => {
                     const StatIcon = stat.icon;
                     return (
-                        <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-border`}>
+                        <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-transparent`}>
                             <View className="flex-row items-center mb-2">
                                 <StatIcon size={14} color={stat.color} />
                                 <Typography className="text-[9px] font-bold text-textGray ml-1.5 uppercase tracking-wide">{stat.label}</Typography>
@@ -585,8 +585,8 @@ export default function QueueScreen() {
                 })}
             </View>
 
-            <View className="bg-surface border border-border rounded-2xl p-3 mb-4">
-                <View className="flex-row items-center justify-center gap-1.5 mb-2.5 pb-2.5 border-b border-border">
+            <View className="bg-surface border border-transparent rounded-2xl p-3 mb-4">
+                <View className="flex-row items-center justify-center gap-1.5 mb-2.5 pb-2.5 border-b border-transparent">
                     {[
                         { id: 'all', label: 'Semua' },
                         { id: 'daily', label: 'Harian' },
@@ -596,7 +596,7 @@ export default function QueueScreen() {
                         <Pressable
                             key={m.id}
                             onPress={() => setDateMode(m.id as any)}
-                            className={`px-3 py-1.5 rounded-full border ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-background border-border'}`}
+                            className={`px-3 py-1.5 rounded-full border ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-background border-transparent'}`}
                         >
                             <Typography className={`text-[10px] font-bold ${dateMode === m.id ? 'text-white' : 'text-textGray'}`}>
                                 {m.label}
@@ -608,7 +608,7 @@ export default function QueueScreen() {
                 <View className="flex-row justify-between items-center">
                     <Pressable
                         onPress={handlePrev}
-                        className="w-10 h-10 bg-background rounded-full items-center justify-center border border-border active:scale-95"
+                        className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent active:scale-95"
                     >
                         <ChevronLeft size={20} color="#1C1C1C" />
                     </Pressable>
@@ -626,14 +626,14 @@ export default function QueueScreen() {
 
                     <Pressable
                         onPress={handleNext}
-                        className="w-10 h-10 bg-background rounded-full items-center justify-center border border-border active:scale-95"
+                        className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent active:scale-95"
                     >
                         <ChevronRight size={20} color="#1C1C1C" />
                     </Pressable>
                 </View>
             </View>
 
-            <View className="flex-row items-center bg-background border border-border rounded-2xl px-4 h-12 mb-3">
+            <View className="flex-row items-center bg-background border border-transparent rounded-2xl px-4 h-12 mb-3">
                 <Search size={18} color="#9CA3AF" />
                 <TextInput
                     value={queueSearchQuery}
@@ -656,7 +656,7 @@ export default function QueueScreen() {
             </Typography>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
                 {[
-                    { id: 'ALL', label: 'Semua', count: queueWorkStatusStats.total, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
+                    { id: 'ALL', label: 'Semua', count: queueWorkStatusStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-gray-200', text: 'text-gray-600' },
                     { id: 'antre', label: 'Antre', count: queueWorkStatusStats.antre, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                     { id: 'proses', label: 'Proses', count: queueWorkStatusStats.proses, active: 'bg-blue-500 border-blue-500', inactive: 'bg-blue-50 border-blue-100', text: 'text-blue-700' },
                     { id: 'selesai', label: 'Selesai', count: queueWorkStatusStats.selesai, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
@@ -682,7 +682,7 @@ export default function QueueScreen() {
             </Typography>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
                 {[
-                    { id: 'ALL', label: 'Semua Bayar', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
+                    { id: 'ALL', label: 'Semua Bayar', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-gray-200', text: 'text-gray-600' },
                     { id: 'LUNAS', label: 'Lunas', count: queuePaymentStats.LUNAS, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
                     { id: 'BELUM_LUNAS', label: 'Belum Lunas', count: queuePaymentStats.BELUM_LUNAS, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                     { id: 'BELUM_BAYAR', label: 'Belum Bayar', count: queuePaymentStats.BELUM_BAYAR, active: 'bg-orange-500 border-orange-500', inactive: 'bg-orange-50 border-orange-100', text: 'text-orange-700' },
@@ -832,7 +832,7 @@ export default function QueueScreen() {
                                 </View>
 
                                 {/* Item Order Card */}
-                                <Card variant="outlined" className="p-4 border-border mb-4 bg-gray-50/60 rounded-2xl">
+                                <Card variant="outlined" className="p-4 border-transparent mb-4 bg-surface/60 rounded-2xl">
                                     <View className="flex-row items-center justify-between mb-3">
                                         <View className="flex-row items-center">
                                             <Receipt size={15} color="#023C69" />
@@ -844,22 +844,22 @@ export default function QueueScreen() {
                                     </View>
 
                                     {((selectedItem?.detail_services) || []).map((s: any, idx: number) => (
-                                        <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-border">
+                                        <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{s.nama_jasa}</Typography>
-                                                <Typography variant="caption" className="text-textGray/70">Jasa</Typography>
+                                                <Typography variant="caption" className="text-textGray">Jasa</Typography>
                                             </View>
                                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(s.harga)}</Typography>
                                         </View>
                                     ))}
 
                                     {((selectedItem?.detail_parts) || []).map((p: any, idx: number) => (
-                                        <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-border">
+                                        <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>
                                                     {p.spare_part_nama || p.spare_part?.nama || 'Sparepart'}
                                                 </Typography>
-                                                <Typography variant="caption" className="text-textGray/70">Part x{formatQty(p.qty || 0)}</Typography>
+                                                <Typography variant="caption" className="text-textGray">Part x{formatQty(p.qty || 0)}</Typography>
                                             </View>
                                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(p.subtotal || 0)}</Typography>
                                         </View>
@@ -867,7 +867,7 @@ export default function QueueScreen() {
                                 </Card>
 
                                 {/* Customer Details Card */}
-                                <Card variant="outlined" className="p-4 border-border mb-4 bg-surface rounded-2xl">
+                                <Card variant="outlined" className="p-4 border-transparent mb-4 bg-surface rounded-2xl">
                                     <View className="flex-row items-center justify-between mb-3">
                                         <View className="flex-row items-center">
                                             <Typography variant="caption" weight="bold" className="text-primary uppercase tracking-widest">Detail Pelanggan</Typography>
@@ -910,7 +910,7 @@ export default function QueueScreen() {
                                                         onPress={() => updateStatus(selectedItem.id, s.id)}
                                                         disabled={updateStatsMutation.isPending}
                                                         style={isActive ? { backgroundColor: s.activeBg, borderColor: s.activeBorder } : {}}
-                                                        className={`flex-1 py-3 rounded-xl border items-center justify-center ${isActive ? 'shadow-sm' : 'bg-surface border-border'}`}
+                                                        className={`flex-1 py-3 rounded-xl border items-center justify-center ${isActive ? 'shadow-sm' : 'bg-surface border-transparent'}`}
                                                     >
                                                         <Typography
                                                             weight="bold"
@@ -926,7 +926,7 @@ export default function QueueScreen() {
                                 )}
 
                                 {/* Payment Summary Card */}
-                                <Card variant="outlined" className="p-4 border-border mb-4 bg-emerald-50/60 rounded-2xl">
+                                <Card variant="outlined" className="p-4 border-transparent mb-4 bg-emerald-50/60 rounded-2xl">
                                     <View className="flex-row items-center justify-between mb-2">
                                         <Typography variant="body2" weight="bold" className="text-emerald-800">Total Tagihan</Typography>
                                         <Typography variant="h4" weight="bold" className="text-emerald-800">{formatCurrency((selectedItem?.grand_total ?? selectedItem?.grand_total) || 0)}</Typography>
@@ -1088,7 +1088,7 @@ export default function QueueScreen() {
                 onRequestClose={() => setDatePickerModalOpen(false)}
             >
                 <View className="flex-1 justify-center items-center bg-black/50 px-6">
-                    <View className="bg-surface rounded-3xl p-6 w-full max-w-md shadow-xl border border-border">
+                    <View className="bg-surface rounded-3xl p-6 w-full max-w-md shadow-xl border border-transparent">
                         <View className="flex-row justify-between items-center mb-4">
                             <Typography variant="h3" weight="bold">Filter Tanggal & Periode</Typography>
                             <Pressable onPress={() => setDatePickerModalOpen(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
@@ -1110,7 +1110,7 @@ export default function QueueScreen() {
                                 <Pressable
                                     key={m.id}
                                     onPress={() => setDateMode(m.id as any)}
-                                    className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-background border-border'}`}
+                                    className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-background border-transparent'}`}
                                 >
                                     <Typography weight="bold" className={`text-xs ${dateMode === m.id ? 'text-white' : 'text-textGray'}`}>
                                         {m.label}
@@ -1135,7 +1135,7 @@ export default function QueueScreen() {
                                                 onPress={() => {
                                                     setDate(monthDate);
                                                 }}
-                                                className={`w-[30%] py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-emerald-600 border-emerald-600' : 'bg-background border-border'}`}
+                                                className={`w-[30%] py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-emerald-600 border-emerald-600' : 'bg-background border-transparent'}`}
                                             >
                                                 <Typography weight="bold" className={`text-xs ${isSelected ? 'text-white' : 'text-textMain'}`}>
                                                     {format(monthDate, 'MMM', { locale: localeID })}
@@ -1162,7 +1162,7 @@ export default function QueueScreen() {
                                                 onPress={() => {
                                                     setDate(new Date(yr, date.getMonth(), 1));
                                                 }}
-                                                className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'bg-background border-border'}`}
+                                                className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'bg-background border-transparent'}`}
                                             >
                                                 <Typography weight="bold" className={`text-xs ${isSelected ? 'text-white' : 'text-textMain'}`}>
                                                     {yr}

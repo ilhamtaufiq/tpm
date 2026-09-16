@@ -189,7 +189,7 @@ export default function ArmadaFormScreen() {
                         textAlignVertical="top"
                     />
 
-                    <View className="flex-row items-center justify-between mt-2 py-4 border-t border-border">
+                    <View className="flex-row items-center justify-between mt-2 py-4 border-t border-transparent">
                         <View>
                             <Typography weight="bold">Status Aktif</Typography>
                             <Typography variant="caption" className="text-textGray">Armada dapat dipilih di form muatan</Typography>

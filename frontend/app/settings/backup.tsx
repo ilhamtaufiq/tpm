@@ -354,7 +354,7 @@ export default function BackupScreen() {
                 rightElement={
                     <Pressable 
                         onPress={onRefresh} 
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        className="w-11 h-11 bg-surface/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={24} color="white" />}
                     </Pressable>
@@ -363,7 +363,7 @@ export default function BackupScreen() {
 
             {/* Standard Bento Action Overlay */}
             <View className="px-6 -mt-6 z-10">
-                <View className="bg-surface p-4 rounded-[32px] shadow-xl border border-border flex-row items-center">
+                <View className="bg-surface p-4 rounded-[32px] shadow-xl border border-transparent flex-row items-center">
                     <View className="w-14 h-14 bg-primary/10 rounded-2xl items-center justify-center mr-4">
                         <ShieldCheck size={28} color={themeColors.primary} strokeWidth={2} />
                     </View>
@@ -432,14 +432,14 @@ export default function BackupScreen() {
                         { label: 'STORAGE', value: formatSize(backups?.reduce((acc, curr) => acc + curr.size, 0) || 0), color: '#3B82F6', icon: HardDrive },
                         { label: 'STATUS', value: 'SAFE', color: '#10B981', icon: Shield },
                     ].map((stat) => (
-                        <View key={stat.label} style={{ width: '31%' }} className="bg-surface p-3 rounded-[32px] border border-border shadow-sm items-center">
+                        <View key={stat.label} style={{ width: '31%' }} className="bg-surface p-3 rounded-[32px] border border-transparent shadow-sm items-center">
                             <View style={{ backgroundColor: stat.color + '15' }} className="w-10 h-10 rounded-2xl items-center justify-center mb-1.5">
                                 <stat.icon size={16} color={stat.color} />
                             </View>
                             <Typography weight="bold" style={{ color: stat.color }} className="text-lg leading-tight uppercase" numberOfLines={1}>
                                 {stat.value}
                             </Typography>
-                            <Typography className="text-textGray/40 text-[7px] font-bold tracking-widest">{stat.label}</Typography>
+                            <Typography className="text-textGray text-[7px] font-bold tracking-widest">{stat.label}</Typography>
                         </View>
                     ))}
                 </View>
@@ -501,7 +501,7 @@ export default function BackupScreen() {
                                 <Typography className="text-textGray font-bold text-[10px] uppercase ml-1.5">Password Verifikasi</Typography>
                             </View>
                             <TextInput
-                                className="bg-background border border-border rounded-2xl px-5 py-4 text-textMain font-bold"
+                                className="bg-background border border-transparent rounded-2xl px-5 py-4 text-textMain font-bold"
                                 placeholder="Masukkan password admin..."
                                 secureTextEntry
                                 value={restorePassword}

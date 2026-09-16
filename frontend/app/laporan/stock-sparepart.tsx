@@ -234,14 +234,14 @@ export default function StockSparepartReportScreen() {
                     {isLoading ? (
                         <View className="py-20 items-center">
                             <ActivityIndicator size="large" color="#023C69" />
-                            <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
+                            <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                         </View>
                     ) : (
-                        <View className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sm">
+                        <View className="bg-surface rounded-3xl border border-transparent overflow-hidden shadow-sm">
                             {parts.map((part, index) => (
                                 <View
                                     key={part.id}
-                                    className={`p-4 flex-row items-center ${index !== parts.length - 1 ? 'border-b border-border' : ''}`}
+                                    className={`p-4 flex-row items-center ${index !== parts.length - 1 ? 'border-b border-transparent' : ''}`}
                                 >
                                     <View className="w-10 h-10 rounded-xl bg-background items-center justify-center mr-4">
                                         <Typography weight="bold" className="text-textGray text-xs">{index + 1}</Typography>

@@ -424,10 +424,10 @@ export default function JasaAngkutReportScreen() {
                                 {/* Group Header */}
                                 <Pressable
                                     onPress={() => toggleGroupCollapse(group.key)}
-                                    className={`bg-surface p-5 rounded-[32px] border ${!isCollapsed ? 'border-primary shadow-lg shadow-primary/10' : 'border-border shadow-sm'} flex-row items-center justify-between`}
+                                    className={`bg-surface p-5 rounded-[32px] border ${!isCollapsed ? 'border-primary shadow-lg shadow-primary/10' : 'border-transparent shadow-sm'} flex-row items-center justify-between`}
                                 >
                                     <View className="flex-row items-center flex-1">
-                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 border ${groupBy === 'armada' ? (group.trips.length > 0 ? 'bg-primary/10 border-primary/10' : 'bg-background border-border') : 'bg-orange-100 border-orange-200'}`}>
+                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 border ${groupBy === 'armada' ? (group.trips.length > 0 ? 'bg-primary/10 border-primary/10' : 'bg-background border-transparent') : 'bg-orange-100 border-orange-200'}`}>
                                             {groupBy === 'armada' ? <Truck size={22} color={!isCollapsed ? '#023C69' : '#94A3B8'} /> : <Users size={22} color="#C2410C" />}
                                         </View>
                                         <View className="flex-1">
@@ -459,7 +459,7 @@ export default function JasaAngkutReportScreen() {
                                 {!isCollapsed && (
                                     <View className="space-y-4 pt-4 px-2">
                                         {group.trips.length === 0 ? (
-                                            <View className="py-4 items-center bg-gray-50/50 rounded-2xl border border-dashed border-border ml-4">
+                                            <View className="py-4 items-center bg-surface/50 rounded-2xl border border-dashed border-transparent ml-4">
                                                 <Typography variant="caption" className="text-textGray italic">Belum ada aktivitas transaksi</Typography>
                                             </View>
                                         ) : (
@@ -467,7 +467,7 @@ export default function JasaAngkutReportScreen() {
                                                 <Pressable
                                                     key={item.id}
                                                     onPress={() => handlePressTrip(item)}
-                                                    className="bg-surface p-5 rounded-[24px] border border-border shadow-sm ml-4 mb-4"
+                                                    className="bg-surface p-5 rounded-[24px] border border-transparent shadow-sm ml-4 mb-4"
                                                 >
                                                     <View className="flex-row items-center mb-3">
                                                         <View className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center mr-3">
@@ -484,7 +484,7 @@ export default function JasaAngkutReportScreen() {
                                                                     </Typography>
                                                                 </View>
                                                             </View>
-                                                            <Typography variant="caption" className="text-textGray/60 text-[10px]" numberOfLines={1}>
+                                                            <Typography variant="caption" className="text-textGray text-[10px]" numberOfLines={1}>
                                                                 {formatDate(item.tanggal)} • {item.nomor_transaksi}
                                                             </Typography>
                                                         </View>
@@ -503,13 +503,13 @@ export default function JasaAngkutReportScreen() {
 
                                                     <View className="flex-row justify-between items-end pt-2 border-t border-gray-50/50">
                                                         <View>
-                                                            <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Laba TPM</Typography>
+                                                            <Typography className="text-textGray text-[8px] uppercase font-bold">Laba TPM</Typography>
                                                             <Typography variant="caption" weight="bold" className="text-emerald-600">
                                                                 {formatCurrency(item.laba_tpm || 0)}
                                                             </Typography>
                                                         </View>
                                                         <View className="items-end">
-                                                            <Typography className="text-textGray/40 text-[8px] uppercase font-bold">In TPM</Typography>
+                                                            <Typography className="text-textGray text-[8px] uppercase font-bold">In TPM</Typography>
                                                             <Typography variant="body2" weight="bold" className="text-primary tracking-tighter">
                                                                 {formatCurrency((item.pendapatan_kotor || 0) - (item.laba_supir || 0))}
                                                             </Typography>
@@ -559,7 +559,7 @@ export default function JasaAngkutReportScreen() {
                     ) : selectedTrip ? (
                         <BottomSheetScrollView showsVerticalScrollIndicator={false}>
                             {/* Trip Info Card */}
-                            <View className="bg-background p-5 rounded-2xl mb-6 border border-border">
+                            <View className="bg-background p-5 rounded-2xl mb-6 border border-transparent">
                                 <View className="flex-row justify-between mb-4">
                                     <View className="flex-1">
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Rute</Typography>
@@ -589,7 +589,7 @@ export default function JasaAngkutReportScreen() {
                                     </View>
                                 </View>
 
-                                <View className="flex-row justify-between mt-2 pt-2 border-t border-border">
+                                <View className="flex-row justify-between mt-2 pt-2 border-t border-transparent">
                                     <View>
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Supir</Typography>
                                         <Typography weight="bold">{selectedTrip.supir_nama}</Typography>
@@ -611,45 +611,45 @@ export default function JasaAngkutReportScreen() {
                                     </View>
                                     <Typography variant="body1" weight="bold">Rincian Biaya</Typography>
                                 </View>
-                                <View className="bg-surface p-4 rounded-2xl border border-border">
-                                    <View className="flex-row justify-between items-center py-2 border-b border-border">
+                                <View className="bg-surface p-4 rounded-2xl border border-transparent">
+                                    <View className="flex-row justify-between items-center py-2 border-b border-transparent">
                                         <View className="flex-row items-center">
                                             <View className="w-6 h-6 bg-amber-50 rounded-md items-center justify-center mr-2">
                                                 <Fuel size={12} color="#F59E0B" />
                                             </View>
                                             <Typography className="text-textGray text-sm">BBM</Typography>
                                         </View>
-                                        <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedTrip.biaya_bbm || 0)}</Typography>
+                                        <Typography weight="bold" className="text-text text-sm">{formatCurrency(selectedTrip.biaya_bbm || 0)}</Typography>
                                     </View>
-                                    <View className="flex-row justify-between items-center py-2 border-b border-border">
+                                    <View className="flex-row justify-between items-center py-2 border-b border-transparent">
                                         <View className="flex-row items-center">
                                             <View className="w-6 h-6 bg-blue-50 rounded-md items-center justify-center mr-2">
                                                 <Receipt size={12} color="#3B82F6" />
                                             </View>
                                             <Typography className="text-textGray text-sm">Tol</Typography>
                                         </View>
-                                        <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedTrip.biaya_tol || 0)}</Typography>
+                                        <Typography weight="bold" className="text-text text-sm">{formatCurrency(selectedTrip.biaya_tol || 0)}</Typography>
                                     </View>
-                                    <View className="flex-row justify-between items-center py-2 border-b border-border">
+                                    <View className="flex-row justify-between items-center py-2 border-b border-transparent">
                                         <View className="flex-row items-center">
                                             <View className="w-6 h-6 bg-orange-50 rounded-md items-center justify-center mr-2">
                                                 <Utensils size={12} color="#F97316" />
                                             </View>
                                             <Typography className="text-textGray text-sm">Makan</Typography>
                                         </View>
-                                        <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedTrip.biaya_makan || 0)}</Typography>
+                                        <Typography weight="bold" className="text-text text-sm">{formatCurrency(selectedTrip.biaya_makan || 0)}</Typography>
                                     </View>
-                                    <View className="flex-row justify-between items-center py-2 border-b border-border">
+                                    <View className="flex-row justify-between items-center py-2 border-b border-transparent">
                                         <View className="flex-row items-center">
                                             <View className="w-6 h-6 bg-purple-50 rounded-md items-center justify-center mr-2">
                                                 <ParkingSquare size={12} color="#A855F7" />
                                             </View>
                                             <Typography className="text-textGray text-sm">Parkir</Typography>
                                         </View>
-                                        <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedTrip.biaya_parkir || 0)}</Typography>
+                                        <Typography weight="bold" className="text-text text-sm">{formatCurrency(selectedTrip.biaya_parkir || 0)}</Typography>
                                     </View>
                                     {selectedTrip.biaya_lainnya > 0 && (
-                                        <View className="flex-row justify-between items-center py-2 border-b border-border">
+                                        <View className="flex-row justify-between items-center py-2 border-b border-transparent">
                                             <View className="flex-row items-center">
                                                 <View className="w-6 h-6 bg-background rounded-md items-center justify-center mr-2">
                                                     <MoreHorizontal size={12} color="#6B7280" />
@@ -674,7 +674,7 @@ export default function JasaAngkutReportScreen() {
                                     </View>
                                     <Typography variant="body1" weight="bold">Pembagian Laba</Typography>
                                 </View>
-                                <View className="bg-surface p-4 rounded-2xl border border-border">
+                                <View className="bg-surface p-4 rounded-2xl border border-transparent">
                                     <View className="flex-row justify-between mb-2">
                                         <Typography className="text-textGray text-xs">Persentase TPM</Typography>
                                         <Typography weight="bold" className="text-text text-sm">{selectedTrip.persentase_tpm || 50}%</Typography>
@@ -711,7 +711,7 @@ export default function JasaAngkutReportScreen() {
                             </View>
 
                             {selectedTrip.catatan && (
-                                <View className="bg-background p-4 rounded-2xl border border-border mb-8">
+                                <View className="bg-background p-4 rounded-2xl border border-transparent mb-8">
                                     <Typography className="text-textGray text-[10px] font-bold uppercase mb-2">Catatan</Typography>
                                     <Typography className="text-textGray">{selectedTrip.catatan}</Typography>
                                 </View>

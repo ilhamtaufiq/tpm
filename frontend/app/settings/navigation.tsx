@@ -139,7 +139,7 @@ export default function NavigationSettingsScreen() {
                     rightElement={
                         <Pressable
                             onPress={handleReset}
-                            className="w-10 h-10 items-center justify-center rounded-2xl bg-surface border border-border shadow-sm active:bg-rose-50"
+                            className="w-10 h-10 items-center justify-center rounded-2xl bg-surface border border-transparent shadow-sm active:bg-rose-50"
                         >
                             <RotateCcw size={20} color={themeColors.secondary} />
                         </Pressable>
@@ -157,11 +157,11 @@ export default function NavigationSettingsScreen() {
                     </View>
 
                     {/* LIVE INTERACTIVE PREVIEW */}
-                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mb-3">Live Preview Bottom Bar</Typography>
+                    <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[2px] ml-4 mb-3">Live Preview Bottom Bar</Typography>
                     
-                    <View className="bg-surface rounded-[32px] p-4 border border-border shadow-sm mb-6 items-center justify-center overflow-hidden">
+                    <View className="bg-surface rounded-[32px] p-4 border border-transparent shadow-sm mb-6 items-center justify-center overflow-hidden">
                         {/* Simulation Bar */}
-                        <View className="w-full bg-surface border border-border rounded-2xl p-2 flex-row items-center justify-between shadow-sm relative h-16">
+                        <View className="w-full bg-surface border border-transparent rounded-2xl p-2 flex-row items-center justify-between shadow-sm relative h-16">
                             {activeSlots.map((slotId, index) => {
                                 const details = getOptionDetails(slotId);
                                 if (!details) return null;
@@ -196,11 +196,11 @@ export default function NavigationSettingsScreen() {
                                 );
                             })}
                         </View>
-                        <Typography variant="caption" className="text-text/30 mt-3 text-center">Tampilan simulasi real-time bottom bar Anda</Typography>
+                        <Typography variant="caption" className="text-textGray mt-3 text-center">Tampilan simulasi real-time bottom bar Anda</Typography>
                     </View>
 
                     {/* SLOT SELECTOR LIST */}
-                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mb-3">Tata Letak Slot Navigasi</Typography>
+                    <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[2px] ml-4 mb-3">Tata Letak Slot Navigasi</Typography>
 
                     <View className="gap-y-4">
                         {activeSlots.map((slotId, index) => {
@@ -212,7 +212,7 @@ export default function NavigationSettingsScreen() {
                                 <Pressable
                                     key={index}
                                     onPress={() => handleOpenPicker(index)}
-                                    className="bg-surface p-5 rounded-[28px] border border-border shadow-sm flex-row items-center justify-between active:bg-gray-50/50"
+                                    className="bg-surface p-5 rounded-[28px] border border-transparent shadow-sm flex-row items-center justify-between active:bg-surface/50"
                                 >
                                     <View className="flex-row items-center flex-1">
                                         {/* Slot Badge */}
@@ -222,7 +222,7 @@ export default function NavigationSettingsScreen() {
 
                                         {/* Selected Option Meta */}
                                         <View className="flex-1 mr-4">
-                                            <Typography variant="caption" className="text-text/30 uppercase font-bold tracking-widest text-[9px]">Slot {index + 1}</Typography>
+                                            <Typography variant="caption" className="text-textGray uppercase font-bold tracking-widest text-[9px]">Slot {index + 1}</Typography>
                                             <View className="flex-row items-center mt-0.5">
                                                 <View style={{ backgroundColor: details.bgColor }} className="w-5 h-5 rounded-md items-center justify-center mr-2 border border-black/5">
                                                     <SlotIcon size={11} color={details.color} strokeWidth={2.5} />
@@ -241,7 +241,7 @@ export default function NavigationSettingsScreen() {
                                                 <Typography variant="caption" weight="bold" className="text-rose-500 text-[8px] uppercase tracking-wider font-bold">FAB+</Typography>
                                             </View>
                                         )}
-                                        <View className="w-8 h-8 rounded-xl bg-background border border-border justify-center items-center shadow-sm">
+                                        <View className="w-8 h-8 rounded-xl bg-background border border-transparent justify-center items-center shadow-sm">
                                             <ChevronRight size={14} color="#9CA3AF" />
                                         </View>
                                     </View>
@@ -251,7 +251,7 @@ export default function NavigationSettingsScreen() {
                     </View>
 
                     {/* FAB ACTIONS CUSTOMIZER */}
-                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mt-8 mb-3">Aksi Cepat FAB+ (Radial) Per Halaman</Typography>
+                    <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[2px] ml-4 mt-8 mb-3">Aksi Cepat FAB+ (Radial) Per Halaman</Typography>
 
                     <View className="gap-y-4">
                         {pageTargets.map((page) => {
@@ -260,7 +260,7 @@ export default function NavigationSettingsScreen() {
                             const positionLabels = ['Aksi Kiri', 'Aksi Tengah', 'Aksi Kanan'];
 
                             return (
-                                <View key={page.id} className="bg-surface p-5 rounded-[28px] border border-border shadow-sm">
+                                <View key={page.id} className="bg-surface p-5 rounded-[28px] border border-transparent shadow-sm">
                                     <View className="flex-row items-center mb-4">
                                         <View className="w-9 h-9 bg-primary/5 rounded-xl justify-center items-center mr-4 border border-primary/10">
                                             <PageIcon size={17} color={themeColors.primary} strokeWidth={2.5} />
@@ -269,7 +269,7 @@ export default function NavigationSettingsScreen() {
                                             <Typography weight="bold" className="text-text text-[15px] font-outfit-bold leading-tight">
                                                 {page.label}
                                             </Typography>
-                                            <Typography variant="caption" className="text-text/40 text-[10px]">
+                                            <Typography variant="caption" className="text-textGray text-[10px]">
                                                 3 tombol radial saat FAB+ dibuka dari halaman ini
                                             </Typography>
                                         </View>
@@ -290,7 +290,7 @@ export default function NavigationSettingsScreen() {
                                                         setPickerMode('pageAction');
                                                         setPickerVisible(true);
                                                     }}
-                                                    className="bg-gray-50/70 rounded-2xl border border-border p-4 flex-row items-center"
+                                                    className="bg-surface/70 rounded-2xl border border-transparent p-4 flex-row items-center"
                                                 >
                                                     <View className="w-9 h-9 bg-primary/5 rounded-xl justify-center items-center mr-3 border border-primary/10">
                                                         <Typography weight="bold" className="text-primary text-sm font-outfit-bold">
@@ -301,7 +301,7 @@ export default function NavigationSettingsScreen() {
                                                         <SlotIcon size={17} color={details.color} strokeWidth={2.5} />
                                                     </View>
                                                     <View className="flex-1">
-                                                        <Typography variant="caption" className="text-text/30 uppercase font-bold tracking-widest text-[8px]">{positionLabels[index]}</Typography>
+                                                        <Typography variant="caption" className="text-textGray uppercase font-bold tracking-widest text-[8px]">{positionLabels[index]}</Typography>
                                                         <Typography weight="bold" className="text-text text-sm" numberOfLines={1}>{details.label}</Typography>
                                                     </View>
                                                     <ChevronRight size={14} color="#9CA3AF" />
@@ -334,7 +334,7 @@ export default function NavigationSettingsScreen() {
                         maxHeightRatio={0.85}
                         bottomInset={insets.bottom}
                         style={{ borderTopLeftRadius: 48, borderTopRightRadius: 48 }}
-                        className="border-t border-border shadow-2xl"
+                        className="border-t border-transparent shadow-2xl"
                     >
                         {/* Drag Handle */}
                         <View className="items-center pt-4 pb-2">
@@ -366,7 +366,7 @@ export default function NavigationSettingsScreen() {
                             </View>
                             <Pressable
                                 onPress={() => setPickerVisible(false)}
-                                className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
+                                className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                             >
                                 <X size={18} color="#6B7280" />
                             </Pressable>
@@ -427,7 +427,7 @@ export default function NavigationSettingsScreen() {
                                                     <Check size={12} color="white" strokeWidth={3} />
                                                 </View>
                                             ) : (
-                                                <View className="w-6 h-6 rounded-full border-2 border-border" />
+                                                <View className="w-6 h-6 rounded-full border-2 border-transparent" />
                                             )}
                                         </Pressable>
                                     );

@@ -170,12 +170,12 @@ export default function LabaRugiScreen() {
         <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
             <View className="bg-blue-600 px-5 py-4 flex-row items-center justify-between w-full">
                 <View className="flex-row items-center">
-                    <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center mr-3 border border-white/10">
+                    <View className="w-8 h-8 rounded-xl bg-surface/20 items-center justify-center mr-3 border border-white/10">
                         <TrendingUp size={18} color="white" />
                     </View>
                     <Typography variant="h4" weight="bold" className="text-white tracking-tight">Unit Bengkel</Typography>
                 </View>
-                <View className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
+                <View className="bg-surface/10 px-2 py-0.5 rounded-lg border border-white/10">
                     <Typography weight="bold" className="text-white text-[10px] uppercase tracking-widest">Revenue Center</Typography>
                 </View>
             </View>
@@ -224,12 +224,12 @@ export default function LabaRugiScreen() {
             <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
                 <View className="bg-emerald-600 px-5 py-4 flex-row items-center justify-between w-full">
                     <View className="flex-row items-center">
-                        <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center mr-3 border border-white/10">
+                        <View className="w-8 h-8 rounded-xl bg-surface/20 items-center justify-center mr-3 border border-white/10">
                             <Truck size={18} color="white" />
                         </View>
                         <Typography variant="h4" weight="bold" className="text-white tracking-tight">Unit Jasa Angkut</Typography>
                     </View>
-                    <View className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
+                    <View className="bg-surface/10 px-2 py-0.5 rounded-lg border border-white/10">
                         <Typography weight="bold" className="text-white text-[10px] uppercase tracking-widest">Logistic Service</Typography>
                     </View>
                 </View>
@@ -269,12 +269,12 @@ export default function LabaRugiScreen() {
             <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
                 <View className="bg-amber-500 px-5 py-4 flex-row items-center justify-between w-full">
                     <View className="flex-row items-center">
-                        <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center mr-3 border border-white/10">
+                        <View className="w-8 h-8 rounded-xl bg-surface/20 items-center justify-center mr-3 border border-white/10">
                             <ArrowUpRight size={18} color="white" />
                         </View>
                         <Typography variant="h4" weight="bold" className="text-white tracking-tight">Unit Jual Beli Mobil</Typography>
                     </View>
-                    <View className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
+                    <View className="bg-surface/10 px-2 py-0.5 rounded-lg border border-white/10">
                         <Typography weight="bold" className="text-white text-[10px] uppercase tracking-widest">Car Trading</Typography>
                     </View>
                 </View>
@@ -336,12 +336,12 @@ export default function LabaRugiScreen() {
         <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
             <View className="bg-slate-700 px-5 py-4 flex-row items-center justify-between w-full">
                 <View className="flex-row items-center">
-                    <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center mr-3 border border-white/10">
+                    <View className="w-8 h-8 rounded-xl bg-surface/20 items-center justify-center mr-3 border border-white/10">
                         <ArrowDownLeft size={18} color="white" />
                     </View>
                     <Typography variant="h4" weight="bold" className="text-white tracking-tight">Biaya Operasional Pusat</Typography>
                 </View>
-                <View className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
+                <View className="bg-surface/10 px-2 py-0.5 rounded-lg border border-white/10">
                     <Typography weight="bold" className="text-white text-[10px] uppercase tracking-widest">Tiga Putra Motor</Typography>
                 </View>
             </View>
@@ -382,9 +382,9 @@ export default function LabaRugiScreen() {
                 <View className="mb-6 w-full px-2">
                     <FinancialRow label="Total Pemasukan (Revenue)" value={totalRevenue} isDark bold color="text-emerald-400" />
                     <FinancialRow label="Total Pengeluaran (HPP & Beban Ops)" value={totalExpenses} isNegative isDark bold color="text-rose-400" />
-                    <View className="h-[1px] bg-white/10 w-full my-3" />
+                    <View className="h-[1px] bg-surface/10 w-full my-3" />
                     <FinancialRow label="Laba operasional seluruh unit" value={totalProfitBeforePrive} isDark large />
-                    <View className="h-[1px] bg-white/10 w-full my-3" />
+                    <View className="h-[1px] bg-surface/10 w-full my-3" />
                     <FinancialRow label="Prive pemilik" value={priveTotal} isNegative isDark color="text-rose-400" />
                 </View>
 
@@ -494,7 +494,7 @@ export default function LabaRugiScreen() {
                     </View>
                     <View className="flex-1 bg-background">
                         {Platform.OS === 'web' ? (
-                            <iframe srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }} title="Laba Rugi Preview" />
+                            <iframe srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none',  }} title="Laba Rugi Preview" />
                         ) : (
                             <WebView originWhitelist={['*']} source={{ html: previewHtml }} style={{ flex: 1 }} />
                         )}

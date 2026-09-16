@@ -113,7 +113,7 @@ export default function ThemeSettingsScreen() {
                         <Pressable
                             onPress={handleResetTheme}
                             disabled={isDefault}
-                            className={`w-10 h-10 items-center justify-center rounded-2xl border shadow-sm ${isDefault ? 'bg-background border-border opacity-40' : 'bg-surface border-border'}`}
+                            className={`w-10 h-10 items-center justify-center rounded-2xl border shadow-sm ${isDefault ? 'bg-background border-transparent opacity-40' : 'bg-surface border-transparent'}`}
                         >
                             <RotateCcw size={20} color={isDefault ? themeColors.textGray : themeColors.secondary} />
                         </Pressable>
@@ -129,17 +129,17 @@ export default function ThemeSettingsScreen() {
                     }}
                     showsVerticalScrollIndicator={false}
                 >
-                    <View className="bg-primary/5 p-6 rounded-[32px] mb-8 items-center border border-primary/10">
+                    <View className="bg-surface p-6 rounded-[32px] mb-8 items-center border border-transparent shadow-sm">
                         <View className="w-16 h-16 bg-primary rounded-full items-center justify-center mb-4 shadow-lg">
                             <Paintbrush size={32} color="white" />
                         </View>
-                        <Typography variant="h4" weight="bold" className="text-primary text-center">Kustomisasi Tema</Typography>
-                        <Typography variant="caption" className="text-primary/60 text-center mt-1">
+                        <Typography variant="h4" weight="bold" className="text-text text-center">Kustomisasi Tema</Typography>
+                        <Typography variant="caption" className="text-textGray text-center mt-1">
                             Pilih palet warna — seluruh aplikasi langsung menyesuaikan
                         </Typography>
                     </View>
 
-                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mb-4">
+                    <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[2px] ml-4 mb-4">
                         Palet Warna
                     </Typography>
 
@@ -212,8 +212,8 @@ export default function ThemeSettingsScreen() {
                         })}
                     </View>
 
-                    <View className="mt-2 p-5 bg-surface rounded-[28px] border border-border shadow-sm mb-8">
-                        <Typography variant="caption" weight="bold" className="text-text/40 uppercase tracking-[1.5px] mb-3">
+                    <View className="mt-2 p-5 bg-surface rounded-[28px] border border-transparent shadow-sm mb-8">
+                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[1.5px] mb-3">
                             Pratinjau Palet Aktif
                         </Typography>
                         <View className="flex-row items-center gap-2">
@@ -221,24 +221,24 @@ export default function ThemeSettingsScreen() {
                                 <View key={key} className="flex-1 items-center">
                                     <View
                                         style={{ backgroundColor: themeColors[key] }}
-                                        className="w-full h-10 rounded-xl border border-border"
+                                        className="w-full h-10 rounded-xl border border-transparent"
                                     />
-                                    <Typography variant="caption" className="text-text/40 text-[9px] mt-1.5">
+                                    <Typography variant="caption" className="text-textGray text-[9px] mt-1.5">
                                         {key === 'textGray' ? 'gray' : key}
                                     </Typography>
                                 </View>
                             ))}
                         </View>
-                        <Typography variant="caption" className="text-text/30 mt-4 text-center">
+                        <Typography variant="caption" className="text-textGray mt-4 text-center">
                             Perubahan langsung diterapkan ke seluruh halaman aplikasi.
                         </Typography>
                     </View>
 
-                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mb-4">
+                    <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[2px] ml-4 mb-4">
                         Latar Belakang Beranda
                     </Typography>
 
-                    <View className="bg-surface p-5 rounded-[32px] border border-border shadow-sm overflow-hidden">
+                    <View className="bg-surface p-5 rounded-[32px] border border-transparent shadow-sm overflow-hidden">
                         <View className="w-full h-40 bg-background rounded-2xl mb-4 overflow-hidden items-center justify-center relative">
                             {user?.home_background ? (
                                 <Image
@@ -248,8 +248,8 @@ export default function ThemeSettingsScreen() {
                                 />
                             ) : (
                                 <View className="items-center">
-                                    <ImageIcon size={40} color="#9CA3AF" />
-                                    <Typography variant="caption" className="text-text/30 mt-2">Default Gradient</Typography>
+                                    <ImageIcon size={40} color={themeColors.textGray} />
+                                    <Typography variant="caption" className="text-textGray mt-2">Default Gradient</Typography>
                                 </View>
                             )}
 
@@ -280,7 +280,7 @@ export default function ThemeSettingsScreen() {
                                 </Pressable>
                             )}
                         </View>
-                        <Typography variant="caption" className="text-text/30 mt-4 px-2 text-center">
+                        <Typography variant="caption" className="text-textGray mt-4 px-2 text-center">
                             Gunakan gambar dengan orientasi lanskap (16:9) untuk hasil terbaik di halaman beranda.
                         </Typography>
                     </View>

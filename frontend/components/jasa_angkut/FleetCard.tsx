@@ -51,7 +51,7 @@ export const FleetCard = ({ armada, onPress }: FleetCardProps) => {
                 </View>
 
                 {armada.catatan && (
-                    <View className="mt-4 pt-3 border-t border-border flex-row items-start">
+                    <View className="mt-4 pt-3 border-t border-transparent flex-row items-start">
                         <Info size={14} color="#9CA3AF" className="mt-0.5" />
                         <Typography variant="caption" className="text-textGray ml-2 italic flex-1">
                             {armada.catatan}

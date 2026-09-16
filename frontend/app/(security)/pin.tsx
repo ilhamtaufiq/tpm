@@ -235,7 +235,7 @@ export default function PinScreen() {
     return (
         <View className="flex-1 bg-surface items-center justify-center px-6">
             {isLoading && (
-                <View className="absolute inset-0 z-50 bg-white/50 items-center justify-center">
+                <View className="absolute inset-0 z-50 bg-surface/50 items-center justify-center">
                     <ActivityIndicator size="large" color="#3b82f6" />
                 </View>
             )}

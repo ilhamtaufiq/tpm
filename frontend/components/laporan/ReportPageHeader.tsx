@@ -19,7 +19,7 @@ export function ReportPageHeader({
     isExporting,
 }: ReportPageHeaderProps) {
     return (
-        <View className="px-6 py-4 flex-row items-center justify-between border-b border-border bg-surface">
+        <View className="px-6 py-4 flex-row items-center justify-between border-b border-transparent bg-surface">
             <View className="flex-row items-center flex-1 mr-3">
                 <Pressable onPress={onBack} className="mr-4">
                     <ChevronLeft size={24} color="#1C1C1C" />
@@ -39,7 +39,7 @@ export function ReportPageHeader({
                 <Pressable
                     onPress={onExport}
                     disabled={isExporting}
-                    className="w-10 h-10 bg-background rounded-xl items-center justify-center border border-border active:opacity-80"
+                    className="w-10 h-10 bg-background rounded-xl items-center justify-center border border-transparent active:opacity-80"
                 >
                     {isExporting ? (
                         <ActivityIndicator size="small" color="#023C69" />

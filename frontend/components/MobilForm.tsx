@@ -455,7 +455,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
                             {/* Split Payment Editor */}
                             {sumberBayar === 'SPLIT' && (
-                                <View className="mt-6 p-4 bg-gray-50/50 rounded-3xl border border-border">
+                                <View className="mt-6 p-4 bg-surface/50 rounded-3xl border border-transparent">
                                     <Typography variant="caption" weight="bold" className="text-primary mb-4 ml-1">RINCIAN PEMBAYARAN MULTI</Typography>
 
                                     {/* Split Payment Rows */}
@@ -466,7 +466,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                                 {idx === 0 && (
                                                     <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1 text-[10px]">Sumber Dana</Typography>
                                                 )}
-                                                <View className="flex-row flex-wrap bg-surface border border-border rounded-xl overflow-hidden h-10 items-center justify-center">
+                                                <View className="flex-row flex-wrap bg-surface border border-transparent rounded-xl overflow-hidden h-10 items-center justify-center">
                                                     {[
                                                         { id: 'UNIT_TUNAI', label: 'Unit' },
                                                         { id: 'UTAMA_TUNAI', label: 'Utm Tunai' },
@@ -537,7 +537,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                     </Pressable>
 
                                     {/* Summary Split */}
-                                    <View className="mt-6 pt-4 border-t border-border flex-row justify-between items-center px-1">
+                                    <View className="mt-6 pt-4 border-t border-transparent flex-row justify-between items-center px-1">
                                         <Typography variant="caption" weight="bold" className="text-textGray uppercase">Total Terbayar:</Typography>
                                         <Typography variant="h3" weight="bold" className="text-primary">
                                             Rp {formatNumber(String(payments.reduce((acc, p) => acc + (parseNumber(p.jumlah) || 0), 0)))}
@@ -565,7 +565,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                             />
                             <View className="flex-1">
                                 <Typography variant="body2" className="mb-1 font-medium">Bagi Hasil (%)</Typography>
-                                <View className="flex-row items-center bg-surface border border-border rounded-lg h-[46px] px-3">
+                                <View className="flex-row items-center bg-surface border border-transparent rounded-lg h-[46px] px-3">
                                     <TextInput
                                         className="flex-1 font-bold text-primary"
                                         keyboardType="numeric"
@@ -672,18 +672,18 @@ const styles = StyleSheet.create({
     },
     webContainer: {
         flex: 1,
-        backgroundColor: 'white',
+        
         height: '80vh' as any,
     },
     mobileContainer: {
         flex: 1,
-        backgroundColor: 'white',
+        
     },
     header: {
         paddingHorizontal: 24,
         paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#f3f4f6',
-        backgroundColor: 'white',
+        
     },
 });

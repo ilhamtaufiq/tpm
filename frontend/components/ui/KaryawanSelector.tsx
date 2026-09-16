@@ -61,10 +61,10 @@ export const KaryawanSelector = ({
 
     return (
         <View className="mb-4 w-full">
-            {label && <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">{label}</Typography>}
+            {label && <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">{label}</Typography>}
 
             <Pressable onPress={handleOpen}>
-                <View className="bg-background p-5 rounded-3xl border border-border flex-row items-center">
+                <View className="bg-background p-5 rounded-3xl border border-transparent flex-row items-center">
                     <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${value ? 'bg-primary/10' : 'bg-background'}`}>
                         <User size={18} color={value ? '#2563EB' : '#9CA3AF'} />
                     </View>
@@ -73,7 +73,7 @@ export const KaryawanSelector = ({
                         {value ? (
                             <>
                                 <Typography weight="bold" className="text-primary text-sm uppercase tracking-tight">{value.nama}</Typography>
-                                <Typography variant="caption" className="text-textGray/60">
+                                <Typography variant="caption" className="text-textGray">
                                     {value.kode} • {value.jabatan}
                                 </Typography>
                             </>
@@ -97,7 +97,7 @@ export const KaryawanSelector = ({
                 onRequestClose={handleClose}
                 statusBarTranslucent
             >
-                <View style={{ flex: 1, backgroundColor: 'white' }}>
+                <View style={{ flex: 1,  }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
                             <View className="w-10 h-1 bg-gray-200 rounded-full" />
@@ -134,7 +134,7 @@ export const KaryawanSelector = ({
                                 showsVerticalScrollIndicator={false}
                                 renderItem={({ item }) => (
                                     <Pressable onPress={() => handleSelect(item)}>
-                                        <Card className={`mb-4 p-5 border ${value?.id === item.id ? 'border-primary bg-primary/5' : 'border-border'} flex-row items-center justify-between`}>
+                                        <Card className={`mb-4 p-5 border ${value?.id === item.id ? 'border-primary bg-primary/5' : 'border-transparent'} flex-row items-center justify-between`}>
                                             <View className="flex-1 mr-4">
                                                 <Typography weight="bold" className="text-text text-base">{item.nama}</Typography>
                                                 <View className="flex-row items-center mt-1">
@@ -143,7 +143,7 @@ export const KaryawanSelector = ({
                                                         variant={value?.id === item.id ? "info" : "neutral"}
                                                         className="mr-2"
                                                     />
-                                                    <Typography variant="caption" weight="medium" className="text-textGray/60">
+                                                    <Typography variant="caption" weight="medium" className="text-textGray">
                                                         {item.jabatan}
                                                     </Typography>
                                                 </View>

@@ -104,7 +104,7 @@ export default function ChangePasswordScreen() {
             {/* Pattern 1: Premium Curved Header */}
             <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
                 {/* Decorative Elements */}
-                <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
+                <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-surface/10 rounded-full blur-[80px]" />
 
                 <Header
                     title="Kata Sandi"
@@ -117,7 +117,7 @@ export default function ChangePasswordScreen() {
 
                 {/* Secure Icon Section */}
                 <Animated.View entering={FadeInUp.delay(200)} className="items-center z-10">
-                    <View className="w-24 h-24 bg-white/10 rounded-[32px] items-center justify-center border border-white/20">
+                    <View className="w-24 h-24 bg-surface/10 rounded-[32px] items-center justify-center border border-white/20">
                         <ShieldCheck size={48} color="white" strokeWidth={1.5} />
                     </View>
                 </Animated.View>
@@ -135,13 +135,13 @@ export default function ChangePasswordScreen() {
                     <Animated.View entering={FadeInDown.delay(400)} className="space-y-6">
 
                         {/* Section: Change Password Form */}
-                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-border">
-                            <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] mb-6">Ubah Kata Sandi</Typography>
+                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-transparent">
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[4px] mb-6">Ubah Kata Sandi</Typography>
 
                             {/* Current Password */}
                             <View className="mb-5">
-                                <Typography variant="caption" className="text-text/40 mb-2 ml-1">Kata Sandi Saat Ini</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
+                                <Typography variant="caption" className="text-textGray mb-2 ml-1">Kata Sandi Saat Ini</Typography>
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
                                     <Lock size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -160,8 +160,8 @@ export default function ChangePasswordScreen() {
 
                             {/* New Password */}
                             <View className="mb-5">
-                                <Typography variant="caption" className="text-text/40 mb-2 ml-1">Kata Sandi Baru</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
+                                <Typography variant="caption" className="text-textGray mb-2 ml-1">Kata Sandi Baru</Typography>
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
                                     <Lock size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -178,8 +178,8 @@ export default function ChangePasswordScreen() {
 
                             {/* Confirm New Password */}
                             <View>
-                                <Typography variant="caption" className="text-text/40 mb-2 ml-1">Konfirmasi Kata Sandi Baru</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
+                                <Typography variant="caption" className="text-textGray mb-2 ml-1">Konfirmasi Kata Sandi Baru</Typography>
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
                                     <Lock size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"

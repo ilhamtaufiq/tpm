@@ -30,7 +30,7 @@ export function ReportDateControls({
     className = 'mb-4',
 }: ReportDateControlsProps) {
     return (
-        <View className={`bg-surface border border-border rounded-2xl p-4 ${className}`}>
+        <View className={`bg-surface border border-transparent rounded-2xl p-4 ${className}`}>
             {showFilterTabs && (
                 <View className="flex-row bg-background p-1 rounded-2xl mb-4">
                     {(['daily', 'monthly', 'yearly'] as ReportFilterType[]).map((type) => {
@@ -39,7 +39,7 @@ export function ReportDateControls({
                             <Pressable
                                 key={type}
                                 onPress={() => onFilterTypeChange(type)}
-                                className={`flex-1 py-2.5 items-center rounded-xl ${isActive ? 'bg-surface border border-border' : ''}`}
+                                className={`flex-1 py-2.5 items-center rounded-xl ${isActive ? 'bg-surface border border-transparent' : ''}`}
                             >
                                 <Typography
                                     variant="caption"
@@ -57,7 +57,7 @@ export function ReportDateControls({
             <View className="flex-row justify-between items-center">
                 <Pressable
                     onPress={onPrev}
-                    className="w-10 h-10 bg-background rounded-full items-center justify-center border border-border"
+                    className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent"
                 >
                     <ChevronLeft size={20} color="#1C1C1C" />
                 </Pressable>
@@ -71,14 +71,14 @@ export function ReportDateControls({
 
                 <Pressable
                     onPress={onNext}
-                    className="w-10 h-10 bg-background rounded-full items-center justify-center border border-border"
+                    className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent"
                 >
                     <ChevronRight size={20} color="#1C1C1C" />
                 </Pressable>
             </View>
 
             {onSearchChange !== undefined && (
-                <View className="mt-4 flex-row items-center bg-background border border-border rounded-2xl px-4 h-12">
+                <View className="mt-4 flex-row items-center bg-background border border-transparent rounded-2xl px-4 h-12">
                     <Search size={18} color="#9CA3AF" />
                     <TextInput
                         placeholder={searchPlaceholder}

@@ -148,7 +148,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                     style={{
                         width: '100%',
                         maxHeight: sheetMaxPx,
-                        backgroundColor: '#FFFFFF',
+                        
                         borderTopLeftRadius: 48,
                         borderTopRightRadius: 48,
                         padding: 24,
@@ -267,7 +267,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                             </Typography>
                                         </Pressable>
                                     </View>
-                                    <View className="bg-background border border-border rounded-2xl px-4 h-12 flex-row items-center">
+                                    <View className="bg-background border border-transparent rounded-2xl px-4 h-12 flex-row items-center">
                                         <Typography className="text-textGray mr-2 font-bold">
                                             Rp
                                         </Typography>
@@ -311,7 +311,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                                 className={`flex-1 py-4 rounded-2xl border items-center justify-center ${
                                                     active
                                                         ? 'bg-primary border-primary shadow-sm shadow-primary/20'
-                                                        : 'bg-white border-gray-100'
+                                                        : 'bg-surface border-gray-100'
                                                 }`}
                                             >
                                                 <Icon
@@ -342,7 +342,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                             >
                                                 Tunai (Rp)
                                             </Typography>
-                                            <View className="bg-background border border-border rounded-2xl px-4 h-12 flex-row items-center">
+                                            <View className="bg-background border border-transparent rounded-2xl px-4 h-12 flex-row items-center">
                                                 <TextInput
                                                     placeholder="0"
                                                     keyboardType="number-pad"
@@ -368,7 +368,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                             >
                                                 Transfer (Rp)
                                             </Typography>
-                                            <View className="bg-background border border-border rounded-2xl px-4 h-12 flex-row items-center">
+                                            <View className="bg-background border border-transparent rounded-2xl px-4 h-12 flex-row items-center">
                                                 <TextInput
                                                     placeholder="0"
                                                     keyboardType="number-pad"
@@ -396,7 +396,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                         >
                                             Nominal Pembayaran
                                         </Typography>
-                                        <View className="bg-background border border-border rounded-2xl px-4 h-12 flex-row items-center">
+                                        <View className="bg-background border border-transparent rounded-2xl px-4 h-12 flex-row items-center">
                                             <Typography className="text-textGray mr-2 font-bold">
                                                 Rp
                                             </Typography>

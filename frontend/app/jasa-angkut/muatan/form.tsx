@@ -130,7 +130,7 @@ export default function MuatanFormScreen() {
                                 <Pressable
                                     key={d.id}
                                     onPress={() => updateField('supir_id', d.id.toString())}
-                                    className={`px-3 py-2 rounded-lg mr-2 mb-2 border ${formData.supir_id === d.id.toString() ? 'bg-sky-100 border-sky-500' : 'bg-surface border-border'}`}
+                                    className={`px-3 py-2 rounded-lg mr-2 mb-2 border ${formData.supir_id === d.id.toString() ? 'bg-sky-100 border-sky-500' : 'bg-surface border-transparent'}`}
                                 >
                                     <Text className={`${formData.supir_id === d.id.toString() ? 'text-sky-700 font-bold' : 'text-textGray'}`}>
                                         {d.nama}
@@ -173,7 +173,7 @@ export default function MuatanFormScreen() {
 
                 {/* Section: Keuangan */}
                 <Card className="mb-4">
-                    <Text className="font-bold text-gray-900 mb-4">Keuangan</Text>
+                    <Text className="font-bold text-text mb-4">Keuangan</Text>
 
                     <Input
                         label="Total Pendapatan (Rp) *"
@@ -188,7 +188,7 @@ export default function MuatanFormScreen() {
                             <Pressable
                                 key={m}
                                 onPress={() => updateField('metode_bayar', m)}
-                                className={`flex-1 py-3 items-center rounded-xl border ${formData.metode_bayar === m ? 'border-sky-500 bg-sky-50' : 'border-border bg-surface'}`}
+                                className={`flex-1 py-3 items-center rounded-xl border ${formData.metode_bayar === m ? 'border-sky-500 bg-sky-50' : 'border-transparent bg-surface'}`}
                             >
                                 <Text className={formData.metode_bayar === m ? 'text-sky-700 font-bold' : 'text-textGray'}>
                                     {m === 'TUNAI' ? 'Tunai' : 'Transfer'}

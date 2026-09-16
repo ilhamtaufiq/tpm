@@ -65,17 +65,17 @@ export default function ForgotPasswordScreen() {
                     showsVerticalScrollIndicator={false}
                 >
                     <View className="bg-primary pt-24 pb-32 px-8 rounded-b-[48px] shadow-2xl items-center relative overflow-hidden">
-                        <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-white/5 rounded-full" />
-                        <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-white/5 rounded-full" />
+                        <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-surface/5 rounded-full" />
+                        <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-surface/5 rounded-full" />
 
                         <Pressable 
                             onPress={() => router.back()}
-                            className="absolute top-16 left-6 p-2 rounded-full bg-white/10"
+                            className="absolute top-16 left-6 p-2 rounded-full bg-surface/10"
                         >
                             <ArrowLeft size={24} color="white" />
                         </Pressable>
 
-                        <View className="w-20 h-20 bg-white/10 rounded-[28px] items-center justify-center mb-6 border border-white/20">
+                        <View className="w-20 h-20 bg-surface/10 rounded-[28px] items-center justify-center mb-6 border border-white/20">
                             <Mail size={40} color="white" strokeWidth={1.5} />
                         </View>
 
@@ -88,7 +88,7 @@ export default function ForgotPasswordScreen() {
                     </View>
 
                     <View className="px-6 -mt-16 mb-8">
-                        <View className="bg-surface p-8 rounded-[40px] shadow-2xl border border-border">
+                        <View className="bg-surface p-8 rounded-[40px] shadow-2xl border border-transparent">
                             {sent ? (
                                 <View className="items-center py-4">
                                     <View className="w-16 h-16 bg-green-100 rounded-full items-center justify-center mb-4">

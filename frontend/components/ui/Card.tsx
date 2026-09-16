@@ -19,7 +19,7 @@ export const Card = ({ className, variant = 'elevated', ...props }: CardProps) =
                 'bg-surface rounded-2xl p-4',
                 variant === 'elevated' && 'shadow-sm elevation-2',
                 variant === 'outlined' && 'border border-gray-200',
-                variant === 'flat' && 'bg-gray-50',
+                variant === 'flat' && 'bg-surface',
                 className
             )}
             {...props}

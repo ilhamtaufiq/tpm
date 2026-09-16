@@ -52,10 +52,10 @@ export const MuatanSelector = ({
 
     return (
         <View className="mb-4 w-full">
-            {label && <Typography weight="bold" className="text-textGray/40 text-[10px] uppercase tracking-widest mb-2 px-1">{label}</Typography>}
+            {label && <Typography weight="bold" className="text-textGray text-[10px] uppercase tracking-widest mb-2 px-1">{label}</Typography>}
 
             <Pressable onPress={handleOpen}>
-                <View className="bg-background rounded-2xl px-4 py-4 border border-border flex-row items-center">
+                <View className="bg-background rounded-2xl px-4 py-4 border border-transparent flex-row items-center">
                     <MapPin size={20} color={value ? '#F59E0B' : '#9CA3AF'} />
 
                     <View className="flex-1 ml-3">
@@ -63,7 +63,7 @@ export const MuatanSelector = ({
                             <>
                                 <Typography weight="bold" className="text-textMain text-sm mb-0.5">{value.asal} → {value.tujuan}</Typography>
                                 <View className="flex-row items-center">
-                                    <Typography variant="caption" className="text-textGray/60 mr-2 text-[10px] uppercase font-bold tracking-tighter">
+                                    <Typography variant="caption" className="text-textGray mr-2 text-[10px] uppercase font-bold tracking-tighter">
                                         {value.nomor_transaksi}
                                     </Typography>
                                     <Typography variant="caption" className="text-primary/60 text-[10px] font-bold tracking-tighter uppercase">
@@ -86,7 +86,7 @@ export const MuatanSelector = ({
 
             {/* Inline Overlay for Search (Replaces Modal to maintain navigation context) */}
             {isOpen && (
-                <View style={[StyleSheet.absoluteFill, { zIndex: 9999, backgroundColor: 'white' }]}>
+                <View style={[StyleSheet.absoluteFill, { zIndex: 9999,  }]}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-4">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full" />
@@ -99,7 +99,7 @@ export const MuatanSelector = ({
                             </Pressable>
                         </View>
 
-                        <View className="flex-row items-center bg-background border border-border rounded-2xl px-4 py-3.5 mb-6 shadow-sm">
+                        <View className="flex-row items-center bg-background border border-transparent rounded-2xl px-4 py-3.5 mb-6 shadow-sm">
                             <Search size={22} color="#9CA3AF" />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-textMain font-medium"
@@ -121,7 +121,7 @@ export const MuatanSelector = ({
                                 showsVerticalScrollIndicator={false}
                                 renderItem={({ item }) => (
                                     <Pressable onPress={() => handleSelect(item)}>
-                                        <Card className="mb-4 p-5 border border-border shadow-sm bg-surface rounded-[32px] flex-row items-center justify-between">
+                                        <Card className="mb-4 p-5 border border-transparent shadow-sm bg-surface rounded-[32px] flex-row items-center justify-between">
                                             <View className="flex-1 mr-4">
                                                 <Typography weight="bold" className="text-primary text-base tracking-tighter mb-1.5">{item.asal} → {item.tujuan}</Typography>
                                                 
@@ -129,12 +129,12 @@ export const MuatanSelector = ({
                                                     <View className="bg-primary/5 px-2 py-0.5 rounded-lg border border-primary/10 mr-2">
                                                         <Typography className="text-primary text-[9px] font-black tracking-widest">{item.nomor_transaksi}</Typography>
                                                     </View>
-                                                    <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest">• {formatDate(item.tanggal)}</Typography>
+                                                    <Typography className="text-textGray text-[9px] font-black uppercase tracking-widest">• {formatDate(item.tanggal)}</Typography>
                                                 </View>
                                                 
                                                 <View className="flex-row items-center">
                                                     <Badge label={item.nopol} variant="info" className="px-1.5 py-0 mr-2" />
-                                                    <Typography variant="caption" className="text-textGray/40 text-[9px] font-black italic">{item.supir_nama || 'Supir -'}</Typography>
+                                                    <Typography variant="caption" className="text-textGray text-[9px] font-black italic">{item.supir_nama || 'Supir -'}</Typography>
                                                 </View>
                                             </View>
                                             {value?.id === item.id && (

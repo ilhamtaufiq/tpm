@@ -19,8 +19,8 @@ export const Input = ({ label, error, containerClassName, innerContainerClassNam
             {label && <Text className="text-textGray text-sm mb-1 font-medium">{label}</Text>}
             <View
                 className={cn(
-                    'bg-gray-100 rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center',
-                    isFocused && 'border-primary bg-white',
+                    'bg-surface rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center',
+                    isFocused && 'border-primary bg-surface',
                     error && 'border-secondary',
                     innerContainerClassName
                 )}

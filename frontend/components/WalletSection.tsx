@@ -19,7 +19,7 @@ export const WalletSection = () => {
             >
                 {/* Left Side: Saldo */}
                 <View className="flex-row items-center flex-1 mr-2 sm:mr-4">
-                    <View className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+                    <View className="w-10 h-10 sm:w-12 sm:h-12 bg-surface/20 rounded-full items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
                         <Wallet size={18} color="white" className="sm:w-5 sm:h-5" />
                     </View>
                     <View className="flex-1">
@@ -29,7 +29,7 @@ export const WalletSection = () => {
                             </Typography>
                             <Pressable 
                                 onPress={() => setHideBalance(!hideBalance)}
-                                className="bg-white/20 p-1 rounded-full items-center justify-center"
+                                className="bg-surface/20 p-1 rounded-full items-center justify-center"
                                 hitSlop={12}
                             >
                                 {hideBalance ? (
@@ -58,7 +58,7 @@ export const WalletSection = () => {
                 <View className="flex-row gap-2 flex-shrink-0">
                     <Pressable
                         onPress={() => router.push({ pathname: '/finance', params: { quickAction: 'mutasi' } })}
-                        className="w-12 h-12 sm:w-[60px] sm:h-[60px] bg-white/20 border border-white/20 rounded-xl sm:rounded-2xl items-center justify-center active:bg-white/30"
+                        className="w-12 h-12 sm:w-[60px] sm:h-[60px] bg-surface/20 border border-white/20 rounded-xl sm:rounded-2xl items-center justify-center active:bg-surface/30"
                     >
                         <Plus size={16} color="white" strokeWidth={2.5} className="mb-0.5 sm:mb-1" />
                         <Typography className="text-white text-[9px] sm:text-[10px] font-bold">Masuk</Typography>
@@ -66,7 +66,7 @@ export const WalletSection = () => {
 
                     <Pressable
                         onPress={() => router.push({ pathname: '/finance', params: { quickAction: 'expenses' } })}
-                        className="w-12 h-12 sm:w-[60px] sm:h-[60px] bg-white/20 border border-white/20 rounded-xl sm:rounded-2xl items-center justify-center active:bg-white/30"
+                        className="w-12 h-12 sm:w-[60px] sm:h-[60px] bg-surface/20 border border-white/20 rounded-xl sm:rounded-2xl items-center justify-center active:bg-surface/30"
                     >
                         <ArrowUp size={16} color="white" strokeWidth={2.5} className="mb-0.5 sm:mb-1" />
                         <Typography className="text-white text-[9px] sm:text-[10px] font-bold">Keluar</Typography>

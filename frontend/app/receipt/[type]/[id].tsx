@@ -312,7 +312,7 @@ export default function PublicReceiptPage() {
         return (
             <SafeAreaView className="flex-1 bg-slate-50">
                 <View className="flex-1 items-center justify-center px-6">
-                    <View className="w-full max-w-sm bg-white rounded-[28px] p-8 items-center border border-gray-100 shadow-sm">
+                    <View className="w-full max-w-sm bg-surface rounded-[28px] p-8 items-center border border-gray-100 shadow-sm">
                         <View className="w-16 h-16 bg-rose-50 rounded-full items-center justify-center mb-4">
                             <ShieldCheck size={28} color="#EF4444" />
                         </View>
@@ -346,7 +346,7 @@ export default function PublicReceiptPage() {
             <View className="px-4 pt-3 pb-2 flex-row items-center justify-between">
                 <Pressable
                     onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-                    className="w-10 h-10 rounded-full bg-white border border-gray-100 items-center justify-center"
+                    className="w-10 h-10 rounded-full bg-surface border border-gray-100 items-center justify-center"
                 >
                     <ArrowLeft size={20} color="#023C69" />
                 </Pressable>
@@ -360,7 +360,7 @@ export default function PublicReceiptPage() {
                 </View>
                 <Pressable
                     onPress={handleCopyLink}
-                    className="w-10 h-10 rounded-full bg-white border border-gray-100 items-center justify-center"
+                    className="w-10 h-10 rounded-full bg-surface border border-gray-100 items-center justify-center"
                 >
                     <Link2 size={18} color="#023C69" />
                 </Pressable>
@@ -390,8 +390,8 @@ export default function PublicReceiptPage() {
                         />
                     </View>
 
-                    <View className="mt-6 bg-white rounded-[24px] p-4 border border-gray-100">
-                        <Typography weight="bold" className="text-gray-800 text-sm mb-3">
+                    <View className="mt-6 bg-surface rounded-[24px] p-4 border border-gray-100">
+                        <Typography weight="bold" className="text-text text-sm mb-3">
                             Aksi Struk
                         </Typography>
                         <View style={{ gap: 10 }}>

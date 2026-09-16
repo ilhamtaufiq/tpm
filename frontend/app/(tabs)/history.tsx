@@ -328,7 +328,7 @@ export default function HistoryTab() {
 
             {/* Search */}
             <View className="px-6 mt-4">
-                <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-border shadow-sm">
+                <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-transparent shadow-sm">
                     <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-background">
                         <Search size={18} color="#9CA3AF" />
                         <TextInput
@@ -357,7 +357,7 @@ export default function HistoryTab() {
                                 setDateMode(m.id as any);
                                 if (m.id !== 'all' && !date) setDate(new Date());
                             }}
-                            className={`px-4 py-2 rounded-xl border ${dateMode === m.id ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-border active:bg-background'}`}
+                            className={`px-4 py-2 rounded-xl border ${dateMode === m.id ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-transparent active:bg-background'}`}
                         >
                             <Typography className={`text-xs font-bold ${dateMode === m.id ? 'text-white' : 'text-textGray'}`}>
                                 {m.label}
@@ -368,10 +368,10 @@ export default function HistoryTab() {
 
                 {dateMode !== 'all' && (
                     <View className="px-6 mt-2">
-                        <View className="bg-surface border border-border rounded-2xl p-2 flex-row justify-between items-center shadow-sm">
+                        <View className="bg-surface border border-transparent rounded-2xl p-2 flex-row justify-between items-center shadow-sm">
                             <Pressable
                                 onPress={handlePrevDate}
-                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-border active:scale-95"
+                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-transparent active:scale-95"
                             >
                                 <ChevronLeft size={18} color="#1C1C1C" />
                             </Pressable>
@@ -389,7 +389,7 @@ export default function HistoryTab() {
 
                             <Pressable
                                 onPress={handleNextDate}
-                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-border active:scale-95"
+                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-transparent active:scale-95"
                             >
                                 <ChevronRight size={18} color="#1C1C1C" />
                             </Pressable>
@@ -405,7 +405,7 @@ export default function HistoryTab() {
                         <Pressable
                             key={t.value}
                             onPress={() => setSelectedType(t.value)}
-                            className={`px-4 py-2 rounded-xl border ${selectedType === t.value ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-border active:bg-background'}`}
+                            className={`px-4 py-2 rounded-xl border ${selectedType === t.value ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-transparent active:bg-background'}`}
                         >
                             <Typography className={`text-xs font-bold ${selectedType === t.value ? 'text-white' : 'text-textGray'}`}>
                                 {t.label}
@@ -422,7 +422,7 @@ export default function HistoryTab() {
                             <Pressable
                                 key={s.value}
                                 onPress={() => setSelectedSource(s.value)}
-                                className={`px-4 py-2 rounded-xl border ${selectedSource === s.value ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-border active:bg-background'}`}
+                                className={`px-4 py-2 rounded-xl border ${selectedSource === s.value ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-transparent active:bg-background'}`}
                             >
                                 <Typography className={`text-xs font-bold ${selectedSource === s.value ? 'text-white' : 'text-textGray'}`}>
                                     {s.label}
@@ -442,15 +442,15 @@ export default function HistoryTab() {
                 {isLoading ? (
                     <View className="py-20 items-center">
                         <ActivityIndicator size="large" color="#023C69" />
-                        <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MENYINGKRONKAN DATA...</Typography>
+                        <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MENYINGKRONKAN DATA...</Typography>
                     </View>
                 ) : filteredList.length === 0 ? (
-                    <View className="items-center justify-center py-20 bg-surface rounded-[24px] border border-dashed border-border mx-6">
+                    <View className="items-center justify-center py-20 bg-surface rounded-[24px] border border-dashed border-transparent mx-6">
                         <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
                             <Calendar size={40} color="#9CA3AF" />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[6px]">Spiii...</Typography>
-                        <Typography variant="caption" className="text-textGray/40 mt-2 text-center px-10">Tidak ditemukan aktivitas yang sesuai dengan kriteria pencarian Anda.</Typography>
+                        <Typography variant="caption" className="text-textGray mt-2 text-center px-10">Tidak ditemukan aktivitas yang sesuai dengan kriteria pencarian Anda.</Typography>
                     </View>
                 ) : (
                     filteredList.map((item: ActivityItem) => {
@@ -461,7 +461,7 @@ export default function HistoryTab() {
                         return (
                             <Pressable
                                 key={item.id}
-                                className="bg-surface px-6 py-5 border-b border-border flex-row items-center active:bg-background"
+                                className="bg-surface px-6 py-5 border-b border-transparent flex-row items-center active:bg-background"
                                 onPress={() => {
                                     setSelectedItem(item);
                                     setModalVisible(true);
@@ -470,7 +470,7 @@ export default function HistoryTab() {
                                 {/* Left: Source Icon */}
                                 <View
                                     style={{ backgroundColor: `${config.color}10` }}
-                                    className="w-12 h-12 rounded-2xl items-center justify-center mr-3 border border-border flex-shrink-0"
+                                    className="w-12 h-12 rounded-2xl items-center justify-center mr-3 border border-transparent flex-shrink-0"
                                 >
                                     <Icon size={20} color={config.color} strokeWidth={2.5} />
                                 </View>
@@ -485,7 +485,7 @@ export default function HistoryTab() {
                                         </Typography>
                                     </View>
 
-                                    <Typography variant="caption" className="text-textGray/60 italic leading-4 mb-1" numberOfLines={1}>
+                                    <Typography variant="caption" className="text-textGray italic leading-4 mb-1" numberOfLines={1}>
                                         {item.subtitle && item.subtitle.trim() !== '-' ? item.subtitle : (item.ref_number || '')}
                                     </Typography>
 
@@ -497,14 +497,14 @@ export default function HistoryTab() {
                                             textClassName="text-[8px]"
                                         />
                                         <View className="w-1 h-1 rounded-full bg-gray-200 mx-1.5" />
-                                        <Typography className="text-[10px] text-textGray/60 font-medium">
+                                        <Typography className="text-[10px] text-textGray font-medium">
                                             {format(new Date(item.timestamp), 'dd MMM, HH:mm', { locale: localeID })}
                                         </Typography>
                                     </View>
                                 </View>
 
                                 {/* Right: Amount & Status */}
-                                <View className="items-end ml-2 pl-3 border-l border-border flex-shrink-0 min-w-[100px]">
+                                <View className="items-end ml-2 pl-3 border-l border-transparent flex-shrink-0 min-w-[100px]">
                                     <Typography
                                         weight="bold"
                                         className={`text-[13px] mb-1 ${item.type === 'financial' ? (item.is_incoming ? "text-emerald-600" : "text-rose-500") : "text-textMain"}`}
@@ -519,7 +519,7 @@ export default function HistoryTab() {
                                                 {item.type === 'financial' ? (item.is_incoming ? 'IN' : 'OUT') : 'TRX'}
                                             </Typography>
                                         </View>
-                                        <Typography className="text-[8px] text-textGray/40 uppercase font-black tracking-tighter">
+                                        <Typography className="text-[8px] text-textGray uppercase font-black tracking-tighter">
                                             {config.label}
                                         </Typography>
 
@@ -546,7 +546,7 @@ export default function HistoryTab() {
                 onRequestClose={() => setDatePickerModalOpen(false)}
             >
                 <View className="flex-1 justify-center items-center bg-black/50 px-6">
-                    <View className="bg-surface rounded-3xl p-6 w-full max-w-md shadow-xl border border-border">
+                    <View className="bg-surface rounded-3xl p-6 w-full max-w-md shadow-xl border border-transparent">
                         <View className="flex-row justify-between items-center mb-4">
                             <Typography variant="h3" weight="bold">Filter Tanggal & Periode</Typography>
                             <Pressable onPress={() => setDatePickerModalOpen(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
@@ -571,7 +571,7 @@ export default function HistoryTab() {
                                         setDateMode(m.id as any);
                                         if (m.id !== 'all' && !date) setDate(new Date());
                                     }}
-                                    className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-background border-border'}`}
+                                    className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-background border-transparent'}`}
                                 >
                                     <Typography weight="bold" className={`text-xs ${dateMode === m.id ? 'text-white' : 'text-textGray'}`}>
                                         {m.label}
@@ -594,7 +594,7 @@ export default function HistoryTab() {
                                             <Pressable
                                                 key={i}
                                                 onPress={() => setDate(monthDate)}
-                                                className={`w-[30%] py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-emerald-600 border-emerald-600' : 'bg-background border-border'}`}
+                                                className={`w-[30%] py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-emerald-600 border-emerald-600' : 'bg-background border-transparent'}`}
                                             >
                                                 <Typography weight="bold" className={`text-xs ${isSelected ? 'text-white' : 'text-textMain'}`}>
                                                     {format(monthDate, 'MMM', { locale: localeID })}
@@ -619,7 +619,7 @@ export default function HistoryTab() {
                                             <Pressable
                                                 key={yr}
                                                 onPress={() => setDate(new Date(yr, date.getMonth(), 1))}
-                                                className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'bg-background border-border'}`}
+                                                className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'bg-background border-transparent'}`}
                                             >
                                                 <Typography weight="bold" className={`text-xs ${isSelected ? 'text-white' : 'text-textMain'}`}>
                                                     {yr}

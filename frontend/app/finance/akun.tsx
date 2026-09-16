@@ -269,7 +269,7 @@ export default function AkunKeuanganScreen() {
             <Pressable
                 key={jenis}
                 onPress={() => handleAdjustClick(jenis)}
-                className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center"
+                className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center"
             >
                 <View className="w-16 h-16 bg-primary/5 rounded-[20px] items-center justify-center mr-4">
                     <Icon size={28} color="#023C69" />
@@ -293,7 +293,7 @@ export default function AkunKeuanganScreen() {
                                 <Typography className="text-emerald-600 text-[10px] font-bold uppercase">AKTIF</Typography>
                             </View>
                         ) : (
-                            <View className="bg-background px-2 py-1 rounded-full border border-border">
+                            <View className="bg-background px-2 py-1 rounded-full border border-transparent">
                                 <Typography className="text-textGray text-[10px] font-bold uppercase">KOSONG</Typography>
                             </View>
                         )}
@@ -301,7 +301,7 @@ export default function AkunKeuanganScreen() {
 
                     <Typography className="text-textGray text-xs mb-3">Terakhir diperbarui hari ini</Typography>
 
-                    <View className="flex-row items-center justify-between mb-4 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50">
+                    <View className="flex-row items-center justify-between mb-4 bg-surface/50 p-3 rounded-2xl border border-gray-100/50">
                         <View className="flex-1">
                             <View className="flex-row items-center mb-0.5">
                                 <View className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5" />
@@ -319,7 +319,7 @@ export default function AkunKeuanganScreen() {
                         </View>
                     </View>
 
-                    <View className="flex-row items-center justify-between pt-3 border-t border-border">
+                    <View className="flex-row items-center justify-between pt-3 border-t border-transparent">
                         <View className="flex-1">
                             <Typography className="text-textGray text-[10px] uppercase font-bold">Saldo Saat Ini</Typography>
                             <Typography variant="h3" weight="bold" className="text-primary mt-0.5">
@@ -329,7 +329,7 @@ export default function AkunKeuanganScreen() {
                         <View className="flex-row space-x-2">
                             <Pressable
                                 onPress={() => router.push({ pathname: '/finance/mutasi', params: { jenis } })}
-                                className="bg-background w-10 h-10 rounded-xl items-center justify-center border border-border"
+                                className="bg-background w-10 h-10 rounded-xl items-center justify-center border border-transparent"
                             >
                                 <History size={18} color="#6B7280" />
                             </Pressable>
@@ -385,7 +385,7 @@ export default function AkunKeuanganScreen() {
             <Pressable
                 key={type}
                 onPress={() => router.push(isPiutang ? '/finance/piutang' : '/finance/hutang')}
-                className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center"
+                className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center"
             >
                 <View className={`w-16 h-16 ${bgColor} rounded-[20px] items-center justify-center mr-4`}>
                     <Icon size={28} color={color} />
@@ -411,14 +411,14 @@ export default function AkunKeuanganScreen() {
 
                     <Typography className="text-textGray text-xs mb-2">Akumulasi dari seluruh transaksi</Typography>
 
-                    <View className="flex-row items-center justify-between pt-3 border-t border-border">
+                    <View className="flex-row items-center justify-between pt-3 border-t border-transparent">
                         <View>
                             <Typography className="text-textGray text-[10px] uppercase font-bold">Total {isPiutang ? 'Tagihan' : 'Kewajiban'}</Typography>
                             <Typography variant="h3" weight="bold" className={`${isPiutang ? 'text-emerald-600' : 'text-rose-600'} mt-0.5`}>
                                 {formatCurrency(nominal || 0)}
                             </Typography>
                         </View>
-                        <View className="bg-background px-4 py-2 rounded-xl flex-row items-center border border-border">
+                        <View className="bg-background px-4 py-2 rounded-xl flex-row items-center border border-transparent">
                             <ArrowRightLeft size={14} color="#6B7280" />
                             <Typography className="text-textGray text-xs font-bold ml-2">Detail</Typography>
                         </View>
@@ -439,7 +439,7 @@ export default function AkunKeuanganScreen() {
 
             <View className="mb-6">
                 <Typography className="text-textGray text-[10px] uppercase font-bold mb-2 ml-1">Akun Terpilih</Typography>
-                <View className="bg-background p-4 rounded-2xl border border-border flex-row items-center">
+                <View className="bg-background p-4 rounded-2xl border border-transparent flex-row items-center">
                     <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center mr-3 shadow-sm">
                         {selectedAccount && React.createElement(ACCOUNT_ICONS[selectedAccount] || Banknote, { size: 20, color: "#023C69" })}
                     </View>
@@ -467,7 +467,7 @@ export default function AkunKeuanganScreen() {
                         startIcon={<Typography weight="bold" className="text-textGray">Rp</Typography>}
                     />
                 </View>
-                <View className="w-1/3 pt-8 items-center bg-background rounded-2xl h-14 justify-center border border-dashed border-border">
+                <View className="w-1/3 pt-8 items-center bg-background rounded-2xl h-14 justify-center border border-dashed border-transparent">
                    <Typography className="text-[10px] text-textGray font-bold uppercase mb-0.5">Selisih</Typography>
                    {(() => {
                        const current = balances ? (balances[selectedAccount?.toLowerCase() as keyof KasBankAllBalances] as any)?.saldo || 0 : 0;
@@ -533,14 +533,14 @@ export default function AkunKeuanganScreen() {
                 rightElement={
                     <Pressable
                         onPress={() => router.push('/finance/laporan')}
-                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
                         <BarChart3 size={20} color="#1F2937" />
                     </Pressable>
                 }
             >
                 {/* Total Balance Bento */}
-                <View className="bg-background p-6 rounded-[32px] border border-border mt-4">
+                <View className="bg-background p-6 rounded-[32px] border border-transparent mt-4">
                     <View className="flex-row items-center mb-1">
                         <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">Total Keseluruhan Saldo</Typography>
                         <View className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-2 animate-pulse" />
@@ -552,7 +552,7 @@ export default function AkunKeuanganScreen() {
                         </Typography>
                     </View>
 
-                    <View className="flex-row mt-6 pt-6 border-t border-border">
+                    <View className="flex-row mt-6 pt-6 border-t border-transparent">
                         <View className="flex-1 flex-row items-center">
                             <View className="w-8 h-8 rounded-full bg-emerald-400/20 items-center justify-center mr-3">
                                 <TrendingUp size={14} color="#10B981" />
@@ -613,7 +613,7 @@ export default function AkunKeuanganScreen() {
 
                 {isLoading ? (
                     [1, 2, 3, 4, 5].map((i) => (
-                        <View key={i} className="bg-surface p-5 rounded-[32px] mb-4 border border-border flex-row items-center">
+                        <View key={i} className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent flex-row items-center">
                             <Skeleton width={64} height={64} borderRadius={20} style={{ marginRight: 16 }} />
                             <View className="flex-1">
                                 <Skeleton width="50%" height={24} style={{ marginBottom: 8 }} />
@@ -648,7 +648,7 @@ export default function AkunKeuanganScreen() {
                             {visibleActiveAccounts.map(renderAccountItem)}
                             
                             {!roleAccount && showAllAccounts && (
-                                <View className="mt-4 pt-4 border-t border-border">
+                                <View className="mt-4 pt-4 border-t border-transparent">
                                     <View className="flex-row items-center mb-4 px-1">
                                         <History size={14} color="#9CA3AF" />
                                         <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest ml-2">Rekening Legacy / Lama</Typography>
@@ -696,7 +696,7 @@ export default function AkunKeuanganScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 48,  }}
                     topInset={insets.top}
                     onClose={() => {
                         setIsAdjustModalVisible(false);
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
         padding: 20
     },
     webModalContent: {
-        backgroundColor: 'white',
+        
         borderRadius: 32,
         width: '100%',
         maxHeight: '90%',

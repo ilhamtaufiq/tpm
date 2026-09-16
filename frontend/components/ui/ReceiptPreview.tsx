@@ -38,7 +38,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
             onRequestClose={onClose}
         >
             <View className="flex-1 bg-black/80">
-                <View className="bg-surface px-6 py-4 flex-row items-center justify-between border-b border-border">
+                <View className="bg-surface px-6 py-4 flex-row items-center justify-between border-b border-transparent">
                     <Typography variant="h3" weight="bold">Preview Struk</Typography>
                     <View className="flex-row items-center" style={{ gap: 12 }}>
                         <Pressable
@@ -89,7 +89,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                     </Typography>
                 </ScrollView>
 
-                <View className="bg-surface px-6 py-4 border-t border-border" style={{ gap: 12 }}>
+                <View className="bg-surface px-6 py-4 border-t border-transparent" style={{ gap: 12 }}>
                     <Button
                         title="Cetak Struk"
                         onPress={onPrint}

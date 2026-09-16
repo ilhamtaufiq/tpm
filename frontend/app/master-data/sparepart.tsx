@@ -489,8 +489,8 @@ export default function SparePartMasterScreen() {
                     onPress={() => router.push(`/master-data/sparepart/edit/${item.id}`)}
                     className="flex-1"
                 >
-                    <View className={`p-4 rounded-[28px] shadow-sm flex-row items-center ${isLowStock ? 'bg-red-50/50 border border-red-200' : 'bg-surface border border-border'}`}>
-                        <View className={`w-20 h-20 rounded-2xl items-center justify-center mr-4 overflow-hidden border ${isLowStock ? 'bg-red-100 border-red-200' : 'bg-background border-border'}`}>
+                    <View className={`p-4 rounded-[28px] shadow-sm flex-row items-center ${isLowStock ? 'bg-red-50/50 border border-red-200' : 'bg-surface border border-transparent'}`}>
+                        <View className={`w-20 h-20 rounded-2xl items-center justify-center mr-4 overflow-hidden border ${isLowStock ? 'bg-red-100 border-red-200' : 'bg-background border-transparent'}`}>
                             {imageUrl ? (
                                 <Image source={{ uri: imageUrl }} className="w-full h-full" resizeMode="cover" />
                             ) : (
@@ -532,7 +532,7 @@ export default function SparePartMasterScreen() {
                                         Stok: {item.stok}
                                     </Typography>
                                 )}
-                                <Typography className="text-textGray/60 text-xs italic">
+                                <Typography className="text-textGray text-xs italic">
                                     Rak: {item.lokasi_rak || '-'}
                                 </Typography>
                             </View>
@@ -548,7 +548,7 @@ export default function SparePartMasterScreen() {
             {/* Compact Dashboard Stats */}
             <View className="mb-4">
                 <View className="flex-row space-x-3 mb-3">
-                    <View className="flex-1 bg-surface p-4 rounded-3xl border border-border shadow-sm flex-row items-center">
+                    <View className="flex-1 bg-surface p-4 rounded-3xl border border-transparent shadow-sm flex-row items-center">
                         <View className="bg-primary/10 p-2 rounded-xl mr-3">
                             <Package size={14} color="#023C69" />
                         </View>
@@ -557,7 +557,7 @@ export default function SparePartMasterScreen() {
                             <Typography variant="h3" weight="bold" className="text-textMain text-lg leading-tight">{stats.total}</Typography>
                         </View>
                     </View>
-                    <View className="flex-1 bg-surface p-4 rounded-3xl border border-border shadow-sm flex-row items-center">
+                    <View className="flex-1 bg-surface p-4 rounded-3xl border border-transparent shadow-sm flex-row items-center">
                         <View className="bg-indigo-50 p-2 rounded-xl mr-3">
                             <Coins size={14} color="#4F46E5" />
                         </View>
@@ -626,7 +626,7 @@ export default function SparePartMasterScreen() {
                             onPress={toggleSelectAll}
                             className="flex-row items-center mr-3"
                         >
-                            <View className={`w-5 h-5 rounded border items-center justify-center ${selectedIds.length === sparePartsList.length && sparePartsList.length > 0 ? 'bg-primary border-primary' : 'border-border'}`}>
+                            <View className={`w-5 h-5 rounded border items-center justify-center ${selectedIds.length === sparePartsList.length && sparePartsList.length > 0 ? 'bg-primary border-primary' : 'border-transparent'}`}>
                                 {selectedIds.length === sparePartsList.length && sparePartsList.length > 0 && <Check size={12} color="white" />}
                             </View>
                             <Typography className="ml-2 text-[11px] font-bold text-textGray">Pilih Semua</Typography>
@@ -664,7 +664,7 @@ export default function SparePartMasterScreen() {
                         ) : (
                             <Pressable
                                 onPress={() => setIsExportModalVisible(true)}
-                                className="px-3 py-2 bg-background rounded-xl flex-row items-center border border-border"
+                                className="px-3 py-2 bg-background rounded-xl flex-row items-center border border-transparent"
                             >
                                 <Download size={14} color="#4B5563" className="mr-2" />
                                 <Typography className="text-[10px] font-bold text-textGray">Download XLS</Typography>
@@ -686,7 +686,7 @@ export default function SparePartMasterScreen() {
                 onBackButtonPress={handleGoBack}
                 showProfile={true}
             >
-                <View className="flex-row items-center bg-background h-11 rounded-2xl border border-border">
+                <View className="flex-row items-center bg-background h-11 rounded-2xl border border-transparent">
                     <Search size={18} color="#9CA3AF" className="ml-4" />
                     <TextInput
                         placeholder="Cari sparepart..."
@@ -707,13 +707,13 @@ export default function SparePartMasterScreen() {
                     <Pressable
                         onPress={() => !isImportProgressVisible && setIsImportModalVisible(true)}
                         disabled={isImportProgressVisible}
-                        className={`w-10 h-10 rounded-2xl items-center justify-center border border-border mr-2 ${isImportProgressVisible ? 'bg-background opacity-50' : 'bg-background'}`}
+                        className={`w-10 h-10 rounded-2xl items-center justify-center border border-transparent mr-2 ${isImportProgressVisible ? 'bg-background opacity-50' : 'bg-background'}`}
                     >
                         <FileUp size={16} color="#023C69" />
                     </Pressable>
                     <Pressable
                         onPress={() => setIsPrintModalVisible(true)}
-                        className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-border"
+                        className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-transparent"
                     >
                         <Printer size={16} color="#023C69" />
                     </Pressable>

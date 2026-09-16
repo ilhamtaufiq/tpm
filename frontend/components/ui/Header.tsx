@@ -132,7 +132,7 @@ export const Header = ({
     return (
         <>
         <View 
-            className={`bg-surface border-b border-border px-6 relative overflow-hidden ${children ? 'pb-2' : 'pb-4'}`}
+            className={`bg-surface border-b border-transparent px-6 relative overflow-hidden ${children ? 'pb-2' : 'pb-4'}`}
             style={{ paddingTop: Math.max(insets.top, 16) + 8 }}
         >
             {/* Header Content */}
@@ -142,9 +142,9 @@ export const Header = ({
                         {showBackButton && (
                             <Pressable
                                 onPress={handleBack}
-                                className="w-11 h-11 bg-background rounded-2xl items-center justify-center mr-4 border border-border active:bg-background"
+                                className="w-11 h-11 bg-background rounded-2xl items-center justify-center mr-4 border border-transparent active:bg-background"
                             >
-                                <ChevronLeft size={24} color="#1F2937" />
+                                <ChevronLeft size={24} color={themeColors.text} />
                             </Pressable>
                         )}
 
@@ -182,9 +182,9 @@ export const Header = ({
                         {showBell && (
                         <Pressable
                             onPress={() => router.push('/settings/notifications')}
-                            className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:opacity-75 relative"
+                            className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent shadow-sm active:opacity-75 relative"
                         >
-                            <Bell size={20} color={themeColors.primary} strokeWidth={2.2} />
+                            <Bell size={20} color={themeColors.text} strokeWidth={2.2} />
                             {unreadCount > 0 && (
                                 <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 items-center justify-center border-2 border-white">
                                     <Typography className="text-white text-[9px] font-black">
@@ -225,7 +225,7 @@ export const Header = ({
                             onPress={() => {
                                 setUserMenuVisible(true);
                             }}
-                            className="w-11 h-11 bg-background rounded-2xl p-0.5 border border-border overflow-hidden relative active:opacity-75"
+                            className="w-11 h-11 bg-background rounded-2xl p-0.5 border border-transparent overflow-hidden relative active:opacity-75"
                         >
                             <View className="w-full h-full bg-surface rounded-2xl items-center justify-center overflow-hidden">
                                 {user?.profile_picture ? (
@@ -242,7 +242,7 @@ export const Header = ({
                                     onPress={() => {
                                         setUserMenuVisible(true);
                                     }}
-                                    className="w-11 h-11 bg-background rounded-2xl p-0.5 border border-border overflow-hidden ml-2 active:opacity-75"
+                                    className="w-11 h-11 bg-background rounded-2xl p-0.5 border border-transparent overflow-hidden ml-2 active:opacity-75"
                                 >
                                 <View className="w-full h-full bg-surface rounded-2xl items-center justify-center overflow-hidden">
                                     {user?.profile_picture ? (
@@ -260,7 +260,7 @@ export const Header = ({
                 {showSearch && (
                     <Pressable
                         onPress={() => setIsSearchOpen(true)}
-                        className="bg-background h-11 rounded-2xl flex-row items-center px-4 border border-border mt-2 active:bg-background"
+                        className="bg-background h-11 rounded-2xl flex-row items-center px-4 border border-transparent mt-2 active:bg-background"
                     >
                         <Search size={18} color="#9CA3AF" />
                         <Typography className="text-textGray ml-3 font-medium text-sm flex-1" numberOfLines={1}>
@@ -274,7 +274,7 @@ export const Header = ({
                         <Typography className="text-amber-800 text-[10px] font-black uppercase tracking-[2px] mb-1">
                             Mode Impersonate
                         </Typography>
-                        <Typography className="text-gray-900 text-xs font-bold">
+                        <Typography className="text-text text-xs font-bold">
                             Login sebagai {user?.full_name || user?.username}
                         </Typography>
                         <Typography className="text-textGray text-[10px] mt-1 font-medium">
@@ -296,7 +296,7 @@ export const Header = ({
                 <View className="flex-1 bg-surface">
                     {/* Modal Header */}
                     <View 
-                        className="pb-4 px-6 border-b border-border flex-row items-center"
+                        className="pb-4 px-6 border-b border-transparent flex-row items-center"
                         style={{ paddingTop: Math.max(insets.top, 16) + 16 }}
                     >
                         <View className="flex-1 bg-background h-12 rounded-2xl flex-row items-center px-4 border border-primary/20">
@@ -328,25 +328,25 @@ export const Header = ({
                                     <Search size={48} color="#D1D5DB" strokeWidth={1.5} />
                                 </View>
                                 <Typography weight="bold" className="text-text tracking-tight text-center text-lg">Quick Search</Typography>
-                                <Typography variant="caption" className="text-text/40 text-center mt-2 max-w-[200px]">Temukan akses cepat ke fitur dan laporan operasional TPM</Typography>
+                                <Typography variant="caption" className="text-textGray text-center mt-2 max-w-[200px]">Temukan akses cepat ke fitur dan laporan operasional TPM</Typography>
                             </View>
                         ) : filteredRoutes.length > 0 ? (
                             <View className="px-6 py-6">
-                                <Typography variant="caption" weight="bold" className="text-text/30 mb-6 tracking-[3px] uppercase">Hasil Pencarian</Typography>
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-6 tracking-[3px] uppercase">Hasil Pencarian</Typography>
                                 {filteredRoutes.map((route) => {
                                     const Icon = route.icon;
                                     return (
                                         <Pressable
                                             key={route.id}
                                             onPress={() => handleNavigate(route.path)}
-                                            className="flex-row items-center py-5 bg-surface mb-4 rounded-[28px] px-5 border border-border shadow-sm"
+                                            className="flex-row items-center py-5 bg-surface mb-4 rounded-[28px] px-5 border border-transparent shadow-sm"
                                         >
                                             <View className="bg-primary/5 w-14 h-14 rounded-2xl items-center justify-center mr-4">
                                                 <Icon size={24} color={themeColors.primary} />
                                             </View>
                                             <View className="flex-1">
                                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">{route.label}</Typography>
-                                                <Typography variant="caption" className="text-text/40" numberOfLines={1}>{route.description}</Typography>
+                                                <Typography variant="caption" className="text-textGray" numberOfLines={1}>{route.description}</Typography>
                                             </View>
                                             <View className="w-8 h-8 rounded-full bg-background items-center justify-center" >
                                                 <ChevronRight size={16} color="#D1D5DB" />
@@ -361,7 +361,7 @@ export const Header = ({
                                     <Search size={48} color="#EF4444" strokeWidth={1.5} />
                                 </View>
                                 <Typography weight="bold" className="text-text">Data Tidak Ditemukan</Typography>
-                                <Typography variant="caption" className="text-text/30 mt-2">Coba kata kunci lain atau periksa ejaan</Typography>
+                                <Typography variant="caption" className="text-textGray mt-2">Coba kata kunci lain atau periksa ejaan</Typography>
                             </View>
                         )}
                     </ScrollView>
@@ -384,7 +384,7 @@ export const Header = ({
 
                     {/* Floating Dropdown Menu Card */}
                     <View
-                        className="bg-surface rounded-3xl border border-border shadow-2xl p-2 absolute w-[180px]"
+                        className="bg-surface rounded-3xl border border-transparent shadow-2xl p-2 absolute w-[180px]"
                         style={{
                             top: Math.max(insets.top, 16) + 56, // positions it perfectly right below the header avatar
                             right: 24,

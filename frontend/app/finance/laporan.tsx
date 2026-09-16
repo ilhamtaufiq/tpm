@@ -358,7 +358,7 @@ export default function LaporanKeuanganScreen() {
                                 {totalRevenue > 0 ? ((labaBersih / totalRevenue) * 100).toFixed(1) : 0}%
                             </Typography>
                         </View>
-                        <View className="bg-white/20 px-3 py-1.5 rounded-full self-center">
+                        <View className="bg-surface/20 px-3 py-1.5 rounded-full self-center">
                             <Typography className="text-white text-[10px] font-bold">PERIODE INI</Typography>
                         </View>
                     </View>
@@ -367,18 +367,18 @@ export default function LaporanKeuanganScreen() {
                 {/* Pendapatan Section */}
                 <View>
                     <Typography variant="h3" weight="bold" className="text-text mb-4 px-1">Pendapatan Operasional</Typography>
-                    <View className="bg-surface rounded-[32px] p-2 shadow-sm border border-border">
+                    <View className="bg-surface rounded-[32px] p-2 shadow-sm border border-transparent">
                         {([
                             ['Bengkel', bengkel.revenue || 0],
                             ['Jasa Angkut', jasaAngkut.revenue || 0],
                             ['Jual Beli Mobil', mobil.revenue || 0],
                         ] as Array<[string, number]>).map(([key, value]) => (
-                            <View key={key} className="flex-row items-center p-4 border-b border-border last:border-b-0">
+                            <View key={key} className="flex-row items-center p-4 border-b border-transparent last:border-b-0">
                                 <View className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center mr-3">
                                     <ArrowUpRight size={18} color="#059669" />
                                 </View>
                                 <View className="flex-1">
-                                    <Typography weight="bold" className="text-gray-800">{key}</Typography>
+                                    <Typography weight="bold" className="text-text">{key}</Typography>
                                     <Typography className="text-textGray text-xs">Pendapatan terakui periode ini</Typography>
                                 </View>
                                 <Typography weight="bold" className="text-emerald-600">{formatCurrency(value)}</Typography>
@@ -401,8 +401,8 @@ export default function LaporanKeuanganScreen() {
 
                 {/* Pengeluaran Section */}
                 <View>
-                    <Typography variant="h3" weight="bold" className="text-gray-800 mb-4 px-1">Beban & Pengeluaran</Typography>
-                    <View className="bg-surface rounded-[32px] p-2 shadow-sm border border-border">
+                    <Typography variant="h3" weight="bold" className="text-text mb-4 px-1">Beban & Pengeluaran</Typography>
+                    <View className="bg-surface rounded-[32px] p-2 shadow-sm border border-transparent">
                         {([
                             ['Bengkel', (bengkel.beban_operasional || 0) + (bengkel.beban_gaji || 0) + (bengkel.beban_lembur || 0)],
                             ['Jasa Angkut', (jasaAngkut.beban_operasional || 0) + (jasaAngkut.maintenance || 0) + (jasaAngkut.beban_umum || 0)],
@@ -410,12 +410,12 @@ export default function LaporanKeuanganScreen() {
                             ['Pusat / Umum', summary.total_beban_umum || 0],
                             ['Prive', summary.prive || 0],
                         ] as Array<[string, number]>).map(([key, value]) => (
-                            <View key={key} className="flex-row items-center p-4 border-b border-border">
+                            <View key={key} className="flex-row items-center p-4 border-b border-transparent">
                                 <View className="w-10 h-10 bg-rose-50 rounded-xl items-center justify-center mr-3">
                                     <ArrowDownRight size={18} color="#E11D48" />
                                 </View>
                                 <View className="flex-1">
-                                    <Typography weight="bold" className="text-gray-800">{key}</Typography>
+                                    <Typography weight="bold" className="text-text">{key}</Typography>
                                     <View className="flex-row items-center">
                                         <Typography className="text-textGray text-xs">Beban laporan laba rugi</Typography>
                                     </View>
@@ -423,7 +423,7 @@ export default function LaporanKeuanganScreen() {
                                 <Typography weight="bold" className="text-rose-600">({formatCurrency(value)})</Typography>
                             </View>
                         ))}
-                        <View className="p-4 bg-gray-50/50 rounded-b-[24px] flex-row justify-between items-center">
+                        <View className="p-4 bg-surface/50 rounded-b-[24px] flex-row justify-between items-center">
                             <Typography weight="bold" className="text-textGray text-xs uppercase">TOTAL BEBAN</Typography>
                             <Typography weight="bold" className="text-rose-600 text-lg">{formatCurrency(totalBeban + (summary.prive || 0))}</Typography>
                         </View>
@@ -455,7 +455,7 @@ export default function LaporanKeuanganScreen() {
                 </View>
 
                 {/* Section A & C Group */}
-                <View className="bg-surface rounded-[40px] p-6 shadow-sm border border-border">
+                <View className="bg-surface rounded-[40px] p-6 shadow-sm border border-transparent">
                     <Typography weight="bold" className="text-text mb-6 flex-row items-center">
                         <Briefcase size={16} color="#023C69" />  Mutasi Ekuitas
                     </Typography>
@@ -488,7 +488,7 @@ export default function LaporanKeuanganScreen() {
                     </View>
                 </View>
 
-                <View className="bg-surface rounded-[40px] p-6 shadow-sm border border-border">
+                <View className="bg-surface rounded-[40px] p-6 shadow-sm border border-transparent">
                     <Typography weight="bold" className="text-text mb-6 flex-row items-center">
                         <ArrowUpRight size={16} color="#059669" />  Perubahan Bersih Modal
                     </Typography>
@@ -509,23 +509,23 @@ export default function LaporanKeuanganScreen() {
             <View className="space-y-6">
                 {/* Balancing Bento */}
                 <View className="flex-row space-x-4">
-                    <View className="flex-1 bg-surface p-5 rounded-[32px] shadow-sm border border-border">
+                    <View className="flex-1 bg-surface p-5 rounded-[32px] shadow-sm border border-transparent">
                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Total Aktiva</Typography>
                         <Typography weight="bold" className="text-primary text-xl" numberOfLines={1}>{formatCurrency(total_aktiva)}</Typography>
                     </View>
-                    <View className="flex-1 bg-surface p-5 rounded-[32px] shadow-sm border border-border">
+                    <View className="flex-1 bg-surface p-5 rounded-[32px] shadow-sm border border-transparent">
                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Total Pasiva</Typography>
                         <Typography weight="bold" className="text-emerald-600 text-xl" numberOfLines={1}>{formatCurrency(total_pasiva)}</Typography>
                     </View>
                 </View>
 
                 {/* Assets Section */}
-                <View className="bg-surface rounded-[40px] p-6 shadow-sm border border-border">
+                <View className="bg-surface rounded-[40px] p-6 shadow-sm border border-transparent">
                     <View className="flex-row items-center mb-6">
                         <View className="w-8 h-8 bg-emerald-100 rounded-full items-center justify-center mr-3">
                             <TrendingUp size={16} color="#059669" />
                         </View>
-                        <Typography weight="bold" className="text-gray-800 text-lg">AKTIVA (Harta)</Typography>
+                        <Typography weight="bold" className="text-text text-lg">AKTIVA (Harta)</Typography>
                     </View>
 
                     <View className="space-y-6">
@@ -534,40 +534,40 @@ export default function LaporanKeuanganScreen() {
                             <View className="space-y-3">
                                 <View className="flex-row justify-between items-center py-1">
                                     <Typography className="text-textGray">Kas & Bank</Typography>
-                                    <Typography weight="bold" className="text-gray-800">{formatCurrency(aktiva_lancar.total_kas_bank)}</Typography>
+                                    <Typography weight="bold" className="text-text">{formatCurrency(aktiva_lancar.total_kas_bank)}</Typography>
                                 </View>
                                 <View className="flex-row justify-between items-center py-1">
                                     <Typography className="text-textGray">Piutang Usaha</Typography>
-                                    <Typography weight="bold" className="text-gray-800">{formatCurrency(aktiva_lancar.total_piutang)}</Typography>
+                                    <Typography weight="bold" className="text-text">{formatCurrency(aktiva_lancar.total_piutang)}</Typography>
                                 </View>
                                 <View className="flex-row justify-between items-center py-1">
                                     <Typography className="text-textGray">Persediaan Sparepart</Typography>
-                                    <Typography weight="bold" className="text-gray-800">{formatCurrency(aktiva_lancar.persediaan_sparepart)}</Typography>
+                                    <Typography weight="bold" className="text-text">{formatCurrency(aktiva_lancar.persediaan_sparepart)}</Typography>
                                 </View>
                                 <View className="flex-row justify-between items-center py-1">
                                     <Typography className="text-textGray">Stok Mobil Dagangan</Typography>
-                                    <Typography weight="bold" className="text-gray-800">{formatCurrency(aktiva_lancar.stok_mobil)}</Typography>
+                                    <Typography weight="bold" className="text-text">{formatCurrency(aktiva_lancar.stok_mobil)}</Typography>
                                 </View>
                             </View>
                         </View>
 
-                        <View className="pt-4 border-t border-border text-right">
+                        <View className="pt-4 border-t border-transparent text-right">
                             <Typography weight="bold" className="text-textGray text-[10px] uppercase mb-3 ml-1">Aktiva Tetap</Typography>
                             <View className="flex-row justify-between items-center py-1">
                                 <Typography className="text-textGray">Aset Tetap (Peralatan/Kendaraan)</Typography>
-                                <Typography weight="bold" className="text-gray-800">{formatCurrency(aktiva_tetap.total_aktiva_tetap || 0)}</Typography>
+                                <Typography weight="bold" className="text-text">{formatCurrency(aktiva_tetap.total_aktiva_tetap || 0)}</Typography>
                             </View>
                         </View>
                     </View>
                 </View>
 
                 {/* Liabilities & Equity Section */}
-                <View className="bg-surface rounded-[40px] p-6 shadow-sm border border-border">
+                <View className="bg-surface rounded-[40px] p-6 shadow-sm border border-transparent">
                     <View className="flex-row items-center mb-6">
                         <View className="w-8 h-8 bg-rose-100 rounded-full items-center justify-center mr-3">
                             <TrendingDown size={16} color="#B91C1C" />
                         </View>
-                        <Typography weight="bold" className="text-gray-800 text-lg">PASIVA (Kewajiban & Modal)</Typography>
+                        <Typography weight="bold" className="text-text text-lg">PASIVA (Kewajiban & Modal)</Typography>
                     </View>
 
                     <View className="space-y-6">
@@ -576,40 +576,40 @@ export default function LaporanKeuanganScreen() {
                             <View className="space-y-3">
                                 <View className="flex-row justify-between items-center py-1">
                                     <Typography className="text-textGray">Hutang Supplier Sparepart</Typography>
-                                    <Typography weight="bold" className="text-gray-800">{formatCurrency(hutang.hutang_part)}</Typography>
+                                    <Typography weight="bold" className="text-text">{formatCurrency(hutang.hutang_part)}</Typography>
                                 </View>
                                 <View className="flex-row justify-between items-center py-1">
                                     <Typography className="text-textGray">Hutang Supplier Mobil</Typography>
-                                    <Typography weight="bold" className="text-gray-800">{formatCurrency(hutang.hutang_mobil)}</Typography>
+                                    <Typography weight="bold" className="text-text">{formatCurrency(hutang.hutang_mobil)}</Typography>
                                 </View>
                                 <View className="flex-row justify-between items-center py-1">
                                     <Typography className="text-textGray">Hutang Investor</Typography>
-                                    <Typography weight="bold" className="text-gray-800">{formatCurrency(hutang.hutang_investor || 0)}</Typography>
+                                    <Typography weight="bold" className="text-text">{formatCurrency(hutang.hutang_investor || 0)}</Typography>
                                 </View>
                                 <View className="flex-row justify-between items-center py-1">
                                     <Typography className="text-textGray">Hutang Lainnya</Typography>
-                                    <Typography weight="bold" className="text-gray-800">{formatCurrency(hutang.hutang_lainnya || 0)}</Typography>
+                                    <Typography weight="bold" className="text-text">{formatCurrency(hutang.hutang_lainnya || 0)}</Typography>
                                 </View>
                                 {(hutang.uang_muka_penjualan || 0) > 0 && (
                                     <View className="flex-row justify-between items-center py-1">
                                         <Typography className="text-textGray">Uang Muka Penjualan</Typography>
-                                        <Typography weight="bold" className="text-gray-800">{formatCurrency(hutang.uang_muka_penjualan || 0)}</Typography>
+                                        <Typography weight="bold" className="text-text">{formatCurrency(hutang.uang_muka_penjualan || 0)}</Typography>
                                     </View>
                                 )}
                                 {(hutang.piutang_booking || 0) > 0 && (
                                     <View className="flex-row justify-between items-center py-1">
                                         <Typography className="text-textGray">Sisa Kewajiban Booking</Typography>
-                                        <Typography weight="bold" className="text-gray-800">{formatCurrency(hutang.piutang_booking || 0)}</Typography>
+                                        <Typography weight="bold" className="text-text">{formatCurrency(hutang.piutang_booking || 0)}</Typography>
                                     </View>
                                 )}
-                                <View className="flex-row justify-between items-center py-1 border-t border-border mt-2 pt-3">
-                                    <Typography weight="bold" className="text-gray-700">Total Hutang</Typography>
+                                <View className="flex-row justify-between items-center py-1 border-t border-transparent mt-2 pt-3">
+                                    <Typography weight="bold" className="text-text">Total Hutang</Typography>
                                     <Typography weight="bold" className="text-rose-600">{formatCurrency(totalHutang)}</Typography>
                                 </View>
                             </View>
                         </View>
 
-                        <View className="pt-4 border-t border-border">
+                        <View className="pt-4 border-t border-transparent">
                             <Typography weight="bold" className="text-textGray text-[10px] uppercase mb-3 ml-1">Ekuitas (Modal)</Typography>
                             <View className="flex-row justify-between items-center py-1">
                                 <Typography className="text-textGray">Modal Disetorkan & Laba</Typography>
@@ -641,7 +641,7 @@ export default function LaporanKeuanganScreen() {
                 rightElement={
                     <Pressable
                         onPress={() => setIsSetupModalVisible(true)}
-                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
                         <Settings size={20} color="#1F2937" />
                     </Pressable>
@@ -650,12 +650,12 @@ export default function LaporanKeuanganScreen() {
 
             {/* Report Selector Tab */}
             <View className="px-6 mt-4">
-                <View className="bg-surface p-3 rounded-[24px] border border-border shadow-sm flex-row gap-x-2">
+                <View className="bg-surface p-3 rounded-[24px] border border-transparent shadow-sm flex-row gap-x-2">
                     {(['LABA_RUGI', 'MODAL', 'NERACA'] as ReportType[]).map((type) => (
                         <Pressable
                             key={type}
                             onPress={() => setReportType(type)}
-                            className={`flex-1 py-2.5 items-center rounded-xl ${reportType === type ? 'bg-primary shadow-sm' : 'bg-background border border-border'}`}
+                            className={`flex-1 py-2.5 items-center rounded-xl ${reportType === type ? 'bg-primary shadow-sm' : 'bg-background border border-transparent'}`}
                         >
                             <Typography
                                 weight="bold"
@@ -679,7 +679,7 @@ export default function LaporanKeuanganScreen() {
                 {/* Date Filter View */}
                 <Pressable
                     onPress={() => setIsDateModalVisible(true)}
-                    className="flex-row items-center justify-between mb-8 bg-surface p-4 rounded-[24px] shadow-sm border border-border"
+                    className="flex-row items-center justify-between mb-8 bg-surface p-4 rounded-[24px] shadow-sm border border-transparent"
                 >
                     <View className="flex-row items-center">
                         <Calendar size={18} color="#023C69" />
@@ -755,7 +755,7 @@ export default function LaporanKeuanganScreen() {
                         index={-1}
                         snapPoints={setupSnapPoints}
                         enablePanDownToClose
-                        backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        backgroundStyle={{ borderRadius: 48,  }}
                         onClose={() => {
                             setIsSetupModalVisible(false);
                             setIsSheetOpen(false);
@@ -774,7 +774,7 @@ export default function LaporanKeuanganScreen() {
                         index={-1}
                         snapPoints={dateSnapPoints}
                         enablePanDownToClose
-                        backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        backgroundStyle={{ borderRadius: 48,  }}
                         onClose={() => {
                             setIsDateModalVisible(false);
                             setIsSheetOpen(false);
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
         padding: 20
     },
     webModalContent: {
-        backgroundColor: 'white',
+        
         borderRadius: 32,
         width: '100%',
         maxHeight: '90%',

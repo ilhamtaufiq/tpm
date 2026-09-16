@@ -92,7 +92,7 @@ export const BaseModal = ({
                             transform: [{ translateY: slideAnim }],
                             opacity: opacityAnim,
                             maxHeight: fullScreen ? '100%' : maxHeight,
-                            backgroundColor: 'white',
+                            
                             width: '100%',
                             zIndex: 2,
                             elevation: 24,
@@ -112,7 +112,7 @@ export const BaseModal = ({
                                 {showCloseButton && (
                                     <Pressable
                                         onPress={onClose}
-                                        className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-border"
+                                        className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-transparent"
                                     >
                                         <X size={20} color="#6B7280" />
                                     </Pressable>
