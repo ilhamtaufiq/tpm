@@ -39,14 +39,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 
     return (
         <View className="flex-1 items-center justify-center py-16 px-8">
-            <View className="w-20 h-20 bg-gray-100 rounded-full items-center justify-center mb-6">
+            <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-6">
                 <IconComponent size={40} color={iconColor} />
             </View>
             <Typography variant="h3" weight="semibold" className="text-center mb-2">
                 {title}
             </Typography>
             {description && (
-                <Typography className="text-center text-gray-500 mb-6">
+                <Typography className="text-center text-textGray mb-6">
                     {description}
                 </Typography>
             )}

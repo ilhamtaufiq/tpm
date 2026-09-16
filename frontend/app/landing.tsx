@@ -87,7 +87,7 @@ export default function LandingPage() {
                     <View className="flex-row gap-4">
                         <Pressable
                             onPress={() => router.push('/(auth)/login')}
-                            className="bg-white px-8 py-4 rounded-2xl shadow-xl shadow-indigo-900/40 flex-row items-center active:scale-95 transition-transform"
+                            className="bg-surface px-8 py-4 rounded-2xl shadow-xl shadow-indigo-900/40 flex-row items-center active:scale-95 transition-transform"
                         >
                             <Typography weight="bold" className="text-indigo-700 mr-2">Buka Aplikasi</Typography>
                             <ChevronRight size={18} color="#4338CA" />
@@ -107,13 +107,13 @@ export default function LandingPage() {
                         <View
                             key={i}
                             style={{ width: width > 768 ? '48%' : '100%' }}
-                            className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 mb-2"
+                            className="bg-surface p-8 rounded-[40px] shadow-sm border border-border mb-2"
                         >
                             <View className={`w-14 h-14 ${feature.bgColor} rounded-2xl items-center justify-center mb-6`}>
                                 {feature.icon}
                             </View>
-                            <Typography weight="bold" className="text-gray-900 text-xl mb-3">{feature.title}</Typography>
-                            <Typography className="text-gray-500 leading-relaxed text-[15px]">
+                            <Typography weight="bold" className="text-text text-xl mb-3">{feature.title}</Typography>
+                            <Typography className="text-textGray leading-relaxed text-[15px]">
                                 {feature.description}
                             </Typography>
                         </View>
@@ -122,16 +122,16 @@ export default function LandingPage() {
             </View>
 
             {/* APP PREVIEW SECTION */}
-            <View className="bg-white py-24 px-6 overflow-hidden">
+            <View className="bg-surface py-24 px-6 overflow-hidden">
                 <View className="max-w-4xl mx-auto items-center">
-                    <Typography weight="bold" className="text-gray-900 text-3xl text-center mb-6">Optimalkan Bisnis dari Genggaman</Typography>
-                    <Typography className="text-gray-500 text-center mb-16 text-lg max-w-xl">
+                    <Typography weight="bold" className="text-text text-3xl text-center mb-6">Optimalkan Bisnis dari Genggaman</Typography>
+                    <Typography className="text-textGray text-center mb-16 text-lg max-w-xl">
                         Didesain untuk kecepatan dan kemudahan akses. Nikmati pengalaman bento-style dashboard yang cantik di setiap perangkat Anda.
                     </Typography>
 
                     <View className="bg-indigo-50/50 p-4 rounded-[64px] border border-indigo-100">
                         {/* We will use the generated image here if it was a real asset, but for now we simulate a premium UI preview */}
-                        <View className="w-full aspect-[16/10] bg-white rounded-[44px] shadow-2xl items-center justify-center border border-white overflow-hidden">
+                        <View className="w-full aspect-[16/10] bg-surface rounded-[44px] shadow-2xl items-center justify-center border border-white overflow-hidden">
                             {/* Simulation of a premium mobile mockup */}
                             <Smartphone size={100} color="#6366F1" opacity={0.1} />
                         </View>
@@ -148,8 +148,8 @@ export default function LandingPage() {
                         resizeMode="contain"
                     />
                 </View>
-                <Typography weight="bold" className="text-gray-900 text-xl mb-4">Tiga Putra Motor</Typography>
-                <Typography className="text-gray-400 text-sm mb-12">© 2026 TPM Super App. All rights reserved.</Typography>
+                <Typography weight="bold" className="text-text text-xl mb-4">Tiga Putra Motor</Typography>
+                <Typography className="text-textGray text-sm mb-12">© 2026 TPM Super App. All rights reserved.</Typography>
 
                 <View className="flex-row gap-8">
                     <Typography className="text-indigo-600 font-bold">Privacy Policy</Typography>

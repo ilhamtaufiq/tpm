@@ -64,8 +64,8 @@ export const KaryawanSelector = ({
             {label && <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">{label}</Typography>}
 
             <Pressable onPress={handleOpen}>
-                <View className="bg-gray-50 p-5 rounded-3xl border border-gray-100 flex-row items-center">
-                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${value ? 'bg-primary/10' : 'bg-gray-100'}`}>
+                <View className="bg-background p-5 rounded-3xl border border-border flex-row items-center">
+                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${value ? 'bg-primary/10' : 'bg-background'}`}>
                         <User size={18} color={value ? '#2563EB' : '#9CA3AF'} />
                     </View>
 
@@ -78,12 +78,12 @@ export const KaryawanSelector = ({
                                 </Typography>
                             </>
                         ) : (
-                            <Typography className="text-gray-400 font-bold">{placeholder || "Pilih Karyawan SDM..."}</Typography>
+                            <Typography className="text-textGray font-bold">{placeholder || "Pilih Karyawan SDM..."}</Typography>
                         )}
                     </View>
 
                     {value && (
-                        <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }} className="bg-gray-100 p-1.5 rounded-full">
+                        <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }} className="bg-background p-1.5 rounded-full">
                             <X size={14} color="#9CA3AF" />
                         </Pressable>
                     )}
@@ -105,12 +105,12 @@ export const KaryawanSelector = ({
 
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold">Pilih Karyawan</Typography>
-                            <Pressable onPress={handleClose} className="bg-gray-50 p-2 rounded-full">
+                            <Pressable onPress={handleClose} className="bg-background p-2 rounded-full">
                                 <X size={20} color="#6B7280" />
                             </Pressable>
                         </View>
 
-                        <View className="flex-row items-center bg-gray-100 rounded-[24px] px-5 py-4 mb-6">
+                        <View className="flex-row items-center bg-background rounded-[24px] px-5 py-4 mb-6">
                             <Search size={20} color="#9CA3AF" />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-text font-medium"
@@ -134,7 +134,7 @@ export const KaryawanSelector = ({
                                 showsVerticalScrollIndicator={false}
                                 renderItem={({ item }) => (
                                     <Pressable onPress={() => handleSelect(item)}>
-                                        <Card className={`mb-4 p-5 border ${value?.id === item.id ? 'border-primary bg-primary/5' : 'border-gray-50'} flex-row items-center justify-between`}>
+                                        <Card className={`mb-4 p-5 border ${value?.id === item.id ? 'border-primary bg-primary/5' : 'border-border'} flex-row items-center justify-between`}>
                                             <View className="flex-1 mr-4">
                                                 <Typography weight="bold" className="text-text text-base">{item.nama}</Typography>
                                                 <View className="flex-row items-center mt-1">
@@ -159,7 +159,7 @@ export const KaryawanSelector = ({
                                 ListEmptyComponent={
                                     <View className="items-center mt-20 px-10">
                                         <Users size={48} color="#E5E7EB" strokeWidth={1} />
-                                        <Typography className="text-gray-400 mt-4 text-center">
+                                        <Typography className="text-textGray mt-4 text-center">
                                             {searchQuery.length > 0 ? "Karyawan tidak ditemukan" : "Daftar karyawan kosong atau belum dimuat"}
                                         </Typography>
                                     </View>

@@ -60,39 +60,30 @@ export const colorPalettes: ColorPalette[] = [
     {
         id: 'ocean', name: 'Ocean',
         colors: { primary: '#0369A1', secondary: '#06B6D4', background: '#F8FAFC', surface: '#FFFFFF', text: '#0F172A', textGray: '#64748B' }, border: '#E2E8F0' },
-    },
     {
         id: 'emerald', name: 'Emerald',
         colors: { primary: '#047857', secondary: '#F59E0B', background: '#F7FCF9', surface: '#FFFFFF', text: '#111827', textGray: '#6B7280' }, border: '#E3EDE7' },
-    },
     {
         id: 'indigo', name: 'Indigo',
         colors: { primary: '#4338CA', secondary: '#EC4899', background: '#F8F9FE', surface: '#FFFFFF', text: '#1E1B4B', textGray: '#71717A' }, border: '#E4E4F5' },
-    },
     {
         id: 'violet', name: 'Violet',
         colors: { primary: '#6D28D9', secondary: '#F59E0B', background: '#FAF8FE', surface: '#FFFFFF', text: '#2E1065', textGray: '#7C7491' }, border: '#EAE4F5' },
-    },
     {
         id: 'sunset', name: 'Sunset',
         colors: { primary: '#C2410C', secondary: '#0EA5E9', background: '#FEF9F5', surface: '#FFFFFF', text: '#431407', textGray: '#8C7A70' }, border: '#F2E6DD' },
-    },
     {
         id: 'rose', name: 'Rose',
         colors: { primary: '#BE123C', secondary: '#0F766E', background: '#FFF8FA', surface: '#FFFFFF', text: '#3F0713', textGray: '#876873' }, border: '#F4E4E9' },
-    },
     {
         id: 'slate', name: 'Slate',
         colors: { primary: '#334155', secondary: '#0EA5E9', background: '#F8FAFC', surface: '#FFFFFF', text: '#0F172A', textGray: '#64748B' }, border: '#E2E8F0' },
-    },
     {
         id: 'midnight', name: 'Midnight',
         colors: { primary: '#1E1B4B', secondary: '#38BDF8', background: '#0F172A', surface: '#1E293B', text: '#F8FAFC', textGray: '#94A3B8' }, border: '#334155' },
-    },
     {
         id: 'graphite', name: 'Graphite',
         colors: { primary: '#18181B', secondary: '#F97316', background: '#121212', surface: '#262626', text: '#FAFAFA', textGray: '#A1A1AA' }, border: '#3F3F46' },
-    },
 ];
 
 /** Cocokkan warna tema saat ini ke sebuah palet (urutan-insensitif). */
@@ -103,6 +94,12 @@ export const findPaletteId = (colors: ThemeColors): string | null => {
         );
     return colorPalettes.find((p) => same(p.colors, colors))?.id ?? null;
 };
+
+/** Garis tepi mengikuti palet aktif; abu netral kalau tema sedang kustom. */
+export const defaultBorder = '#E5E7EB';
+
+export const findPaletteBorder = (colors: ThemeColors): string =>
+    colorPalettes.find((p) => p.id === findPaletteId(colors))?.border ?? defaultBorder;
 
 export const useUIStore = create<UIState>()(
     persist(

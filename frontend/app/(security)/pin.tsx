@@ -233,7 +233,7 @@ export default function PinScreen() {
     };
 
     return (
-        <View className="flex-1 bg-white items-center justify-center px-6">
+        <View className="flex-1 bg-surface items-center justify-center px-6">
             {isLoading && (
                 <View className="absolute inset-0 z-50 bg-white/50 items-center justify-center">
                     <ActivityIndicator size="large" color="#3b82f6" />
@@ -249,7 +249,7 @@ export default function PinScreen() {
             </View>
 
             <View className="mb-12 items-center">
-                <Text className="text-2xl font-bold text-slate-800 mb-2">
+                <Text className="text-2xl font-bold text-text mb-2">
                     {currentMode === 'setup' 
                         ? (action === 'change_pin' ? 'Buat PIN Baru' : 'Buat PIN Baru') 
                         : currentMode === 'confirm' 
@@ -257,7 +257,7 @@ export default function PinScreen() {
                         : (action === 'change_pin' ? 'Masukkan PIN Lama' : 
                            action === 'disable_pin' ? 'Verifikasi PIN' : 'Masukkan PIN')}
                 </Text>
-                <Text className="text-slate-500 text-center">
+                <Text className="text-textGray text-center">
                     {currentMode === 'setup' 
                         ? (action === 'change_pin' ? 'Masukkan PIN baru Anda' : 'Gunakan PIN untuk keamanan aplikasi') 
                         : currentMode === 'confirm' 
@@ -286,9 +286,9 @@ export default function PinScreen() {
                     <Pressable
                         key={num}
                         onPress={() => handlePress(num.toString())}
-                        className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-slate-50 border border-slate-100"
+                        className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-background border border-slate-100"
                     >
-                        <Text className="text-3xl font-semibold text-slate-800">{num}</Text>
+                        <Text className="text-3xl font-semibold text-text">{num}</Text>
                     </Pressable>
                 ))}
 
@@ -305,9 +305,9 @@ export default function PinScreen() {
 
                 <Pressable
                     onPress={() => handlePress('0')}
-                    className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-slate-50 border border-slate-100"
+                    className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-background border border-slate-100"
                 >
-                    <Text className="text-3xl font-semibold text-slate-800">0</Text>
+                    <Text className="text-3xl font-semibold text-text">0</Text>
                 </Pressable>
 
                 <Pressable

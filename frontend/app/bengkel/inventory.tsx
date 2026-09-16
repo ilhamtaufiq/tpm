@@ -1,15 +1,15 @@
 ﻿import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, FlatList, Image, Platform, Modal } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Typography } from '../../components/ui/Typography';
+import { Header } from '../../components/ui/Header';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { appAlert } from '../../utils/appAlert';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import {
-    ChevronLeft,
     Search,
     Plus,
     AlertTriangle,
@@ -302,10 +302,10 @@ export default function InventoryScreen() {
                 ].map((stat) => {
                     const StatIcon = stat.icon;
                     return (
-                        <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-gray-100`}>
+                        <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-border`}>
                             <View className="flex-row items-center mb-2">
                                 <StatIcon size={14} color={stat.color} />
-                                <Typography className="text-[9px] font-bold text-gray-500 ml-1.5 uppercase tracking-wide">{stat.label}</Typography>
+                                <Typography className="text-[9px] font-bold text-textGray ml-1.5 uppercase tracking-wide">{stat.label}</Typography>
                             </View>
                             <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1}>{stat.value}</Typography>
                         </View>
@@ -313,7 +313,7 @@ export default function InventoryScreen() {
                 })}
             </View>
 
-            <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 mb-3">
+            <View className="flex-row items-center bg-background border border-border rounded-2xl px-4 h-12 mb-3">
                 <Search size={18} color="#9CA3AF" />
                 <TextInput
                     placeholder="Cari nama, kode, atau kategori..."
@@ -331,7 +331,7 @@ export default function InventoryScreen() {
                 )}
                 <Pressable
                     onPress={handlePresentSortSheet}
-                    className={`w-9 h-9 rounded-xl items-center justify-center ${sortBy !== 'nama' || sortOrder !== 'asc' ? 'bg-primary/10' : 'bg-white border border-gray-100'}`}
+                    className={`w-9 h-9 rounded-xl items-center justify-center ${sortBy !== 'nama' || sortOrder !== 'asc' ? 'bg-primary/10' : 'bg-surface border border-border'}`}
                 >
                     <ArrowUpDown size={16} color={sortBy !== 'nama' || sortOrder !== 'asc' ? '#023C69' : '#6B7280'} />
                 </Pressable>
@@ -372,10 +372,10 @@ export default function InventoryScreen() {
                         <Pressable
                             key={action.label}
                             onPress={action.onPress}
-                            className="flex-1 bg-white border border-gray-100 rounded-2xl py-3 items-center active:opacity-80"
+                            className="flex-1 bg-surface border border-border rounded-2xl py-3 items-center active:opacity-80"
                         >
                             <ActionIcon size={18} color={action.color} />
-                            <Typography className="text-[9px] font-bold text-gray-600 mt-1">{action.label}</Typography>
+                            <Typography className="text-[9px] font-bold text-textGray mt-1">{action.label}</Typography>
                         </Pressable>
                     );
                 })}
@@ -398,10 +398,10 @@ export default function InventoryScreen() {
             )}
 
             {filteredParts.length > 0 && (
-                <View className="bg-white p-3 rounded-2xl border border-gray-100 flex-row items-center justify-between mb-4">
+                <View className="bg-surface p-3 rounded-2xl border border-border flex-row items-center justify-between mb-4">
                     <View className="flex-row items-center">
                         <Pressable onPress={toggleSelectAll} className="flex-row items-center mr-3">
-                            <View className={`w-6 h-6 rounded-lg border items-center justify-center ${selectedIds.length === filteredParts.length && filteredParts.length > 0 ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                            <View className={`w-6 h-6 rounded-lg border items-center justify-center ${selectedIds.length === filteredParts.length && filteredParts.length > 0 ? 'bg-primary border-primary' : 'border-border'}`}>
                                 {selectedIds.length === filteredParts.length && filteredParts.length > 0 && <Check size={14} color="white" />}
                             </View>
                             <Typography className="ml-2 text-xs font-bold text-textGray">Pilih Semua</Typography>
@@ -412,7 +412,7 @@ export default function InventoryScreen() {
                             </Typography>
                         )}
                     </View>
-                    <Typography className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    <Typography className="text-[10px] font-bold text-textGray uppercase tracking-widest">
                         {filteredParts.length} item
                     </Typography>
                 </View>
@@ -420,7 +420,7 @@ export default function InventoryScreen() {
 
             {statsData?.top_sales?.length > 0 && (
                 <View className="mb-4">
-                    <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2 ml-1">
+                    <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-2 ml-1">
                         Terlaris
                     </Typography>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -428,7 +428,7 @@ export default function InventoryScreen() {
                             <Pressable
                                 key={`top-${item.id}`}
                                 onPress={() => handleOpenDetail(item)}
-                                className="bg-white border border-gray-100 rounded-2xl p-3 mr-3 min-w-[140px] active:opacity-90"
+                                className="bg-surface border border-border rounded-2xl p-3 mr-3 min-w-[140px] active:opacity-90"
                             >
                                 <Typography weight="bold" className="text-textMain text-xs" numberOfLines={2}>{item.nama}</Typography>
                                 <Typography className="text-emerald-600 text-[10px] font-bold mt-2">{item.total_sales} terjual</Typography>
@@ -441,27 +441,26 @@ export default function InventoryScreen() {
     );
 
     return (
-        <SafeAreaView className="flex-1 bg-surface">
+        <View className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
 
-            <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
-                <View className="flex-row items-center">
-                    <Pressable onPress={handleBack} className="mr-4">
-                        <ChevronLeft size={24} color="#1C1C1C" />
+            <Header
+                title="Inventory Sparepart"
+                subtitle="Kelola stok, harga, dan restock"
+                showBackButton
+                onBackButtonPress={handleBack}
+                showProfile={false}
+                showBell={false}
+                rightElement={
+                    <Pressable
+                        onPress={() => router.push('/bengkel/purchase')}
+                        className="bg-primary px-4 py-2 rounded-xl flex-row items-center active:opacity-90"
+                    >
+                        <Plus size={16} color="white" />
+                        <Typography weight="bold" className="text-white text-xs ml-1">Restock</Typography>
                     </Pressable>
-                    <View>
-                        <Typography variant="h2" weight="bold">Inventory Sparepart</Typography>
-                        <Typography className="text-gray-400 text-xs mt-0.5">Kelola stok, harga, dan restock</Typography>
-                    </View>
-                </View>
-                <Pressable
-                    onPress={() => router.push('/bengkel/purchase')}
-                    className="bg-primary px-4 py-2 rounded-xl flex-row items-center active:opacity-90"
-                >
-                    <Plus size={16} color="white" />
-                    <Typography weight="bold" className="text-white text-xs ml-1">Restock</Typography>
-                </Pressable>
-            </View>
+                }
+            />
 
             {isLoading ? (
                 <View className="flex-1 px-6 pt-6">
@@ -488,8 +487,8 @@ export default function InventoryScreen() {
                                 <ActivityIndicator size="small" color="#023C69" />
                             </View>
                         ) : hasNextPage ? null : filteredParts.length > 0 ? (
-                            <View className="py-8 items-center border-t border-gray-100 border-dashed mt-4">
-                                <Typography className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Semua data telah dimuat</Typography>
+                            <View className="py-8 items-center border-t border-border border-dashed mt-4">
+                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">Semua data telah dimuat</Typography>
                             </View>
                         ) : null
                     )}
@@ -503,7 +502,7 @@ export default function InventoryScreen() {
                         return (
                             <Pressable
                                 onPress={() => handleOpenDetail(part)}
-                                className="bg-white p-4 rounded-[28px] mb-4 border border-gray-50 shadow-sm active:scale-[0.98]"
+                                className="bg-surface p-4 rounded-[28px] mb-4 border border-border shadow-sm active:scale-[0.98]"
                             >
                                 <View className="flex-row items-center">
                                     <Pressable
@@ -549,7 +548,7 @@ export default function InventoryScreen() {
                                         <Typography className="text-textGray text-[11px] mt-1" numberOfLines={1}>
                                             {[part.kode_part, part.kode_ean, part.kode].filter(Boolean).join(' • ') || '-'} • {part.kategori || 'Suku Cadang'}
                                         </Typography>
-                                        <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-50">
+                                        <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-border">
                                             <Typography className="text-textGray text-[10px] font-semibold">
                                                 {!isAlwaysReadyStock(part.stok) ? `Min: ${part.stok_minimum} ${part.satuan || 'pcs'}` : 'Katalog referensi'}
                                             </Typography>
@@ -602,7 +601,7 @@ export default function InventoryScreen() {
                                     <Typography variant="h3" weight="bold">
                                         {isEditing ? 'Edit Sparepart' : 'Detail Sparepart'}
                                     </Typography>
-                                    <Typography className="text-gray-400 text-xs mt-0.5">
+                                    <Typography className="text-textGray text-xs mt-0.5">
                                         {formData.kode || selectedPart.kode || '-'}
                                     </Typography>
                                 </View>
@@ -611,7 +610,7 @@ export default function InventoryScreen() {
                                         setIsModalVisible(false);
                                         setIsEditing(false);
                                     }}
-                                    className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center"
+                                    className="w-8 h-8 bg-background rounded-full items-center justify-center"
                                 >
                                     <X size={18} color="#4B5563" />
                                 </Pressable>
@@ -624,7 +623,7 @@ export default function InventoryScreen() {
                                 showsVerticalScrollIndicator={false}
                             >
                                 <View className="items-center mb-5">
-                                    <View className="w-32 h-32 bg-gray-50 rounded-3xl items-center justify-center overflow-hidden border border-gray-100">
+                                    <View className="w-32 h-32 bg-background rounded-3xl items-center justify-center overflow-hidden border border-border">
                                         {formData.gambar ? (
                                             <Image
                                                 source={{ uri: `${FILE_URL}/uploads/${formData.gambar}` }}
@@ -736,7 +735,7 @@ export default function InventoryScreen() {
                                             <Button
                                                 title="Ubah Data"
                                                 variant="outline-neutral"
-                                                className="bg-gray-100 border-0"
+                                                className="bg-background border-0"
                                                 onPress={() => setIsEditing(true)}
                                                 icon={<Edit3 size={16} color="#4B5563" style={{ marginRight: 8 }} />}
                                             />
@@ -755,7 +754,7 @@ export default function InventoryScreen() {
                 title="Update Stok Cepat"
             >
                 <View className="p-1">
-                    <Card className="bg-gray-50 border-gray-100 p-4 mb-6">
+                    <Card className="bg-background border-border p-4 mb-6">
                         <Typography variant="body1" weight="bold">{scannedPart?.nama}</Typography>
                         <Typography variant="caption" className="text-textGray mt-1">
                             Kode: {scannedPart?.kode} • Stok Saat Ini: {isAlwaysReadyStock(scannedPart?.stok) ? 'Always Ready' : `${scannedPart?.stok} ${scannedPart?.satuan || 'pcs'}`}
@@ -765,17 +764,17 @@ export default function InventoryScreen() {
                     <View className="flex-row space-x-3 mb-6">
                         <Pressable
                             onPress={() => setStockOp('add')}
-                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'add' ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-100'}`}
+                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'add' ? 'bg-emerald-50 border-emerald-500' : 'bg-surface border-border'}`}
                         >
                             <Plus size={20} color={stockOp === 'add' ? '#10B981' : '#94A3B8'} />
-                            <Typography className={`ml-2 font-bold ${stockOp === 'add' ? 'text-emerald-700' : 'text-gray-400'}`}>Tambah</Typography>
+                            <Typography className={`ml-2 font-bold ${stockOp === 'add' ? 'text-emerald-700' : 'text-textGray'}`}>Tambah</Typography>
                         </Pressable>
                         <Pressable
                             onPress={() => setStockOp('subtract')}
-                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'subtract' ? 'bg-rose-50 border-rose-500' : 'bg-white border-gray-100'}`}
+                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'subtract' ? 'bg-rose-50 border-rose-500' : 'bg-surface border-border'}`}
                         >
                             <Minus size={20} color={stockOp === 'subtract' ? '#F43F5E' : '#94A3B8'} />
-                            <Typography className={`ml-2 font-bold ${stockOp === 'subtract' ? 'text-rose-700' : 'text-gray-400'}`}>Kurang</Typography>
+                            <Typography className={`ml-2 font-bold ${stockOp === 'subtract' ? 'text-rose-700' : 'text-textGray'}`}>Kurang</Typography>
                         </Pressable>
                     </View>
 
@@ -783,7 +782,7 @@ export default function InventoryScreen() {
                     <View className="flex-row items-center space-x-4 mb-8">
                         <Pressable
                             onPress={() => setStockChange(prev => Math.max(0, parseInt(prev) - 1).toString())}
-                            className="w-12 h-12 bg-gray-100 rounded-xl items-center justify-center"
+                            className="w-12 h-12 bg-background rounded-xl items-center justify-center"
                         >
                             <Minus size={20} color="#4B5563" />
                         </Pressable>
@@ -792,12 +791,12 @@ export default function InventoryScreen() {
                                 keyboardType="numeric"
                                 value={stockChange}
                                 onChangeText={setStockChange}
-                                className="h-12 bg-gray-50 border border-gray-200 rounded-xl text-center text-xl font-bold font-outfit"
+                                className="h-12 bg-background border border-border rounded-xl text-center text-xl font-bold font-outfit"
                             />
                         </View>
                         <Pressable
                             onPress={() => setStockChange(prev => (parseInt(prev || '0') + 1).toString())}
-                            className="w-12 h-12 bg-gray-100 rounded-xl items-center justify-center"
+                            className="w-12 h-12 bg-background rounded-xl items-center justify-center"
                         >
                             <Plus size={20} color="#4B5563" />
                         </Pressable>
@@ -929,7 +928,7 @@ export default function InventoryScreen() {
                     </BottomSheetScrollView>
                 </BottomSheet>
             )}
-        </SafeAreaView>
+        </View>
     );
 
     function renderSortContent() {
@@ -944,7 +943,7 @@ export default function InventoryScreen() {
                     <Typography variant="h3" weight="bold">Urutkan Sparepart</Typography>
                     <Pressable
                         onPress={onClose}
-                        className="bg-gray-100 p-2 rounded-full"
+                        className="bg-background p-2 rounded-full"
                     >
                         <X size={20} color="#4B5563" />
                     </Pressable>
@@ -982,7 +981,7 @@ export default function InventoryScreen() {
                                     })}
                                     className="shadow-sm shadow-gray-200"
                                 >
-                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${sortBy === option.id ? 'bg-primary/10' : 'bg-gray-50'}`}>
+                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${sortBy === option.id ? 'bg-primary/10' : 'bg-background'}`}>
                                         <View>
                                             {React.createElement(option.icon, { size: 22, color: sortBy === option.id ? '#023C69' : '#94A3B8' })}
                                         </View>
@@ -1005,18 +1004,18 @@ export default function InventoryScreen() {
                         </View>
                     </View>
 
-                    <View className="pt-4 border-t border-gray-100">
+                    <View className="pt-4 border-t border-border">
                         <Typography variant="caption" weight="bold" className="text-textGray mb-4 ml-1 uppercase tracking-widest text-[10px]">Arah Urutan</Typography>
                         <View className="flex-row space-x-3">
                             <Pressable
                                 onPress={() => setSortOrder('asc')}
-                                className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${sortOrder === 'asc' ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-white border-gray-100 shadow-sm'}`}
+                                className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${sortOrder === 'asc' ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-surface border-border shadow-sm'}`}
                             >
                                 <Typography weight="bold" className={sortOrder === 'asc' ? 'text-white' : 'text-textMain'}>Terkecil/A-Z</Typography>
                             </Pressable>
                             <Pressable
                                 onPress={() => setSortOrder('desc')}
-                                className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${sortOrder === 'desc' ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-white border-gray-100 shadow-sm'}`}
+                                className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${sortOrder === 'desc' ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-surface border-border shadow-sm'}`}
                             >
                                 <Typography weight="bold" className={sortOrder === 'desc' ? 'text-white' : 'text-textMain'}>Terbesar/Z-A</Typography>
                             </Pressable>

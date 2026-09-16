@@ -175,16 +175,16 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                 <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Foto Barang</Typography>
                     <View className="flex-row items-center space-x-4">
-                        <View className="w-24 h-24 bg-gray-50 border border-gray-100 rounded-2xl items-center justify-center overflow-hidden">
+                        <View className="w-24 h-24 bg-background border border-border rounded-2xl items-center justify-center overflow-hidden">
                             {(form.imageUri || form.gambar) ? (
                                 <Image key={form.imageUri || form.gambar} source={{ uri: form.imageUri || (form.gambar ? `${FILE_URL}/uploads/${form.gambar}` : undefined) }} className="w-full h-full" resizeMode="cover" />
                             ) : (
-                                <View className="items-center justify-center"><ImageIcon size={32} color="#9CA3AF" strokeWidth={1.5} /><Typography className="text-[8px] text-gray-400 mt-1">Kosong</Typography></View>
+                                <View className="items-center justify-center"><ImageIcon size={32} color="#9CA3AF" strokeWidth={1.5} /><Typography className="text-[8px] text-textGray mt-1">Kosong</Typography></View>
                             )}
                         </View>
                         <View className="flex-1 space-y-2">
-                            <Pressable onPress={pickImage} className="flex-row items-center bg-white border border-indigo-100 rounded-xl px-3 py-2.5 active:bg-indigo-50"><ImageIcon size={16} color="#4F46E5" /><Typography className="text-indigo-600 font-bold text-xs ml-2">Pilih Galeri</Typography></Pressable>
-                            <Pressable onPress={takePhoto} className="flex-row items-center bg-white border border-gray-200 rounded-xl px-3 py-2.5 active:bg-gray-50"><Camera size={16} color="#6B7280" /><Typography className="text-gray-600 font-bold text-xs ml-2">Ambil Foto</Typography></Pressable>
+                            <Pressable onPress={pickImage} className="flex-row items-center bg-surface border border-indigo-100 rounded-xl px-3 py-2.5 active:bg-indigo-50"><ImageIcon size={16} color="#4F46E5" /><Typography className="text-indigo-600 font-bold text-xs ml-2">Pilih Galeri</Typography></Pressable>
+                            <Pressable onPress={takePhoto} className="flex-row items-center bg-surface border border-border rounded-xl px-3 py-2.5 active:bg-background"><Camera size={16} color="#6B7280" /><Typography className="text-textGray font-bold text-xs ml-2">Ambil Foto</Typography></Pressable>
                         </View>
                     </View>
                 </View>
@@ -199,7 +199,7 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                         <View className="flex-row items-center space-x-3">
                             <View className="flex-1">
                                 <TextInput
-                                    className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                                    className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                     placeholder="Kode Part Pabrik (GS1 / OEM)"
                                     placeholderTextColor="#9CA3AF"
                                     value={form.kode_part}
@@ -213,7 +213,7 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                         <View className="flex-row items-center space-x-3">
                             <View className="flex-1">
                                 <TextInput
-                                    className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                                    className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                     placeholder="Barcode EAN / GTIN (opsional)"
                                     placeholderTextColor="#9CA3AF"
                                     keyboardType="number-pad"
@@ -235,7 +235,7 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                         <View className="flex-row items-center space-x-3">
                             <View className="flex-1">
                                 <TextInput
-                                    className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 text-xs italic"
+                                    className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 text-xs italic"
                                     placeholder="ID Stok Internal (SKU)"
                                     placeholderTextColor="#9CA3AF"
                                     value={form.kode}
@@ -255,18 +255,18 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                 {/* Nama */}
                 <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Barang *</Typography>
-                    <TextInput className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="Contoh: Oli Yamalube" placeholderTextColor="#9CA3AF" value={form.nama} onChangeText={(t) => setForm({ ...form, nama: t })} />
+                    <TextInput className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="Contoh: Oli Yamalube" placeholderTextColor="#9CA3AF" value={form.nama} onChangeText={(t) => setForm({ ...form, nama: t })} />
                 </View>
 
                 {/* Harga */}
                 <View className="flex-row space-x-3">
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Harga Beli</Typography>
-                        <TextInput className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="0" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={form.harga_beli} onChangeText={(t) => setForm({ ...form, harga_beli: formatNumber(t) })} />
+                        <TextInput className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="0" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={form.harga_beli} onChangeText={(t) => setForm({ ...form, harga_beli: formatNumber(t) })} />
                     </View>
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Harga Jual</Typography>
-                        <TextInput className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="0" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={form.harga_jual} onChangeText={(t) => setForm({ ...form, harga_jual: formatNumber(t) })} />
+                        <TextInput className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="0" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={form.harga_jual} onChangeText={(t) => setForm({ ...form, harga_jual: formatNumber(t) })} />
                     </View>
                 </View>
 
@@ -284,16 +284,16 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                                     setForm((prev) => (prev.stok === ALWAYS_READY_STOCK ? { ...prev, stok: '0' } : prev));
                                 }
                             }} className="flex-row items-center">
-                                <View className={`w-4 h-4 rounded border items-center justify-center mr-1.5 ${isAlwaysReady ? 'bg-primary border-primary' : 'border-gray-300'}`}>{isAlwaysReady && <Check size={10} color="white" />}</View>
+                                <View className={`w-4 h-4 rounded border items-center justify-center mr-1.5 ${isAlwaysReady ? 'bg-primary border-primary' : 'border-border'}`}>{isAlwaysReady && <Check size={10} color="white" />}</View>
                                 <Typography className={`text-[10px] font-bold ${isAlwaysReady ? 'text-primary' : 'text-textGray'}`}>Always Ready</Typography>
                             </Pressable>
                         </View>
-                        <TextInput className={`bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 ${isAlwaysReady ? 'opacity-50' : ''}`} placeholder="0" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={form.stok} onChangeText={(t) => setForm({ ...form, stok: t })} editable={!isAlwaysReady} />
+                        <TextInput className={`bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 ${isAlwaysReady ? 'opacity-50' : ''}`} placeholder="0" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={form.stok} onChangeText={(t) => setForm({ ...form, stok: t })} editable={!isAlwaysReady} />
                         {isAlwaysReady && <Typography className="text-[8px] text-indigo-500 mt-1 italic font-bold">* Mode Always Ready: Stok diset ke 999999 dan tidak akan berkurang.</Typography>}
                     </View>
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Min. Stok</Typography>
-                        <TextInput className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="5" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={form.stok_minimum} onChangeText={(t) => setForm({ ...form, stok_minimum: t })} />
+                        <TextInput className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="5" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={form.stok_minimum} onChangeText={(t) => setForm({ ...form, stok_minimum: t })} />
                     </View>
                 </View>
 
@@ -301,24 +301,24 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                 <View className="flex-row space-x-3">
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Satuan</Typography>
-                        <TextInput className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="pcs" placeholderTextColor="#9CA3AF" value={form.satuan} onChangeText={(t) => setForm({ ...form, satuan: t })} />
+                        <TextInput className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="pcs" placeholderTextColor="#9CA3AF" value={form.satuan} onChangeText={(t) => setForm({ ...form, satuan: t })} />
                     </View>
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Kategori</Typography>
-                        <TextInput className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="Umum" placeholderTextColor="#9CA3AF" value={form.kategori} onChangeText={(t) => setForm({ ...form, kategori: t })} />
+                        <TextInput className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="Umum" placeholderTextColor="#9CA3AF" value={form.kategori} onChangeText={(t) => setForm({ ...form, kategori: t })} />
                     </View>
                 </View>
 
                 {/* Lokasi Rak */}
                 <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Lokasi Rak (Opsional)</Typography>
-                    <TextInput className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="Contoh: Rak A-1" placeholderTextColor="#9CA3AF" value={form.lokasi_rak} onChangeText={(t) => setForm({ ...form, lokasi_rak: t })} />
+                    <TextInput className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="Contoh: Rak A-1" placeholderTextColor="#9CA3AF" value={form.lokasi_rak} onChangeText={(t) => setForm({ ...form, lokasi_rak: t })} />
                 </View>
 
                 {/* Catatan */}
                 <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Catatan (Opsional)</Typography>
-                    <TextInput className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]" placeholder="Keterangan tambahan..." placeholderTextColor="#9CA3AF" value={form.catatan} onChangeText={(t) => setForm({ ...form, catatan: t })} multiline textAlignVertical="top" />
+                    <TextInput className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]" placeholder="Keterangan tambahan..." placeholderTextColor="#9CA3AF" value={form.catatan} onChangeText={(t) => setForm({ ...form, catatan: t })} multiline textAlignVertical="top" />
                 </View>
 
                 {/* Tombol Aksi */}

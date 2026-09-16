@@ -55,7 +55,7 @@ export const MuatanSelector = ({
             {label && <Typography weight="bold" className="text-textGray/40 text-[10px] uppercase tracking-widest mb-2 px-1">{label}</Typography>}
 
             <Pressable onPress={handleOpen}>
-                <View className="bg-gray-50 rounded-2xl px-4 py-4 border border-gray-100 flex-row items-center">
+                <View className="bg-background rounded-2xl px-4 py-4 border border-border flex-row items-center">
                     <MapPin size={20} color={value ? '#F59E0B' : '#9CA3AF'} />
 
                     <View className="flex-1 ml-3">
@@ -72,7 +72,7 @@ export const MuatanSelector = ({
                                 </View>
                             </>
                         ) : (
-                            <Typography className="text-gray-400 text-sm font-medium">{placeholder || "Pilih Transaksi/Muatan"}</Typography>
+                            <Typography className="text-textGray text-sm font-medium">{placeholder || "Pilih Transaksi/Muatan"}</Typography>
                         )}
                     </View>
 
@@ -94,12 +94,12 @@ export const MuatanSelector = ({
 
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold" className="text-primary tracking-tight text-xl">Cari Muatan</Typography>
-                            <Pressable onPress={handleClose} hitSlop={12} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                            <Pressable onPress={handleClose} hitSlop={12} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                                 <X size={20} color="#6B7280" />
                             </Pressable>
                         </View>
 
-                        <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 mb-6 shadow-sm">
+                        <View className="flex-row items-center bg-background border border-border rounded-2xl px-4 py-3.5 mb-6 shadow-sm">
                             <Search size={22} color="#9CA3AF" />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-textMain font-medium"
@@ -121,7 +121,7 @@ export const MuatanSelector = ({
                                 showsVerticalScrollIndicator={false}
                                 renderItem={({ item }) => (
                                     <Pressable onPress={() => handleSelect(item)}>
-                                        <Card className="mb-4 p-5 border border-gray-50 shadow-sm bg-white rounded-[32px] flex-row items-center justify-between">
+                                        <Card className="mb-4 p-5 border border-border shadow-sm bg-surface rounded-[32px] flex-row items-center justify-between">
                                             <View className="flex-1 mr-4">
                                                 <Typography weight="bold" className="text-primary text-base tracking-tighter mb-1.5">{item.asal} → {item.tujuan}</Typography>
                                                 
@@ -147,12 +147,12 @@ export const MuatanSelector = ({
                                 )}
                                 ListEmptyComponent={
                                     searchQuery.length > 0 ? (
-                                        <View className="items-center mt-12 bg-gray-50 p-10 rounded-[40px]">
-                                            <Typography className="text-gray-400 font-bold uppercase tracking-widest">Tidak ditemukan</Typography>
+                                        <View className="items-center mt-12 bg-background p-10 rounded-[40px]">
+                                            <Typography className="text-textGray font-bold uppercase tracking-widest">Tidak ditemukan</Typography>
                                         </View>
                                     ) : (
-                                        <View className="items-center mt-12 bg-gray-50 p-10 rounded-[40px]">
-                                            <Typography className="text-gray-400 font-bold uppercase tracking-widest">Cari detail muatan...</Typography>
+                                        <View className="items-center mt-12 bg-background p-10 rounded-[40px]">
+                                            <Typography className="text-textGray font-bold uppercase tracking-widest">Cari detail muatan...</Typography>
                                         </View>
                                     )
                                 }

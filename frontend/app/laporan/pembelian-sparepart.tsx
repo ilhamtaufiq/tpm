@@ -275,8 +275,8 @@ export default function PembelianSparepartReportScreen() {
                         <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                     </View>
                 ) : purchases.length === 0 ? (
-                    <View className="items-center justify-center py-20 bg-white rounded-[40px] border border-dashed border-gray-100">
-                        <View className="w-24 h-24 bg-gray-50 rounded-full items-center justify-center mb-6 opacity-30">
+                    <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-border">
+                        <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
                             <ShoppingCart size={40} color="#9CA3AF" />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[6px]">Belum Ada Data</Typography>
@@ -287,7 +287,7 @@ export default function PembelianSparepartReportScreen() {
                         <Pressable
                             key={item.id}
                             onPress={() => handlePressTransaction(item)}
-                            className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
+                            className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm"
                         >
                             <View className="flex-row items-center mb-4">
                                 <View className="w-14 h-14 bg-blue-50 rounded-2xl items-center justify-center mr-4">
@@ -350,9 +350,9 @@ export default function PembelianSparepartReportScreen() {
                     <View className="flex-row justify-between items-center mb-6">
                         <View>
                             <Typography variant="h2" weight="bold">Detail Pembelian</Typography>
-                            <Typography className="text-gray-400 text-xs mt-1">Stok & Jasa Angkut Transaksi</Typography>
+                            <Typography className="text-textGray text-xs mt-1">Stok & Jasa Angkut Transaksi</Typography>
                         </View>
-                        <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
+                        <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-background rounded-full items-center justify-center">
                             <X size={16} color="#4B5563" />
                         </Pressable>
                     </View>
@@ -360,42 +360,42 @@ export default function PembelianSparepartReportScreen() {
                     {detailLoading ? (
                         <View className="flex-1 items-center justify-center">
                             <ActivityIndicator size="large" color="#023C69" />
-                            <Typography className="mt-4 text-gray-400">Memuat detail...</Typography>
+                            <Typography className="mt-4 text-textGray">Memuat detail...</Typography>
                         </View>
                     ) : selectedTransaction ? (
                         <BottomSheetScrollView showsVerticalScrollIndicator={false}>
                             {/* Summary Card */}
-                            <View className="bg-gray-50 p-5 rounded-2xl mb-6 border border-gray-100">
+                            <View className="bg-background p-5 rounded-2xl mb-6 border border-border">
                                 <View className="flex-row justify-between mb-4">
                                     <View>
-                                        <Typography className="text-gray-400 text-[10px] font-bold uppercase mb-1">Supplier</Typography>
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Supplier</Typography>
                                         <Typography weight="bold" className="text-lg">{selectedTransaction.supplier?.nama || selectedTransaction.supplier_nama || 'Supplier Umum'}</Typography>
-                                        <Typography className="text-gray-500 text-xs font-semibold">INV: {selectedTransaction.nomor_faktur || '-'}</Typography>
+                                        <Typography className="text-textGray text-xs font-semibold">INV: {selectedTransaction.nomor_faktur || '-'}</Typography>
                                     </View>
                                     <View className="items-end">
-                                        <Typography className="text-gray-400 text-[10px] font-bold uppercase mb-1">Tanggal</Typography>
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Tanggal</Typography>
                                         <Typography weight="bold">{format(new Date(selectedTransaction.tanggal), 'dd MMM yyyy', { locale: localeID })}</Typography>
                                     </View>
                                 </View>
 
                                 <View className="flex-row justify-between mb-2">
                                     <View>
-                                        <Typography className="text-gray-400 text-[10px] font-bold uppercase mb-1">Status Bayar</Typography>
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Status Bayar</Typography>
                                         <Badge
                                             variant={selectedTransaction.status_bayar?.toUpperCase() === 'LUNAS' ? 'success' : 'error'}
                                             label={selectedTransaction.status_bayar}
                                         />
                                     </View>
                                     <View className="items-end">
-                                        <Typography className="text-gray-400 text-[10px] font-bold uppercase mb-1">No. Transaksi</Typography>
-                                        <Typography weight="medium" className="text-gray-700">{selectedTransaction.nomor_transaksi}</Typography>
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">No. Transaksi</Typography>
+                                        <Typography weight="medium" className="text-text">{selectedTransaction.nomor_transaksi}</Typography>
                                     </View>
                                 </View>
 
                                 {selectedTransaction.catatan && (
                                     <View className="mt-4 pt-4 border-t border-gray-200/50">
-                                        <Typography className="text-gray-400 text-[10px] font-bold uppercase mb-1">Keterangan</Typography>
-                                        <Typography className="text-gray-600 italic text-sm">"{selectedTransaction.catatan}"</Typography>
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Keterangan</Typography>
+                                        <Typography className="text-textGray italic text-sm">"{selectedTransaction.catatan}"</Typography>
                                     </View>
                                 )}
                             </View>
@@ -410,12 +410,12 @@ export default function PembelianSparepartReportScreen() {
                                 </View>
                                 {selectedTransaction.detail && selectedTransaction.detail.length > 0 ? (
                                     selectedTransaction.detail.map((item: any, index: number) => (
-                                        <View key={`part-${index}`} className="flex-row justify-between items-start py-3 border-b border-gray-100 last:border-0">
+                                        <View key={`part-${index}`} className="flex-row justify-between items-start py-3 border-b border-border last:border-0">
                                             <View className="flex-1 pr-4">
                                                 <Typography weight="bold" className="text-gray-800 text-sm">
                                                     {item.spare_part?.nama || item.spare_part_nama || 'Item'}
                                                 </Typography>
-                                                <Typography variant="caption" className="text-gray-500">
+                                                <Typography variant="caption" className="text-textGray">
                                                     {item.qty} {item.spare_part?.satuan || 'pcs'} x {formatCurrency(item.harga_satuan)}
                                                 </Typography>
                                             </View>
@@ -425,7 +425,7 @@ export default function PembelianSparepartReportScreen() {
                                         </View>
                                     ))
                                 ) : (
-                                    <Typography className="text-gray-400 italic text-sm ml-8">Tidak ada rincian barang</Typography>
+                                    <Typography className="text-textGray italic text-sm ml-8">Tidak ada rincian barang</Typography>
                                 )}
                             </View>
 
@@ -433,7 +433,7 @@ export default function PembelianSparepartReportScreen() {
                             <View className="bg-primary/5 p-5 rounded-2xl border border-primary/10 mb-6">
                                 <View className="space-y-2 mb-4">
                                     <View className="flex-row justify-between">
-                                        <Typography className="text-gray-500 text-xs">Total Nilai</Typography>
+                                        <Typography className="text-textGray text-xs">Total Nilai</Typography>
                                         <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedTransaction.total || 0)}</Typography>
                                     </View>
                                     {Number(selectedTransaction.diskon) > 0 && (

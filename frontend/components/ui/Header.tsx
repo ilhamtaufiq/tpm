@@ -132,7 +132,7 @@ export const Header = ({
     return (
         <>
         <View 
-            className={`bg-white border-b border-gray-100 px-6 relative overflow-hidden ${children ? 'pb-2' : 'pb-4'}`}
+            className={`bg-surface border-b border-border px-6 relative overflow-hidden ${children ? 'pb-2' : 'pb-4'}`}
             style={{ paddingTop: Math.max(insets.top, 16) + 8 }}
         >
             {/* Header Content */}
@@ -142,7 +142,7 @@ export const Header = ({
                         {showBackButton && (
                             <Pressable
                                 onPress={handleBack}
-                                className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center mr-4 border border-gray-100 active:bg-gray-100"
+                                className="w-11 h-11 bg-background rounded-2xl items-center justify-center mr-4 border border-border active:bg-background"
                             >
                                 <ChevronLeft size={24} color="#1F2937" />
                             </Pressable>
@@ -156,7 +156,7 @@ export const Header = ({
                         <View className="flex-1">
                             {variant === 'home' ? (
                                 <View className="flex-row items-center gap-3">
-                                    <Typography variant="h2" weight="bold" className="text-gray-900 tracking-tighter">
+                                    <Typography variant="h2" weight="bold" className="text-text tracking-tighter">
                                         TPM
                                     </Typography>
                                 </View>
@@ -165,12 +165,12 @@ export const Header = ({
                                     {subtitle && (
                                         <View className="flex-row items-center mb-0.5">
                                             <View style={{ backgroundColor: themeColors.primary }} className="w-1.5 h-1.5 rounded-full mr-2" />
-                                            <Typography className="text-gray-400 text-[9px] uppercase tracking-widest font-bold">
+                                            <Typography className="text-textGray text-[9px] uppercase tracking-widest font-bold">
                                                 {subtitle}
                                             </Typography>
                                         </View>
                                     )}
-                                    <Typography variant="h2" weight="bold" className="text-gray-900 text-xl tracking-tighter" numberOfLines={1}>
+                                    <Typography variant="h2" weight="bold" className="text-text text-xl tracking-tighter" numberOfLines={1}>
                                         {title}
                                     </Typography>
                                 </>
@@ -182,7 +182,7 @@ export const Header = ({
                         {showBell && (
                         <Pressable
                             onPress={() => router.push('/settings/notifications')}
-                            className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:opacity-75 relative"
+                            className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:opacity-75 relative"
                         >
                             <Bell size={20} color={themeColors.primary} strokeWidth={2.2} />
                             {unreadCount > 0 && (
@@ -225,9 +225,9 @@ export const Header = ({
                             onPress={() => {
                                 setUserMenuVisible(true);
                             }}
-                            className="w-11 h-11 bg-gray-50 rounded-2xl p-0.5 border border-gray-100 overflow-hidden relative active:opacity-75"
+                            className="w-11 h-11 bg-background rounded-2xl p-0.5 border border-border overflow-hidden relative active:opacity-75"
                         >
-                            <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
+                            <View className="w-full h-full bg-surface rounded-2xl items-center justify-center overflow-hidden">
                                 {user?.profile_picture ? (
                                     <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
                                 ) : (
@@ -242,9 +242,9 @@ export const Header = ({
                                     onPress={() => {
                                         setUserMenuVisible(true);
                                     }}
-                                    className="w-11 h-11 bg-gray-50 rounded-2xl p-0.5 border border-gray-100 overflow-hidden ml-2 active:opacity-75"
+                                    className="w-11 h-11 bg-background rounded-2xl p-0.5 border border-border overflow-hidden ml-2 active:opacity-75"
                                 >
-                                <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
+                                <View className="w-full h-full bg-surface rounded-2xl items-center justify-center overflow-hidden">
                                     {user?.profile_picture ? (
                                         <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
                                     ) : (
@@ -260,10 +260,10 @@ export const Header = ({
                 {showSearch && (
                     <Pressable
                         onPress={() => setIsSearchOpen(true)}
-                        className="bg-gray-50 h-11 rounded-2xl flex-row items-center px-4 border border-gray-100 mt-2 active:bg-gray-100"
+                        className="bg-background h-11 rounded-2xl flex-row items-center px-4 border border-border mt-2 active:bg-background"
                     >
                         <Search size={18} color="#9CA3AF" />
-                        <Typography className="text-gray-500 ml-3 font-medium text-sm flex-1" numberOfLines={1}>
+                        <Typography className="text-textGray ml-3 font-medium text-sm flex-1" numberOfLines={1}>
                             {searchPlaceholder}
                         </Typography>
                     </Pressable>
@@ -277,7 +277,7 @@ export const Header = ({
                         <Typography className="text-gray-900 text-xs font-bold">
                             Login sebagai {user?.full_name || user?.username}
                         </Typography>
-                        <Typography className="text-gray-500 text-[10px] mt-1 font-medium">
+                        <Typography className="text-textGray text-[10px] mt-1 font-medium">
                             Admin asal: {impersonatorUser?.full_name || impersonatorUser?.username}
                         </Typography>
                     </View>
@@ -293,10 +293,10 @@ export const Header = ({
                 transparent={true}
                 onRequestClose={() => setIsSearchOpen(false)}
             >
-                <View className="flex-1 bg-white">
+                <View className="flex-1 bg-surface">
                     {/* Modal Header */}
                     <View 
-                        className="pb-4 px-6 border-b border-gray-100 flex-row items-center"
+                        className="pb-4 px-6 border-b border-border flex-row items-center"
                         style={{ paddingTop: Math.max(insets.top, 16) + 16 }}
                     >
                         <View className="flex-1 bg-background h-12 rounded-2xl flex-row items-center px-4 border border-primary/20">
@@ -324,7 +324,7 @@ export const Header = ({
                     <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
                         {query.trim() === '' ? (
                             <View className="p-12 items-center">
-                                <View className="w-24 h-24 bg-gray-50 rounded-[32px] items-center justify-center mb-6">
+                                <View className="w-24 h-24 bg-background rounded-[32px] items-center justify-center mb-6">
                                     <Search size={48} color="#D1D5DB" strokeWidth={1.5} />
                                 </View>
                                 <Typography weight="bold" className="text-text tracking-tight text-center text-lg">Quick Search</Typography>
@@ -339,7 +339,7 @@ export const Header = ({
                                         <Pressable
                                             key={route.id}
                                             onPress={() => handleNavigate(route.path)}
-                                            className="flex-row items-center py-5 bg-surface mb-4 rounded-[28px] px-5 border border-gray-50 shadow-sm"
+                                            className="flex-row items-center py-5 bg-surface mb-4 rounded-[28px] px-5 border border-border shadow-sm"
                                         >
                                             <View className="bg-primary/5 w-14 h-14 rounded-2xl items-center justify-center mr-4">
                                                 <Icon size={24} color={themeColors.primary} />
@@ -348,7 +348,7 @@ export const Header = ({
                                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">{route.label}</Typography>
                                                 <Typography variant="caption" className="text-text/40" numberOfLines={1}>{route.description}</Typography>
                                             </View>
-                                            <View className="w-8 h-8 rounded-full bg-gray-50 items-center justify-center" >
+                                            <View className="w-8 h-8 rounded-full bg-background items-center justify-center" >
                                                 <ChevronRight size={16} color="#D1D5DB" />
                                             </View>
                                         </Pressable>
@@ -384,7 +384,7 @@ export const Header = ({
 
                     {/* Floating Dropdown Menu Card */}
                     <View
-                        className="bg-white rounded-3xl border border-gray-100 shadow-2xl p-2 absolute w-[180px]"
+                        className="bg-surface rounded-3xl border border-border shadow-2xl p-2 absolute w-[180px]"
                         style={{
                             top: Math.max(insets.top, 16) + 56, // positions it perfectly right below the header avatar
                             right: 24,
@@ -397,10 +397,10 @@ export const Header = ({
                                 setUserMenuVisible(false);
                                 router.push('/settings/profile');
                             }}
-                            className="flex-row items-center p-3 rounded-2xl active:bg-gray-50"
+                            className="flex-row items-center p-3 rounded-2xl active:bg-background"
                         >
                             <User size={16} color="#6B7280" strokeWidth={2.2} />
-                            <Typography className="text-gray-500 text-xs font-medium ml-2">
+                            <Typography className="text-textGray text-xs font-medium ml-2">
                                 Ubah Profile
                             </Typography>
                         </Pressable>

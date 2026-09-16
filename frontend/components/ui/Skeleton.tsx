@@ -53,7 +53,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 
 // Pre-built skeleton variants
 export const SkeletonCard: React.FC<{ className?: string }> = ({ className }) => (
-    <View className={`bg-white rounded-2xl p-4 mb-3 ${className || ''}`}>
+    <View className={`bg-surface rounded-2xl p-4 mb-3 ${className || ''}`}>
         <View className="flex-row items-center">
             <Skeleton width={48} height={48} borderRadius={24} />
             <View className="flex-1 ml-3">
@@ -66,7 +66,7 @@ export const SkeletonCard: React.FC<{ className?: string }> = ({ className }) =>
 );
 
 export const SkeletonListItem: React.FC = () => (
-    <View className="flex-row items-center py-4 border-b border-gray-100">
+    <View className="flex-row items-center py-4 border-b border-border">
         <Skeleton width={40} height={40} borderRadius={20} />
         <View className="flex-1 ml-3">
             <Skeleton width="70%" height={14} style={{ marginBottom: 6 }} />
@@ -78,7 +78,7 @@ export const SkeletonListItem: React.FC = () => (
 export const SkeletonStats: React.FC = () => (
     <View className="flex-row justify-between mb-6">
         {[1, 2, 3].map((i) => (
-            <View key={i} className="w-[31%] bg-white rounded-xl p-3 items-center">
+            <View key={i} className="w-[31%] bg-surface rounded-xl p-3 items-center">
                 <Skeleton width={36} height={36} borderRadius={18} style={{ marginBottom: 8 }} />
                 <Skeleton width={40} height={20} style={{ marginBottom: 4 }} />
                 <Skeleton width={50} height={10} />

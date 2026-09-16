@@ -24,7 +24,7 @@ export const OrientationControl = ({ compact = false }: OrientationControlProps)
         return (
             <Pressable
                 onPress={cycleOrientation}
-                className="flex-row items-center bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100 active:bg-gray-100"
+                className="flex-row items-center bg-background rounded-2xl px-4 py-3 border border-border active:bg-background"
             >
                 <View className="w-10 h-10 bg-indigo-50 rounded-xl items-center justify-center mr-3">
                     <RotateCw size={20} color="#6366F1" />
@@ -42,7 +42,7 @@ export const OrientationControl = ({ compact = false }: OrientationControlProps)
     }
 
     return (
-        <View className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm">
+        <View className="bg-surface p-5 rounded-[40px] border border-border shadow-sm">
             <View className="flex-row items-center mb-4">
                 <View className="w-12 h-12 bg-indigo-50 rounded-[20px] items-center justify-center mr-4">
                     <MonitorSmartphone size={24} color="#6366F1" />

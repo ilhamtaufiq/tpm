@@ -118,7 +118,7 @@ export default function HutangUsahaScreen() {
     const paymentSheetRef = useRef<BottomSheet>(null);
     const createSheetRef = useRef<BottomSheet>(null);
 
-    const detailSnapPoints = useMemo(() => ['70%', '85%'], []);
+    const detailSnapPoints = useMemo(() => ['95%'], []);
     const paymentSnapPoints = useMemo(() => ['65%', '85%'], []);
     const createSnapPoints = useMemo(() => ['75%', '90%'], []);
 
@@ -396,16 +396,16 @@ export default function HutangUsahaScreen() {
             />
 
             <View className="mb-6">
-                <Typography className="mb-3 text-gray-500 font-bold text-[10px] uppercase tracking-widest">Sumber Hutang</Typography>
+                <Typography className="mb-3 text-textGray font-bold text-[10px] uppercase tracking-widest">Sumber Hutang</Typography>
                 <View className="flex-row flex-wrap gap-2">
                     {Object.entries(SUMBER_LABEL).map(([key, label]) => (
                         <Pressable
                             key={key}
                             onPress={() => setCreateSource(key)}
-                            className={`px-4 py-2.5 rounded-2xl border ${createSource === key ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
+                            className={`px-4 py-2.5 rounded-2xl border ${createSource === key ? 'border-primary bg-primary/5' : 'border-border bg-gray-50/50'}`}
                         >
                             <Typography
-                                className={createSource === key ? 'text-primary' : 'text-gray-400'}
+                                className={createSource === key ? 'text-primary' : 'text-textGray'}
                                 weight={createSource === key ? 'bold' : 'medium'}
                                 variant="caption"
                             >
@@ -418,12 +418,12 @@ export default function HutangUsahaScreen() {
 
             <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-3">
-                    <Typography className="text-gray-500 font-bold text-[10px] uppercase tracking-widest">Metode Penerimaan (Opsional)</Typography>
+                    <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest">Metode Penerimaan (Opsional)</Typography>
                     <Pressable
                         onPress={() => setIsCreateSplitPayment(!isCreateSplitPayment)}
-                        className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200'}`}
+                        className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-background border-border'}`}
                     >
-                        <Typography className={`text-[9px] font-bold ${isCreateSplitPayment ? 'text-amber-600' : 'text-gray-400'}`}>
+                        <Typography className={`text-[9px] font-bold ${isCreateSplitPayment ? 'text-amber-600' : 'text-textGray'}`}>
                             {isCreateSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                         </Typography>
                     </Pressable>
@@ -433,18 +433,18 @@ export default function HutangUsahaScreen() {
                     <View className="flex-row space-x-2 gap-2">
                         <Pressable
                             onPress={() => setCreateMethod(undefined)}
-                            className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-gray-100' : 'border-gray-100 bg-gray-50/50'}`}
+                            className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-background' : 'border-border bg-gray-50/50'}`}
                         >
-                            <Typography className={!createMethod ? 'text-gray-700 font-bold' : 'text-gray-400'} variant="caption">Tidak Ada</Typography>
+                            <Typography className={!createMethod ? 'text-text font-bold' : 'text-textGray'} variant="caption">Tidak Ada</Typography>
                         </Pressable>
                         {['TUNAI', 'TRANSFER'].map((m) => (
                             <Pressable
                                 key={m}
                                 onPress={() => setCreateMethod(m as 'TUNAI' | 'TRANSFER')}
-                                className={`flex-1 py-3.5 items-center rounded-2xl border ${createMethod === m ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
+                                className={`flex-1 py-3.5 items-center rounded-2xl border ${createMethod === m ? 'border-primary bg-primary/5' : 'border-border bg-gray-50/50'}`}
                             >
                                 <Typography
-                                    className={createMethod === m ? 'text-primary font-bold' : 'text-gray-400'}
+                                    className={createMethod === m ? 'text-primary font-bold' : 'text-textGray'}
                                     variant="caption"
                                 >
                                     {m}
@@ -455,7 +455,7 @@ export default function HutangUsahaScreen() {
                 ) : (
                     <View className="space-y-4">
                         {createPayments.map((p, idx) => (
-                            <Card key={p.id} variant="outlined" className="p-5 border-gray-100 rounded-[24px] bg-gray-50/30">
+                            <Card key={p.id} variant="outlined" className="p-5 border-border rounded-[24px] bg-gray-50/30">
                                 <View className="flex-row items-center justify-between mb-4">
                                     <View className="bg-primary/10 px-2 py-1 rounded-lg">
                                         <Typography variant="caption" weight="bold" className="text-primary text-[9px] uppercase tracking-widest">Metode #{idx + 1}</Typography>
@@ -475,9 +475,9 @@ export default function HutangUsahaScreen() {
                                         <Pressable
                                             key={m}
                                             onPress={() => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, metode: m } : item))}
-                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'border-primary bg-primary' : 'border-gray-200 bg-white'}`}
+                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'border-primary bg-primary' : 'border-border bg-surface'}`}
                                         >
-                                            <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-white' : 'text-gray-400'}>{m}</Typography>
+                                            <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-white' : 'text-textGray'}>{m}</Typography>
                                         </Pressable>
                                     ))}
                                 </View>
@@ -494,10 +494,10 @@ export default function HutangUsahaScreen() {
 
                         <Pressable
                             onPress={() => setCreatePayments([...createPayments, { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }])}
-                            className="flex-row items-center justify-center p-4 border border-dashed border-gray-300 rounded-[24px] bg-white"
+                            className="flex-row items-center justify-center p-4 border border-dashed border-border rounded-[24px] bg-surface"
                         >
                             <Plus size={18} color="#64748B" className="mr-2" />
-                            <Typography weight="bold" className="text-gray-500 text-xs">Tambah Metode Penerimaan</Typography>
+                            <Typography weight="bold" className="text-textGray text-xs">Tambah Metode Penerimaan</Typography>
                         </Pressable>
                     </View>
                 )}
@@ -552,7 +552,7 @@ export default function HutangUsahaScreen() {
                 <View className="flex-row justify-between items-start mb-4">
                     <View>
                         <Typography variant="h2" weight="bold">{selectedHutang.nama_kreditur}</Typography>
-                        <Typography variant="caption" className="text-gray-400">{selectedHutang.nomor_hutang}</Typography>
+                        <Typography variant="caption" className="text-textGray">{selectedHutang.nomor_hutang}</Typography>
                     </View>
                     <Badge
                         label={selectedHutang.status === 'LUNAS' ? 'Lunas' : selectedHutang.status === 'SEBAGIAN' ? 'Sebagian' : 'Belum Lunas'}
@@ -560,38 +560,38 @@ export default function HutangUsahaScreen() {
                     />
                 </View>
 
-                <Card variant="outlined" className="p-4 mb-4 border-gray-100">
+                <Card variant="outlined" className="p-4 mb-4 border-border">
                     <View className="flex-row justify-between mb-2">
-                        <Typography variant="caption" className="text-gray-500">Total Hutang</Typography>
+                        <Typography variant="caption" className="text-textGray">Total Hutang</Typography>
                         <Typography variant="body2" weight="bold">{formatCurrency(selectedHutang.nominal_hutang)}</Typography>
                     </View>
                     <View className="flex-row justify-between mb-2">
-                        <Typography variant="caption" className="text-gray-500">Sudah Dibayar</Typography>
+                        <Typography variant="caption" className="text-textGray">Sudah Dibayar</Typography>
                         <Typography variant="body2" weight="medium" className="text-green-600">{formatCurrency(selectedHutang.total_dibayar)}</Typography>
                     </View>
-                    <View className="h-[1px] bg-gray-100 my-2" />
+                    <View className="h-[1px] bg-background my-2" />
                     <View className="flex-row justify-between">
-                        <Typography variant="caption" weight="bold" className="text-gray-600">Sisa Hutang</Typography>
+                        <Typography variant="caption" weight="bold" className="text-textGray">Sisa Hutang</Typography>
                         <Typography variant="body1" weight="bold" className="text-red-600">{formatCurrency(selectedHutang.sisa_hutang)}</Typography>
                     </View>
                 </Card>
 
                 {/* Informasi hutang untuk verifikasi sebelum pembayaran */}
-                <Card variant="outlined" className="p-4 mb-4 border-gray-100">
-                    <Typography variant="caption" weight="bold" className="text-gray-500 mb-3">
+                <Card variant="outlined" className="p-4 mb-4 border-border">
+                    <Typography variant="caption" weight="bold" className="text-textGray mb-3">
                         INFORMASI HUTANG
                     </Typography>
 
                     <View className="gap-3">
                         <View className="flex-row justify-between gap-4">
-                            <Typography variant="caption" className="text-gray-500">Tanggal Hutang</Typography>
+                            <Typography variant="caption" className="text-textGray">Tanggal Hutang</Typography>
                             <Typography variant="body2" weight="medium" className="text-right">
                                 {formatDate(selectedHutang.tanggal)}
                             </Typography>
                         </View>
 
                         <View className="flex-row justify-between gap-4">
-                            <Typography variant="caption" className="text-gray-500">Sumber</Typography>
+                            <Typography variant="caption" className="text-textGray">Sumber</Typography>
                             <Typography variant="body2" weight="medium" className="text-right">
                                 {SUMBER_LABEL[selectedHutang.sumber] || selectedHutang.sumber}
                             </Typography>
@@ -599,7 +599,7 @@ export default function HutangUsahaScreen() {
 
                         {selectedHutang.unit && (
                             <View className="flex-row justify-between gap-4">
-                                <Typography variant="caption" className="text-gray-500">Unit</Typography>
+                                <Typography variant="caption" className="text-textGray">Unit</Typography>
                                 <Typography variant="body2" weight="medium" className="text-right">
                                     {formatUnitLabel(selectedHutang.unit)}
                                 </Typography>
@@ -608,7 +608,7 @@ export default function HutangUsahaScreen() {
 
                         {selectedHutang.nomor_referensi && (
                             <View className="flex-row justify-between gap-4">
-                                <Typography variant="caption" className="text-gray-500">Referensi</Typography>
+                                <Typography variant="caption" className="text-textGray">Referensi</Typography>
                                 <Typography variant="body2" weight="medium" className="text-right">
                                     {selectedHutang.nomor_referensi}
                                 </Typography>
@@ -617,7 +617,7 @@ export default function HutangUsahaScreen() {
 
                         {selectedHutang.tanggal_jatuh_tempo && (
                             <View className="flex-row justify-between gap-4">
-                                <Typography variant="caption" className="text-gray-500">Jatuh Tempo</Typography>
+                                <Typography variant="caption" className="text-textGray">Jatuh Tempo</Typography>
                                 <Typography variant="body2" weight="medium" className="text-right">
                                     {formatDate(selectedHutang.tanggal_jatuh_tempo)}
                                 </Typography>
@@ -626,7 +626,7 @@ export default function HutangUsahaScreen() {
 
                         {selectedHutang.tanggal_lunas && (
                             <View className="flex-row justify-between gap-4">
-                                <Typography variant="caption" className="text-gray-500">Tanggal Lunas</Typography>
+                                <Typography variant="caption" className="text-textGray">Tanggal Lunas</Typography>
                                 <Typography variant="body2" weight="medium" className="text-right text-green-600">
                                     {formatDate(selectedHutang.tanggal_lunas)}
                                 </Typography>
@@ -635,7 +635,7 @@ export default function HutangUsahaScreen() {
 
                         {selectedHutang.telepon_kreditur && (
                             <View className="flex-row justify-between gap-4">
-                                <Typography variant="caption" className="text-gray-500">Telepon</Typography>
+                                <Typography variant="caption" className="text-textGray">Telepon</Typography>
                                 <Typography variant="body2" weight="medium" className="text-right">
                                     {selectedHutang.telepon_kreditur}
                                 </Typography>
@@ -644,14 +644,14 @@ export default function HutangUsahaScreen() {
 
                         {selectedHutang.alamat_kreditur && (
                             <View>
-                                <Typography variant="caption" className="text-gray-500 mb-1">Alamat</Typography>
+                                <Typography variant="caption" className="text-textGray mb-1">Alamat</Typography>
                                 <Typography variant="body2">{selectedHutang.alamat_kreditur}</Typography>
                             </View>
                         )}
 
                         {selectedHutang.catatan && (
                             <View>
-                                <Typography variant="caption" className="text-gray-500 mb-1">Keterangan</Typography>
+                                <Typography variant="caption" className="text-textGray mb-1">Keterangan</Typography>
                                 <Typography variant="body2">{selectedHutang.catatan}</Typography>
                             </View>
                         )}
@@ -661,13 +661,13 @@ export default function HutangUsahaScreen() {
                 {/* History */}
                 {selectedHutang.pembayaran && selectedHutang.pembayaran.length > 0 && (
                     <View className="mb-4">
-                        <Typography variant="caption" weight="bold" className="text-gray-500 mb-2">RIWAYAT PEMBAYARAN</Typography>
+                        <Typography variant="caption" weight="bold" className="text-textGray mb-2">RIWAYAT PEMBAYARAN</Typography>
                         {selectedHutang.pembayaran.map((p: PembayaranHutang) => (
-                            <View key={p.id} className="flex-row justify-between py-2.5 border-b border-gray-50 items-center">
+                            <View key={p.id} className="flex-row justify-between py-2.5 border-b border-border items-center">
                                 <View>
                                     <Typography variant="caption" weight="bold" className="text-textMain">{formatDate(p.tanggal)}</Typography>
-                                    <View className="bg-gray-100 px-1.5 py-0.5 rounded-md self-start mt-0.5">
-                                        <Typography className="text-[8px] font-bold text-gray-500 tracking-tighter">{p.metode_bayar}</Typography>
+                                    <View className="bg-background px-1.5 py-0.5 rounded-md self-start mt-0.5">
+                                        <Typography className="text-[8px] font-bold text-textGray tracking-tighter">{p.metode_bayar}</Typography>
                                     </View>
                                 </View>
                                 <Typography variant="caption" weight="bold" className="text-red-600">-{formatCurrency(p.nominal)}</Typography>
@@ -713,7 +713,7 @@ export default function HutangUsahaScreen() {
                 rightElement={canCreate ? (
                     <Pressable
                         onPress={handleOpenCreate}
-                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
                     >
                         <Plus size={20} color="#1F2937" />
                     </Pressable>
@@ -723,18 +723,18 @@ export default function HutangUsahaScreen() {
             {/* Filters & Search */}
             {!isSheetOpen && (
                 <View className="px-6 mt-4">
-                    <View className="bg-white p-3 rounded-[24px] border border-gray-100 shadow-sm flex-col">
+                    <View className="bg-surface p-3 rounded-[24px] border border-border shadow-sm flex-col">
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-3 space-x-2 pb-1">
                             {STATUS_FILTERS.map((filter) => (
                                 <Pressable
                                     key={filter.value}
                                     onPress={() => setSelectedFilter(filter.value)}
-                                    className={`px-4 py-2 rounded-xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-primary shadow-sm' : 'bg-gray-50 border border-gray-100'}`}
+                                    className={`px-4 py-2 rounded-xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-primary shadow-sm' : 'bg-background border border-border'}`}
                                 >
                                     <Typography
                                         variant="caption"
                                         weight="bold"
-                                        className={`text-[10px] uppercase tracking-wider ${selectedFilter === filter.value ? 'text-white font-bold' : 'text-gray-400'}`}
+                                        className={`text-[10px] uppercase tracking-wider ${selectedFilter === filter.value ? 'text-white font-bold' : 'text-textGray'}`}
                                     >
                                         {filter.label}
                                     </Typography>
@@ -742,7 +742,7 @@ export default function HutangUsahaScreen() {
                             ))}
                         </ScrollView>
 
-                        <View className="flex-row items-center px-4 bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                        <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-border">
                             <Search size={16} color="#9CA3AF" />
                             <TextInput
                                 className="flex-1 ml-3 text-xs text-textMain font-semibold h-full"
@@ -770,7 +770,7 @@ export default function HutangUsahaScreen() {
                     renderItem={({ item }) => (
                         <Pressable
                             onPress={() => handleOpenDetail(item)}
-                            className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
+                            className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm"
                         >
                             <View className="flex-row justify-between items-start mb-4">
                                 <View className="flex-1 mr-3">
@@ -802,7 +802,7 @@ export default function HutangUsahaScreen() {
                     ListHeaderComponent={
                         <View className="mb-6">
                             {/* Summary Card (White Bento Style) */}
-                            <View className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm mb-6">
+                            <View className="bg-surface p-6 rounded-[32px] border border-border shadow-sm mb-6">
                                 <View className="flex-row justify-between items-center mb-6">
                                     <View className="bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100">
                                         <Typography className="text-rose-600 text-[10px] font-bold uppercase tracking-widest">Global Overview</Typography>
@@ -834,18 +834,29 @@ export default function HutangUsahaScreen() {
             {/* Detail & Create Modals - Platform Specific */}
             {Platform.OS === 'web' ? (
                 <>
-                    <Modal visible={detailVisible} transparent animationType="fade">
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.webModalContent}>
-                                {renderDetailContent()}
+                    <Modal visible={detailVisible} transparent animationType="slide">
+                        <View className="flex-1 justify-end bg-black/50">
+                            <Pressable className="absolute inset-0" onPress={() => { setDetailVisible(false); setIsSheetOpen(false); }} />
+                            <View style={styles.sheetContent}>
+                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                                <ScrollView
+                                    style={{ flex: 1 }}
+                                    showsVerticalScrollIndicator
+                                    nestedScrollEnabled
+                                    keyboardShouldPersistTaps="handled"
+                                >
+                                    {renderDetailContent()}
+                                </ScrollView>
                             </View>
                         </View>
                     </Modal>
-                    <Modal visible={createVisible} transparent animationType="fade">
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.webModalContent}>
+                    <Modal visible={createVisible} transparent animationType="slide">
+                        <View className="flex-1 justify-end bg-black/50">
+                            <Pressable className="absolute inset-0" onPress={() => { setCreateVisible(false); setIsSheetOpen(false); }} />
+                            <View style={styles.sheetContent}>
+                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                                 <ScrollView
-                                    style={{ maxHeight: 480, flexGrow: 0 }}
+                                    style={{ flex: 1 }}
                                     showsVerticalScrollIndicator
                                     nestedScrollEnabled
                                     keyboardShouldPersistTaps="handled"
@@ -933,16 +944,14 @@ export default function HutangUsahaScreen() {
 }
 
 const styles = StyleSheet.create({
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    webModalContent: {
+    sheetContent: {
         backgroundColor: 'white',
-        width: 500,
-        borderRadius: 32,
+        width: '100%',
+        maxWidth: 640,
+        height: '95%',
+        alignSelf: 'center',
+        borderTopLeftRadius: 48,
+        borderTopRightRadius: 48,
         overflow: 'hidden',
     }
 });

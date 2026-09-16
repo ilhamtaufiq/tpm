@@ -27,8 +27,8 @@ export const DriverCard = ({ supir, onPress }: DriverCardProps) => {
                                 {supir.nama}
                             </Typography>
                             {supir.kode && (
-                                <View className="bg-gray-100 px-1.5 py-0.5 rounded">
-                                    <Typography variant="caption" className="text-gray-500">
+                                <View className="bg-background px-1.5 py-0.5 rounded">
+                                    <Typography variant="caption" className="text-textGray">
                                         {supir.kode}
                                     </Typography>
                                 </View>
@@ -40,7 +40,7 @@ export const DriverCard = ({ supir, onPress }: DriverCardProps) => {
                                 variant={supir.is_active ? 'success' : 'error'}
                                 label={supir.is_active ? 'Aktif' : 'Non-Aktif'}
                             />
-                            <Typography variant="caption" className="text-gray-500 ml-3">
+                            <Typography variant="caption" className="text-textGray ml-3">
                                 Bergabung: {new Date(supir.tanggal_bergabung).toLocaleDateString('id-ID')}
                             </Typography>
                         </View>
@@ -58,23 +58,23 @@ export const DriverCard = ({ supir, onPress }: DriverCardProps) => {
                             </Typography>
                         </View>
                         {supir.info_kendaraan && (
-                            <Typography variant="caption" className="text-gray-500 mt-0.5 ml-0.5">
+                            <Typography variant="caption" className="text-textGray mt-0.5 ml-0.5">
                                 {supir.info_kendaraan}
                             </Typography>
                         )}
                     </View>
                 )}
 
-                <View className="flex-row mt-4 pt-4 border-t border-gray-100">
+                <View className="flex-row mt-4 pt-4 border-t border-border">
                     <View className="flex-row items-center mr-4">
                         <Phone size={14} color="#6B7280" />
-                        <Typography variant="caption" className="text-gray-600 ml-1.5">
+                        <Typography variant="caption" className="text-textGray ml-1.5">
                             {supir.telepon || '-'}
                         </Typography>
                     </View>
                     <View className="flex-row items-center">
                         <FileText size={14} color="#6B7280" />
-                        <Typography variant="caption" className="text-gray-600 ml-1.5">
+                        <Typography variant="caption" className="text-textGray ml-1.5">
                             SIM: {supir.jenis_sim || '-'}
                         </Typography>
                     </View>

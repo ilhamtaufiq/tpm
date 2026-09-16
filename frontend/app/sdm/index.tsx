@@ -73,7 +73,7 @@ export default function SDMScreen() {
                             className="w-[22%] items-center"
                         >
                             <View
-                                className="w-14 h-14 rounded-full items-center justify-center mb-2 bg-white shadow-sm border border-gray-100"
+                                className="w-14 h-14 rounded-full items-center justify-center mb-2 bg-surface shadow-sm border border-border"
                                 style={{ backgroundColor: `${action.color}15` }}
                             >
                                 <action.icon size={22} color={action.color} strokeWidth={2.5} />
@@ -90,7 +90,7 @@ export default function SDMScreen() {
                 <View className="space-y-4">
                     <Pressable
                         onPress={() => router.push('/sdm/absensi')}
-                        className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
+                        className="bg-surface p-6 rounded-[32px] border border-border shadow-sm flex-row items-center justify-between"
                     >
                         <View className="flex-row items-center">
                             <View className="w-12 h-12 bg-emerald-50 rounded-2xl items-center justify-center mr-4 border border-emerald-100">
@@ -107,7 +107,7 @@ export default function SDMScreen() {
                     {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
                         <Pressable
                             onPress={() => router.push('/sdm/karyawan')}
-                            className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
+                            className="bg-surface p-6 rounded-[32px] border border-border shadow-sm flex-row items-center justify-between"
                         >
                             <View className="flex-row items-center">
                                 <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center mr-4 border border-blue-100">
@@ -124,7 +124,7 @@ export default function SDMScreen() {
 
                     <Pressable
                         onPress={() => router.push('/sdm/kasbon')}
-                        className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
+                        className="bg-surface p-6 rounded-[32px] border border-border shadow-sm flex-row items-center justify-between"
                     >
                         <View className="flex-row items-center">
                             <View className="w-12 h-12 bg-amber-50 rounded-2xl items-center justify-center mr-4 border border-amber-100">
@@ -141,7 +141,7 @@ export default function SDMScreen() {
                     {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
                         <Pressable
                             onPress={() => router.push('/sdm/slip-gaji')}
-                            className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
+                            className="bg-surface p-6 rounded-[32px] border border-border shadow-sm flex-row items-center justify-between"
                         >
                             <View className="flex-row items-center">
                                 <View className="w-12 h-12 bg-purple-50 rounded-2xl items-center justify-center mr-4 border border-purple-100">

@@ -176,11 +176,11 @@ export default function ReportsScreen() {
             <Pressable
                 key={report.path}
                 onPress={() => router.push(report.path as any)}
-                className="w-[48%] bg-white p-4 rounded-[24px] mb-4 border border-gray-100 active:scale-[0.98]"
+                className="w-[48%] bg-surface p-4 rounded-[24px] mb-4 border border-border active:scale-[0.98]"
             >
                 <View
                     style={{ backgroundColor: `${report.color}12` }}
-                    className="w-12 h-12 rounded-2xl items-center justify-center mb-3 border border-gray-50"
+                    className="w-12 h-12 rounded-2xl items-center justify-center mb-3 border border-border"
                 >
                     <Icon size={22} color={report.color} strokeWidth={2.5} />
                 </View>
@@ -188,7 +188,7 @@ export default function ReportsScreen() {
                     {report.title}
                 </Typography>
                 <View className="flex-row items-center mt-2">
-                    <Typography className="text-gray-400 text-[9px] font-bold uppercase tracking-widest flex-1">
+                    <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest flex-1">
                         Lihat
                     </Typography>
                     <ChevronRight size={14} color={group.accent} />
@@ -203,11 +203,11 @@ export default function ReportsScreen() {
             <Pressable
                 key={report.path}
                 onPress={() => router.push(report.path as any)}
-                className="w-full bg-white p-5 rounded-[28px] mb-4 border border-gray-100 flex-row items-center active:scale-[0.98]"
+                className="w-full bg-surface p-5 rounded-[28px] mb-4 border border-border flex-row items-center active:scale-[0.98]"
             >
                 <View
                     style={{ backgroundColor: `${report.color}12` }}
-                    className="w-14 h-14 rounded-2xl items-center justify-center mr-4 border border-gray-50"
+                    className="w-14 h-14 rounded-2xl items-center justify-center mr-4 border border-border"
                 >
                     <Icon size={24} color={report.color} strokeWidth={2.5} />
                 </View>
@@ -232,13 +232,13 @@ export default function ReportsScreen() {
             <Pressable
                 key={report.path}
                 onPress={() => router.push(report.path as any)}
-                className="w-full rounded-[28px] mb-4 border border-gray-100 overflow-hidden active:scale-[0.98]"
+                className="w-full rounded-[28px] mb-4 border border-border overflow-hidden active:scale-[0.98]"
             >
-                <View className="bg-white p-5">
+                <View className="bg-surface p-5">
                     <View className="flex-row items-start justify-between">
                         <View
                             style={{ backgroundColor: `${report.color}15` }}
-                            className="w-14 h-14 rounded-2xl items-center justify-center border border-gray-50"
+                            className="w-14 h-14 rounded-2xl items-center justify-center border border-border"
                         >
                             <Icon size={24} color={report.color} strokeWidth={2.5} />
                         </View>
@@ -256,7 +256,7 @@ export default function ReportsScreen() {
                             {report.desc}
                         </Typography>
                     ) : null}
-                    <View className="flex-row items-center mt-4 pt-4 border-t border-gray-50">
+                    <View className="flex-row items-center mt-4 pt-4 border-t border-border">
                         <Typography className="text-primary text-xs font-bold flex-1">Buka Laporan</Typography>
                         <ChevronRight size={18} color="#023C69" />
                     </View>
@@ -269,14 +269,14 @@ export default function ReportsScreen() {
         <SafeAreaView className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
 
-            <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
+            <View className="px-6 py-4 flex-row items-center justify-between border-b border-border bg-surface">
                 <View className="flex-row items-center">
                     <Pressable onPress={handleGoBack} className="mr-4">
                         <ChevronLeft size={24} color="#1C1C1C" />
                     </Pressable>
                     <View>
                         <Typography variant="h2" weight="bold">Pusat Laporan</Typography>
-                        <Typography className="text-gray-400 text-xs mt-0.5">
+                        <Typography className="text-textGray text-xs mt-0.5">
                             Analisa performa & data bisnis
                         </Typography>
                     </View>
@@ -296,10 +296,10 @@ export default function ReportsScreen() {
                     ].map((stat) => {
                         const StatIcon = stat.icon;
                         return (
-                            <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-gray-100`}>
+                            <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-border`}>
                                 <View className="flex-row items-center mb-2">
                                     <StatIcon size={14} color={stat.color} />
-                                    <Typography className="text-[9px] font-bold text-gray-500 ml-1.5 uppercase tracking-wide">
+                                    <Typography className="text-[9px] font-bold text-textGray ml-1.5 uppercase tracking-wide">
                                         {stat.label}
                                     </Typography>
                                 </View>
@@ -311,7 +311,7 @@ export default function ReportsScreen() {
                     })}
                 </View>
 
-                <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 mb-3">
+                <View className="flex-row items-center bg-background border border-border rounded-2xl px-4 h-12 mb-3">
                     <Search size={18} color="#9CA3AF" />
                     <TextInput
                         value={search}
@@ -345,7 +345,7 @@ export default function ReportsScreen() {
                                 <Typography
                                     variant="caption"
                                     weight="bold"
-                                    className={isActive ? 'text-white' : 'text-gray-600'}
+                                    className={isActive ? 'text-white' : 'text-textGray'}
                                 >
                                     {filter.label} ({filter.count})
                                 </Typography>
@@ -355,7 +355,7 @@ export default function ReportsScreen() {
                 </ScrollView>
 
                 {filteredGroups.length === 0 ? (
-                    <View className="bg-white border border-gray-100 rounded-[28px] p-8 items-center">
+                    <View className="bg-surface border border-border rounded-[28px] p-8 items-center">
                         <FileText size={32} color="#CBD5E1" />
                         <Typography weight="bold" className="text-textMain mt-4">
                             Laporan tidak ditemukan
@@ -379,7 +379,7 @@ export default function ReportsScreen() {
                                         {group.name}
                                     </Typography>
                                 </View>
-                                <Typography className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                <Typography className="text-[10px] font-bold text-textGray uppercase tracking-widest">
                                     {group.reports.length} laporan
                                 </Typography>
                             </View>

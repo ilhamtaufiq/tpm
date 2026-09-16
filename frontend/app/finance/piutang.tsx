@@ -392,12 +392,12 @@ export default function PiutangUsahaScreen() {
 
             <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-3">
-                    <Typography className="text-gray-500 font-bold text-[10px] uppercase tracking-widest">Metode Pencairan (Opsional)</Typography>
+                    <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest">Metode Pencairan (Opsional)</Typography>
                     <Pressable
                         onPress={() => setIsCreateSplitPayment(!isCreateSplitPayment)}
-                        className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-gray-100 border-gray-200'}`}
+                        className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-background border-border'}`}
                     >
-                        <Typography className={`text-[9px] font-bold ${isCreateSplitPayment ? 'text-amber-600' : 'text-gray-400'}`}>
+                        <Typography className={`text-[9px] font-bold ${isCreateSplitPayment ? 'text-amber-600' : 'text-textGray'}`}>
                             {isCreateSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                         </Typography>
                     </Pressable>
@@ -407,18 +407,18 @@ export default function PiutangUsahaScreen() {
                     <View className="flex-row space-x-2 gap-2">
                         <Pressable
                             onPress={() => setCreateMethod(undefined)}
-                            className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-gray-100' : 'border-gray-100 bg-gray-50/50'}`}
+                            className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-background' : 'border-border bg-gray-50/50'}`}
                         >
-                            <Typography className={!createMethod ? 'text-gray-700 font-bold' : 'text-gray-400'} variant="caption">Tidak Ada</Typography>
+                            <Typography className={!createMethod ? 'text-text font-bold' : 'text-textGray'} variant="caption">Tidak Ada</Typography>
                         </Pressable>
                         {['TUNAI', 'TRANSFER'].map((m) => (
                             <Pressable
                                 key={m}
                                 onPress={() => setCreateMethod(m as 'TUNAI' | 'TRANSFER')}
-                                className={`flex-1 py-3.5 items-center rounded-2xl border ${createMethod === m ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
+                                className={`flex-1 py-3.5 items-center rounded-2xl border ${createMethod === m ? 'border-primary bg-primary/5' : 'border-border bg-gray-50/50'}`}
                             >
                                 <Typography
-                                    className={createMethod === m ? 'text-primary font-bold' : 'text-gray-400'}
+                                    className={createMethod === m ? 'text-primary font-bold' : 'text-textGray'}
                                     variant="caption"
                                 >
                                     {m}
@@ -429,7 +429,7 @@ export default function PiutangUsahaScreen() {
                 ) : (
                     <View className="space-y-4">
                         {createPayments.map((p, idx) => (
-                            <Card key={p.id} variant="outlined" className="p-5 border-gray-100 rounded-[24px] bg-gray-50/30">
+                            <Card key={p.id} variant="outlined" className="p-5 border-border rounded-[24px] bg-gray-50/30">
                                 <View className="flex-row items-center justify-between mb-4">
                                     <View className="bg-primary/10 px-2 py-1 rounded-lg">
                                         <Typography variant="caption" weight="bold" className="text-primary text-[9px] uppercase tracking-widest">Metode #{idx + 1}</Typography>
@@ -449,9 +449,9 @@ export default function PiutangUsahaScreen() {
                                         <Pressable
                                             key={m}
                                             onPress={() => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, metode: m } : item))}
-                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary' : 'border-gray-200 bg-white'}`}
+                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary' : 'border-border bg-surface'}`}
                                         >
-                                            <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-white' : 'text-gray-400'}>{m}</Typography>
+                                            <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-white' : 'text-textGray'}>{m}</Typography>
                                         </Pressable>
                                     ))}
                                 </View>
@@ -467,10 +467,10 @@ export default function PiutangUsahaScreen() {
                         ))}
                         <Pressable
                             onPress={() => setCreatePayments([...createPayments, { id: Date.now() + Math.random() + Math.random(), metode: '', nominal: '', catatan: '' }])}
-                            className="flex-row items-center justify-center p-4 border border-dashed border-gray-300 rounded-[24px] bg-white"
+                            className="flex-row items-center justify-center p-4 border border-dashed border-border rounded-[24px] bg-surface"
                         >
                             <Plus size={18} color="#64748B" className="mr-2" />
-                            <Typography weight="bold" className="text-gray-500 text-xs text-center">Tambah Metode Pencairan</Typography>
+                            <Typography weight="bold" className="text-textGray text-xs text-center">Tambah Metode Pencairan</Typography>
                         </Pressable>
                     </View>
                 )}
@@ -525,7 +525,7 @@ export default function PiutangUsahaScreen() {
                 <View className="flex-row justify-between items-start mb-4">
                     <View>
                         <Typography variant="h2" weight="bold">{selectedPiutang.nama_debitur}</Typography>
-                        <Typography variant="caption" className="text-gray-400">{selectedPiutang.nomor_piutang}</Typography>
+                        <Typography variant="caption" className="text-textGray">{selectedPiutang.nomor_piutang}</Typography>
                     </View>
                     <Badge
                         label={selectedPiutang.is_overdue ? 'Jatuh Tempo' : selectedPiutang.status === 'LUNAS' ? 'Lunas' : 'Belum Lunas'}
@@ -533,38 +533,38 @@ export default function PiutangUsahaScreen() {
                     />
                 </View>
 
-                <Card variant="outlined" className="p-4 mb-4 border-gray-100">
+                <Card variant="outlined" className="p-4 mb-4 border-border">
                     <View className="flex-row justify-between mb-2">
-                        <Typography variant="caption" className="text-gray-500">Total Piutang</Typography>
+                        <Typography variant="caption" className="text-textGray">Total Piutang</Typography>
                         <Typography variant="body2" weight="bold">{formatCurrency(selectedPiutang.nominal_piutang)}</Typography>
                     </View>
                     <View className="flex-row justify-between mb-2">
-                        <Typography variant="caption" className="text-gray-500">Sudah Dibayar</Typography>
+                        <Typography variant="caption" className="text-textGray">Sudah Dibayar</Typography>
                         <Typography variant="body2" weight="medium" className="text-green-600">{formatCurrency(selectedPiutang.total_dibayar)}</Typography>
                     </View>
-                    <View className="h-[1px] bg-gray-100 my-2" />
+                    <View className="h-[1px] bg-background my-2" />
                     <View className="flex-row justify-between">
-                        <Typography variant="caption" weight="bold" className="text-gray-600">Sisa Piutang</Typography>
+                        <Typography variant="caption" weight="bold" className="text-textGray">Sisa Piutang</Typography>
                         <Typography variant="body1" weight="bold" className="text-red-600">{formatCurrency(selectedPiutang.sisa_piutang)}</Typography>
                     </View>
                 </Card>
 
                 {/* Informasi piutang untuk verifikasi sebelum pelunasan */}
-                <Card variant="outlined" className="p-4 mb-4 border-gray-100">
-                    <Typography variant="caption" weight="bold" className="text-gray-500 mb-3">
+                <Card variant="outlined" className="p-4 mb-4 border-border">
+                    <Typography variant="caption" weight="bold" className="text-textGray mb-3">
                         INFORMASI PIUTANG
                     </Typography>
 
                     <View className="gap-3">
                         <View className="flex-row justify-between gap-4">
-                            <Typography variant="caption" className="text-gray-500">Tanggal Piutang</Typography>
+                            <Typography variant="caption" className="text-textGray">Tanggal Piutang</Typography>
                             <Typography variant="body2" weight="medium" className="text-right">
                                 {formatDate(selectedPiutang.tanggal)}
                             </Typography>
                         </View>
 
                         <View className="flex-row justify-between gap-4">
-                            <Typography variant="caption" className="text-gray-500">Sumber</Typography>
+                            <Typography variant="caption" className="text-textGray">Sumber</Typography>
                             <Typography variant="body2" weight="medium" className="text-right">
                                 {SUMBER_LABEL[selectedPiutang.sumber] || selectedPiutang.sumber}
                             </Typography>
@@ -572,7 +572,7 @@ export default function PiutangUsahaScreen() {
 
                         {selectedPiutang.unit && (
                             <View className="flex-row justify-between gap-4">
-                                <Typography variant="caption" className="text-gray-500">Unit</Typography>
+                                <Typography variant="caption" className="text-textGray">Unit</Typography>
                                 <Typography variant="body2" weight="medium" className="text-right">
                                     {formatUnitLabel(selectedPiutang.unit)}
                                 </Typography>
@@ -581,7 +581,7 @@ export default function PiutangUsahaScreen() {
 
                         {selectedPiutang.nomor_referensi && (
                             <View className="flex-row justify-between gap-4">
-                                <Typography variant="caption" className="text-gray-500">Referensi</Typography>
+                                <Typography variant="caption" className="text-textGray">Referensi</Typography>
                                 <Typography variant="body2" weight="medium" className="text-right">
                                     {selectedPiutang.nomor_referensi}
                                 </Typography>
@@ -590,7 +590,7 @@ export default function PiutangUsahaScreen() {
 
                         {selectedPiutang.tanggal_jatuh_tempo && (
                             <View className="flex-row justify-between gap-4">
-                                <Typography variant="caption" className="text-gray-500">Jatuh Tempo</Typography>
+                                <Typography variant="caption" className="text-textGray">Jatuh Tempo</Typography>
                                 <Typography
                                     variant="body2"
                                     weight="medium"
@@ -603,7 +603,7 @@ export default function PiutangUsahaScreen() {
 
                         {selectedPiutang.tanggal_lunas && (
                             <View className="flex-row justify-between gap-4">
-                                <Typography variant="caption" className="text-gray-500">Tanggal Lunas</Typography>
+                                <Typography variant="caption" className="text-textGray">Tanggal Lunas</Typography>
                                 <Typography variant="body2" weight="medium" className="text-right text-green-600">
                                     {formatDate(selectedPiutang.tanggal_lunas)}
                                 </Typography>
@@ -612,7 +612,7 @@ export default function PiutangUsahaScreen() {
 
                         {selectedPiutang.telepon_debitur && (
                             <View className="flex-row justify-between gap-4">
-                                <Typography variant="caption" className="text-gray-500">Telepon</Typography>
+                                <Typography variant="caption" className="text-textGray">Telepon</Typography>
                                 <Typography variant="body2" weight="medium" className="text-right">
                                     {selectedPiutang.telepon_debitur}
                                 </Typography>
@@ -621,14 +621,14 @@ export default function PiutangUsahaScreen() {
 
                         {selectedPiutang.alamat_debitur && (
                             <View>
-                                <Typography variant="caption" className="text-gray-500 mb-1">Alamat</Typography>
+                                <Typography variant="caption" className="text-textGray mb-1">Alamat</Typography>
                                 <Typography variant="body2">{selectedPiutang.alamat_debitur}</Typography>
                             </View>
                         )}
 
                         {selectedPiutang.catatan && (
                             <View>
-                                <Typography variant="caption" className="text-gray-500 mb-1">Keterangan</Typography>
+                                <Typography variant="caption" className="text-textGray mb-1">Keterangan</Typography>
                                 <Typography variant="body2">{selectedPiutang.catatan}</Typography>
                             </View>
                         )}
@@ -638,13 +638,13 @@ export default function PiutangUsahaScreen() {
                 {/* Payment History */}
                 {selectedPiutang.pembayaran && selectedPiutang.pembayaran.length > 0 && (
                     <View className="mb-4">
-                        <Typography variant="caption" weight="bold" className="text-gray-500 mb-2">RIWAYAT PEMBAYARAN</Typography>
+                        <Typography variant="caption" weight="bold" className="text-textGray mb-2">RIWAYAT PEMBAYARAN</Typography>
                         {selectedPiutang.pembayaran.map((p: PembayaranPiutang) => (
-                            <View key={p.id} className="flex-row justify-between py-2.5 border-b border-gray-50 items-center">
+                            <View key={p.id} className="flex-row justify-between py-2.5 border-b border-border items-center">
                                 <View>
                                     <Typography variant="caption" weight="bold" className="text-textMain">{formatDate(p.tanggal)}</Typography>
-                                    <View className="bg-gray-100 px-1.5 py-0.5 rounded-md self-start mt-0.5">
-                                        <Typography className="text-[8px] font-bold text-gray-500 tracking-tighter">{p.metode_bayar}</Typography>
+                                    <View className="bg-background px-1.5 py-0.5 rounded-md self-start mt-0.5">
+                                        <Typography className="text-[8px] font-bold text-textGray tracking-tighter">{p.metode_bayar}</Typography>
                                     </View>
                                 </View>
                                 <Typography variant="caption" weight="bold" className="text-green-600">+{formatCurrency(p.nominal)}</Typography>
@@ -690,7 +690,7 @@ export default function PiutangUsahaScreen() {
                             <Typography variant="body2" weight="bold" numberOfLines={1}>
                                 {item.nama_debitur}
                             </Typography>
-                            <Typography variant="caption" className="text-gray-400 mt-0.5">
+                            <Typography variant="caption" className="text-textGray mt-0.5">
                                 {item.nomor_piutang} • {SUMBER_LABEL[item.sumber as keyof typeof SUMBER_LABEL] || item.sumber}
                             </Typography>
                         </View>
@@ -703,16 +703,16 @@ export default function PiutangUsahaScreen() {
                     </View>
 
                     <View className="flex-row justify-between items-center mb-2">
-                        <Typography variant="caption" className="text-gray-500">
+                        <Typography variant="caption" className="text-textGray">
                             Sisa: <Typography variant="caption" weight="bold" className="text-red-600">{formatCurrency(item.sisa_piutang)}</Typography>
                         </Typography>
-                        <Typography variant="caption" className="text-gray-400">
+                        <Typography variant="caption" className="text-textGray">
                             dari {formatCurrency(item.nominal_piutang)}
                         </Typography>
                     </View>
 
                     {/* Progress Bar */}
-                    <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <View className="h-2 bg-background rounded-full overflow-hidden">
                         <View
                             className="h-full bg-primary rounded-full"
                             style={{ width: `${progressPercent}%` }}
@@ -720,7 +720,7 @@ export default function PiutangUsahaScreen() {
                     </View>
 
                     {item.tanggal_jatuh_tempo && (
-                        <Typography variant="caption" className={`mt-2 ${item.is_overdue ? 'text-red-500' : 'text-gray-400'}`}>
+                        <Typography variant="caption" className={`mt-2 ${item.is_overdue ? 'text-red-500' : 'text-textGray'}`}>
                             {item.is_overdue ? '⚠️ ' : ''}Jatuh tempo: {formatDate(item.tanggal_jatuh_tempo)}
                         </Typography>
                     )}
@@ -739,7 +739,7 @@ export default function PiutangUsahaScreen() {
                 rightElement={canCreate ? (
                     <Pressable
                         onPress={handleOpenCreate}
-                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
                     >
                         <Plus size={20} color="#1F2937" />
                     </Pressable>
@@ -749,18 +749,18 @@ export default function PiutangUsahaScreen() {
             {/* Filter & Search Navigator Overlay */}
             {!isSheetOpen && (
                 <View className="px-6 mt-4">
-                    <View className="bg-white p-3 rounded-[24px] border border-gray-100 shadow-sm flex-col">
+                    <View className="bg-surface p-3 rounded-[24px] border border-border shadow-sm flex-col">
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-3 space-x-2 pb-1">
                             {STATUS_FILTERS.map((filter) => (
                                 <Pressable
                                     key={filter.value}
                                     onPress={() => setSelectedFilter(filter.value)}
-                                    className={`px-4 py-2 rounded-xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-primary shadow-sm' : 'bg-gray-50 border border-gray-100'}`}
+                                    className={`px-4 py-2 rounded-xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-primary shadow-sm' : 'bg-background border border-border'}`}
                                 >
                                     <Typography
                                         variant="caption"
                                         weight="bold"
-                                        className={`text-[10px] uppercase tracking-wider ${selectedFilter === filter.value ? 'text-white font-bold' : 'text-gray-400'}`}
+                                        className={`text-[10px] uppercase tracking-wider ${selectedFilter === filter.value ? 'text-white font-bold' : 'text-textGray'}`}
                                     >
                                         {filter.label}
                                     </Typography>
@@ -768,7 +768,7 @@ export default function PiutangUsahaScreen() {
                             ))}
                         </ScrollView>
 
-                        <View className="flex-row items-center px-4 bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                        <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-border">
                             <Search size={16} color="#9CA3AF" />
                             <TextInput
                                 className="flex-1 ml-3 text-xs text-textMain font-semibold h-full"
@@ -793,7 +793,7 @@ export default function PiutangUsahaScreen() {
                     return (
                         <Pressable
                             onPress={() => handleOpenDetail(item)}
-                            className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
+                            className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm"
                         >
                             <View className="flex-row justify-between items-start mb-4">
                                 <View className="flex-1 mr-3">
@@ -812,7 +812,7 @@ export default function PiutangUsahaScreen() {
                             </View>
 
                             {/* Financial Bento Inner Grid */}
-                            <View className="bg-gray-50 p-4 rounded-2xl flex-row justify-between mb-4 border border-gray-100/50">
+                            <View className="bg-background p-4 rounded-2xl flex-row justify-between mb-4 border border-gray-100/50">
                                 <View>
                                     <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest mb-1">Total</Typography>
                                     <Typography weight="semibold" className="text-textMain text-sm">{formatCurrency(item.nominal_piutang)}</Typography>
@@ -829,7 +829,7 @@ export default function PiutangUsahaScreen() {
                                     <Typography className="text-textGray/40 text-[9px] font-bold uppercase tracking-widest">Progress Pelunasan</Typography>
                                     <Typography className="text-primary text-[10px] font-bold">{Math.round(progressPercent || 0)}%</Typography>
                                 </View>
-                                <View className="h-2 bg-gray-100 rounded-full overflow-hidden border border-gray-200/20">
+                                <View className="h-2 bg-background rounded-full overflow-hidden border border-gray-200/20">
                                     <View
                                         className="h-full bg-primary rounded-full"
                                         style={{ width: `${progressPercent}%` }}
@@ -838,7 +838,7 @@ export default function PiutangUsahaScreen() {
                             </View>
 
                             {/* Footer Utility Row */}
-                            <View className="flex-row items-center justify-between pt-4 border-t border-gray-50">
+                            <View className="flex-row items-center justify-between pt-4 border-t border-border">
                                 <View className="flex-row items-center">
                                     <Clock size={12} color={isOverdue ? "#EF4444" : "#9CA3AF"} />
                                     <Typography className={`${isOverdue ? 'text-rose-600' : 'text-textGray/60'} text-[10px] ml-1.5 font-bold uppercase tracking-widest`}>
@@ -855,7 +855,7 @@ export default function PiutangUsahaScreen() {
                 ListHeaderComponent={
                     <View className="mb-6">
                         {/* Receivables Insight Card (White Bento Style) */}
-                        <View className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm mb-6">
+                        <View className="bg-surface p-6 rounded-[32px] border border-border shadow-sm mb-6">
                             <View className="flex-row justify-between items-center mb-6">
                                 <View className="bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
                                     <Typography className="text-emerald-600 text-[10px] font-bold uppercase tracking-widest">Global Overview</Typography>
@@ -876,7 +876,7 @@ export default function PiutangUsahaScreen() {
                             </View>
 
                             {/* Bento Stats Row */}
-                            <View className="h-[1px] bg-gray-50 my-6" />
+                            <View className="h-[1px] bg-background my-6" />
                             <View className="flex-row justify-between">
                                 <View className="flex-1">
                                     <View className="flex-row items-center mb-1">
@@ -885,7 +885,7 @@ export default function PiutangUsahaScreen() {
                                     </View>
                                     <Typography weight="bold" className="text-textMain text-sm">{localSummary?.jumlah_belum_lunas || 0} Akun</Typography>
                                 </View>
-                                <View className="flex-1 items-end pl-4 border-l border-gray-50">
+                                <View className="flex-1 items-end pl-4 border-l border-border">
                                     <View className="flex-row items-center mb-1">
                                         <AlertTriangle size={10} color="#F43F5E" className="mr-1.5" />
                                         <Typography className="text-textGray/30 text-[9px] uppercase font-bold tracking-widest">Jatuh Tempo</Typography>
@@ -929,7 +929,7 @@ export default function PiutangUsahaScreen() {
                             setCreateVisible(false);
                             setIsSheetOpen(false);
                         }} />
-                        <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
+                        <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                             <ScrollView style={{ flex: 1 }} className="px-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {renderCreateContent()}
@@ -974,7 +974,7 @@ export default function PiutangUsahaScreen() {
                             setDetailVisible(false);
                             setIsSheetOpen(false);
                         }} />
-                        <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[80%] self-center p-0 overflow-hidden shadow-2xl relative">
+                        <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[80%] self-center p-0 overflow-hidden shadow-2xl relative">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                             <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {renderDetailContent()}

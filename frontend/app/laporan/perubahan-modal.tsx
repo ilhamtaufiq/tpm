@@ -244,7 +244,7 @@ export default function LaporanPerubahanModalScreen() {
                 ) : !report ? (
                     <View className="py-12 items-center justify-center">
                         <AlertTriangle size={48} color="#94a3b8" />
-                        <Typography variant="body1" className="text-slate-500 mt-4">Data tidak tersedia</Typography>
+                        <Typography variant="body1" className="text-textGray mt-4">Data tidak tersedia</Typography>
                     </View>
                 ) : (
                     <View className="space-y-5">
@@ -295,12 +295,12 @@ export default function LaporanPerubahanModalScreen() {
                             <StatCard label="PRIVE" value={equity.prive} icon={ArrowDownLeft} bgColor="#e11d48" subLabel="Penarikan pemilik" />
                         </View>
 
-                        <Card className="p-6 bg-white rounded-[24px] border border-slate-100 shadow-sm mt-2">
-                            <Typography variant="body1" weight="bold" className="text-slate-900 mb-5">Rincian Perubahan Ekuitas</Typography>
+                        <Card className="p-6 bg-surface rounded-[24px] border border-slate-100 shadow-sm mt-2">
+                            <Typography variant="body1" weight="bold" className="text-text mb-5">Rincian Perubahan Ekuitas</Typography>
 
                             <FinancialRow label="Modal Awal" value={equity.modalAwal} bold color="text-slate-900" />
                             {(report.modal_awal_penyesuaian || 0) !== 0 && (
-                                <Typography variant="caption" className="text-slate-500 text-[11px] mb-2 pl-1">
+                                <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">
                                     · sudah bersih dari aktivitas hari saldo awal ({formatCurrency(report.modal_awal_penyesuaian || 0)} dipindah ke baris mutasi di bawah)
                                 </Typography>
                             )}
@@ -309,13 +309,13 @@ export default function LaporanPerubahanModalScreen() {
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest">Penambahan</Typography>
                                 <FinancialRow label="Penambahan Modal" value={equity.setoranKas + equity.modalNonKas} color="text-emerald-700" />
-                                <Typography variant="caption" className="text-slate-500 text-[11px] mb-2 pl-1">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</Typography>
+                                <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</Typography>
                                 {equity.labaBersih >= 0 && (
                                     <>
                                         <FinancialRow label="Laba/Rugi Periode" value={equity.labaBersih} color="text-emerald-700" />
                                         {equity.diskonPenjualanBengkel > 0 && (
                                             <View className="mb-2 pl-1">
-                                                <Typography variant="caption" className="text-slate-500 text-[11px]">
+                                                <Typography variant="caption" className="text-textGray text-[11px]">
                                                     · info: diskon bengkel {formatCurrency(equity.diskonPenjualanBengkel)} sudah di laba (bukan baris modal terpisah)
                                                 </Typography>
                                             </View>
@@ -327,13 +327,13 @@ export default function LaporanPerubahanModalScreen() {
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-rose-600 mb-2 uppercase tracking-widest">Pengurangan</Typography>
                                 <FinancialRow label="Prive/ Pengambilan Pemilik" value={equity.prive} isNegative />
-                                <Typography variant="caption" className="text-slate-500 text-[11px] mb-2 pl-1">* pengambilan pemilik dan akun ini hanya muncul di laporan perubahan modal saja, karena sifat nya mengurangi kumulatif antar modal dan laba/rugi</Typography>
+                                <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* pengambilan pemilik dan akun ini hanya muncul di laporan perubahan modal saja, karena sifat nya mengurangi kumulatif antar modal dan laba/rugi</Typography>
                                 {equity.labaBersih < 0 && (
                                     <>
                                         <FinancialRow label="Rugi Periode" value={Math.abs(equity.labaBersih)} isNegative />
                                         {equity.diskonPenjualanBengkel > 0 && (
                                             <View className="mb-2 pl-1">
-                                                <Typography variant="caption" className="text-slate-500 text-[11px]">
+                                                <Typography variant="caption" className="text-textGray text-[11px]">
                                                     · info: diskon bengkel {formatCurrency(equity.diskonPenjualanBengkel)} sudah di laba (bukan baris modal terpisah)
                                                 </Typography>
                                             </View>
@@ -410,7 +410,7 @@ export default function LaporanPerubahanModalScreen() {
             {/* PDF PREVIEW MODAL */}
             {showPdfPreview && (
                 <Modal visible={showPdfPreview} animationType="slide">
-                    <SafeAreaView className="flex-1 bg-white">
+                    <SafeAreaView className="flex-1 bg-surface">
                         <View className="flex-row items-center justify-between p-4 border-b border-slate-100">
                             <Pressable onPress={() => setShowPdfPreview(false)} className="p-2"><X size={24} color="#64748b" /></Pressable>
                             <Typography variant="body1" weight="bold">Pratinjau Laporan</Typography>

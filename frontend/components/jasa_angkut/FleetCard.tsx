@@ -39,21 +39,21 @@ export const FleetCard = ({ armada, onPress }: FleetCardProps) => {
                                 label={armada.is_active ? 'Aktif' : 'Non-Aktif'}
                             />
                             {armada.jenis && (
-                                <Typography variant="caption" className="text-gray-500 ml-3">
+                                <Typography variant="caption" className="text-textGray ml-3">
                                     Tipe: {armada.jenis}
                                 </Typography>
                             )}
                         </View>
                     </View>
-                    <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center">
+                    <View className="w-10 h-10 bg-background rounded-xl items-center justify-center">
                         <Truck size={20} color="#6B7280" />
                     </View>
                 </View>
 
                 {armada.catatan && (
-                    <View className="mt-4 pt-3 border-t border-gray-50 flex-row items-start">
+                    <View className="mt-4 pt-3 border-t border-border flex-row items-start">
                         <Info size={14} color="#9CA3AF" className="mt-0.5" />
-                        <Typography variant="caption" className="text-gray-500 ml-2 italic flex-1">
+                        <Typography variant="caption" className="text-textGray ml-2 italic flex-1">
                             {armada.catatan}
                         </Typography>
                     </View>

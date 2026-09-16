@@ -104,7 +104,7 @@ const FILTER_SOURCES = [
 ] as const;
 
 const FILTER_TYPES = [
-    { label: 'Semua Rans', value: 'all' },
+    { label: 'Semua Transaksi', value: 'all' },
     { label: 'Uang Masuk', value: 'in' },
     { label: 'Uang Keluar', value: 'out' },
 ] as const;
@@ -324,17 +324,12 @@ export default function HistoryTab() {
                 subtitle={walletFilter ? 'Kas & Setoran' : 'Log Transaksi'}
                 showBackButton
                 onBackButtonPress={handleBack}
-                rightElement={
-                    <View className="bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
-                        <Typography className="text-textGray uppercase text-[8px] font-bold tracking-widest">ARCHIVE</Typography>
-                    </View>
-                }
             />
 
             {/* Search */}
             <View className="px-6 mt-4">
-                <View className="bg-white p-2 rounded-[24px] flex-row items-center border border-gray-100 shadow-sm">
-                    <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-gray-50">
+                <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-border shadow-sm">
+                    <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-background">
                         <Search size={18} color="#9CA3AF" />
                         <TextInput
                             placeholder="Cari transaksi, ref, unit, atau kategori..."
@@ -351,7 +346,7 @@ export default function HistoryTab() {
             <View className="mt-3">
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 8 }}>
                     {[
-                        { id: 'all', label: 'Semua Waktu' },
+                        { id: 'all', label: 'Semua' },
                         { id: 'daily', label: 'Harian' },
                         { id: 'monthly', label: 'Bulanan' },
                         { id: 'yearly', label: 'Tahunan' },
@@ -362,9 +357,9 @@ export default function HistoryTab() {
                                 setDateMode(m.id as any);
                                 if (m.id !== 'all' && !date) setDate(new Date());
                             }}
-                            className={`px-4 py-2 rounded-xl border ${dateMode === m.id ? 'bg-primary border-primary shadow-sm' : 'bg-white border-gray-100 active:bg-gray-50'}`}
+                            className={`px-4 py-2 rounded-xl border ${dateMode === m.id ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-border active:bg-background'}`}
                         >
-                            <Typography className={`text-xs font-bold ${dateMode === m.id ? 'text-white' : 'text-gray-500'}`}>
+                            <Typography className={`text-xs font-bold ${dateMode === m.id ? 'text-white' : 'text-textGray'}`}>
                                 {m.label}
                             </Typography>
                         </Pressable>
@@ -373,10 +368,10 @@ export default function HistoryTab() {
 
                 {dateMode !== 'all' && (
                     <View className="px-6 mt-2">
-                        <View className="bg-white border border-gray-100 rounded-2xl p-2 flex-row justify-between items-center shadow-sm">
+                        <View className="bg-surface border border-border rounded-2xl p-2 flex-row justify-between items-center shadow-sm">
                             <Pressable
                                 onPress={handlePrevDate}
-                                className="w-9 h-9 bg-gray-50 rounded-xl items-center justify-center border border-gray-100 active:scale-95"
+                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-border active:scale-95"
                             >
                                 <ChevronLeft size={18} color="#1C1C1C" />
                             </Pressable>
@@ -394,7 +389,7 @@ export default function HistoryTab() {
 
                             <Pressable
                                 onPress={handleNextDate}
-                                className="w-9 h-9 bg-gray-50 rounded-xl items-center justify-center border border-gray-100 active:scale-95"
+                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-border active:scale-95"
                             >
                                 <ChevronRight size={18} color="#1C1C1C" />
                             </Pressable>
@@ -410,9 +405,9 @@ export default function HistoryTab() {
                         <Pressable
                             key={t.value}
                             onPress={() => setSelectedType(t.value)}
-                            className={`px-4 py-2 rounded-xl border ${selectedType === t.value ? 'bg-primary border-primary shadow-sm' : 'bg-white border-gray-100 active:bg-gray-50'}`}
+                            className={`px-4 py-2 rounded-xl border ${selectedType === t.value ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-border active:bg-background'}`}
                         >
-                            <Typography className={`text-xs font-bold ${selectedType === t.value ? 'text-white' : 'text-gray-500'}`}>
+                            <Typography className={`text-xs font-bold ${selectedType === t.value ? 'text-white' : 'text-textGray'}`}>
                                 {t.label}
                             </Typography>
                         </Pressable>
@@ -427,9 +422,9 @@ export default function HistoryTab() {
                             <Pressable
                                 key={s.value}
                                 onPress={() => setSelectedSource(s.value)}
-                                className={`px-4 py-2 rounded-xl border ${selectedSource === s.value ? 'bg-primary border-primary shadow-sm' : 'bg-white border-gray-100 active:bg-gray-50'}`}
+                                className={`px-4 py-2 rounded-xl border ${selectedSource === s.value ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-border active:bg-background'}`}
                             >
-                                <Typography className={`text-xs font-bold ${selectedSource === s.value ? 'text-white' : 'text-gray-500'}`}>
+                                <Typography className={`text-xs font-bold ${selectedSource === s.value ? 'text-white' : 'text-textGray'}`}>
                                     {s.label}
                                 </Typography>
                             </Pressable>
@@ -450,8 +445,8 @@ export default function HistoryTab() {
                         <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MENYINGKRONKAN DATA...</Typography>
                     </View>
                 ) : filteredList.length === 0 ? (
-                    <View className="items-center justify-center py-20 bg-white rounded-[24px] border border-dashed border-gray-100 mx-6">
-                        <View className="w-24 h-24 bg-gray-50 rounded-full items-center justify-center mb-6 opacity-30">
+                    <View className="items-center justify-center py-20 bg-surface rounded-[24px] border border-dashed border-border mx-6">
+                        <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
                             <Calendar size={40} color="#9CA3AF" />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[6px]">Spiii...</Typography>
@@ -466,7 +461,7 @@ export default function HistoryTab() {
                         return (
                             <Pressable
                                 key={item.id}
-                                className="bg-white px-6 py-5 border-b border-gray-100 flex-row items-center active:bg-gray-50"
+                                className="bg-surface px-6 py-5 border-b border-border flex-row items-center active:bg-background"
                                 onPress={() => {
                                     setSelectedItem(item);
                                     setModalVisible(true);
@@ -475,7 +470,7 @@ export default function HistoryTab() {
                                 {/* Left: Source Icon */}
                                 <View
                                     style={{ backgroundColor: `${config.color}10` }}
-                                    className="w-12 h-12 rounded-2xl items-center justify-center mr-3 border border-gray-50 flex-shrink-0"
+                                    className="w-12 h-12 rounded-2xl items-center justify-center mr-3 border border-border flex-shrink-0"
                                 >
                                     <Icon size={20} color={config.color} strokeWidth={2.5} />
                                 </View>
@@ -509,7 +504,7 @@ export default function HistoryTab() {
                                 </View>
 
                                 {/* Right: Amount & Status */}
-                                <View className="items-end ml-2 pl-3 border-l border-gray-50 flex-shrink-0 min-w-[100px]">
+                                <View className="items-end ml-2 pl-3 border-l border-border flex-shrink-0 min-w-[100px]">
                                     <Typography
                                         weight="bold"
                                         className={`text-[13px] mb-1 ${item.type === 'financial' ? (item.is_incoming ? "text-emerald-600" : "text-rose-500") : "text-textMain"}`}
@@ -551,16 +546,16 @@ export default function HistoryTab() {
                 onRequestClose={() => setDatePickerModalOpen(false)}
             >
                 <View className="flex-1 justify-center items-center bg-black/50 px-6">
-                    <View className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl border border-gray-100">
+                    <View className="bg-surface rounded-3xl p-6 w-full max-w-md shadow-xl border border-border">
                         <View className="flex-row justify-between items-center mb-4">
                             <Typography variant="h3" weight="bold">Filter Tanggal & Periode</Typography>
-                            <Pressable onPress={() => setDatePickerModalOpen(false)} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
+                            <Pressable onPress={() => setDatePickerModalOpen(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
                                 <X size={18} color="#4B5563" />
                             </Pressable>
                         </View>
 
                         {/* Mode Selector */}
-                        <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-2">
                             Tipe Filter
                         </Typography>
                         <View className="flex-row gap-2 mb-5">
@@ -576,9 +571,9 @@ export default function HistoryTab() {
                                         setDateMode(m.id as any);
                                         if (m.id !== 'all' && !date) setDate(new Date());
                                     }}
-                                    className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                    className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-background border-border'}`}
                                 >
-                                    <Typography weight="bold" className={`text-xs ${dateMode === m.id ? 'text-white' : 'text-gray-600'}`}>
+                                    <Typography weight="bold" className={`text-xs ${dateMode === m.id ? 'text-white' : 'text-textGray'}`}>
                                         {m.label}
                                     </Typography>
                                 </Pressable>
@@ -588,7 +583,7 @@ export default function HistoryTab() {
                         {/* Month Selector Grid for Monthly */}
                         {dateMode === 'monthly' && (
                             <View className="mb-4">
-                                <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                                <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-2">
                                     Pilih Bulan ({format(date, 'yyyy')})
                                 </Typography>
                                 <View className="flex-row flex-wrap gap-2">
@@ -599,7 +594,7 @@ export default function HistoryTab() {
                                             <Pressable
                                                 key={i}
                                                 onPress={() => setDate(monthDate)}
-                                                className={`w-[30%] py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-emerald-600 border-emerald-600' : 'bg-gray-50 border-gray-100'}`}
+                                                className={`w-[30%] py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-emerald-600 border-emerald-600' : 'bg-background border-border'}`}
                                             >
                                                 <Typography weight="bold" className={`text-xs ${isSelected ? 'text-white' : 'text-textMain'}`}>
                                                     {format(monthDate, 'MMM', { locale: localeID })}
@@ -614,7 +609,7 @@ export default function HistoryTab() {
                         {/* Year Selector for Monthly/Yearly */}
                         {(dateMode === 'monthly' || dateMode === 'yearly') && (
                             <View className="mb-4">
-                                <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                                <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-2">
                                     Pilih Tahun
                                 </Typography>
                                 <View className="flex-row gap-2">
@@ -624,7 +619,7 @@ export default function HistoryTab() {
                                             <Pressable
                                                 key={yr}
                                                 onPress={() => setDate(new Date(yr, date.getMonth(), 1))}
-                                                className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                                className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'bg-background border-border'}`}
                                             >
                                                 <Typography weight="bold" className={`text-xs ${isSelected ? 'text-white' : 'text-textMain'}`}>
                                                     {yr}
@@ -637,7 +632,7 @@ export default function HistoryTab() {
                         )}
 
                         {/* Quick Presets */}
-                        <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-2">
                             Pintas Cepat
                         </Typography>
                         <View className="flex-row gap-2 mb-5">

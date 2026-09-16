@@ -321,7 +321,7 @@ export default function KaryawanScreen() {
         return (
             <Pressable onPress={() => openDetail(item)}>
                 <View>
-                    <Card className="mb-3 p-4 border border-gray-100">
+                    <Card className="mb-3 p-4 border border-border">
                         <View className="flex-row items-center justify-between">
                             <View className="flex-row items-center flex-1">
                                 <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center mr-3">
@@ -332,9 +332,9 @@ export default function KaryawanScreen() {
                                         <Typography weight="semibold" className="mr-2">{item.nama}</Typography>
                                         <Badge label={statusBadge.label} variant={statusBadge.variant} />
                                     </View>
-                                    <Typography variant="caption" className="text-gray-500">{item.jabatan}</Typography>
+                                    <Typography variant="caption" className="text-textGray">{item.jabatan}</Typography>
                                     {item.telepon && (
-                                        <Typography variant="caption" className="text-gray-400">{item.telepon}</Typography>
+                                        <Typography variant="caption" className="text-textGray">{item.telepon}</Typography>
                                     )}
                                 </View>
                             </View>
@@ -383,13 +383,13 @@ export default function KaryawanScreen() {
 
             {/* Filter & Search — pull up to sit tighter under header stats */}
             <View className="px-6 -mt-14 z-10">
-                <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
+                <View className="bg-surface p-2 rounded-3xl shadow-xl border border-border flex-col">
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
                         {STATUS_FILTERS.map((filter) => (
                             <Pressable
                                 key={filter.key}
                                 onPress={() => setSelectedFilter(filter.key as EmployeeStatus | 'all')}
-                                className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.key ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-gray-50 border border-gray-100'}`}
+                                className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.key ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-background border border-border'}`}
                             >
                                 <View>
                                     <Typography
@@ -404,7 +404,7 @@ export default function KaryawanScreen() {
                         ))}
                     </ScrollView>
 
-                    <View className="flex-row items-center px-4 bg-gray-50 h-14 rounded-2xl border border-gray-100">
+                    <View className="flex-row items-center px-4 bg-background h-14 rounded-2xl border border-border">
                         <Search size={18} color="#9CA3AF" />
                         <TextInput
                             className="flex-1 ml-3 text-sm text-textMain font-medium"
@@ -427,9 +427,9 @@ export default function KaryawanScreen() {
                         <Pressable
                             onPress={() => openDetail(item)}
                             
-                            className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
+                            className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm flex-row items-center"
                         >
-                            <View className="w-14 h-14 bg-gray-50 rounded-2xl items-center justify-center mr-4 border border-gray-100/50">
+                            <View className="w-14 h-14 bg-background rounded-2xl items-center justify-center mr-4 border border-gray-100/50">
                                 <User size={28} color="#023C69" />
                             </View>
                             <View className="flex-1 mr-3">
@@ -437,8 +437,8 @@ export default function KaryawanScreen() {
                                     <Typography variant="body1" weight="bold" className="text-textMain tracking-tight mr-2" numberOfLines={1}>
                                         {item.nama}
                                     </Typography>
-                                    <View className={item.status === 'AKTIF' ? "bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100" : "bg-gray-100 px-2 py-0.5 rounded-lg border border-gray-200"}>
-                                        <Typography className={item.status === 'AKTIF' ? "text-emerald-600 text-[8px] font-bold" : "text-gray-500 text-[8px] font-bold"}>
+                                    <View className={item.status === 'AKTIF' ? "bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100" : "bg-background px-2 py-0.5 rounded-lg border border-border"}>
+                                        <Typography className={item.status === 'AKTIF' ? "text-emerald-600 text-[8px] font-bold" : "text-textGray text-[8px] font-bold"}>
                                             {item.status}
                                         </Typography>
                                     </View>
@@ -453,7 +453,7 @@ export default function KaryawanScreen() {
                                     </Typography>
                                 </View>
                             </View>
-                            <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100">
+                            <View className="w-10 h-10 bg-background rounded-xl items-center justify-center border border-border">
                                 <MoreVertical size={18} color="#D1D5DB" />
                             </View>
                         </Pressable>
@@ -468,10 +468,10 @@ export default function KaryawanScreen() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 ListEmptyComponent={
                     <View className="items-center py-20">
-                        <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-6">
+                        <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-6">
                             <User size={40} color="#D1D5DB" />
                         </View>
-                        <Typography className="text-gray-400 font-medium">Tidak ada karyawan ditemukan</Typography>
+                        <Typography className="text-textGray font-medium">Tidak ada karyawan ditemukan</Typography>
                     </View>
                 }
             />
@@ -501,7 +501,7 @@ export default function KaryawanScreen() {
                     <View className="flex-1 justify-end bg-black/40">
                         <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                         <View
-                            className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative z-10"
+                            className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative z-10"
                             style={{ maxHeight: '90%' }}
                         >
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
@@ -580,13 +580,13 @@ export default function KaryawanScreen() {
                         <View className="w-1 h-6 bg-primary rounded-full mr-3" />
                         <Typography variant="h2" weight="bold" className="text-2xl tracking-tight">Detail Pegawai</Typography>
                     </View>
-                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                         <X size={20} color="#6B7280" />
                     </Pressable>
                 </View>
 
                 <View className="items-center mb-10">
-                    <View className="p-1 bg-gray-50 rounded-full border border-gray-100 shadow-sm">
+                    <View className="p-1 bg-background rounded-full border border-border shadow-sm">
                         <View className="w-24 h-24 bg-primary/10 rounded-full items-center justify-center">
                             <User size={48} color="#023C69" />
                         </View>
@@ -595,8 +595,8 @@ export default function KaryawanScreen() {
                     <Typography className="text-textGray mt-1 font-medium">{karyawan.jabatan}</Typography>
 
                     <View className="flex-row mt-4">
-                        <View className={karyawan.status === 'AKTIF' ? "bg-emerald-50 px-4 py-1.5 rounded-full border border-emerald-100" : "bg-gray-50 px-4 py-1.5 rounded-full border border-gray-100"}>
-                            <Typography className={karyawan.status === 'AKTIF' ? "text-emerald-600 font-bold text-[10px] uppercase tracking-widest" : "text-gray-500 font-bold text-[10px] uppercase tracking-widest"}>
+                        <View className={karyawan.status === 'AKTIF' ? "bg-emerald-50 px-4 py-1.5 rounded-full border border-emerald-100" : "bg-background px-4 py-1.5 rounded-full border border-border"}>
+                            <Typography className={karyawan.status === 'AKTIF' ? "text-emerald-600 font-bold text-[10px] uppercase tracking-widest" : "text-textGray font-bold text-[10px] uppercase tracking-widest"}>
                                 {karyawan.status}
                             </Typography>
                         </View>
@@ -605,15 +605,15 @@ export default function KaryawanScreen() {
 
                 {/* Info Bento Grid */}
                 <View className="flex-row flex-wrap justify-between mb-8">
-                    <View className="w-[48%] bg-gray-50 p-5 rounded-[32px] mb-4 border border-gray-100/50 shadow-sm">
+                    <View className="w-[48%] bg-background p-5 rounded-[32px] mb-4 border border-gray-100/50 shadow-sm">
                         <Typography className="text-textGray/40 text-[9px] font-bold uppercase tracking-widest mb-2">Gaji Pokok</Typography>
                         <Typography weight="bold" className="text-textMain text-sm">{formatCurrency(karyawan.gaji_pokok)}</Typography>
                     </View>
-                    <View className="w-[48%] bg-gray-50 p-5 rounded-[32px] mb-4 border border-gray-100/50 shadow-sm">
+                    <View className="w-[48%] bg-background p-5 rounded-[32px] mb-4 border border-gray-100/50 shadow-sm">
                         <Typography className="text-textGray/40 text-[9px] font-bold uppercase tracking-widest mb-2">Tunjangan</Typography>
                         <Typography weight="bold" className="text-emerald-600 text-sm">+{formatCurrency(karyawan.tunjangan || 0)}</Typography>
                     </View>
-                    <View className="w-full bg-gray-50 p-5 rounded-[32px] border border-gray-100/50 shadow-sm">
+                    <View className="w-full bg-background p-5 rounded-[32px] border border-gray-100/50 shadow-sm">
                         <View className="flex-row items-center justify-between mb-4 pb-4 border-b border-gray-200/50">
                             <View className="flex-row items-center">
                                 <Phone size={16} color="#023C69" />
@@ -689,7 +689,7 @@ export default function KaryawanScreen() {
                             {selectedKaryawan ? 'Update Data' : 'Tambah Staff'}
                         </Typography>
                     </View>
-                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                         <X size={20} color="#6B7280" />
                     </Pressable>
                 </View>
@@ -697,7 +697,7 @@ export default function KaryawanScreen() {
                 <View style={{ gap: 24 }}>
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Lengkap *</Typography>
-                        <View className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 flex-row items-center">
+                        <View className="bg-background rounded-2xl border border-border px-4 py-4 flex-row items-center">
                             <User size={18} color="#9CA3AF" />
                             <Input
                                 className="flex-1 ml-3 text-textMain font-medium"
@@ -714,7 +714,7 @@ export default function KaryawanScreen() {
                         <View className="w-[48%]">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">NIK</Typography>
                             <Input
-                                className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 text-textMain font-medium"
+                                className="bg-background rounded-2xl border border-border px-4 py-4 text-textMain font-medium"
                                 style={{ backgroundColor: '#F9FAFB', borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 16, color: '#111827', fontWeight: '500' }}
                                 placeholder="16 Digit NIK"
                                 placeholderTextColor="#9CA3AF"
@@ -726,7 +726,7 @@ export default function KaryawanScreen() {
                         <View className="w-[48%]">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Telepon</Typography>
                             <Input
-                                className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 text-textMain font-medium"
+                                className="bg-background rounded-2xl border border-border px-4 py-4 text-textMain font-medium"
                                 style={{ backgroundColor: '#F9FAFB', borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 16, color: '#111827', fontWeight: '500' }}
                                 placeholder="08xxxxxxxx"
                                 placeholderTextColor="#9CA3AF"
@@ -740,7 +740,7 @@ export default function KaryawanScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Jabatan / Peran *</Typography>
                         <Input
-                            className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 text-textMain font-medium"
+                            className="bg-background rounded-2xl border border-border px-4 py-4 text-textMain font-medium"
                             style={{ backgroundColor: '#F9FAFB', borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 16, color: '#111827', fontWeight: '500' }}
                             placeholder="E.g. Mekanik Head"
                             placeholderTextColor="#9CA3AF"
@@ -753,7 +753,7 @@ export default function KaryawanScreen() {
                         <View className="w-[48%]">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Gaji Pokok *</Typography>
                             <Input
-                                className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 text-textMain font-medium"
+                                className="bg-background rounded-2xl border border-border px-4 py-4 text-textMain font-medium"
                                 style={{ backgroundColor: '#F9FAFB', borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 16, color: '#111827', fontWeight: '500' }}
                                 placeholder="Rp 0"
                                 placeholderTextColor="#9CA3AF"
@@ -765,7 +765,7 @@ export default function KaryawanScreen() {
                         <View className="w-[48%]">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Tunjangan</Typography>
                             <Input
-                                className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-4 text-textMain font-medium"
+                                className="bg-background rounded-2xl border border-border px-4 py-4 text-textMain font-medium"
                                 style={{ backgroundColor: '#F9FAFB', borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 16, color: '#111827', fontWeight: '500' }}
                                 placeholder="Rp 0"
                                 placeholderTextColor="#9CA3AF"
@@ -779,7 +779,7 @@ export default function KaryawanScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Catatan Tambahan</Typography>
                         <Input
-                            className="bg-gray-50 rounded-[32px] border border-gray-100 px-5 py-4 text-textMain font-medium h-24"
+                            className="bg-background rounded-[32px] border border-border px-5 py-4 text-textMain font-medium h-24"
                             style={{ backgroundColor: '#F9FAFB', borderRadius: 32, borderWidth: 1, borderColor: '#F3F4F6', paddingHorizontal: 20, paddingVertical: 16, color: '#111827', fontWeight: '500', minHeight: 96, textAlignVertical: 'top' }}
                             placeholder="Keahlian khusus, preferensi shift, dll..."
                             placeholderTextColor="#9CA3AF"

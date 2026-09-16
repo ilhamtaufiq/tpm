@@ -9,14 +9,14 @@ import {
     ActivityIndicator,
     Modal
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
+import { Header } from '../../../components/ui/Header';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { BottomSheetContainer, BoundedSheetScrollView } from '../../../components/ui/BottomSheetContainer';
 import {
-    ChevronLeft,
     Search,
     Plus,
     Package,
@@ -76,32 +76,30 @@ export default function PurchaseIndexScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-surface">
+        <View className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
 
-            {/* Header */}
-            <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
-                <View className="flex-row items-center">
-                    <Pressable onPress={handleBack} className="mr-4">
-                        <ChevronLeft size={24} color="#1C1C1C" />
+            <Header
+                title="Riwayat Restock"
+                subtitle="Daftar pembelian & stok masuk"
+                showBackButton
+                onBackButtonPress={handleBack}
+                showProfile={false}
+                showBell={false}
+                rightElement={
+                    <Pressable
+                        onPress={() => router.push('/bengkel/purchase/create')}
+                        className="bg-primary px-4 py-2 rounded-xl flex-row items-center active:opacity-90"
+                    >
+                        <Plus size={16} color="white" />
+                        <Typography weight="bold" className="text-white text-xs ml-1">Tambah</Typography>
                     </Pressable>
-                    <View>
-                        <Typography variant="h2" weight="bold">Riwayat Restock</Typography>
-                        <Typography className="text-gray-400 text-xs mt-0.5">Daftar pembelian & stok masuk</Typography>
-                    </View>
-                </View>
-                <Pressable
-                    onPress={() => router.push('/bengkel/purchase/create')}
-                    className="bg-primary px-4 py-2 rounded-xl flex-row items-center active:opacity-90"
-                >
-                    <Plus size={16} color="white" />
-                    <Typography weight="bold" className="text-white text-xs ml-1">Tambah</Typography>
-                </Pressable>
-            </View>
+                }
+            />
 
             {/* Search Box */}
-            <View className="p-6 bg-white border-b border-gray-50">
-                <View className="flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
+            <View className="p-6 bg-surface border-b border-border">
+                <View className="flex-row items-center px-4 bg-background h-12 rounded-2xl border border-border">
                     <Search size={18} color="#9CA3AF" />
                     <TextInput
                         placeholder="Cari supplier, nomor faktur, atau nota..."
@@ -128,8 +126,8 @@ export default function PurchaseIndexScreen() {
                         <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                     </View>
                 ) : purchases.length === 0 ? (
-                    <View className="items-center justify-center py-20 bg-white rounded-[40px] border border-dashed border-gray-100">
-                        <View className="w-24 h-24 bg-gray-50 rounded-full items-center justify-center mb-6 opacity-30">
+                    <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-border">
+                        <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
                             <ShoppingCart size={40} color="#9CA3AF" />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[6px]">Belum Ada Data</Typography>
@@ -140,7 +138,7 @@ export default function PurchaseIndexScreen() {
                         <Pressable
                             key={item.id}
                             onPress={() => setSelectedPurchase(item)}
-                            className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm active:scale-[0.98] transition-transform"
+                            className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm active:scale-[0.98] transition-transform"
                         >
                             <View className="flex-row items-center mb-4">
                                 <View className="w-14 h-14 bg-blue-50 rounded-2xl items-center justify-center mr-4">
@@ -202,7 +200,7 @@ export default function PurchaseIndexScreen() {
                         <Button
                             title="Tutup"
                             variant="outline"
-                            className="border-gray-200"
+                            className="border-border"
                             onPress={() => setSelectedPurchase(null)}
                         />
                     }
@@ -212,11 +210,11 @@ export default function PurchaseIndexScreen() {
                         <View className="flex-row items-center justify-between mb-6">
                             <View>
                                 <Typography variant="h3" weight="bold">Detail Transaksi</Typography>
-                                <Typography className="text-gray-400 text-xs mt-0.5">Nota: {selectedPurchase?.nomor_transaksi || '-'}</Typography>
+                                <Typography className="text-textGray text-xs mt-0.5">Nota: {selectedPurchase?.nomor_transaksi || '-'}</Typography>
                             </View>
                             <Pressable
                                 onPress={() => setSelectedPurchase(null)}
-                                className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
+                                className="w-10 h-10 bg-background rounded-full items-center justify-center"
                             >
                                 <X size={20} color="#475569" />
                             </Pressable>
@@ -229,12 +227,12 @@ export default function PurchaseIndexScreen() {
                             showsVerticalScrollIndicator={false}
                         >
                             {/* Summary Card */}
-                            <Card variant="outlined" className="p-5 border-gray-100 bg-gray-50/30 mb-6">
+                            <Card variant="outlined" className="p-5 border-border bg-gray-50/30 mb-6">
                                 <View className="space-y-4">
                                     <View className="flex-row items-center">
                                         <User size={18} color="#64748B" />
                                         <View className="ml-3">
-                                            <Typography variant="caption" className="text-gray-400 font-bold uppercase tracking-widest text-[9px]">Supplier</Typography>
+                                            <Typography variant="caption" className="text-textGray font-bold uppercase tracking-widest text-[9px]">Supplier</Typography>
                                             <Typography weight="bold" className="text-textMain">{selectedPurchase?.supplier?.nama || selectedPurchase?.supplier_nama || 'Supplier Umum'}</Typography>
                                         </View>
                                     </View>
@@ -242,7 +240,7 @@ export default function PurchaseIndexScreen() {
                                     <View className="flex-row items-center">
                                         <Calendar size={18} color="#64748B" />
                                         <View className="ml-3">
-                                            <Typography variant="caption" className="text-gray-400 font-bold uppercase tracking-widest text-[9px]">Tanggal & Faktur</Typography>
+                                            <Typography variant="caption" className="text-textGray font-bold uppercase tracking-widest text-[9px]">Tanggal & Faktur</Typography>
                                             <Typography weight="bold" className="text-textMain">
                                                 {selectedPurchase?.tanggal ? format(new Date(selectedPurchase.tanggal), 'dd MMMM yyyy', { locale: localeID }) : '-'}
                                                 {selectedPurchase?.nomor_faktur ? ` • ${selectedPurchase.nomor_faktur}` : ''}
@@ -253,7 +251,7 @@ export default function PurchaseIndexScreen() {
                                     <View className="flex-row items-center">
                                         <Clock size={18} color="#64748B" />
                                         <View className="ml-3">
-                                            <Typography variant="caption" className="text-gray-400 font-bold uppercase tracking-widest text-[9px]">Status Pembayaran</Typography>
+                                            <Typography variant="caption" className="text-textGray font-bold uppercase tracking-widest text-[9px]">Status Pembayaran</Typography>
                                             <View className="flex-row items-center mt-0.5">
                                                 <Badge
                                                     label={selectedPurchase?.status_bayar || 'UNPAID'}
@@ -271,13 +269,13 @@ export default function PurchaseIndexScreen() {
                             {/* Items List */}
                             <Typography weight="bold" className="text-primary text-xs uppercase mb-3 px-1 tracking-widest">Daftar Barang ({selectedPurchase?.detail?.length || 0})</Typography>
                             {selectedPurchase?.detail?.map((detail: any, index: number) => (
-                                <View key={index} className="flex-row items-center p-4 bg-white border border-gray-100 rounded-2xl mb-2">
+                                <View key={index} className="flex-row items-center p-4 bg-surface border border-border rounded-2xl mb-2">
                                     <View className="w-10 h-10 bg-blue-50 rounded-xl items-center justify-center mr-3">
                                         <Package size={20} color="#3B82F6" />
                                     </View>
                                     <View className="flex-1 mr-2">
                                         <Typography weight="bold" className="text-sm text-textMain" numberOfLines={1}>{detail.spare_part?.nama || detail.spare_part_nama || '-'}</Typography>
-                                        <Typography variant="caption" className="text-gray-400">{formatCurrency(detail.harga_satuan || 0)} x {detail.qty}</Typography>
+                                        <Typography variant="caption" className="text-textGray">{formatCurrency(detail.harga_satuan || 0)} x {detail.qty}</Typography>
                                     </View>
                                     <Typography weight="bold" className="text-primary text-sm">
                                         {formatCurrency((detail.harga_satuan || 0) * (detail.qty || 0))}
@@ -305,6 +303,6 @@ export default function PurchaseIndexScreen() {
                         </BoundedSheetScrollView>
                 </BottomSheetContainer>
             </Modal>
-        </SafeAreaView>
+        </View>
     );
 }

@@ -305,7 +305,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                 className="relative"
                 style={{ width }}
             >
-                <View style={{ height: previewHeight }} className="bg-gray-100 overflow-hidden">
+                <View style={{ height: previewHeight }} className="bg-background overflow-hidden">
                     {item.file_type === 'video' ? (
                         <View className="flex-1 bg-black">
                             <Video
@@ -341,7 +341,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
         const ContentWrapper = Platform.OS === 'web' ? ScrollView : BottomSheetScrollView;
 
     return (
-        <View className="flex-1 bg-white">
+        <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
             <ContentWrapper showsVerticalScrollIndicator={false} className="flex-1">
                 {/* Fixed Header Overlay (Mobile Style) */}
@@ -376,7 +376,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                 </View>
 
                 {/* Media Gallery Section */}
-                <View className="bg-gray-100 relative">
+                <View className="bg-background relative">
                     {activeUnit.media && activeUnit.media.length > 0 ? (
                         <FlatList
                             data={activeUnit.media}
@@ -403,14 +403,14 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             {activeUnit.media.map((_: any, i: number) => (
                                 <View
                                     key={i}
-                                    className={`h-1.5 rounded-full ${i === activeIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`}
+                                    className={`h-1.5 rounded-full ${i === activeIndex ? 'w-6 bg-surface' : 'w-1.5 bg-white/40'}`}
                                 />
                             ))}
                         </View>
                     )}
                 </View>
 
-                <View className="bg-white -mt-8 rounded-t-[48px] px-6 pt-10">
+                <View className="bg-surface -mt-8 rounded-t-[48px] px-6 pt-10">
                     {/* Badge & Title */}
                     <View className="items-center mb-10">
                         <View className="bg-primary/10 px-4 py-1.5 rounded-full mb-3 border border-primary/5">
@@ -443,7 +443,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             </Typography>
                         </View>
 
-                        <Card className="p-5 rounded-[32px] bg-white border border-gray-100 shadow-sm">
+                        <Card className="p-5 rounded-[32px] bg-surface border border-border shadow-sm">
                             {/* Action Buttons: Share & Upload */}
                             <View className="flex-row space-x-3 mb-4">
                                 <Pressable
@@ -487,7 +487,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                         const fullUrl = `${baseUrl}/uploads/${filePath}`;
                                         return (
                                             <View key={med.id} className="w-1/3 p-1">
-                                                <View className="bg-gray-100 rounded-2xl overflow-hidden h-24 relative border border-gray-200">
+                                                <View className="bg-background rounded-2xl overflow-hidden h-24 relative border border-border">
                                                     {med.file_type === 'video' ? (
                                                         <Pressable onPress={() => setLightboxIndex(idx)} className="w-full h-full bg-black items-center justify-center">
                                                             <PlayCircle size={24} color="white" opacity={0.8} />
@@ -515,9 +515,9 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                     })}
                                 </View>
                             ) : (
-                                <View className="py-6 items-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                <View className="py-6 items-center bg-background rounded-2xl border border-dashed border-border">
                                     <ImageIcon size={32} color="#9CA3AF" opacity={0.4} />
-                                    <Typography className="text-gray-400 text-xs mt-2 italic">Belum ada foto/video unit ini</Typography>
+                                    <Typography className="text-textGray text-xs mt-2 italic">Belum ada foto/video unit ini</Typography>
                                 </View>
                             )}
                         </Card>
@@ -526,7 +526,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     {/* Extended Info Cards */}
                     <Typography variant="h3" weight="bold" className="mb-6 text-textMain tracking-tight">Data Teknis & Investasi</Typography>
 
-                    <Card variant="outlined" className="p-0 border-gray-100 rounded-[32px] overflow-hidden bg-gray-50/30 mb-8">
+                    <Card variant="outlined" className="p-0 border-border rounded-[32px] overflow-hidden bg-gray-50/30 mb-8">
                         <DetailRow icon={FileText} label="Kepemilikan" value={activeUnit.tipe_kepemilikan} />
                         <DetailRow icon={Palette} label="Nama Investor" value={activeUnit.nama_investor || 'TPM'} />
                         {Number(activeUnit.nominal_investor || 0) > 0 && (
@@ -546,8 +546,8 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         </Typography>
                     </View>
 
-                    <Card className="p-6 rounded-[36px] bg-white border border-gray-100 shadow-xl shadow-black/5 mb-10">
-                        <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-gray-50">
+                    <Card className="p-6 rounded-[36px] bg-surface border border-border shadow-xl shadow-black/5 mb-10">
+                        <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-border">
                             <View>
                                 <Typography variant="caption" className="text-textGray mb-1">Harga Beli Awal</Typography>
                                 <Typography variant="h3" weight="bold" className="text-textMain">{formatCurrency(activeUnit.harga_beli)}</Typography>
@@ -558,7 +558,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         </View>
 
                         {Number(activeUnit.nominal_investor || 0) > 0 && (
-                            <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-gray-50">
+                            <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-border">
                                 <View>
                                     <Typography variant="caption" className="text-textGray mb-1">Nominal Modal Investor</Typography>
                                     <Typography variant="h3" weight="bold" className="text-indigo-600">{formatCurrency(activeUnit.nominal_investor)}</Typography>
@@ -569,7 +569,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             </View>
                         )}
 
-                        <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-gray-50">
+                        <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-border">
                             <View>
                                 <Typography variant="caption" className="text-textGray mb-1">Total Biaya & Sparepart</Typography>
                                 <Typography variant="h3" weight="bold" className="text-orange-500">{formatCurrency(Number(activeUnit.total_biaya || 0) + Number(activeUnit.total_part_service || 0))}</Typography>
@@ -580,7 +580,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         </View>
 
                         {activeUnit.status?.toUpperCase() !== 'TERJUAL' && (
-                            <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-gray-50">
+                            <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-border">
                                 <View>
                                     <Typography variant="caption" className="text-textGray mb-1">Harga Jual Unit</Typography>
                                     <Typography variant="h3" weight="bold" className="text-emerald-600">{formatCurrency(Number(activeUnit.harga_jual || 0))}</Typography>
@@ -667,15 +667,15 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 {/* Debt Info */}
                                 <View className="p-6">
                                     <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-rose-100">
-                                        <Typography className="text-gray-500">Harga Beli</Typography>
+                                        <Typography className="text-textGray">Harga Beli</Typography>
                                         <Typography weight="bold" className="text-textMain">{formatCurrency(activeHutang.nominal_hutang)}</Typography>
                                     </View>
                                     <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-rose-100">
-                                        <Typography className="text-gray-500">Total Terbayar</Typography>
+                                        <Typography className="text-textGray">Total Terbayar</Typography>
                                         <Typography weight="bold" className="text-emerald-600">{formatCurrency(activeHutang.total_dibayar)}</Typography>
                                     </View>
                                     <View className="flex-row justify-between items-center mb-6">
-                                        <Typography className="text-gray-500">Sisa Hutang</Typography>
+                                        <Typography className="text-textGray">Sisa Hutang</Typography>
                                         <Typography variant="h3" weight="bold" className="text-red-500">{formatCurrency(activeHutang.sisa_hutang)}</Typography>
                                     </View>
 
@@ -710,31 +710,31 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 <View className="p-6">
                                     {(activeTx.tanggal || activeTx.created_at) && (
                                         <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-amber-100">
-                                            <Typography className="text-gray-500">Tanggal Booking</Typography>
+                                            <Typography className="text-textGray">Tanggal Booking</Typography>
                                             <Typography weight="bold" className="text-textMain">{formatDate(activeTx.tanggal || activeTx.created_at)}</Typography>
                                         </View>
                                     )}
                                     <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-amber-100">
-                                        <Typography className="text-gray-500">Pembeli</Typography>
+                                        <Typography className="text-textGray">Pembeli</Typography>
                                         <Typography weight="bold" className="text-textMain">{activeTx.nama_pembeli}</Typography>
                                     </View>
                                     <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-amber-100">
-                                        <Typography className="text-gray-500">Harga Jual</Typography>
+                                        <Typography className="text-textGray">Harga Jual</Typography>
                                         <Typography weight="bold" className="text-textMain">{formatCurrency(activeTx.harga_jual)}</Typography>
                                     </View>
                                     <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-amber-100">
-                                        <Typography className="text-gray-500">DP Terbayar</Typography>
+                                        <Typography className="text-textGray">DP Terbayar</Typography>
                                         <Typography weight="bold" className="text-emerald-600">{formatCurrency(activeTx.dp)}</Typography>
                                     </View>
                                     {activeTx.metode_bayar && (
                                         <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-amber-100">
-                                            <Typography className="text-gray-500">Metode Bayar DP</Typography>
+                                            <Typography className="text-textGray">Metode Bayar DP</Typography>
                                             <Typography weight="bold" className="text-textMain uppercase">{activeTx.metode_bayar}</Typography>
                                         </View>
                                     )}
                                     {activeTx.status_bayar && (
                                         <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-amber-100">
-                                            <Typography className="text-gray-500">Status Pembayaran</Typography>
+                                            <Typography className="text-textGray">Status Pembayaran</Typography>
                                             <Typography weight="bold" className={`uppercase ${
                                                 activeTx.status_bayar === 'LUNAS' ? 'text-emerald-600' :
                                                 activeTx.status_bayar === 'PARTIAL' ? 'text-amber-600' : 'text-rose-600'
@@ -742,7 +742,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                         </View>
                                     )}
                                     <View className="flex-row justify-between items-center mb-6">
-                                        <Typography className="text-gray-500">Sisa Bayar</Typography>
+                                        <Typography className="text-textGray">Sisa Bayar</Typography>
                                         <Typography variant="h3" weight="bold" className="text-red-500">{formatCurrency(activeTx.sisa_bayar)}</Typography>
                                     </View>
 
@@ -769,7 +769,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                             setCancelSuccess(false);
                                             setShowCancelModal(true);
                                         }}
-                                        className="bg-white flex-row items-center justify-center py-4 rounded-2xl border-2 border-red-200"
+                                        className="bg-surface flex-row items-center justify-center py-4 rounded-2xl border-2 border-red-200"
                                     >
                                         <Ban size={18} color="#EF4444" />
                                         <Typography weight="bold" className="text-red-500 text-base ml-2">Batalkan Booking</Typography>
@@ -965,19 +965,19 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                 onRequestClose={() => setShowCancelModal(false)}
             >
                 <View className="flex-1 bg-black/60 justify-end">
-                    <View className="bg-white rounded-t-[36px] px-6 pt-8 pb-10">
+                    <View className="bg-surface rounded-t-[36px] px-6 pt-8 pb-10">
                         {/* Modal Header */}
                         <View className="flex-row justify-between items-center mb-6">
                             <View>
                                 <Typography variant="h2" weight="bold" className="text-red-600">Batalkan Booking</Typography>
-                                <Typography variant="caption" className="text-gray-400 mt-1">{activeTx?.nomor_transaksi}</Typography>
+                                <Typography variant="caption" className="text-textGray mt-1">{activeTx?.nomor_transaksi}</Typography>
                             </View>
                             <Pressable
                                 onPress={() => {
                                     setShowCancelModal(false);
                                     setCancelSuccess(false);
                                 }}
-                                className="w-10 h-10 bg-gray-100 rounded-2xl items-center justify-center"
+                                className="w-10 h-10 bg-background rounded-2xl items-center justify-center"
                             >
                                 <X size={18} color="#6B7280" />
                             </Pressable>
@@ -986,7 +986,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         {!activeTx && !cancelSuccess ? (
                             <View className="items-center py-20">
                                 <ActivityIndicator size="large" color="#EF4444" />
-                                <Typography className="text-gray-400 mt-6 text-center px-10">
+                                <Typography className="text-textGray mt-6 text-center px-10">
                                     Mengambil data transaksi...{'\n'}Silakan tunggu sebentar.
                                 </Typography>
                             </View>
@@ -996,7 +996,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                     <Ban size={40} color="#EF4444" />
                                 </View>
                                 <Typography variant="h3" weight="bold" className="text-red-600 mb-2">Booking Dibatalkan</Typography>
-                                <Typography className="text-gray-400 text-center">Mobil kembali ke status TERSEDIA</Typography>
+                                <Typography className="text-textGray text-center">Mobil kembali ke status TERSEDIA</Typography>
                                 <Pressable
                                     onPress={() => {
                                         setShowCancelModal(false);
@@ -1034,7 +1034,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 <View className="mb-5">
                                     <Typography weight="bold" className="text-textMain mb-2">Penalti Pembatalan</Typography>
                                     <TextInput
-                                        className="bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-lg font-bold text-textMain"
+                                        className="bg-background border border-border rounded-2xl px-5 py-4 text-lg font-bold text-textMain"
                                         value={formatNumber(cancelPenalti)}
                                         onChangeText={(val) => {
                                             const cleanVal = String(parseNumber(val));
@@ -1049,7 +1049,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                         keyboardType="numeric"
                                         placeholder="0"
                                     />
-                                    <Typography variant="caption" className="text-gray-400 mt-2">Maks: {formatCurrency(activeTx?.dp || 0)}</Typography>
+                                    <Typography variant="caption" className="text-textGray mt-2">Maks: {formatCurrency(activeTx?.dp || 0)}</Typography>
                                 </View>
 
                                 {/* Refund Preview */}
@@ -1058,10 +1058,10 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                     const penaltiVal = parseFloat(cancelPenalti) || 0;
                                     const refundVal = Math.max(0, dp - penaltiVal);
                                     return (
-                                        <View className="bg-gray-50 p-5 rounded-2xl mb-5 border border-gray-100">
-                                            <Typography variant="caption" className="text-gray-400 font-bold uppercase tracking-wider text-[10px] mb-3">Rincian Pembatalan</Typography>
+                                        <View className="bg-background p-5 rounded-2xl mb-5 border border-border">
+                                            <Typography variant="caption" className="text-textGray font-bold uppercase tracking-wider text-[10px] mb-3">Rincian Pembatalan</Typography>
                                             <View className="flex-row justify-between items-center mb-2">
-                                                <Typography className="text-gray-500">DP Terbayar</Typography>
+                                                <Typography className="text-textGray">DP Terbayar</Typography>
                                                 <Typography weight="bold" className="text-textMain">{formatCurrency(dp)}</Typography>
                                             </View>
                                             <View className="flex-row justify-between items-center mb-2">
@@ -1074,7 +1074,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                     <Typography weight="bold" className="text-amber-600">+ {formatCurrency(penaltiVal)}</Typography>
                                                 </View>
                                             )}
-                                            <View className="border-t border-gray-200 mt-2 pt-3 flex-row justify-between items-center">
+                                            <View className="border-t border-border mt-2 pt-3 flex-row justify-between items-center">
                                                 <View className="flex-row items-center">
                                                     <ArrowDownLeft size={16} color="#10B981" />
                                                     <Typography weight="bold" className="text-emerald-600 ml-1">
@@ -1084,7 +1084,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                 <Typography variant="h3" weight="bold" className="text-emerald-600">{formatCurrency(refundVal)}</Typography>
                                             </View>
                                             {refundVal > 0 && (
-                                                <Typography variant="caption" className="text-gray-500 mt-3 leading-relaxed">
+                                                <Typography variant="caption" className="text-textGray mt-3 leading-relaxed">
                                                     Sisa DP dicatat sebagai hutang di menu Hutang. Kas tidak keluar saat pembatalan; refund dibayar dari menu Hutang.
                                                 </Typography>
                                             )}
@@ -1096,7 +1096,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 <View className="mb-8">
                                     <Typography weight="bold" className="text-textMain mb-2">Alasan Pembatalan (opsional)</Typography>
                                     <TextInput
-                                        className="bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-base text-textMain"
+                                        className="bg-background border border-border rounded-2xl px-5 py-4 text-base text-textMain"
                                         value={cancelAlasan}
                                         onChangeText={setCancelAlasan}
                                         placeholder="Contoh: Pembeli mengundurkan diri"
@@ -1109,7 +1109,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 </ScrollView>
 
                                 {/* Submit Button - Fixed at bottom */}
-                                <View className="pt-6 border-t border-gray-100 mt-2">
+                                <View className="pt-6 border-t border-border mt-2">
                                     {isConfirmingCancel && (
                                         <View className="bg-red-50 p-5 rounded-2xl mb-4 border border-red-100">
                                             <View className="flex-row items-center mb-2">
@@ -1124,7 +1124,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                 onPress={() => setIsConfirmingCancel(false)}
                                                 className="mt-3"
                                             >
-                                                <Typography weight="bold" className="text-gray-500 text-xs">Ubah rincian pembatalan</Typography>
+                                                <Typography weight="bold" className="text-textGray text-xs">Ubah rincian pembatalan</Typography>
                                             </TouchableOpacity>
                                         </View>
                                     )}
@@ -1235,7 +1235,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
 // Helper Component for Premium Specs
 const SpecCard = ({ icon: Icon, label, value, color }: any) => (
-    <View className="w-[48%] bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm">
+    <View className="w-[48%] bg-surface p-5 rounded-[32px] border border-border shadow-sm">
         <View className="w-11 h-11 rounded-2xl self-start mb-4 items-center justify-center" style={{ backgroundColor: `${color}15` }}>
             <Icon size={20} color={color} />
         </View>
@@ -1245,7 +1245,7 @@ const SpecCard = ({ icon: Icon, label, value, color }: any) => (
 );
 
 const DetailRow = ({ icon: Icon, label, value, last }: { icon: any, label: string, value?: string | number, last?: boolean }) => (
-    <View className={`flex-row justify-between items-center px-6 py-5 ${!last ? 'border-b border-gray-50' : ''}`}>
+    <View className={`flex-row justify-between items-center px-6 py-5 ${!last ? 'border-b border-border' : ''}`}>
         <View className="flex-row items-center">
             <Icon size={18} color="#9CA3AF" />
             <Typography className="text-textGray font-medium ml-3">{label}</Typography>

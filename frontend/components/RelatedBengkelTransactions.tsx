@@ -41,7 +41,7 @@ export const RelatedBengkelTransactions = ({ muatan_id, mobil_id }: RelatedBengk
             <Typography variant="h3" weight="bold" className="mb-4 text-textMain tracking-tight">Riwayat Bengkel Terkait</Typography>
             <View className="space-y-3">
                 {transactions.map((item: any) => (
-                    <Card key={item.id} className="p-4 border-gray-100 bg-gray-50/50 rounded-[24px]">
+                    <Card key={item.id} className="p-4 border-border bg-gray-50/50 rounded-[24px]">
                         <View className="flex-row justify-between items-start mb-2">
                             <View className="flex-row items-center">
                                 <View className="w-10 h-10 bg-blue-100/50 rounded-2xl items-center justify-center mr-3">
@@ -51,7 +51,7 @@ export const RelatedBengkelTransactions = ({ muatan_id, mobil_id }: RelatedBengk
                                     <View className="flex-row items-center">
                                         <Typography variant="body2" weight="bold">{item.nomor_transaksi}</Typography>
                                         <View className="ml-2 px-1.5 py-0.5 rounded-md bg-gray-200/50">
-                                            <Typography className="text-[8px] font-bold text-gray-500 uppercase">
+                                            <Typography className="text-[8px] font-bold text-textGray uppercase">
                                                 {categoryMap[item.kategori] || item.kategori}
                                             </Typography>
                                         </View>

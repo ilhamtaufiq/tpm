@@ -144,7 +144,7 @@ export default function UserCashManagementScreen() {
 
     const renderUserItem = ({ item }: { item: any }) => (
         <View className="flex-row items-center px-6 py-4 border-b border-slate-50">
-            <View className="w-12 h-12 bg-slate-50 rounded-2xl items-center justify-center mr-4 overflow-hidden">
+            <View className="w-12 h-12 bg-background rounded-2xl items-center justify-center mr-4 overflow-hidden">
                 {item.profile_picture ? (
                     <Image source={{ uri: getFileUrl(item.profile_picture) as string }} className="w-full h-full" />
                 ) : (
@@ -170,7 +170,7 @@ export default function UserCashManagementScreen() {
                         </Pressable>
                         <Pressable 
                             onPress={() => handleOpenForm(item, 'set')}
-                            className="bg-slate-50 px-3 py-1.5 rounded-lg flex-row items-center"
+                            className="bg-background px-3 py-1.5 rounded-lg flex-row items-center"
                         >
                             <Edit3 size={12} color="#64748b" />
                             <Typography weight="bold" className="text-slate-600 text-[10px] ml-1">Set</Typography>
@@ -234,20 +234,20 @@ export default function UserCashManagementScreen() {
 
             {/* Tabs */}
             <View className="px-6 mt-4 z-10">
-                <View className="bg-white p-2 rounded-[24px] shadow-sm flex-row items-center border border-gray-100">
+                <View className="bg-surface p-2 rounded-[24px] shadow-sm flex-row items-center border border-border">
                     <Pressable 
                         onPress={() => setActiveTab('list')}
                         className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'list' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
                     >
                         <User size={18} color={activeTab === 'list' ? 'white' : '#9CA3AF'} />
-                        <Typography className={`ml-2 text-sm font-bold ${activeTab === 'list' ? 'text-white' : 'text-gray-400'}`}>Daftar User</Typography>
+                        <Typography className={`ml-2 text-sm font-bold ${activeTab === 'list' ? 'text-white' : 'text-textGray'}`}>Daftar User</Typography>
                     </Pressable>
                     <Pressable 
                         onPress={() => setActiveTab('history')}
                         className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'history' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
                     >
                         <History size={18} color={activeTab === 'history' ? 'white' : '#9CA3AF'} />
-                        <Typography className={`ml-2 text-sm font-bold ${activeTab === 'history' ? 'text-white' : 'text-gray-400'}`}>Riwayat</Typography>
+                        <Typography className={`ml-2 text-sm font-bold ${activeTab === 'history' ? 'text-white' : 'text-textGray'}`}>Riwayat</Typography>
                     </Pressable>
                 </View>
             </View>
@@ -256,8 +256,8 @@ export default function UserCashManagementScreen() {
                 <>
                     {/* Search Bar */}
                     <View className="px-6 mt-4">
-                        <View className="bg-white p-2 rounded-[24px] flex-row items-center border border-gray-100 shadow-sm">
-                            <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-gray-50">
+                        <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-border shadow-sm">
+                            <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-background">
                                 <Search size={18} color="#9CA3AF" />
                                 <TextInput 
                                     placeholder="Cari nama atau username..." 

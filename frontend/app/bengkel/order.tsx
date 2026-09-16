@@ -33,7 +33,7 @@ export default function BengkelOrderScreen() {
 
     if (orderId && detailData && isBengkelTransactionLocked(detailData)) {
         return (
-            <View className="flex-1 bg-white">
+            <View className="flex-1 bg-surface">
                 <StatusBar barStyle="dark-content" />
                 <Header
                     title="Edit Antrian"
@@ -42,10 +42,10 @@ export default function BengkelOrderScreen() {
                     showProfile={false}
                 />
                 <View className="flex-1 items-center justify-center px-8">
-                    <Typography weight="bold" className="text-gray-700 text-center mb-2">
+                    <Typography weight="bold" className="text-text text-center mb-2">
                         Transaksi Sudah Lunas & Selesai
                     </Typography>
-                    <Typography className="text-gray-500 text-center text-sm">
+                    <Typography className="text-textGray text-center text-sm">
                         Order ini tidak dapat diedit lagi.
                     </Typography>
                 </View>
@@ -54,7 +54,7 @@ export default function BengkelOrderScreen() {
     }
 
     return (
-        <View className="flex-1 bg-white">
+        <View className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
             <Header 
                 title={orderId ? "Edit Antrian" : "Buat Antrian Bengkel"}

@@ -47,7 +47,7 @@ export const BusinessPulse = () => {
                 {stats.map((stat) => (
                     <Pressable
                         key={stat.id}
-                        className="w-[31%] bg-white p-4 rounded-[24px] border border-gray-100 shadow-sm"
+                        className="w-[31%] bg-surface p-4 rounded-[24px] border border-border shadow-sm"
                     >
                         <View
                             style={{ backgroundColor: `${stat.color}15` }}

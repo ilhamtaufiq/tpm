@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, Pressable, Switch, ActivityIndicator, StatusBar } from 'react-native';
 import { appAlert, appConfirm } from '../../../utils/appAlert';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, Save, Trash2 } from 'lucide-react-native';
+import { Save, Trash2 } from 'lucide-react-native';
 import { Typography } from '../../../components/ui/Typography';
+import { Header } from '../../../components/ui/Header';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
@@ -137,27 +137,25 @@ export default function ArmadaFormScreen() {
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-surface">
+        <View className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
 
-            {/* Header */}
-            <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
-                <View className="flex-row items-center">
-                    <Pressable onPress={() => router.back()} className="mr-4">
-                        <ChevronLeft size={24} color="#1C1C1C" />
-                    </Pressable>
-                    <Typography variant="h2" weight="bold">{isEdit ? 'Edit Armada' : 'Armada Baru'}</Typography>
-                </View>
-                {isEdit && (
+            <Header
+                title={isEdit ? 'Edit Armada' : 'Armada Baru'}
+                showBackButton
+                onBackButtonPress={() => router.back()}
+                showProfile={false}
+                showBell={false}
+                rightElement={isEdit ? (
                     <Pressable onPress={handleDelete} className="w-10 h-10 bg-red-50 rounded-full items-center justify-center">
                         <Trash2 size={20} color="#EF4444" />
                     </Pressable>
-                )}
-            </View>
+                ) : undefined}
+            />
 
             <ScrollView className="flex-1 p-6">
                 <Card className="p-6 mb-6">
-                    <Typography variant="caption" weight="bold" className="text-gray-400 mb-6 uppercase tracking-widest">Informasi Kendaraan</Typography>
+                    <Typography variant="caption" weight="bold" className="text-textGray mb-6 uppercase tracking-widest">Informasi Kendaraan</Typography>
 
                     <Input
                         label="Nama Kendaraan / Panggilan *"
@@ -191,10 +189,10 @@ export default function ArmadaFormScreen() {
                         textAlignVertical="top"
                     />
 
-                    <View className="flex-row items-center justify-between mt-2 py-4 border-t border-gray-50">
+                    <View className="flex-row items-center justify-between mt-2 py-4 border-t border-border">
                         <View>
                             <Typography weight="bold">Status Aktif</Typography>
-                            <Typography variant="caption" className="text-gray-500">Armada dapat dipilih di form muatan</Typography>
+                            <Typography variant="caption" className="text-textGray">Armada dapat dipilih di form muatan</Typography>
                         </View>
                         <Switch
                             value={formData.is_active}
@@ -213,6 +211,6 @@ export default function ArmadaFormScreen() {
                     className="mb-10"
                 />
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }

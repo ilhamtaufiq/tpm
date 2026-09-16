@@ -64,7 +64,7 @@ export default function DataImportScreen() {
 
     if (!isAdmin) {
         return (
-            <View className="flex-1 bg-white">
+            <View className="flex-1 bg-surface">
                 <Header title="Import Data" showBackButton />
                 <View className="flex-1 items-center justify-center p-8">
                     <AlertTriangle size={40} color="#9CA3AF" />
@@ -227,7 +227,7 @@ export default function DataImportScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="dark-content" />
             <Header title="Import Data" showBackButton />
             <ScrollView
@@ -270,13 +270,13 @@ export default function DataImportScreen() {
                     </Typography>
                     <Pressable
                         onPress={handlePick}
-                        className="border border-dashed border-gray-300 rounded-2xl p-6 items-center bg-white active:bg-gray-50"
+                        className="border border-dashed border-border rounded-2xl p-6 items-center bg-surface active:bg-background"
                     >
                         <FileSpreadsheet size={28} color={themeColors.primary} />
                         <Typography weight="bold" className="mt-2 text-sm">
                             {pickedName || 'Ketuk untuk pilih .xlsx'}
                         </Typography>
-                        <Typography className="text-xs text-gray-400 mt-1">
+                        <Typography className="text-xs text-textGray mt-1">
                             Maks 8MB · multi-sheet
                         </Typography>
                     </Pressable>
@@ -313,7 +313,7 @@ export default function DataImportScreen() {
                                 ) : (
                                     <AlertTriangle size={16} color="#DC2626" />
                                 )}
-                                <Typography className="ml-2 text-xs text-gray-600">
+                                <Typography className="ml-2 text-xs text-textGray">
                                     Batch {preview.batch_id} ·{' '}
                                     {preview.dry_run ? 'dry-run' : 'committed'} · error{' '}
                                     {totalErrors}
@@ -322,7 +322,7 @@ export default function DataImportScreen() {
                             {Object.entries(preview.sheets || {}).map(([name, s]) => (
                                 <View
                                     key={name}
-                                    className="bg-gray-50 rounded-2xl p-3 mb-2 border border-gray-100"
+                                    className="bg-background rounded-2xl p-3 mb-2 border border-border"
                                 >
                                     <View className="flex-row items-center justify-between">
                                         <Typography weight="bold" className="text-sm">
@@ -337,7 +337,7 @@ export default function DataImportScreen() {
                                             variant={s.errors?.length ? 'error' : 'success'}
                                         />
                                     </View>
-                                    <Typography className="text-[11px] text-gray-500 mt-1">
+                                    <Typography className="text-[11px] text-textGray mt-1">
                                         rows {s.rows} · +{s.created} · ~{s.updated} · skip{' '}
                                         {s.skipped}
                                     </Typography>
@@ -350,7 +350,7 @@ export default function DataImportScreen() {
                                         </Typography>
                                     ))}
                                     {(s.errors?.length || 0) > 5 ? (
-                                        <Typography className="text-[11px] text-gray-400 mt-1">
+                                        <Typography className="text-[11px] text-textGray mt-1">
                                             +{(s.errors?.length || 0) - 5} error lain…
                                         </Typography>
                                     ) : null}
@@ -367,7 +367,7 @@ export default function DataImportScreen() {
                                 </Card>
                             ) : null}
                             {preview.neraca_verification ? (
-                                <Card className="mt-3 p-3 border-gray-200 bg-white">
+                                <Card className="mt-3 p-3 border-border bg-surface">
                                     <View className="flex-row items-center justify-between mb-2">
                                         <View className="flex-row items-center">
                                             {preview.neraca_verification.is_balanced ? (
@@ -375,7 +375,7 @@ export default function DataImportScreen() {
                                             ) : (
                                                 <AlertTriangle size={16} color="#DC2626" />
                                             )}
-                                            <Typography weight="bold" className="ml-2 text-sm text-gray-800">
+                                            <Typography weight="bold" className="ml-2 text-sm text-text">
                                                 Verifikasi Neraca
                                             </Typography>
                                         </View>
@@ -384,60 +384,60 @@ export default function DataImportScreen() {
                                             variant={preview.neraca_verification.is_balanced ? 'success' : 'error'}
                                         />
                                     </View>
-                                    <View className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                                    <View className="bg-background rounded-xl p-3 border border-border">
                                         <View className="flex-row justify-between items-center py-1">
-                                            <Typography className="text-[11px] text-gray-500">Kas</Typography>
-                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                            <Typography className="text-[11px] text-textGray">Kas</Typography>
+                                            <Typography className="text-[11px] text-text font-semibold">
                                                 {preview.neraca_verification.computed.total_kas?.toLocaleString('id-ID') ?? '-'}
                                             </Typography>
                                         </View>
                                         <View className="flex-row justify-between items-center py-1">
-                                            <Typography className="text-[11px] text-gray-500">Piutang</Typography>
-                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                            <Typography className="text-[11px] text-textGray">Piutang</Typography>
+                                            <Typography className="text-[11px] text-text font-semibold">
                                                 {preview.neraca_verification.computed.total_piutang?.toLocaleString('id-ID') ?? '-'}
                                             </Typography>
                                         </View>
                                         <View className="flex-row justify-between items-center py-1">
-                                            <Typography className="text-[11px] text-gray-500">Persediaan Sparepart</Typography>
-                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                            <Typography className="text-[11px] text-textGray">Persediaan Sparepart</Typography>
+                                            <Typography className="text-[11px] text-text font-semibold">
                                                 {preview.neraca_verification.computed.persediaan_sparepart?.toLocaleString('id-ID') ?? '-'}
                                             </Typography>
                                         </View>
                                         <View className="flex-row justify-between items-center py-1">
-                                            <Typography className="text-[11px] text-gray-500">Aset Tetap</Typography>
-                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                            <Typography className="text-[11px] text-textGray">Aset Tetap</Typography>
+                                            <Typography className="text-[11px] text-text font-semibold">
                                                 {preview.neraca_verification.computed.total_aset_tetap?.toLocaleString('id-ID') ?? '-'}
                                             </Typography>
                                         </View>
                                         <View className="flex-row justify-between items-center py-1">
-                                            <Typography className="text-[11px] text-gray-500">Mobil</Typography>
-                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                            <Typography className="text-[11px] text-textGray">Mobil</Typography>
+                                            <Typography className="text-[11px] text-text font-semibold">
                                                 {preview.neraca_verification.computed.total_mobil?.toLocaleString('id-ID') ?? '-'}
                                             </Typography>
                                         </View>
                                         <View className="h-[1px] bg-gray-200 my-1.5" />
                                         <View className="flex-row justify-between items-center py-1">
-                                            <Typography className="text-[11px] text-gray-800 font-bold">Aktiva</Typography>
-                                            <Typography className="text-[11px] text-gray-900 font-bold">
+                                            <Typography className="text-[11px] text-text font-bold">Aktiva</Typography>
+                                            <Typography className="text-[11px] text-text font-bold">
                                                 {preview.neraca_verification.computed.total_aktiva?.toLocaleString('id-ID') ?? '-'}
                                             </Typography>
                                         </View>
                                         <View className="h-[1px] bg-gray-200 my-1.5" />
                                         <View className="flex-row justify-between items-center py-1">
-                                            <Typography className="text-[11px] text-gray-500">Hutang</Typography>
-                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                            <Typography className="text-[11px] text-textGray">Hutang</Typography>
+                                            <Typography className="text-[11px] text-text font-semibold">
                                                 {preview.neraca_verification.computed.total_hutang?.toLocaleString('id-ID') ?? '-'}
                                             </Typography>
                                         </View>
                                         <View className="flex-row justify-between items-center py-1">
-                                            <Typography className="text-[11px] text-gray-500">Hutang Part</Typography>
-                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                            <Typography className="text-[11px] text-textGray">Hutang Part</Typography>
+                                            <Typography className="text-[11px] text-text font-semibold">
                                                 {preview.neraca_verification.computed.hutang_part?.toLocaleString('id-ID') ?? '-'}
                                             </Typography>
                                         </View>
                                         <View className="flex-row justify-between items-center py-1">
-                                            <Typography className="text-[11px] text-gray-500">Hutang Mobil</Typography>
-                                            <Typography className="text-[11px] text-gray-800 font-semibold">
+                                            <Typography className="text-[11px] text-textGray">Hutang Mobil</Typography>
+                                            <Typography className="text-[11px] text-text font-semibold">
                                                 {preview.neraca_verification.computed.hutang_mobil?.toLocaleString('id-ID') ?? '-'}
                                             </Typography>
                                         </View>

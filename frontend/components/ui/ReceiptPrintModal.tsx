@@ -47,12 +47,12 @@ export default function ReceiptPrintModal({ visible, onClose, data, onSuccess }:
                     </View>
 
                     <Typography variant="h3" weight="bold" className="text-textMain mb-1">Cetak Struk</Typography>
-                    <Typography className="text-gray-400 text-sm text-center mb-6">Pilih aksi untuk struk transaksi ini</Typography>
+                    <Typography className="text-textGray text-sm text-center mb-6">Pilih aksi untuk struk transaksi ini</Typography>
 
                     {loading && (
                         <View className="items-center mb-4">
                             <ActivityIndicator size="large" color="#023C69" />
-                            <Typography className="text-gray-500 text-xs mt-2">Memproses...</Typography>
+                            <Typography className="text-textGray text-xs mt-2">Memproses...</Typography>
                         </View>
                     )}
 
@@ -79,7 +79,7 @@ export default function ReceiptPrintModal({ visible, onClose, data, onSuccess }:
 
                     {(success || error) && (
                         <Pressable onPress={handleClose} className="mt-4 p-2">
-                            <Typography className="text-gray-400 text-sm font-bold">{success ? 'Selesai' : 'Tutup'}</Typography>
+                            <Typography className="text-textGray text-sm font-bold">{success ? 'Selesai' : 'Tutup'}</Typography>
                         </Pressable>
                     )}
                 </View>

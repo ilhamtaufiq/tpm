@@ -224,7 +224,7 @@ export default function SupplierScreen() {
 
     const renderSupplierItem = ({ item }: { item: Supplier }) => (
         <Pressable onPress={() => openDetail(item)}>
-            <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
+            <View className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center">
                 <View className="w-16 h-16 bg-amber-50 rounded-[20px] items-center justify-center mr-4 border border-amber-100/50">
                     <Package size={32} color="#F59E0B" />
                 </View>
@@ -234,13 +234,13 @@ export default function SupplierScreen() {
                     <Typography className="text-textGray text-xs">{item.kota || 'Tidak ada lokasi'}</Typography>
 
                     {item.telepon && (
-                        <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
+                        <View className="flex-row items-center mt-2 pt-2 border-t border-border">
                             <Phone size={12} color="#9CA3AF" />
-                            <Typography variant="caption" className="text-gray-500 ml-1.5">{item.telepon}</Typography>
+                            <Typography variant="caption" className="text-textGray ml-1.5">{item.telepon}</Typography>
                         </View>
                     )}
                 </View>
-                <View className="ml-2 w-8 h-8 rounded-full bg-gray-50 items-center justify-center">
+                <View className="ml-2 w-8 h-8 rounded-full bg-background items-center justify-center">
                     <MoreVertical size={16} color="#9CA3AF" />
                 </View>
             </View>
@@ -253,7 +253,7 @@ export default function SupplierScreen() {
                 <View className="p-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <Typography variant="h2" weight="bold">Detail Supplier</Typography>
-                        <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                        <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                             <X size={20} color="#6B7280" />
                         </Pressable>
                     </View>
@@ -266,40 +266,40 @@ export default function SupplierScreen() {
                         <Badge label="Supplier" variant="warning" />
                     </View>
 
-                    <Card className="p-5 mb-6 border border-gray-100 rounded-[24px]">
+                    <Card className="p-5 mb-6 border border-border rounded-[24px]">
                         <Typography variant="h3" weight="bold" className="mb-4 text-base">Informasi Kontak</Typography>
 
                         {selectedSupplier.telepon && (
-                            <View className="flex-row items-center mb-4 bg-gray-50 p-3 rounded-2xl">
-                                <View className="w-10 h-10 bg-white rounded-xl items-center justify-center shadow-sm mr-3">
+                            <View className="flex-row items-center mb-4 bg-background p-3 rounded-2xl">
+                                <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
                                     <Phone size={20} color="#6B7280" />
                                 </View>
                                 <View>
-                                    <Typography className="text-xs text-gray-400 font-bold uppercase">Telepon</Typography>
+                                    <Typography className="text-xs text-textGray font-bold uppercase">Telepon</Typography>
                                     <Typography weight="semibold">{selectedSupplier.telepon}</Typography>
                                 </View>
                             </View>
                         )}
 
                         {selectedSupplier.email && (
-                            <View className="flex-row items-center mb-4 bg-gray-50 p-3 rounded-2xl">
-                                <View className="w-10 h-10 bg-white rounded-xl items-center justify-center shadow-sm mr-3">
+                            <View className="flex-row items-center mb-4 bg-background p-3 rounded-2xl">
+                                <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
                                     <Mail size={20} color="#6B7280" />
                                 </View>
                                 <View>
-                                    <Typography className="text-xs text-gray-400 font-bold uppercase">Email</Typography>
+                                    <Typography className="text-xs text-textGray font-bold uppercase">Email</Typography>
                                     <Typography weight="semibold">{selectedSupplier.email}</Typography>
                                 </View>
                             </View>
                         )}
 
                         {(selectedSupplier.alamat || selectedSupplier.kota) && (
-                            <View className="flex-row items-center mb-4 bg-gray-50 p-3 rounded-2xl">
-                                <View className="w-10 h-10 bg-white rounded-xl items-center justify-center shadow-sm mr-3">
+                            <View className="flex-row items-center mb-4 bg-background p-3 rounded-2xl">
+                                <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
                                     <MapPin size={20} color="#6B7280" />
                                 </View>
                                 <View className="flex-1">
-                                    <Typography className="text-xs text-gray-400 font-bold uppercase">Alamat</Typography>
+                                    <Typography className="text-xs text-textGray font-bold uppercase">Alamat</Typography>
                                     <Typography weight="semibold" className="flex-wrap">
                                         {selectedSupplier.alamat ? `${selectedSupplier.alamat}, ` : ''}{selectedSupplier.kota}
                                     </Typography>
@@ -308,12 +308,12 @@ export default function SupplierScreen() {
                         )}
 
                         {selectedSupplier.bank && selectedSupplier.rekening && (
-                            <View className="flex-row items-center bg-gray-50 p-3 rounded-2xl">
-                                <View className="w-10 h-10 bg-white rounded-xl items-center justify-center shadow-sm mr-3">
+                            <View className="flex-row items-center bg-background p-3 rounded-2xl">
+                                <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
                                     <CreditCard size={20} color="#6B7280" />
                                 </View>
                                 <View>
-                                    <Typography className="text-xs text-gray-400 font-bold uppercase">Rekening Bank</Typography>
+                                    <Typography className="text-xs text-textGray font-bold uppercase">Rekening Bank</Typography>
                                     <Typography weight="semibold">{selectedSupplier.bank} - {selectedSupplier.rekening}</Typography>
                                 </View>
                             </View>
@@ -344,7 +344,7 @@ export default function SupplierScreen() {
                     <Typography variant="h2" weight="bold">
                         {selectedSupplier ? 'Edit Supplier' : 'Tambah Supplier'}
                     </Typography>
-                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                         <X size={20} color="#6B7280" />
                     </Pressable>
                 </View>
@@ -353,7 +353,7 @@ export default function SupplierScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Supplier *</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="Contoh: Toko Sparepart Jaya"
                             placeholderTextColor="#9CA3AF"
                             value={formData.nama}
@@ -364,7 +364,7 @@ export default function SupplierScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Telepon</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="08xxxxxxxxxx"
                             placeholderTextColor="#9CA3AF"
                             value={formData.telepon}
@@ -376,7 +376,7 @@ export default function SupplierScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Email (Opsional)</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="email@example.com"
                             placeholderTextColor="#9CA3AF"
                             value={formData.email}
@@ -388,7 +388,7 @@ export default function SupplierScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Kota</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="Contoh: Surabaya"
                             placeholderTextColor="#9CA3AF"
                             value={formData.kota}
@@ -399,7 +399,7 @@ export default function SupplierScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Alamat Lengkap</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]"
                             placeholder="Masukan alamat lengkap..."
                             placeholderTextColor="#9CA3AF"
                             value={formData.alamat}
@@ -413,7 +413,7 @@ export default function SupplierScreen() {
                         <View className="flex-1">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Bank</Typography>
                             <TextInput
-                                className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                                className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                 placeholder="BCA"
                                 placeholderTextColor="#9CA3AF"
                                 value={formData.bank}
@@ -423,7 +423,7 @@ export default function SupplierScreen() {
                         <View className="flex-[1.5]">
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">No. Rekening</Typography>
                             <TextInput
-                                className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                                className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                 placeholder="1234567890"
                                 placeholderTextColor="#9CA3AF"
                                 value={formData.rekening}
@@ -457,7 +457,7 @@ export default function SupplierScreen() {
                 showProfile={true}
             >
                 {!sheetVisible && (
-                    <View className="flex-row items-center bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                    <View className="flex-row items-center bg-background h-11 rounded-2xl border border-border">
                         <Search size={18} color="#9CA3AF" className="ml-4" />
                         <TextInput
                             placeholder="Cari nama supplier..."
@@ -513,7 +513,7 @@ export default function SupplierScreen() {
                             onPress={handleCloseSheet}
                         />
                         <View
-                            className="bg-white rounded-t-[32px] shadow-2xl h-[90%]"
+                            className="bg-surface rounded-t-[32px] shadow-2xl h-[90%]"
                             style={{
                                 width: '100%',
                                 maxWidth: 640,

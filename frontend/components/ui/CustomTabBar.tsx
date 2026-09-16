@@ -236,7 +236,7 @@ function CustomTabBarInner() {
     return (
         <>
         <View
-            className="absolute left-0 right-0 flex-row items-center justify-around px-2 rounded-t-[24px] border-t border-gray-200 bg-white"
+            className="absolute left-0 right-0 flex-row items-center justify-around px-2 rounded-t-[24px] border-t border-border bg-surface"
             style={{
                 bottom: 0,
                 height: tabBarHeight,
@@ -339,7 +339,7 @@ function CustomTabBarInner() {
                                 <Typography
                                     variant="caption"
                                     weight="medium"
-                                    className="text-[10px] text-gray-400"
+                                    className="text-[10px] text-textGray"
                                     numberOfLines={1}
                                 >
                                     {routeInfo.label}
@@ -415,7 +415,7 @@ function CustomTabBarInner() {
                                     warmPath(subFab1.path);
                                     router.navigate(subFab1.path as any);
                                 }}
-                                className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
+                                className="w-12 h-12 rounded-full bg-surface flex items-center justify-center border border-border shadow-lg active:scale-90"
                             >
                                 <subFab1.icon size={20} color={subFab1.color} strokeWidth={2.5} />
                             </Pressable>
@@ -436,7 +436,7 @@ function CustomTabBarInner() {
                                     warmPath(subFab2.path);
                                     router.navigate(subFab2.path as any);
                                 }}
-                                className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
+                                className="w-12 h-12 rounded-full bg-surface flex items-center justify-center border border-border shadow-lg active:scale-90"
                             >
                                 <subFab2.icon size={20} color={subFab2.color} strokeWidth={2.5} />
                             </Pressable>
@@ -458,7 +458,7 @@ function CustomTabBarInner() {
                                     warmPath(subFab3.path);
                                     router.navigate(subFab3.path as any);
                                 }}
-                                className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
+                                className="w-12 h-12 rounded-full bg-surface flex items-center justify-center border border-border shadow-lg active:scale-90"
                             >
                                 <subFab3.icon size={20} color={subFab3.color} strokeWidth={2.5} />
                             </Pressable>

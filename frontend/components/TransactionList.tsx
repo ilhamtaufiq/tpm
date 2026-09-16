@@ -105,15 +105,15 @@ function TransactionListInner() {
     return (
         <View className="px-6 mt-2 pb-32">
             <View className="flex-row justify-between items-center mb-4">
-                <Typography variant="h3" weight="bold" className="text-gray-800 tracking-tight">Aktivitas Terkini</Typography>
+                <Typography variant="h3" weight="bold" className="text-text tracking-tight">Aktivitas Terkini</Typography>
                 <Pressable onPress={() => router.push('/history')}>
                     <Typography variant="caption" weight="bold" className="text-indigo-500">Lihat Riwayat</Typography>
                 </Pressable>
             </View>
 
             {list.length === 0 ? (
-                <View className="items-center py-10 bg-white rounded-3xl border border-gray-100 border-dashed">
-                    <Typography className="text-gray-400 font-medium">Belum ada aktivitas</Typography>
+                <View className="items-center py-10 bg-surface rounded-3xl border border-border border-dashed">
+                    <Typography className="text-textGray font-medium">Belum ada aktivitas</Typography>
                 </View>
             ) : (
                 list.map((item: ActivityItem) => {
@@ -126,7 +126,7 @@ function TransactionListInner() {
                             style={({ pressed }) => ({
                                 opacity: pressed ? 0.8 : 1
                             })}
-                            className="flex-row items-center bg-white p-4 rounded-[24px] mb-3 shadow-sm shadow-gray-100 border border-gray-50"
+                            className="flex-row items-center bg-surface p-4 rounded-[24px] mb-3 shadow-sm shadow-gray-100 border border-border"
                             onPress={() => handleItemPress(item)}
                         >
                             <View
@@ -137,13 +137,13 @@ function TransactionListInner() {
                             </View>
 
                             <View className="flex-1 mr-2">
-                                <Typography variant="body2" weight="bold" className="text-gray-800 mb-0.5 tracking-tight" numberOfLines={1}>
+                                <Typography variant="body2" weight="bold" className="text-text mb-0.5 tracking-tight" numberOfLines={1}>
                                     {isPlaceholderText(item.title)
                                         ? (item.ref_number || item.subtitle || 'Transaksi')
                                         : item.title}
                                 </Typography>
                                 <View className="flex-row items-center">
-                                    <Typography variant="caption" className="text-gray-400 text-[10px]" numberOfLines={1}>
+                                    <Typography variant="caption" className="text-textGray text-[10px]" numberOfLines={1}>
                                         {item.subtitle && !isPlaceholderText(item.subtitle) ? `${item.subtitle} • ` : ''}
                                         {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: localeID })}
                                     </Typography>

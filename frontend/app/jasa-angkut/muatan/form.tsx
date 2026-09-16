@@ -111,17 +111,17 @@ export default function MuatanFormScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-background">
             <Stack.Screen options={{ headerTitle: 'Input Muatan Baru' }} />
 
             <ScrollView contentContainerStyle={{ padding: 16 }}>
 
                 {/* Section: Rute & Driver */}
                 <Card className="mb-4">
-                    <Text className="font-bold text-gray-900 mb-4">Informasi Rute</Text>
+                    <Text className="font-bold text-text mb-4">Informasi Rute</Text>
 
                     {/* Driver Selection (Simplified as Horizontal Scroll or Custom List for now) */}
-                    <Text className="text-gray-500 text-xs mb-1">Supir *</Text>
+                    <Text className="text-textGray text-xs mb-1">Supir *</Text>
                     {loadingDrivers ? (
                         <ActivityIndicator />
                     ) : (
@@ -130,9 +130,9 @@ export default function MuatanFormScreen() {
                                 <Pressable
                                     key={d.id}
                                     onPress={() => updateField('supir_id', d.id.toString())}
-                                    className={`px-3 py-2 rounded-lg mr-2 mb-2 border ${formData.supir_id === d.id.toString() ? 'bg-sky-100 border-sky-500' : 'bg-white border-gray-200'}`}
+                                    className={`px-3 py-2 rounded-lg mr-2 mb-2 border ${formData.supir_id === d.id.toString() ? 'bg-sky-100 border-sky-500' : 'bg-surface border-border'}`}
                                 >
-                                    <Text className={`${formData.supir_id === d.id.toString() ? 'text-sky-700 font-bold' : 'text-gray-600'}`}>
+                                    <Text className={`${formData.supir_id === d.id.toString() ? 'text-sky-700 font-bold' : 'text-textGray'}`}>
                                         {d.nama}
                                     </Text>
                                 </Pressable>
@@ -188,16 +188,16 @@ export default function MuatanFormScreen() {
                             <Pressable
                                 key={m}
                                 onPress={() => updateField('metode_bayar', m)}
-                                className={`flex-1 py-3 items-center rounded-xl border ${formData.metode_bayar === m ? 'border-sky-500 bg-sky-50' : 'border-gray-200 bg-white'}`}
+                                className={`flex-1 py-3 items-center rounded-xl border ${formData.metode_bayar === m ? 'border-sky-500 bg-sky-50' : 'border-border bg-surface'}`}
                             >
-                                <Text className={formData.metode_bayar === m ? 'text-sky-700 font-bold' : 'text-gray-500'}>
+                                <Text className={formData.metode_bayar === m ? 'text-sky-700 font-bold' : 'text-textGray'}>
                                     {m === 'TUNAI' ? 'Tunai' : 'Transfer'}
                                 </Text>
                             </Pressable>
                         ))}
                     </View>
 
-                    <Typography variant="caption" className="text-gray-400 mt-4 italic">Biaya operasional sekarang diinput melalui menu Detail Armada.</Typography>
+                    <Typography variant="caption" className="text-textGray mt-4 italic">Biaya operasional sekarang diinput melalui menu Detail Armada.</Typography>
                 </Card>
 
                 {/* Live Simulation */}

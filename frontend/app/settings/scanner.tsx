@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, ScrollView, Pressable, TextInput, Switch, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Scan, Keyboard, Info, CheckCircle2, AlertCircle, RefreshCw, Trash2 } from 'lucide-react-native';
+import { Scan, Keyboard, Info, CheckCircle2, AlertCircle, RefreshCw, Trash2 } from 'lucide-react-native';
+import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ScannerSettingsScreen() {
@@ -56,27 +55,19 @@ export default function ScannerSettingsScreen() {
     const clearHistory = () => setTestResult([]);
 
     return (
-        <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-            {/* Header */}
-            <View className="p-6 bg-surface pb-8 rounded-b-[32px] shadow-sm">
-                <View className="flex-row items-center mb-6">
-                    <Pressable
-                        onPress={() => router.back()}
-                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center mr-4"
-                    >
-                        <ChevronLeft size={24} color="#1C1C1C" />
-                    </Pressable>
-                    <View className="flex-1">
-                        <Typography variant="h2" weight="bold">Barcode Scanner</Typography>
-                        <Typography variant="caption" className="text-textGray mt-1">
-                            Integrasi Hardware Scanner 2D / Barcode
-                        </Typography>
-                    </View>
+        <View className="flex-1 bg-background">
+            <Header
+                title="Barcode Scanner"
+                subtitle="Integrasi Hardware Scanner 2D / Barcode"
+                showBackButton
+                showProfile={false}
+                showBell={false}
+                rightElement={
                     <View className="w-12 h-12 bg-indigo-50 rounded-2xl items-center justify-center text-indigo-600">
                         <Scan size={24} color="#4F46E5" />
                     </View>
-                </View>
-            </View>
+                }
+            />
 
             <ScrollView className="flex-1 p-6" showsVerticalScrollIndicator={false}>
                 {/* Connection Status */}
@@ -113,7 +104,7 @@ export default function ScannerSettingsScreen() {
                     <View className="mb-6">
                         <TextInput
                             ref={testInputRef}
-                            className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-4 text-center font-bold text-lg text-primary"
+                            className="bg-background border border-border rounded-2xl px-4 py-4 text-center font-bold text-lg text-primary"
                             placeholder="Klik di sini sblm scan"
                             placeholderTextColor="#9CA3AF"
                             showSoftInputOnFocus={false} // Prevent soft keyboard from popping up
@@ -135,13 +126,13 @@ export default function ScannerSettingsScreen() {
                         </View>
 
                         {testResult.length === 0 ? (
-                            <View className="py-8 items-center justify-center border border-dashed border-gray-200 rounded-2xl">
+                            <View className="py-8 items-center justify-center border border-dashed border-border rounded-2xl">
                                 <Typography className="text-textGray/40 italic">Belum ada data scan</Typography>
                             </View>
                         ) : (
                             <View className="space-y-2">
                                 {testResult.map((code, index) => (
-                                    <View key={index} className="bg-gray-50 p-3 rounded-xl flex-row justify-between items-center border border-gray-100">
+                                    <View key={index} className="bg-background p-3 rounded-xl flex-row justify-between items-center border border-border">
                                         <Typography weight="bold" className="text-primary">{code}</Typography>
                                         <CheckCircle2 size={16} color="#10B981" />
                                     </View>
@@ -159,13 +150,13 @@ export default function ScannerSettingsScreen() {
                         { icon: <Keyboard size={18} color="#6B7280" />, text: "App akan mendeteksi scanner sebagai input eksternal." },
                         { icon: <CheckCircle2 size={18} color="#6B7280" />, text: "Scanner harus mengirimkan 'Enter' (Carriage Return) setelah setiap scan." }
                     ].map((item, i) => (
-                        <View key={i} className="flex-row items-center space-x-3 bg-white p-4 rounded-2xl border border-gray-100">
+                        <View key={i} className="flex-row items-center space-x-3 bg-surface p-4 rounded-2xl border border-border">
                             {item.icon}
                             <Typography variant="body2" className="text-textGray flex-1">{item.text}</Typography>
                         </View>
                     ))}
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }

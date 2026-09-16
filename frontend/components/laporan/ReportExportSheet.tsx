@@ -37,9 +37,9 @@ export function ReportExportSheet({
                 <View className="flex-row justify-between items-center mb-6">
                     <View>
                         <Typography variant="h3" weight="bold">{title}</Typography>
-                        <Typography variant="caption" className="text-gray-500 mt-0.5">{subtitle}</Typography>
+                        <Typography variant="caption" className="text-textGray mt-0.5">{subtitle}</Typography>
                     </View>
-                    <Pressable onPress={onClose} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
+                    <Pressable onPress={onClose} className="w-8 h-8 bg-background rounded-full items-center justify-center">
                         <X size={18} color="#64748B" />
                     </Pressable>
                 </View>

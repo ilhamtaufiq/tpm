@@ -18,7 +18,7 @@ export function ReportSectionHeader({ title, count, countLabel = 'item' }: Repor
                 </Typography>
             </View>
             {count !== undefined ? (
-                <Typography className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <Typography className="text-[10px] font-bold text-textGray uppercase tracking-widest">
                     {count} {countLabel}
                 </Typography>
             ) : null}

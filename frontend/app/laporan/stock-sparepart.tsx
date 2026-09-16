@@ -237,29 +237,29 @@ export default function StockSparepartReportScreen() {
                             <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                         </View>
                     ) : (
-                        <View className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+                        <View className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sm">
                             {parts.map((part, index) => (
                                 <View
                                     key={part.id}
-                                    className={`p-4 flex-row items-center ${index !== parts.length - 1 ? 'border-b border-gray-50' : ''}`}
+                                    className={`p-4 flex-row items-center ${index !== parts.length - 1 ? 'border-b border-border' : ''}`}
                                 >
-                                    <View className="w-10 h-10 rounded-xl bg-gray-50 items-center justify-center mr-4">
-                                        <Typography weight="bold" className="text-gray-400 text-xs">{index + 1}</Typography>
+                                    <View className="w-10 h-10 rounded-xl bg-background items-center justify-center mr-4">
+                                        <Typography weight="bold" className="text-textGray text-xs">{index + 1}</Typography>
                                     </View>
 
                                     <View className="flex-1">
                                         <Typography variant="body2" weight="bold">{part.nama}</Typography>
-                                        <Typography variant="caption" className="text-gray-500">{part.kode} • {part.kategori || 'Suku Cadang'}</Typography>
+                                        <Typography variant="caption" className="text-textGray">{part.kode} • {part.kategori || 'Suku Cadang'}</Typography>
                                     </View>
 
                                     <View className="items-end">
                                         <View className="flex-row items-center">
-                                            <Typography variant="body2" weight="bold" className={isAlwaysReadyStock(part.stok) ? 'text-emerald-600' : (part.stok <= part.stok_minimum ? 'text-error' : 'text-gray-800')}>
+                                            <Typography variant="body2" weight="bold" className={isAlwaysReadyStock(part.stok) ? 'text-emerald-600' : (part.stok <= part.stok_minimum ? 'text-error' : 'text-text')}>
                                                 {isAlwaysReadyStock(part.stok) ? 'Ready' : part.stok}
                                             </Typography>
-                                            <Typography variant="caption" className="text-gray-400 ml-1">{part.satuan || 'Unit'}</Typography>
+                                            <Typography variant="caption" className="text-textGray ml-1">{part.satuan || 'Unit'}</Typography>
                                         </View>
-                                        <Typography variant="caption" className="text-gray-500">
+                                        <Typography variant="caption" className="text-textGray">
                                             Value: {isAlwaysReadyStock(part.stok) ? formatCurrency(0) : formatCurrency(part.stok * part.harga_beli)}
                                         </Typography>
                                     </View>

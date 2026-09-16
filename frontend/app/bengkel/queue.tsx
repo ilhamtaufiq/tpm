@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { View, ScrollView, Pressable, TextInput, Modal, StatusBar, ActivityIndicator, Platform, Share, FlatList, RefreshControl as RNRefreshControl } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
+import { Header } from '../../components/ui/Header';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -456,7 +457,7 @@ export default function QueueScreen() {
                     setSelectedItem(item);
                     setDetailModalOpen(true);
                 }}
-                className="bg-white p-4 rounded-[28px] mb-4 border border-gray-50 shadow-sm active:scale-[0.98]"
+                className="bg-surface p-4 rounded-[28px] mb-4 border border-border shadow-sm active:scale-[0.98]"
             >
                 <View className="flex-row items-start">
                     <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-3 border ${workTheme.bg} ${workTheme.border}`}>
@@ -475,7 +476,7 @@ export default function QueueScreen() {
                                 <Typography className="text-textGray text-[11px] mt-0.5" numberOfLines={1}>
                                     {item.nama_customer || 'Umum'} • {item.jenis_kendaraan || '-'}
                                 </Typography>
-                                <Typography className="text-gray-400 text-[10px] mt-1" numberOfLines={1}>
+                                <Typography className="text-textGray text-[10px] mt-1" numberOfLines={1}>
                                     {item.nomor_transaksi || '-'}
                                 </Typography>
                             </View>
@@ -495,20 +496,20 @@ export default function QueueScreen() {
                             </View>
                         </View>
 
-                        <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-50">
+                        <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-border">
                             <View className="flex-row items-center flex-1 mr-2">
                                 <Clock size={12} color="#9CA3AF" />
                                 <Typography className="text-textGray text-[10px] font-semibold ml-1">
                                     {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID }) : '-'}
                                 </Typography>
                                 {itemCount > 0 && (
-                                    <Typography className="text-gray-400 text-[10px] ml-2">
+                                    <Typography className="text-textGray text-[10px] ml-2">
                                         • {itemCount} item
                                     </Typography>
                                 )}
                                 {Number(item.grand_total || 0) <= 0 && itemCount === 0 && (
-                                    <View className="ml-2 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200">
-                                        <Typography className="text-slate-500 text-[8px] font-bold uppercase">Belum tagihan</Typography>
+                                    <View className="ml-2 px-1.5 py-0.5 rounded-md bg-background border border-slate-200">
+                                        <Typography className="text-textGray text-[8px] font-bold uppercase">Belum tagihan</Typography>
                                     </View>
                                 )}
                             </View>
@@ -520,7 +521,7 @@ export default function QueueScreen() {
                                 )}
                                 <Typography
                                     weight="bold"
-                                    className={`text-sm ${Number(item.grand_total || 0) <= 0 && itemCount === 0 ? 'text-gray-400' : 'text-primary'}`}
+                                    className={`text-sm ${Number(item.grand_total || 0) <= 0 && itemCount === 0 ? 'text-textGray' : 'text-primary'}`}
                                 >
                                     {Number(item.grand_total || 0) <= 0 && itemCount === 0
                                         ? 'Belum tagihan'
@@ -530,7 +531,7 @@ export default function QueueScreen() {
                         </View>
 
                         {!isBengkelTransactionLocked(item) && !isBengkelTransactionVoided(item) && (
-                            <View className="flex-row items-center mt-3 pt-3 border-t border-gray-50 gap-2">
+                            <View className="flex-row items-center mt-3 pt-3 border-t border-border gap-2">
                                 {[
                                     { label: 'Sparepart', mode: 'sparepart', icon: Package, color: '#059669' },
                                     { label: 'Servis', mode: 'servis', icon: Wrench, color: '#2563EB' },
@@ -543,7 +544,7 @@ export default function QueueScreen() {
                                                 event?.stopPropagation?.();
                                                 openQueueTransactionMode(action.mode as 'sparepart' | 'servis', item);
                                             }}
-                                            className="flex-1 h-9 rounded-xl bg-gray-50 border border-gray-100 flex-row items-center justify-center active:scale-95"
+                                            className="flex-1 h-9 rounded-xl bg-background border border-border flex-row items-center justify-center active:scale-95"
                                         >
                                             <ActionIcon size={13} color={action.color} />
                                             <Typography weight="bold" className="text-[9px] text-textMain ml-1" numberOfLines={1}>
@@ -570,22 +571,22 @@ export default function QueueScreen() {
                 ].map((stat) => {
                     const StatIcon = stat.icon;
                     return (
-                        <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-gray-100`}>
+                        <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-border`}>
                             <View className="flex-row items-center mb-2">
                                 <StatIcon size={14} color={stat.color} />
-                                <Typography className="text-[9px] font-bold text-gray-500 ml-1.5 uppercase tracking-wide">{stat.label}</Typography>
+                                <Typography className="text-[9px] font-bold text-textGray ml-1.5 uppercase tracking-wide">{stat.label}</Typography>
                             </View>
                             <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1}>{stat.value}</Typography>
                             {stat.sub ? (
-                                <Typography className="text-[9px] text-gray-400 mt-0.5">{stat.sub}</Typography>
+                                <Typography className="text-[9px] text-textGray mt-0.5">{stat.sub}</Typography>
                             ) : null}
                         </View>
                     );
                 })}
             </View>
 
-            <View className="bg-white border border-gray-100 rounded-2xl p-3 mb-4">
-                <View className="flex-row items-center justify-center gap-1.5 mb-2.5 pb-2.5 border-b border-gray-100">
+            <View className="bg-surface border border-border rounded-2xl p-3 mb-4">
+                <View className="flex-row items-center justify-center gap-1.5 mb-2.5 pb-2.5 border-b border-border">
                     {[
                         { id: 'all', label: 'Semua' },
                         { id: 'daily', label: 'Harian' },
@@ -595,9 +596,9 @@ export default function QueueScreen() {
                         <Pressable
                             key={m.id}
                             onPress={() => setDateMode(m.id as any)}
-                            className={`px-3 py-1.5 rounded-full border ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                            className={`px-3 py-1.5 rounded-full border ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-background border-border'}`}
                         >
-                            <Typography className={`text-[10px] font-bold ${dateMode === m.id ? 'text-white' : 'text-gray-600'}`}>
+                            <Typography className={`text-[10px] font-bold ${dateMode === m.id ? 'text-white' : 'text-textGray'}`}>
                                 {m.label}
                             </Typography>
                         </Pressable>
@@ -607,14 +608,14 @@ export default function QueueScreen() {
                 <View className="flex-row justify-between items-center">
                     <Pressable
                         onPress={handlePrev}
-                        className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100 active:scale-95"
+                        className="w-10 h-10 bg-background rounded-full items-center justify-center border border-border active:scale-95"
                     >
                         <ChevronLeft size={20} color="#1C1C1C" />
                     </Pressable>
 
                     <Pressable
                         onPress={() => setDatePickerModalOpen(true)}
-                        className="items-center flex-1 mx-2 py-1 rounded-xl active:bg-gray-50 flex-row justify-center"
+                        className="items-center flex-1 mx-2 py-1 rounded-xl active:bg-background flex-row justify-center"
                     >
                         <Calendar size={16} color="#023C69" />
                         <Typography variant="body2" weight="bold" className="text-textMain ml-2">
@@ -625,14 +626,14 @@ export default function QueueScreen() {
 
                     <Pressable
                         onPress={handleNext}
-                        className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100 active:scale-95"
+                        className="w-10 h-10 bg-background rounded-full items-center justify-center border border-border active:scale-95"
                     >
                         <ChevronRight size={20} color="#1C1C1C" />
                     </Pressable>
                 </View>
             </View>
 
-            <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 mb-3">
+            <View className="flex-row items-center bg-background border border-border rounded-2xl px-4 h-12 mb-3">
                 <Search size={18} color="#9CA3AF" />
                 <TextInput
                     value={queueSearchQuery}
@@ -650,7 +651,7 @@ export default function QueueScreen() {
                 )}
             </View>
 
-            <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2 ml-1">
+            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-2 ml-1">
                 Status Pengerjaan
             </Typography>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
@@ -676,7 +677,7 @@ export default function QueueScreen() {
                 })}
             </ScrollView>
 
-            <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2 ml-1">
+            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-2 ml-1">
                 Status Pembayaran
             </Typography>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
@@ -719,7 +720,7 @@ export default function QueueScreen() {
             )}
 
             <View className="flex-row items-center justify-between mb-3 px-1">
-                <Typography className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <Typography className="text-[10px] font-bold text-textGray uppercase tracking-widest">
                     Daftar Antrian
                 </Typography>
                 <Typography className="text-[10px] font-bold text-primary">
@@ -730,27 +731,26 @@ export default function QueueScreen() {
     );
 
     return (
-        <SafeAreaView className="flex-1 bg-surface">
+        <View className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
 
-            <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
-                <View className="flex-row items-center">
-                    <Pressable onPress={handleBack} className="mr-4">
-                        <ChevronLeft size={24} color="#1C1C1C" />
+            <Header
+                title="Antrian Bengkel"
+                subtitle="Monitor order, status & pembayaran"
+                showBackButton
+                onBackButtonPress={handleBack}
+                showProfile={false}
+                showBell={false}
+                rightElement={
+                    <Pressable
+                        onPress={() => router.push('/bengkel/order')}
+                        className="bg-primary px-4 py-2 rounded-xl flex-row items-center active:opacity-90"
+                    >
+                        <Plus size={16} color="white" />
+                        <Typography weight="bold" className="text-white text-xs ml-1">Order Baru</Typography>
                     </Pressable>
-                    <View>
-                        <Typography variant="h2" weight="bold">Antrian Bengkel</Typography>
-                        <Typography className="text-gray-400 text-xs mt-0.5">Monitor order, status & pembayaran</Typography>
-                    </View>
-                </View>
-                <Pressable
-                    onPress={() => router.push('/bengkel/order')}
-                    className="bg-primary px-4 py-2 rounded-xl flex-row items-center active:opacity-90"
-                >
-                    <Plus size={16} color="white" />
-                    <Typography weight="bold" className="text-white text-xs ml-1">Order Baru</Typography>
-                </Pressable>
-            </View>
+                }
+            />
 
             {isLoading ? (
                 <View className="flex-1 px-6 pt-6">
@@ -800,11 +800,11 @@ export default function QueueScreen() {
                             <View className="flex-row justify-between items-center mb-4">
                                 <View className="flex-1 mr-3">
                                     <Typography variant="h3" weight="bold">Detail Antrian</Typography>
-                                    <Typography className="text-gray-400 text-xs mt-0.5" numberOfLines={1}>
+                                    <Typography className="text-textGray text-xs mt-0.5" numberOfLines={1}>
                                         {selectedItem.nomor_transaksi || '-'} • {selectedItem.nama_customer || 'Umum'}
                                     </Typography>
                                 </View>
-                                <Pressable onPress={() => setDetailModalOpen(false)} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
+                                <Pressable onPress={() => setDetailModalOpen(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
                                     <X size={18} color="#4B5563" />
                                 </Pressable>
                             </View>
@@ -832,7 +832,7 @@ export default function QueueScreen() {
                                 </View>
 
                                 {/* Item Order Card */}
-                                <Card variant="outlined" className="p-4 border-gray-100 mb-4 bg-gray-50/60 rounded-2xl">
+                                <Card variant="outlined" className="p-4 border-border mb-4 bg-gray-50/60 rounded-2xl">
                                     <View className="flex-row items-center justify-between mb-3">
                                         <View className="flex-row items-center">
                                             <Receipt size={15} color="#023C69" />
@@ -844,7 +844,7 @@ export default function QueueScreen() {
                                     </View>
 
                                     {((selectedItem?.detail_services) || []).map((s: any, idx: number) => (
-                                        <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-gray-100">
+                                        <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-border">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{s.nama_jasa}</Typography>
                                                 <Typography variant="caption" className="text-textGray/70">Jasa</Typography>
@@ -854,7 +854,7 @@ export default function QueueScreen() {
                                     ))}
 
                                     {((selectedItem?.detail_parts) || []).map((p: any, idx: number) => (
-                                        <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-gray-100">
+                                        <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-border">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>
                                                     {p.spare_part_nama || p.spare_part?.nama || 'Sparepart'}
@@ -867,7 +867,7 @@ export default function QueueScreen() {
                                 </Card>
 
                                 {/* Customer Details Card */}
-                                <Card variant="outlined" className="p-4 border-gray-100 mb-4 bg-white rounded-2xl">
+                                <Card variant="outlined" className="p-4 border-border mb-4 bg-surface rounded-2xl">
                                     <View className="flex-row items-center justify-between mb-3">
                                         <View className="flex-row items-center">
                                             <Typography variant="caption" weight="bold" className="text-primary uppercase tracking-widest">Detail Pelanggan</Typography>
@@ -910,7 +910,7 @@ export default function QueueScreen() {
                                                         onPress={() => updateStatus(selectedItem.id, s.id)}
                                                         disabled={updateStatsMutation.isPending}
                                                         style={isActive ? { backgroundColor: s.activeBg, borderColor: s.activeBorder } : {}}
-                                                        className={`flex-1 py-3 rounded-xl border items-center justify-center ${isActive ? 'shadow-sm' : 'bg-white border-gray-100'}`}
+                                                        className={`flex-1 py-3 rounded-xl border items-center justify-center ${isActive ? 'shadow-sm' : 'bg-surface border-border'}`}
                                                     >
                                                         <Typography
                                                             weight="bold"
@@ -926,7 +926,7 @@ export default function QueueScreen() {
                                 )}
 
                                 {/* Payment Summary Card */}
-                                <Card variant="outlined" className="p-4 border-gray-100 mb-4 bg-emerald-50/60 rounded-2xl">
+                                <Card variant="outlined" className="p-4 border-border mb-4 bg-emerald-50/60 rounded-2xl">
                                     <View className="flex-row items-center justify-between mb-2">
                                         <Typography variant="body2" weight="bold" className="text-emerald-800">Total Tagihan</Typography>
                                         <Typography variant="h4" weight="bold" className="text-emerald-800">{formatCurrency((selectedItem?.grand_total ?? selectedItem?.grand_total) || 0)}</Typography>
@@ -989,7 +989,7 @@ export default function QueueScreen() {
                                             </Typography>
                                         </Pressable>
                                     ) : (
-                                        <View className="flex-1 py-3 rounded-xl items-center justify-center flex-row bg-gray-100">
+                                        <View className="flex-1 py-3 rounded-xl items-center justify-center flex-row bg-background">
                                             <CheckCircle2 size={16} color="#10B981" />
                                             <Typography weight="bold" className="text-emerald-600 text-xs ml-2 uppercase tracking-widest">
                                                 LUNAS
@@ -1088,16 +1088,16 @@ export default function QueueScreen() {
                 onRequestClose={() => setDatePickerModalOpen(false)}
             >
                 <View className="flex-1 justify-center items-center bg-black/50 px-6">
-                    <View className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl border border-gray-100">
+                    <View className="bg-surface rounded-3xl p-6 w-full max-w-md shadow-xl border border-border">
                         <View className="flex-row justify-between items-center mb-4">
                             <Typography variant="h3" weight="bold">Filter Tanggal & Periode</Typography>
-                            <Pressable onPress={() => setDatePickerModalOpen(false)} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
+                            <Pressable onPress={() => setDatePickerModalOpen(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
                                 <X size={18} color="#4B5563" />
                             </Pressable>
                         </View>
 
                         {/* Mode Selector */}
-                        <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-2">
                             Tipe Filter
                         </Typography>
                         <View className="flex-row gap-2 mb-5">
@@ -1110,9 +1110,9 @@ export default function QueueScreen() {
                                 <Pressable
                                     key={m.id}
                                     onPress={() => setDateMode(m.id as any)}
-                                    className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                    className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${dateMode === m.id ? 'bg-primary border-primary' : 'bg-background border-border'}`}
                                 >
-                                    <Typography weight="bold" className={`text-xs ${dateMode === m.id ? 'text-white' : 'text-gray-600'}`}>
+                                    <Typography weight="bold" className={`text-xs ${dateMode === m.id ? 'text-white' : 'text-textGray'}`}>
                                         {m.label}
                                     </Typography>
                                 </Pressable>
@@ -1122,7 +1122,7 @@ export default function QueueScreen() {
                         {/* Month Selector Grid for Monthly */}
                         {dateMode === 'monthly' && (
                             <View className="mb-4">
-                                <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                                <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-2">
                                     Pilih Bulan ({format(date, 'yyyy')})
                                 </Typography>
                                 <View className="flex-row flex-wrap gap-2">
@@ -1135,7 +1135,7 @@ export default function QueueScreen() {
                                                 onPress={() => {
                                                     setDate(monthDate);
                                                 }}
-                                                className={`w-[30%] py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-emerald-600 border-emerald-600' : 'bg-gray-50 border-gray-100'}`}
+                                                className={`w-[30%] py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-emerald-600 border-emerald-600' : 'bg-background border-border'}`}
                                             >
                                                 <Typography weight="bold" className={`text-xs ${isSelected ? 'text-white' : 'text-textMain'}`}>
                                                     {format(monthDate, 'MMM', { locale: localeID })}
@@ -1150,7 +1150,7 @@ export default function QueueScreen() {
                         {/* Year Selector for Monthly/Yearly */}
                         {(dateMode === 'monthly' || dateMode === 'yearly') && (
                             <View className="mb-4">
-                                <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                                <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-2">
                                     Pilih Tahun
                                 </Typography>
                                 <View className="flex-row gap-2">
@@ -1162,7 +1162,7 @@ export default function QueueScreen() {
                                                 onPress={() => {
                                                     setDate(new Date(yr, date.getMonth(), 1));
                                                 }}
-                                                className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                                className={`flex-1 py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'bg-background border-border'}`}
                                             >
                                                 <Typography weight="bold" className={`text-xs ${isSelected ? 'text-white' : 'text-textMain'}`}>
                                                     {yr}
@@ -1175,7 +1175,7 @@ export default function QueueScreen() {
                         )}
 
                         {/* Quick Presets */}
-                        <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2">
+                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-2">
                             Pintas Cepat
                         </Typography>
                         <View className="flex-row gap-2 mb-5">
@@ -1229,6 +1229,6 @@ export default function QueueScreen() {
                 onConfirm={dialogConfig.onConfirm}
                 onClose={() => setDialogConfig((prev: any) => ({ ...prev, visible: false }))}
             />
-        </SafeAreaView>
+        </View>
     );
 }

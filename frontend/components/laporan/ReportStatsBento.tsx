@@ -17,10 +17,10 @@ export function ReportStatsBento({ stats, className = 'mb-4' }: ReportStatsBento
                 const StatIcon = stat.icon;
                 const bg = stat.bg || 'bg-white';
                 return (
-                    <View key={stat.label} className={`flex-1 ${bg} rounded-2xl p-3 border border-gray-100`}>
+                    <View key={stat.label} className={`flex-1 ${bg} rounded-2xl p-3 border border-border`}>
                         <View className="flex-row items-center mb-2">
                             <StatIcon size={14} color={stat.color} />
-                            <Typography className="text-[9px] font-bold text-gray-500 ml-1.5 uppercase tracking-wide">
+                            <Typography className="text-[9px] font-bold text-textGray ml-1.5 uppercase tracking-wide">
                                 {stat.label}
                             </Typography>
                         </View>
@@ -28,7 +28,7 @@ export function ReportStatsBento({ stats, className = 'mb-4' }: ReportStatsBento
                             {stat.value}
                         </Typography>
                         {stat.sub ? (
-                            <Typography className="text-[9px] text-gray-400 mt-0.5" numberOfLines={1}>
+                            <Typography className="text-[9px] text-textGray mt-0.5" numberOfLines={1}>
                                 {stat.sub}
                             </Typography>
                         ) : null}

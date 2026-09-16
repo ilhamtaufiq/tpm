@@ -112,7 +112,7 @@ export const BaseModal = ({
                                 {showCloseButton && (
                                     <Pressable
                                         onPress={onClose}
-                                        className="w-10 h-10 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100"
+                                        className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-border"
                                     >
                                         <X size={20} color="#6B7280" />
                                     </Pressable>

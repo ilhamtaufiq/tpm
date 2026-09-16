@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Platform, KeyboardAvoidingView, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Camera, User, Mail, Phone, Briefcase, Save, CheckCircle2 } from 'lucide-react-native';
+import { Camera, User, Mail, Phone, Briefcase, Save, CheckCircle2 } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
+import { Header } from '../../components/ui/Header';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useUIStore } from '../../store/useUIStore';
@@ -153,25 +154,19 @@ export default function ProfileSettingsScreen() {
                 {/* Decorative Elements */}
                 <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
 
-                <View className="flex-row items-center justify-between mb-8 z-10">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Ubah Profil</Typography>
-                            <Typography className="text-white/50 text-[10px] uppercase tracking-widest font-bold mt-0.5">Edit Data Akun</Typography>
-                        </View>
-                    </View>
-                </View>
+                <Header
+                    title="Ubah Profil"
+                    subtitle="Edit Data Akun"
+                    showBackButton
+                    onBackButtonPress={handleBack}
+                    showProfile={false}
+                    showBell={false}
+                />
 
                 {/* Avatar Section */}
                 <Animated.View entering={FadeInUp.delay(200)} className="items-center z-10">
                     <View className="relative">
-                        <View className="w-28 h-28 bg-white rounded-[36px] items-center justify-center shadow-2xl border-4 border-white/20 overflow-hidden">
+                        <View className="w-28 h-28 bg-surface rounded-[36px] items-center justify-center shadow-2xl border-4 border-white/20 overflow-hidden">
                             {image ? (
                                 <Image source={{ uri: image }} className="w-full h-full" />
                             ) : (
@@ -207,13 +202,13 @@ export default function ProfileSettingsScreen() {
                     <Animated.View entering={FadeInDown.delay(400)} className="space-y-6">
 
                         {/* Section: Personal Info */}
-                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-gray-50">
+                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-border">
                             <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] mb-6">Informasi Personal</Typography>
 
                             {/* Name Input */}
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Nama Lengkap</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
                                     <User size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -227,7 +222,7 @@ export default function ProfileSettingsScreen() {
                             {/* Email Input */}
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Alamat Email</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
                                     <Mail size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -243,7 +238,7 @@ export default function ProfileSettingsScreen() {
                             {/* Phone Input */}
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Nomor Telepon</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
                                     <Phone size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -258,7 +253,7 @@ export default function ProfileSettingsScreen() {
                             {/* Role Input */}
                             <View>
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Jabatan / Divisi</Typography>
-                                <View className={`flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100 ${!isAdmin ? 'opacity-50' : ''}`}>
+                                <View className={`flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border ${!isAdmin ? 'opacity-50' : ''}`}>
                                     <Briefcase size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -272,7 +267,7 @@ export default function ProfileSettingsScreen() {
                         </View>
 
                         {/* Additional Info / Settings Card */}
-                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-gray-50">
+                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-border">
                             <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] mb-4">Informasi Tambahan</Typography>
                             <View className="flex-row items-center justify-between p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                                 <View className="flex-row items-center">

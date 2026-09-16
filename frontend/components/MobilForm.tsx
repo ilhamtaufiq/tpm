@@ -324,14 +324,14 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                 <View className="flex-row space-x-3 mb-1">
                     <View className="flex-1">
                         <Typography variant="body2" className="text-textGray mb-1 font-medium">Transmisi</Typography>
-                        <View className="flex-row bg-gray-100 rounded-xl p-1">
+                        <View className="flex-row bg-background rounded-xl p-1">
                             {['MT', 'AT'].map((t) => (
                                 <Pressable
                                     key={t}
                                     onPress={() => setTransmisi(t)}
-                                    className={`flex-1 py-2 rounded-lg items-center ${transmisi === t ? 'bg-white shadow-sm' : ''}`}
+                                    className={`flex-1 py-2 rounded-lg items-center ${transmisi === t ? 'bg-surface shadow-sm' : ''}`}
                                 >
-                                    <Typography weight={transmisi === t ? 'bold' : 'medium'} className={transmisi === t ? 'text-primary' : 'text-gray-400'}>{t}</Typography>
+                                    <Typography weight={transmisi === t ? 'bold' : 'medium'} className={transmisi === t ? 'text-primary' : 'text-textGray'}>{t}</Typography>
                                 </Pressable>
                             ))}
                         </View>
@@ -361,7 +361,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                         {!isEdit && (
                             <View className="flex-1">
                                 <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-tight">Status Bayar</Typography>
-                                <View className="flex-row bg-gray-100 rounded-2xl p-1 border border-gray-200/50 space-x-1">
+                                <View className="flex-row bg-background rounded-2xl p-1 border border-gray-200/50 space-x-1">
                                     {[
                                         { label: 'Lunas', value: 'LUNAS' },
                                         { label: 'Hutang', value: 'BELUM_LUNAS' }
@@ -369,9 +369,9 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                         <Pressable
                                             key={s.value}
                                             onPress={() => setStatusBayar(s.value)}
-                                            className={`flex-1 py-2 rounded-xl items-center justify-center ${statusBayar === s.value ? 'bg-white shadow-sm' : ''}`}
+                                            className={`flex-1 py-2 rounded-xl items-center justify-center ${statusBayar === s.value ? 'bg-surface shadow-sm' : ''}`}
                                         >
-                                            <Typography variant="caption" weight="bold" className={`text-center ${statusBayar === s.value ? 'text-primary' : 'text-gray-400'}`}>
+                                            <Typography variant="caption" weight="bold" className={`text-center ${statusBayar === s.value ? 'text-primary' : 'text-textGray'}`}>
                                                 {s.label}
                                             </Typography>
                                         </Pressable>
@@ -434,9 +434,9 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                                             }
                                                             setSumberBayar(m.value);
                                                         }}
-                                                        className={`py-2 rounded-xl items-center justify-center ${sumberBayar === m.value ? 'bg-blue-600 shadow-sm' : 'bg-gray-100'}`}
+                                                        className={`py-2 rounded-xl items-center justify-center ${sumberBayar === m.value ? 'bg-blue-600 shadow-sm' : 'bg-background'}`}
                                                     >
-                                                        <Typography variant="caption" weight="bold" className={`text-center text-[10px] ${sumberBayar === m.value ? 'text-white' : 'text-gray-500'}`}>
+                                                        <Typography variant="caption" weight="bold" className={`text-center text-[10px] ${sumberBayar === m.value ? 'text-white' : 'text-textGray'}`}>
                                                             {m.label}
                                                         </Typography>
                                                     </Pressable>
@@ -455,7 +455,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
                             {/* Split Payment Editor */}
                             {sumberBayar === 'SPLIT' && (
-                                <View className="mt-6 p-4 bg-gray-50/50 rounded-3xl border border-gray-100">
+                                <View className="mt-6 p-4 bg-gray-50/50 rounded-3xl border border-border">
                                     <Typography variant="caption" weight="bold" className="text-primary mb-4 ml-1">RINCIAN PEMBAYARAN MULTI</Typography>
 
                                     {/* Split Payment Rows */}
@@ -466,7 +466,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                                 {idx === 0 && (
                                                     <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1 text-[10px]">Sumber Dana</Typography>
                                                 )}
-                                                <View className="flex-row flex-wrap bg-white border border-gray-200 rounded-xl overflow-hidden h-10 items-center justify-center">
+                                                <View className="flex-row flex-wrap bg-surface border border-border rounded-xl overflow-hidden h-10 items-center justify-center">
                                                     {[
                                                         { id: 'UNIT_TUNAI', label: 'Unit' },
                                                         { id: 'UTAMA_TUNAI', label: 'Utm Tunai' },
@@ -530,14 +530,14 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                     {/* Add Button */}
                                     <Pressable
                                         onPress={() => setPayments([...payments, { id: Date.now() + Math.random(), metode: 'TUNAI', sumber: 'UNIT_TUNAI', jumlah: '' }])}
-                                        className="flex-row items-center justify-center py-2 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
+                                        className="flex-row items-center justify-center py-2 bg-surface border border-dashed border-primary/30 rounded-xl mt-1"
                                     >
                                         <Plus size={14} color="#023C69" />
                                         <Typography weight="bold" className="text-primary text-[10px] ml-1 text-center">Tambah Sumber Dana</Typography>
                                     </Pressable>
 
                                     {/* Summary Split */}
-                                    <View className="mt-6 pt-4 border-t border-gray-100 flex-row justify-between items-center px-1">
+                                    <View className="mt-6 pt-4 border-t border-border flex-row justify-between items-center px-1">
                                         <Typography variant="caption" weight="bold" className="text-textGray uppercase">Total Terbayar:</Typography>
                                         <Typography variant="h3" weight="bold" className="text-primary">
                                             Rp {formatNumber(String(payments.reduce((acc, p) => acc + (parseNumber(p.jumlah) || 0), 0)))}
@@ -565,7 +565,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                             />
                             <View className="flex-1">
                                 <Typography variant="body2" className="mb-1 font-medium">Bagi Hasil (%)</Typography>
-                                <View className="flex-row items-center bg-white border border-gray-200 rounded-lg h-[46px] px-3">
+                                <View className="flex-row items-center bg-surface border border-border rounded-lg h-[46px] px-3">
                                     <TextInput
                                         className="flex-1 font-bold text-primary"
                                         keyboardType="numeric"
@@ -581,7 +581,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                         {parseNumber(nominalInvestor) > 0 && (
                             <View className="mt-4">
                                 <Typography variant="caption" weight="bold" className="text-primary mb-2 uppercase">TUJUAN DANA MASUK INVESTOR</Typography>
-                                <View className="flex-row bg-white border border-primary/10 rounded-2xl p-1.5 space-x-1.5">
+                                <View className="flex-row bg-surface border border-primary/10 rounded-2xl p-1.5 space-x-1.5">
                                     {[
                                         { label: 'Bank Utama', value: 'BANK_UTAMA' },
                                         { label: 'Cash Utama', value: 'KAS_UTAMA' }
@@ -589,9 +589,9 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                         <Pressable
                                             key={opt.value}
                                             onPress={() => setInvestorKasJenis(opt.value)}
-                                            className={`flex-1 py-2.5 rounded-xl items-center justify-center ${investorKasJenis === opt.value ? 'bg-primary shadow-sm' : 'bg-gray-50'}`}
+                                            className={`flex-1 py-2.5 rounded-xl items-center justify-center ${investorKasJenis === opt.value ? 'bg-primary shadow-sm' : 'bg-background'}`}
                                         >
-                                            <Typography weight="bold" className={`text-[11px] ${investorKasJenis === opt.value ? 'text-white' : 'text-gray-400'}`}>
+                                            <Typography weight="bold" className={`text-[11px] ${investorKasJenis === opt.value ? 'text-white' : 'text-textGray'}`}>
                                                 {opt.label.toUpperCase()}
                                             </Typography>
                                         </Pressable>
@@ -622,7 +622,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             <View style={styles.webContainer}>
                 <View style={styles.header}>
                     <Typography variant="h3" weight="bold">{isEdit ? 'Edit Data Unit' : 'Tambah Unit Baru'}</Typography>
-                    <Typography variant="caption" className="text-gray-400">Pastikan data unit sesuai dengan STNK/BPKB</Typography>
+                    <Typography variant="caption" className="text-textGray">Pastikan data unit sesuai dengan STNK/BPKB</Typography>
                 </View>
                 <ScrollView style={styles.flex1} showsVerticalScrollIndicator={true}>
                     {renderFormContent()}
@@ -644,7 +644,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
         <View style={styles.mobileContainer}>
             <View style={styles.header}>
                 <Typography variant="h3" weight="bold">{isEdit ? 'Edit Data Unit' : 'Tambah Unit Baru'}</Typography>
-                <Typography variant="caption" className="text-gray-400">Pastikan data unit sesuai dengan STNK/BPKB</Typography>
+                <Typography variant="caption" className="text-textGray">Pastikan data unit sesuai dengan STNK/BPKB</Typography>
             </View>
             <BottomSheetScrollView
                 style={styles.flex1}

@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable, TextInput, Image, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Info, Image as ImageIcon, Save, RefreshCw, Type } from 'lucide-react-native';
+import { Info, Image as ImageIcon, Save, RefreshCw, Type } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
+import { Header } from '../../components/ui/Header';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import { router } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -103,27 +102,19 @@ export default function BrandingSettingsScreen() {
     const removeLogo = () => setLogo(null);
 
     return (
-        <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-            {/* Header */}
-            <View className="p-6 bg-surface pb-8 rounded-b-[32px] shadow-sm">
-                <View className="flex-row items-center mb-6">
-                    <Pressable
-                        onPress={() => router.back()}
-                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center mr-4"
-                    >
-                        <ChevronLeft size={24} color="#1C1C1C" />
-                    </Pressable>
-                    <View className="flex-1">
-                        <Typography variant="h2" weight="bold">Branding App</Typography>
-                        <Typography variant="caption" className="text-textGray mt-1">
-                            Personalisasi identitas aplikasi
-                        </Typography>
-                    </View>
+        <View className="flex-1 bg-background">
+            <Header
+                title="Branding App"
+                subtitle="Personalisasi identitas aplikasi"
+                showBackButton
+                showProfile={false}
+                showBell={false}
+                rightElement={
                     <View className="w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center text-primary">
                         <Type size={24} color="#023C69" />
                     </View>
-                </View>
-            </View>
+                }
+            />
 
             <ScrollView className="flex-1 p-6" showsVerticalScrollIndicator={false}>
                 {/* Notice */}
@@ -145,7 +136,7 @@ export default function BrandingSettingsScreen() {
                             value={name}
                             onChangeText={setName}
                             maxLength={10}
-                            className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-4 text-center font-bold text-lg text-primary"
+                            className="bg-background border border-border rounded-2xl px-4 py-4 text-center font-bold text-lg text-primary"
                             placeholder="Contoh: TPM / JPM / TOKO"
                         />
                     </View>
@@ -160,7 +151,7 @@ export default function BrandingSettingsScreen() {
 
                     {logo ? (
                         <View className="items-center">
-                            <View className="p-4 bg-gray-50 rounded-[32px] mb-4 border border-gray-100 shadow-inner">
+                            <View className="p-4 bg-background rounded-[32px] mb-4 border border-border shadow-inner">
                                 <Image
                                     source={{ uri: logo }}
                                     style={{ width: 100, height: 100 }}
@@ -177,9 +168,9 @@ export default function BrandingSettingsScreen() {
                     ) : (
                         <Pressable
                             onPress={pickLogo}
-                            className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-[32px] p-10 items-center"
+                            className="bg-background border-2 border-dashed border-border rounded-[32px] p-10 items-center"
                         >
-                            <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-3">
+                            <View className="w-16 h-16 bg-background rounded-full items-center justify-center mb-3">
                                 <ImageIcon size={32} color="#9CA3AF" />
                             </View>
                             <Typography weight="medium" className="text-textGray">Gunakan Logo Kustom</Typography>
@@ -219,6 +210,6 @@ export default function BrandingSettingsScreen() {
                 onConfirm={dialogConfig.onConfirm}
                 loading={saving}
             />
-        </SafeAreaView>
+        </View>
     );
 }

@@ -1,9 +1,8 @@
 import React from 'react';
 import { View, ScrollView, Pressable, Switch, Platform, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Header } from '../../components/ui/Header';
 import { useRouter } from 'expo-router';
 import {
-    ChevronLeft,
     ShieldCheck,
     Wallet,
     Wrench,
@@ -121,23 +120,19 @@ export default function SecurityFeaturesScreen() {
     ];
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
-            {/* Header */}
-            <View className="px-6 pt-4 pb-6 flex-row items-center justify-between border-b border-gray-100 bg-white">
-                <Pressable
-                    onPress={() => router.back()}
-                    className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center"
-                >
-                    <ChevronLeft size={24} color="#1E293B" />
-                </Pressable>
-                <Typography variant="h3" weight="bold" className="text-slate-800">Keamanan Halaman</Typography>
-                <View className="w-10" />
-            </View>
+        <View className="flex-1 bg-background">
+            <Header
+                title="Keamanan Halaman"
+                showBackButton
+                onBackButtonPress={() => router.back()}
+                showProfile={false}
+                showBell={false}
+            />
 
             <ScrollView className="flex-1 px-6 pt-6" showsVerticalScrollIndicator={false}>
                 <View className="mb-6">
-                    <Typography variant="h4" weight="bold" className="text-slate-800 mb-2">Keamanan & Akses</Typography>
-                    <Typography className="text-slate-500 text-xs">
+                    <Typography variant="h4" weight="bold" className="text-text mb-2">Keamanan & Akses</Typography>
+                    <Typography className="text-textGray text-xs">
                         Kelola bagaimana aplikasi diakses dan dilindungi. Perubahan di sini akan berdampak pada seluruh pengguna.
                     </Typography>
                 </View>
@@ -145,7 +140,7 @@ export default function SecurityFeaturesScreen() {
                 {/* Section: Platform Access (Independent of PIN) */}
                 <View className="mb-8">
                     <Typography weight="bold" className="text-slate-400 text-[10px] uppercase tracking-widest mb-4 px-2">Akses Platform</Typography>
-                    <View className="bg-white rounded-[32px] overflow-hidden border border-gray-100 shadow-sm relative">
+                    <View className="bg-surface rounded-[32px] overflow-hidden border border-border shadow-sm relative">
                         {updateSettingsMutation.isPending && (
                             <View className="absolute inset-0 z-10 bg-white/50 items-center justify-center">
                                 <ActivityIndicator size="small" color={themeColors.primary} />
@@ -199,7 +194,7 @@ export default function SecurityFeaturesScreen() {
                     </View>
                 )}
 
-                <View className="bg-white rounded-[32px] overflow-hidden border border-gray-100 mb-20 shadow-sm relative">
+                <View className="bg-surface rounded-[32px] overflow-hidden border border-border mb-20 shadow-sm relative">
                     {updateSettingsMutation.isPending && (
                         <View className="absolute inset-0 z-10 bg-white/50 items-center justify-center">
                             <ActivityIndicator size="large" color={themeColors.primary} />
@@ -208,14 +203,14 @@ export default function SecurityFeaturesScreen() {
                     {featureList.filter(f => f.id !== 'disable_web_access').map((item, index, filteredArr) => (
                         <View
                             key={item.id}
-                            className={`p-5 flex-row items-center justify-between ${index !== filteredArr.length - 1 ? 'border-b border-gray-50' : ''}`}
+                            className={`p-5 flex-row items-center justify-between ${index !== filteredArr.length - 1 ? 'border-b border-border' : ''}`}
                         >
                             <View className="flex-row items-center flex-1">
                                 <View className={`w-10 h-10 ${item.color} rounded-xl items-center justify-center mr-4`}>
                                     <item.icon size={20} color={item.iconColor} />
                                 </View>
                                 <View className="flex-1 pr-4">
-                                    <Typography weight="bold" className="text-[14px] text-slate-800 mb-0.5">{item.label}</Typography>
+                                    <Typography weight="bold" className="text-[14px] text-text mb-0.5">{item.label}</Typography>
                                     <Typography numberOfLines={1} className="text-[10px] text-slate-400">{item.desc}</Typography>
                                 </View>
                             </View>
@@ -233,13 +228,13 @@ export default function SecurityFeaturesScreen() {
             </ScrollView>
 
             {/* Bottom Insight */}
-            <View className="p-8 bg-slate-50 rounded-t-[48px] items-center">
+            <View className="p-8 bg-background rounded-t-[48px] items-center">
                 <View className="w-10 h-1bg-slate-200 rounded-full mb-6" />
                 <Typography className="text-slate-400 text-center text-[10px] leading-relaxed">
                     Perubahan akan langsung diterapkan pada navigasi berikutnya.{"\n"}Halaman yang diproteksi tidak akan menampilkan data sebelum PIN dimasukkan.
                 </Typography>
             </View>
-        </SafeAreaView>
+        </View>
     );
 }
 

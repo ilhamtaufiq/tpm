@@ -139,7 +139,7 @@ export default function LoginScreen() {
 
                     {/* Login Card - Bento Style Overlap */}
                     <View className="px-6 -mt-16 mb-8">
-                        <View className="bg-white p-8 rounded-[40px] shadow-2xl border border-gray-50">
+                        <View className="bg-surface p-8 rounded-[40px] shadow-2xl border border-border">
                             <View className="mb-8">
                                 <Typography variant="h2" weight="bold" className="text-primary">Masuk</Typography>
                                 <Typography variant="body2" className="text-textGray mt-1">

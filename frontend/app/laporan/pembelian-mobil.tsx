@@ -292,8 +292,8 @@ export default function PembelianMobilReportScreen() {
                             <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                         </View>
                     ) : mobils.length === 0 ? (
-                        <View className="items-center justify-center py-20 bg-white rounded-[40px] border border-dashed border-gray-100">
-                            <View className="w-24 h-24 bg-gray-50 rounded-full items-center justify-center mb-6 opacity-30">
+                        <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-border">
+                            <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
                                 <Car size={40} color="#9CA3AF" />
                             </View>
                             <Typography className="text-textGray font-bold uppercase tracking-[6px]">Belum Ada Data</Typography>
@@ -305,11 +305,11 @@ export default function PembelianMobilReportScreen() {
                                 key={item.id}
                                 onPress={() => handlePressMobil(item)}
                             >
-                                <Card className="p-4 border-gray-100 mb-4">
+                                <Card className="p-4 border-border mb-4">
                                     <View className="flex-row justify-between mb-2">
                                         <View className="flex-1">
                                             <Typography variant="body2" weight="bold">{item.merek} {item.model} ({item.tahun})</Typography>
-                                            <Typography variant="caption" className="text-gray-400 font-bold">{item.nomor_plat}</Typography>
+                                            <Typography variant="caption" className="text-textGray font-bold">{item.nomor_plat}</Typography>
                                         </View>
                                         <Badge
                                             variant={item.status === 'Tersedia' ? 'success' : item.status === 'Terjual' ? 'info' : 'warning'}
@@ -317,17 +317,17 @@ export default function PembelianMobilReportScreen() {
                                         />
                                     </View>
 
-                                    <View className="flex-row justify-between items-end mt-2 pt-2 border-t border-gray-50">
+                                    <View className="flex-row justify-between items-end mt-2 pt-2 border-t border-border">
                                         <View>
-                                            <Typography variant="caption" className="text-gray-500">
+                                            <Typography variant="caption" className="text-textGray">
                                                 Tgl Masuk: {format(new Date(item.tanggal_masuk), 'dd MMM yyyy', { locale: localeID })}
                                             </Typography>
-                                            <Typography variant="caption" className="text-gray-400">
+                                            <Typography variant="caption" className="text-textGray">
                                                 By: {item.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${item.nama_investor}`}
                                             </Typography>
                                         </View>
                                         <View className="items-end">
-                                            <Typography variant="caption" className="text-gray-400">Harga Beli</Typography>
+                                            <Typography variant="caption" className="text-textGray">Harga Beli</Typography>
                                             <Typography variant="body2" weight="bold" className="text-primary">
                                                 {formatCurrency(item.harga_beli || 0)}
                                             </Typography>
@@ -356,9 +356,9 @@ export default function PembelianMobilReportScreen() {
                     <View className="flex-row justify-between items-center mb-6">
                         <View>
                             <Typography variant="h2" weight="bold">Detail Unit</Typography>
-                            <Typography className="text-gray-400 text-xs mt-1">Informasi lengkap kendaraan</Typography>
+                            <Typography className="text-textGray text-xs mt-1">Informasi lengkap kendaraan</Typography>
                         </View>
-                        <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
+                        <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-background rounded-full items-center justify-center">
                             <X size={16} color="#4B5563" />
                         </Pressable>
                     </View>
@@ -366,20 +366,20 @@ export default function PembelianMobilReportScreen() {
                     {detailLoading ? (
                         <View className="flex-1 items-center justify-center">
                             <ActivityIndicator size="large" color="#023C69" />
-                            <Typography className="mt-4 text-gray-400">Memuat detail...</Typography>
+                            <Typography className="mt-4 text-textGray">Memuat detail...</Typography>
                         </View>
                     ) : selectedMobil ? (
                         <BottomSheetScrollView showsVerticalScrollIndicator={false}>
                             {/* Summary Card */}
-                            <View className="bg-gray-50 p-5 rounded-2xl mb-6 border border-gray-100">
+                            <View className="bg-background p-5 rounded-2xl mb-6 border border-border">
                                 <View className="flex-row justify-between mb-4">
                                     <View>
-                                        <Typography className="text-gray-400 text-[10px] font-bold uppercase mb-1">Kendaraan</Typography>
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Kendaraan</Typography>
                                         <Typography weight="bold" className="text-lg">{selectedMobil.merek} {selectedMobil.model}</Typography>
-                                        <Typography className="text-gray-500 text-xs font-semibold">{selectedMobil.nomor_plat} • Tahun {selectedMobil.tahun}</Typography>
+                                        <Typography className="text-textGray text-xs font-semibold">{selectedMobil.nomor_plat} • Tahun {selectedMobil.tahun}</Typography>
                                     </View>
                                     <View className="items-end">
-                                        <Typography className="text-gray-400 text-[10px] font-bold uppercase mb-1">Status</Typography>
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Status</Typography>
                                         <Badge
                                             variant={selectedMobil.status === 'Tersedia' ? 'success' : selectedMobil.status === 'Terjual' ? 'info' : 'warning'}
                                             label={selectedMobil.status}
@@ -389,12 +389,12 @@ export default function PembelianMobilReportScreen() {
 
                                 <View className="flex-row justify-between mb-2">
                                     <View>
-                                        <Typography className="text-gray-400 text-[10px] font-bold uppercase mb-1">Tanggal Masuk</Typography>
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Tanggal Masuk</Typography>
                                         <Typography weight="bold">{format(new Date(selectedMobil.tanggal_masuk), 'dd MMM yyyy', { locale: localeID })}</Typography>
                                     </View>
                                     <View className="items-end">
-                                        <Typography className="text-gray-400 text-[10px] font-bold uppercase mb-1">Kepemilikan</Typography>
-                                        <Typography weight="medium" className="text-gray-700">
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Kepemilikan</Typography>
+                                        <Typography weight="medium" className="text-text">
                                             {selectedMobil.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${selectedMobil.nama_investor}`}
                                         </Typography>
                                     </View>
@@ -411,12 +411,12 @@ export default function PembelianMobilReportScreen() {
                                 </View>
                                 {selectedMobil.biaya_operasional && selectedMobil.biaya_operasional.length > 0 ? (
                                     selectedMobil.biaya_operasional.map((item: any, index: number) => (
-                                        <View key={`biaya-${index}`} className="flex-row justify-between items-start py-3 border-b border-gray-100 last:border-0">
+                                        <View key={`biaya-${index}`} className="flex-row justify-between items-start py-3 border-b border-border last:border-0">
                                             <View className="flex-1 pr-4">
                                                 <Typography weight="bold" className="text-gray-800 text-sm">
                                                     {item.keterangan}
                                                 </Typography>
-                                                <Typography variant="caption" className="text-gray-500">
+                                                <Typography variant="caption" className="text-textGray">
                                                     {format(new Date(item.tanggal), 'dd MMM yyyy', { locale: localeID })}
                                                 </Typography>
                                             </View>
@@ -426,7 +426,7 @@ export default function PembelianMobilReportScreen() {
                                         </View>
                                     ))
                                 ) : (
-                                    <Typography className="text-gray-400 italic text-sm ml-8">Tidak ada biaya operasional</Typography>
+                                    <Typography className="text-textGray italic text-sm ml-8">Tidak ada biaya operasional</Typography>
                                 )}
                             </View>
 
@@ -440,12 +440,12 @@ export default function PembelianMobilReportScreen() {
                                 </View>
                                 {selectedMobil.part_services && selectedMobil.part_services.length > 0 ? (
                                     selectedMobil.part_services.map((item: any, index: number) => (
-                                        <View key={`part-${index}`} className="flex-row justify-between items-start py-3 border-b border-gray-100 last:border-0">
+                                        <View key={`part-${index}`} className="flex-row justify-between items-start py-3 border-b border-border last:border-0">
                                             <View className="flex-1 pr-4">
                                                 <Typography weight="bold" className="text-gray-800 text-sm">
                                                     {item.spare_part?.nama || item.nama_jasa || 'Item'}
                                                 </Typography>
-                                                <Typography variant="caption" className="text-gray-500">
+                                                <Typography variant="caption" className="text-textGray">
                                                     {item.qty || 1} x {formatCurrency(item.harga || item.harga_satuan || 0)}
                                                 </Typography>
                                             </View>
@@ -455,7 +455,7 @@ export default function PembelianMobilReportScreen() {
                                         </View>
                                     ))
                                 ) : (
-                                    <Typography className="text-gray-400 italic text-sm ml-8">Tidak ada perawatan bengkel</Typography>
+                                    <Typography className="text-textGray italic text-sm ml-8">Tidak ada perawatan bengkel</Typography>
                                 )}
                             </View>
 
@@ -463,15 +463,15 @@ export default function PembelianMobilReportScreen() {
                             <View className="bg-primary/5 p-5 rounded-2xl border border-primary/10 mb-8">
                                 <View className="space-y-2 mb-4">
                                     <View className="flex-row justify-between">
-                                        <Typography className="text-gray-500 text-xs">Harga Beli</Typography>
+                                        <Typography className="text-textGray text-xs">Harga Beli</Typography>
                                         <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedMobil.harga_beli || 0)}</Typography>
                                     </View>
                                     <View className="flex-row justify-between">
-                                        <Typography className="text-gray-500 text-xs">Biaya Operasional</Typography>
+                                        <Typography className="text-textGray text-xs">Biaya Operasional</Typography>
                                         <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedMobil.total_biaya_operasional || 0)}</Typography>
                                     </View>
                                     <View className="flex-row justify-between">
-                                        <Typography className="text-gray-500 text-xs">Biaya Bengkel</Typography>
+                                        <Typography className="text-textGray text-xs">Biaya Bengkel</Typography>
                                         <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedMobil.total_biaya_bengkel || 0)}</Typography>
                                     </View>
                                     {selectedMobil.nominal_investor > 0 && (

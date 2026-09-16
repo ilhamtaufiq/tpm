@@ -285,7 +285,7 @@ export default function CustomerScreen() {
 
     const renderCustomerItem = ({ item }: { item: Customer }) => (
         <Pressable onPress={() => openDetail(item)}>
-            <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
+            <View className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center">
                 <View className={`w-16 h-16 rounded-[20px] items-center justify-center mr-4 ${item.tipe === 'perusahaan' ? 'bg-blue-50 border border-blue-100/50' : 'bg-emerald-50 border border-emerald-100/50'}`}>
                     {item.tipe === 'perusahaan' ? (
                         <Building2 size={32} color="#3B82F6" />
@@ -306,13 +306,13 @@ export default function CustomerScreen() {
                     <Typography className="text-textGray text-xs">{item.kota || 'Tidak ada lokasi'}</Typography>
 
                     {item.telepon && (
-                        <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
+                        <View className="flex-row items-center mt-2 pt-2 border-t border-border">
                             <Phone size={12} color="#9CA3AF" />
-                            <Typography variant="caption" className="text-gray-500 ml-1.5">{item.telepon}</Typography>
+                            <Typography variant="caption" className="text-textGray ml-1.5">{item.telepon}</Typography>
                         </View>
                     )}
                 </View>
-                <View className="ml-2 w-8 h-8 rounded-full bg-gray-50 items-center justify-center">
+                <View className="ml-2 w-8 h-8 rounded-full bg-background items-center justify-center">
                     <MoreVertical size={16} color="#9CA3AF" />
                 </View>
             </View>
@@ -325,7 +325,7 @@ export default function CustomerScreen() {
                 <View className="p-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <Typography variant="h2" weight="bold">Detail Customer</Typography>
-                        <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                        <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                             <X size={20} color="#6B7280" />
                         </Pressable>
                     </View>
@@ -345,40 +345,40 @@ export default function CustomerScreen() {
                         />
                     </View>
 
-                    <Card className="p-5 mb-6 border border-gray-100 rounded-[24px]">
+                    <Card className="p-5 mb-6 border border-border rounded-[24px]">
                         <Typography variant="h3" weight="bold" className="mb-4 text-base">Informasi Kontak</Typography>
 
                         {selectedCustomer.telepon && (
-                            <View className="flex-row items-center mb-4 bg-gray-50 p-3 rounded-2xl">
-                                <View className="w-10 h-10 bg-white rounded-xl items-center justify-center shadow-sm mr-3">
+                            <View className="flex-row items-center mb-4 bg-background p-3 rounded-2xl">
+                                <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
                                     <Phone size={20} color="#6B7280" />
                                 </View>
                                 <View>
-                                    <Typography className="text-xs text-gray-400 font-bold uppercase">Telepon</Typography>
+                                    <Typography className="text-xs text-textGray font-bold uppercase">Telepon</Typography>
                                     <Typography weight="semibold">{selectedCustomer.telepon}</Typography>
                                 </View>
                             </View>
                         )}
 
                         {selectedCustomer.email && (
-                            <View className="flex-row items-center mb-4 bg-gray-50 p-3 rounded-2xl">
-                                <View className="w-10 h-10 bg-white rounded-xl items-center justify-center shadow-sm mr-3">
+                            <View className="flex-row items-center mb-4 bg-background p-3 rounded-2xl">
+                                <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
                                     <Mail size={20} color="#6B7280" />
                                 </View>
                                 <View>
-                                    <Typography className="text-xs text-gray-400 font-bold uppercase">Email</Typography>
+                                    <Typography className="text-xs text-textGray font-bold uppercase">Email</Typography>
                                     <Typography weight="semibold">{selectedCustomer.email}</Typography>
                                 </View>
                             </View>
                         )}
 
                         {(selectedCustomer.alamat || selectedCustomer.kota) && (
-                            <View className="flex-row items-center bg-gray-50 p-3 rounded-2xl">
-                                <View className="w-10 h-10 bg-white rounded-xl items-center justify-center shadow-sm mr-3">
+                            <View className="flex-row items-center bg-background p-3 rounded-2xl">
+                                <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
                                     <MapPin size={20} color="#6B7280" />
                                 </View>
                                 <View className="flex-1">
-                                    <Typography className="text-xs text-gray-400 font-bold uppercase">Alamat</Typography>
+                                    <Typography className="text-xs text-textGray font-bold uppercase">Alamat</Typography>
                                     <Typography weight="semibold" className="flex-wrap">
                                         {selectedCustomer.alamat ? `${selectedCustomer.alamat}, ` : ''}{selectedCustomer.kota}
                                     </Typography>
@@ -388,18 +388,18 @@ export default function CustomerScreen() {
                     </Card>
 
                     {selectedCustomer.vehicles && selectedCustomer.vehicles.length > 0 && (
-                        <Card className="p-5 mb-6 border border-gray-100 rounded-[24px]">
+                        <Card className="p-5 mb-6 border border-border rounded-[24px]">
                             <Typography variant="h3" weight="bold" className="mb-4 text-base">Data Kendaraan</Typography>
                             {selectedCustomer.vehicles.map((vehicle, index) => (
-                                <View key={index} className={`flex-row items-center p-3 rounded-2xl bg-gray-50 ${index !== 0 ? 'mt-3' : ''}`}>
-                                    <View className="w-10 h-10 bg-white rounded-xl items-center justify-center shadow-sm mr-3">
+                                <View key={index} className={`flex-row items-center p-3 rounded-2xl bg-background ${index !== 0 ? 'mt-3' : ''}`}>
+                                    <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
                                         <Truck size={20} color="#6B7280" />
                                     </View>
                                     <View className="flex-1">
                                         <Typography weight="bold" className="text-primary">{vehicle.plat_nomor}</Typography>
-                                        <Typography variant="caption" className="text-gray-500 uppercase font-bold">{vehicle.jenis_unit}</Typography>
+                                        <Typography variant="caption" className="text-textGray uppercase font-bold">{vehicle.jenis_unit}</Typography>
                                         {vehicle.catatan && (
-                                            <Typography variant="caption" className="text-gray-400 italic mt-0.5">{vehicle.catatan}</Typography>
+                                            <Typography variant="caption" className="text-textGray italic mt-0.5">{vehicle.catatan}</Typography>
                                         )}
                                     </View>
                                 </View>
@@ -431,7 +431,7 @@ export default function CustomerScreen() {
                     <Typography variant="h2" weight="bold">
                         {selectedCustomer ? 'Edit Customer' : 'Tambah Customer'}
                     </Typography>
-                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                         <X size={20} color="#6B7280" />
                     </Pressable>
                 </View>
@@ -440,7 +440,7 @@ export default function CustomerScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Customer *</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="Contoh: Budi Santoso"
                             placeholderTextColor="#9CA3AF"
                             value={formData.nama}
@@ -455,10 +455,10 @@ export default function CustomerScreen() {
                                 <Pressable
                                     key={tipe}
                                     onPress={() => setFormData({ ...formData, tipe })}
-                                    className={`flex-1 py-3.5 rounded-2xl border ${formData.tipe === tipe ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}
+                                    className={`flex-1 py-3.5 rounded-2xl border ${formData.tipe === tipe ? 'bg-primary border-primary' : 'bg-surface border-border'}`}
                                 >
                                     <Typography
-                                        className={`text-center font-bold text-sm ${formData.tipe === tipe ? 'text-white' : 'text-gray-500'}`}
+                                        className={`text-center font-bold text-sm ${formData.tipe === tipe ? 'text-white' : 'text-textGray'}`}
                                     >
                                         {tipe === 'perusahaan' ? 'Perusahaan' : 'Perorangan'}
                                     </Typography>
@@ -470,7 +470,7 @@ export default function CustomerScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Telepon</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="08xxxxxxxxxx"
                             placeholderTextColor="#9CA3AF"
                             value={formData.telepon}
@@ -482,7 +482,7 @@ export default function CustomerScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Email (Opsional)</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="email@example.com"
                             placeholderTextColor="#9CA3AF"
                             value={formData.email}
@@ -494,7 +494,7 @@ export default function CustomerScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Kota</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="Contoh: Jakarta Selatan"
                             placeholderTextColor="#9CA3AF"
                             value={formData.kota}
@@ -505,7 +505,7 @@ export default function CustomerScreen() {
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Alamat Lengkap</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[100px]"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[100px]"
                             placeholder="Masukan alamat lengkap..."
                             placeholderTextColor="#9CA3AF"
                             value={formData.alamat}
@@ -516,7 +516,7 @@ export default function CustomerScreen() {
                     </View>
 
                     {/* Vehicle Management Section */}
-                    <View className="pt-4 border-t border-gray-100">
+                    <View className="pt-4 border-t border-border">
                         <View className="flex-row justify-between items-center mb-4">
                             <Typography weight="bold" className="text-base">Daftar Kendaraan</Typography>
                             <Pressable
@@ -530,9 +530,9 @@ export default function CustomerScreen() {
                         </View>
 
                         {formData.vehicles.map((vehicle, index) => (
-                            <View key={index} className="bg-gray-50 p-4 rounded-2xl mb-4 border border-gray-100">
+                            <View key={index} className="bg-background p-4 rounded-2xl mb-4 border border-border">
                                 <View className="flex-row justify-between items-center mb-3">
-                                    <Typography className="text-[10px] font-bold text-gray-400 uppercase">Kendaraan #{index + 1}</Typography>
+                                    <Typography className="text-[10px] font-bold text-textGray uppercase">Kendaraan #{index + 1}</Typography>
                                     <Pressable onPress={() => removeVehicle(index)}>
                                         <Trash2 size={16} color="#EF4444" />
                                     </Pressable>
@@ -541,7 +541,7 @@ export default function CustomerScreen() {
                                     <View>
                                         <Typography className="mb-1.5 text-textGray font-bold text-[9px] uppercase tracking-wider ml-1">Plat Nomor</Typography>
                                         <TextInput
-                                            className="bg-white border border-gray-100 rounded-xl px-3 py-2.5 text-textMain font-medium focus:border-primary"
+                                            className="bg-surface border border-border rounded-xl px-3 py-2.5 text-textMain font-medium focus:border-primary"
                                             placeholder="Contoh: B 1234 ABC"
                                             placeholderTextColor="#9CA3AF"
                                             value={vehicle.plat_nomor}
@@ -552,7 +552,7 @@ export default function CustomerScreen() {
                                     <View>
                                         <Typography className="mb-1.5 text-textGray font-bold text-[9px] uppercase tracking-wider ml-1">Jenis Unit</Typography>
                                         <TextInput
-                                            className="bg-white border border-gray-100 rounded-xl px-3 py-2.5 text-textMain font-medium focus:border-primary"
+                                            className="bg-surface border border-border rounded-xl px-3 py-2.5 text-textMain font-medium focus:border-primary"
                                             placeholder="Contoh: Toyota Avanza"
                                             placeholderTextColor="#9CA3AF"
                                             value={vehicle.jenis_unit}
@@ -562,7 +562,7 @@ export default function CustomerScreen() {
                                     <View>
                                         <Typography className="mb-1.5 text-textGray font-bold text-[9px] uppercase tracking-wider ml-1">Catatan (Opsional)</Typography>
                                         <TextInput
-                                            className="bg-white border border-gray-100 rounded-xl px-3 py-2.5 text-textMain font-medium focus:border-primary"
+                                            className="bg-surface border border-border rounded-xl px-3 py-2.5 text-textMain font-medium focus:border-primary"
                                             placeholder="Warna, tahun, dll..."
                                             placeholderTextColor="#9CA3AF"
                                             value={vehicle.catatan}
@@ -574,9 +574,9 @@ export default function CustomerScreen() {
                         ))}
 
                         {formData.vehicles.length === 0 && (
-                            <View className="items-center py-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                            <View className="items-center py-6 bg-background rounded-2xl border border-dashed border-border">
                                 <Truck size={32} color="#D1D5DB" />
-                                <Typography className="text-gray-400 mt-2 text-xs">Belum ada data kendaraan</Typography>
+                                <Typography className="text-textGray mt-2 text-xs">Belum ada data kendaraan</Typography>
                             </View>
                         )}
                     </View>
@@ -607,7 +607,7 @@ export default function CustomerScreen() {
                 showProfile={true}
             >
                 {!sheetVisible && (
-                    <View className="flex-row items-center bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                    <View className="flex-row items-center bg-background h-11 rounded-2xl border border-border">
                         <Search size={18} color="#9CA3AF" className="ml-4" />
                         <TextInput
                             placeholder="Cari nama atau telepon..."
@@ -627,10 +627,10 @@ export default function CustomerScreen() {
                             <Pressable
                                 key={filter.key}
                                 onPress={() => setSelectedFilter(filter.key)}
-                                className={`mr-3 px-5 py-2.5 rounded-2xl border ${selectedFilter === filter.key ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-white border-gray-100'}`}
+                                className={`mr-3 px-5 py-2.5 rounded-2xl border ${selectedFilter === filter.key ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-surface border-border'}`}
                             >
                                 <Typography
-                                    className={selectedFilter === filter.key ? 'text-white' : 'text-gray-500'}
+                                    className={selectedFilter === filter.key ? 'text-white' : 'text-textGray'}
                                     weight={selectedFilter === filter.key ? 'bold' : 'medium'}
                                     variant="caption"
                                 >
@@ -685,7 +685,7 @@ export default function CustomerScreen() {
                             onPress={handleCloseSheet}
                         />
                         <View
-                            className="bg-white rounded-t-[32px] shadow-2xl h-[90%]"
+                            className="bg-surface rounded-t-[32px] shadow-2xl h-[90%]"
                             style={{
                                 width: '100%',
                                 maxWidth: 640,

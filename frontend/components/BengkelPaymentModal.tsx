@@ -166,14 +166,14 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                 Pembayaran
                             </Typography>
                             {nomorTransaksi && (
-                                <Typography variant="caption" className="text-gray-400 mt-0.5">
+                                <Typography variant="caption" className="text-textGray mt-0.5">
                                     #{nomorTransaksi}
                                 </Typography>
                             )}
                         </View>
                         <Pressable
                             onPress={onClose}
-                            className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center"
+                            className="w-8 h-8 bg-background rounded-full items-center justify-center"
                         >
                             <X size={18} color="#4B5563" />
                         </Pressable>
@@ -241,7 +241,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                         <Typography
                                             variant="caption"
                                             weight="semibold"
-                                            className="text-gray-600 ml-1"
+                                            className="text-textGray ml-1"
                                         >
                                             Diskon (Rp)
                                         </Typography>
@@ -262,13 +262,13 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                                     <CheckCircle2 size={12} color="white" />
                                                 )}
                                             </View>
-                                            <Typography className="text-gray-500 text-[10px]">
+                                            <Typography className="text-textGray text-[10px]">
                                                 Cetak di struk
                                             </Typography>
                                         </Pressable>
                                     </View>
-                                    <View className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 flex-row items-center">
-                                        <Typography className="text-gray-400 mr-2 font-bold">
+                                    <View className="bg-background border border-border rounded-2xl px-4 h-12 flex-row items-center">
+                                        <Typography className="text-textGray mr-2 font-bold">
                                             Rp
                                         </Typography>
                                         <TextInput
@@ -290,7 +290,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                 <Typography
                                     variant="caption"
                                     weight="semibold"
-                                    className="text-gray-600 mb-2.5 ml-1"
+                                    className="text-textGray mb-2.5 ml-1"
                                 >
                                     Metode Pembayaran
                                 </Typography>
@@ -338,11 +338,11 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                             <Typography
                                                 variant="caption"
                                                 weight="semibold"
-                                                className="text-gray-600 mb-1.5 ml-1"
+                                                className="text-textGray mb-1.5 ml-1"
                                             >
                                                 Tunai (Rp)
                                             </Typography>
-                                            <View className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 flex-row items-center">
+                                            <View className="bg-background border border-border rounded-2xl px-4 h-12 flex-row items-center">
                                                 <TextInput
                                                     placeholder="0"
                                                     keyboardType="number-pad"
@@ -364,11 +364,11 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                             <Typography
                                                 variant="caption"
                                                 weight="semibold"
-                                                className="text-gray-600 mb-1.5 ml-1"
+                                                className="text-textGray mb-1.5 ml-1"
                                             >
                                                 Transfer (Rp)
                                             </Typography>
-                                            <View className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 flex-row items-center">
+                                            <View className="bg-background border border-border rounded-2xl px-4 h-12 flex-row items-center">
                                                 <TextInput
                                                     placeholder="0"
                                                     keyboardType="number-pad"
@@ -392,12 +392,12 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                         <Typography
                                             variant="caption"
                                             weight="semibold"
-                                            className="text-gray-600 mb-1.5 ml-1"
+                                            className="text-textGray mb-1.5 ml-1"
                                         >
                                             Nominal Pembayaran
                                         </Typography>
-                                        <View className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 flex-row items-center">
-                                            <Typography className="text-gray-400 mr-2 font-bold">
+                                        <View className="bg-background border border-border rounded-2xl px-4 h-12 flex-row items-center">
+                                            <Typography className="text-textGray mr-2 font-bold">
                                                 Rp
                                             </Typography>
                                             <TextInput
@@ -508,7 +508,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                         <Pressable onPress={onClose} className="py-3 items-center">
                             <Typography
                                 weight="bold"
-                                className="text-gray-400 text-xs uppercase tracking-widest"
+                                className="text-textGray text-xs uppercase tracking-widest"
                             >
                                 Batal
                             </Typography>

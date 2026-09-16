@@ -102,7 +102,7 @@ export const MasterDataSelector = ({
             {label && <Typography weight="medium" className="text-textGray text-sm mb-1">{label}</Typography>}
 
             {!hideTrigger && <Pressable onPress={handleOpen} disabled={inlineMode}>
-                <View className="bg-gray-100 rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
+                <View className="bg-background rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
                     {type === 'customer' ? (
                         <User size={20} color={value ? '#2563EB' : '#9CA3AF'} />
                     ) : (
@@ -113,15 +113,15 @@ export const MasterDataSelector = ({
                         {value ? (
                             <>
                                 <Typography weight="semibold" className="text-text text-base">{value.nama}</Typography>
-                                <Typography variant="caption" className="text-gray-500">
+                                <Typography variant="caption" className="text-textGray">
                                     {value.kode || (value.tipe === 'Perusahaan' ? 'Perusahaan' : 'Perorangan')}
                                 </Typography>
                             </>
                         ) : (
                             allowGuest && onGuestNameChange && searchQuery && !value ? (
-                                <Typography className="text-gray-900 text-base">{searchQuery} (Guest)</Typography>
+                                <Typography className="text-text text-base">{searchQuery} (Guest)</Typography>
                             ) : (
-                                <Typography className="text-gray-400 text-base">{placeholder || `Pilih ${type === 'customer' ? 'Customer' : 'Supplier'}...`}</Typography>
+                                <Typography className="text-textGray text-base">{placeholder || `Pilih ${type === 'customer' ? 'Customer' : 'Supplier'}...`}</Typography>
                             )
                         )}
                     </View>
@@ -136,7 +136,7 @@ export const MasterDataSelector = ({
 
             {inlineMode && (
                 <View className={hideTrigger ? '' : 'mt-3'}>
-                    <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-3">
+                    <View className="flex-row items-center bg-background rounded-xl px-4 py-3 mb-3">
                         <Search size={20} color="#9CA3AF" />
                         <TextInput
                             className="flex-1 ml-3 text-base text-text font-outfit"
@@ -155,7 +155,7 @@ export const MasterDataSelector = ({
                     {allowGuest && onGuestNameChange && searchQuery.length > 0 && (
                         <Pressable
                             onPress={handleGuestSelect}
-                            className={`mb-3 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-300'}`}
+                            className={`mb-3 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-background border-border'}`}
                         >
                             <View className="flex-row items-center flex-1">
                                 <User size={18} color={selectedGuestName === searchQuery.trim() && !value ? '#10B981' : '#4B5563'} />
@@ -188,11 +188,11 @@ export const MasterDataSelector = ({
                                 <Pressable
                                     key={item.id}
                                     onPress={() => handleSelect(item)}
-                                    className={`mb-3 p-4 rounded-2xl border flex-row items-center justify-between shadow-sm ${value?.id === item.id ? 'bg-emerald-50 border-emerald-200' : 'bg-surface border-gray-100'}`}
+                                    className={`mb-3 p-4 rounded-2xl border flex-row items-center justify-between shadow-sm ${value?.id === item.id ? 'bg-emerald-50 border-emerald-200' : 'bg-surface border-border'}`}
                                 >
                                         <View className="flex-1 mr-2">
                                             <Typography weight="semibold">{item.nama}</Typography>
-                                            <Typography variant="caption" className="text-gray-500">
+                                            <Typography variant="caption" className="text-textGray">
                                                 {item.kota ? `${item.kota} â€¢ ` : ''}{item.telepon || '-'}
                                             </Typography>
                                             {type === 'customer' && item.vehicles && item.vehicles.length > 0 && (
@@ -218,12 +218,12 @@ export const MasterDataSelector = ({
                                 </Pressable>
                             ))}
                             {(!searchResults || searchResults.length === 0) && searchQuery.length > 0 && (
-                                <Typography className="text-center text-gray-500 mt-4">Data tidak ditemukan</Typography>
+                                <Typography className="text-center text-textGray mt-4">Data tidak ditemukan</Typography>
                             )}
                             {inlineMode && (searchResults || []).length >= visibleLimit && (
                                 <Pressable
                                     onPress={() => setVisibleLimit(prev => prev + inlineLimit)}
-                                    className="mt-1 mb-3 py-3 rounded-2xl bg-gray-100 border border-gray-200 items-center"
+                                    className="mt-1 mb-3 py-3 rounded-2xl bg-background border border-border items-center"
                                 >
                                     <Typography className="text-primary text-xs font-bold">Muat lagi</Typography>
                                 </Pressable>
@@ -254,7 +254,7 @@ export const MasterDataSelector = ({
                             </Pressable>
                         </View>
 
-                        <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
+                        <View className="flex-row items-center bg-background rounded-xl px-4 py-3 mb-4">
                             <Search size={20} color="#9CA3AF" />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-text font-outfit"
@@ -270,7 +270,7 @@ export const MasterDataSelector = ({
                             {allowGuest && searchQuery.length > 0 && (
                                 <Pressable
                                     onPress={handleGuestSelect}
-                                    className={`flex-1 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-300'}`}
+                                    className={`flex-1 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-background border-border'}`}
                                 >
                                     <View className="flex-row items-center flex-1">
                                         <User size={18} color={selectedGuestName === searchQuery.trim() && !value ? '#10B981' : '#4B5563'} />
@@ -305,10 +305,10 @@ export const MasterDataSelector = ({
                                 showsVerticalScrollIndicator={false}
                                 renderItem={({ item }) => (
                                     <Pressable onPress={() => handleSelect(item)}>
-                                        <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
+                                        <Card className="mb-3 p-4 border border-border flex-row items-center justify-between">
                                             <View className="flex-1 mr-2">
                                                 <Typography weight="semibold">{item.nama}</Typography>
-                                                <Typography variant="caption" className="text-gray-500">
+                                                <Typography variant="caption" className="text-textGray">
                                                     {item.kota ? `${item.kota} • ` : ''}{item.telepon || '-'}
                                                 </Typography>
                                                 {type === 'customer' && item.vehicles && item.vehicles.length > 0 && (
@@ -332,7 +332,7 @@ export const MasterDataSelector = ({
                                 )}
                                 ListEmptyComponent={
                                     searchQuery.length > 1 ? (
-                                        <Typography className="text-center text-gray-500 mt-4">Data tidak ditemukan</Typography>
+                                        <Typography className="text-center text-textGray mt-4">Data tidak ditemukan</Typography>
                                     ) : null
                                 }
                             />

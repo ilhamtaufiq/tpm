@@ -172,7 +172,7 @@ export default function ArusKasAkunScreen() {
                 {isLoading ? (
                     <View className="py-20 items-center justify-center">
                         <ActivityIndicator size="large" color="#0D9488" />
-                        <Typography className="text-gray-400 text-xs font-bold mt-4 uppercase tracking-widest">
+                        <Typography className="text-textGray text-xs font-bold mt-4 uppercase tracking-widest">
                             Memuat Data Arus Kas...
                         </Typography>
                     </View>
@@ -235,7 +235,7 @@ export default function ArusKasAkunScreen() {
                         </View>
 
                         {/* Breakdown per Account Card */}
-                        <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                        <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
                             <View className="bg-teal-50/70 px-5 py-4 flex-row justify-between items-center border-b border-teal-100/50 w-full">
                                 <View className="flex-row items-center flex-1 mr-2">
                                     <View className="w-10 h-10 rounded-full bg-teal-100/80 items-center justify-center mr-3 flex-shrink-0">
@@ -257,7 +257,7 @@ export default function ArusKasAkunScreen() {
                                 </Typography>
                                 {flows.length === 0 ? (
                                     <View className="py-8 items-center justify-center">
-                                        <Typography className="text-gray-400 font-medium">Tidak ada mutasi kas pada periode ini.</Typography>
+                                        <Typography className="text-textGray font-medium">Tidak ada mutasi kas pada periode ini.</Typography>
                                     </View>
                                 ) : (
                                     <KasArusJenisBreakdown flows={flows} />
@@ -272,7 +272,7 @@ export default function ArusKasAkunScreen() {
                             const totalSaldoKas = details.reduce((acc: number, item: any) => acc + Number(item.saldo || 0), 0);
 
                             return (
-                                <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                                <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
                                     <View className="bg-indigo-50/70 px-5 py-4 flex-row justify-between items-center border-b border-indigo-100/50 w-full">
                                         <View className="flex-row items-center flex-1 mr-2">
                                             <View className="w-10 h-10 rounded-full bg-indigo-100/80 items-center justify-center mr-3 flex-shrink-0">
@@ -315,8 +315,8 @@ export default function ArusKasAkunScreen() {
             {/* PDF PREVIEW MODAL */}
             {showPdfPreview && (
                 <Modal visible={showPdfPreview} animationType="slide">
-                    <SafeAreaView className="flex-1 bg-white">
-                        <View className="flex-row items-center justify-between p-4 border-b border-slate-100 bg-white">
+                    <SafeAreaView className="flex-1 bg-surface">
+                        <View className="flex-row items-center justify-between p-4 border-b border-slate-100 bg-surface">
                             <Pressable onPress={() => setShowPdfPreview(false)} className="p-2">
                                 <X size={24} color="#64748b" />
                             </Pressable>

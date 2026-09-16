@@ -327,9 +327,9 @@ export default function AbsensiScreen() {
                             <Pressable
                                 onPress={() => setSelectedKaryawan(item)}
                                 
-                                className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
+                                className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center"
                             >
-                                <View className="w-14 h-14 bg-gray-50 rounded-2xl items-center justify-center mr-4 border border-gray-100 shadow-inner">
+                                <View className="w-14 h-14 bg-background rounded-2xl items-center justify-center mr-4 border border-border shadow-inner">
                                     <User size={28} color="#023C69" />
                                 </View>
                                 <View className="flex-1 mr-3">
@@ -340,7 +340,7 @@ export default function AbsensiScreen() {
                                         {item.jabatan}
                                     </Typography>
                                 </View>
-                                <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100">
+                                <View className="w-10 h-10 bg-background rounded-xl items-center justify-center border border-border">
                                     <CalendarIcon size={18} color="#D1D5DB" />
                                 </View>
                             </Pressable>
@@ -353,7 +353,7 @@ export default function AbsensiScreen() {
                                 <View className="py-20"><ActivityIndicator size="large" color="#023C69" /></View>
                             ) : (
                                 <View className="items-center py-20">
-                                    <Typography className="text-gray-400 font-medium text-center">Tidak ada karyawan aktif</Typography>
+                                    <Typography className="text-textGray font-medium text-center">Tidak ada karyawan aktif</Typography>
                                 </View>
                             )
                         }
@@ -363,8 +363,8 @@ export default function AbsensiScreen() {
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ paddingTop: 10, paddingBottom: 150 }}
                     >
-                        <Card className="rounded-[32px] overflow-hidden border border-gray-100 shadow-xl mb-6">
-                            <View className="p-5 border-b border-gray-50 bg-gray-50/50 flex-row items-center justify-between">
+                        <Card className="rounded-[32px] overflow-hidden border border-border shadow-xl mb-6">
+                            <View className="p-5 border-b border-border bg-gray-50/50 flex-row items-center justify-between">
                                 <View className="flex-row items-center">
                                     <CalendarIcon size={20} color="#023C69" className="mr-2" />
                                     <Typography weight="bold" className="text-textMain">Seleksi Tanggal Masuk</Typography>
@@ -403,7 +403,7 @@ export default function AbsensiScreen() {
                             />
                         </Card>
 
-                        <View className="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm mb-6">
+                        <View className="bg-surface p-5 rounded-[32px] border border-border shadow-sm mb-6">
                             <Typography className="text-textGray/40 text-[10px] font-black uppercase tracking-[2px] mb-4">Ringkasan Bulan Ini</Typography>
                             <View className="flex-row flex-wrap -m-1">
                                 {[
@@ -422,7 +422,7 @@ export default function AbsensiScreen() {
                                     </View>
                                 ))}
                             </View>
-                            <View className="mt-4 bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                            <View className="mt-4 bg-background rounded-2xl p-4 border border-border">
                                 <Typography className="text-[10px] text-textGray/50 font-black uppercase tracking-wider">Persentase Kehadiran</Typography>
                                 <Typography weight="bold" className="text-textMain text-xl mt-1">{monthlySummary?.persentase_kehadiran || 0}%</Typography>
                             </View>
@@ -448,7 +448,7 @@ export default function AbsensiScreen() {
                         <View className="flex-row space-x-4">
                             <Pressable
                                 onPress={() => setSelectedKaryawan(null)}
-                                className="flex-1 bg-gray-100 h-16 rounded-2xl items-center justify-center border border-gray-200"
+                                className="flex-1 bg-background h-16 rounded-2xl items-center justify-center border border-border"
                             >
                                 <Typography weight="bold" className="text-textGray">Batal</Typography>
                             </Pressable>
@@ -494,7 +494,7 @@ export default function AbsensiScreen() {
                                     <View key={status} className="w-1/2 p-1">
                                         <Pressable
                                             onPress={() => setTempStatus(status)}
-                                            className={`rounded-2xl p-3 border ${active ? 'border-transparent' : 'border-gray-100 bg-gray-50'}`}
+                                            className={`rounded-2xl p-3 border ${active ? 'border-transparent' : 'border-border bg-background'}`}
                                             style={active ? { backgroundColor: STATUS_META[status].color } : undefined}
                                         >
                                             <Typography weight="bold" className={active ? 'text-white text-center' : `${STATUS_META[status].text} text-center`}>
@@ -524,7 +524,7 @@ export default function AbsensiScreen() {
                                 innerContainerClassName="rounded-full px-6"
                             />
 
-                            <Typography className="text-gray-500 text-xs italic mt-2">
+                            <Typography className="text-textGray text-xs italic mt-2">
                                 * Keluar antara 12:00 - 14:00 otomatis dihitung Setengah Hari
                             </Typography>
 
@@ -535,10 +535,10 @@ export default function AbsensiScreen() {
                                         setJamMasuk('08:00');
                                         setJamKeluar('17:00');
                                     }}
-                                    className={`flex-1 py-3 rounded-full border items-center justify-center ${jamMasuk === '08:00' && jamKeluar === '17:00' && tempStatus === 'HADIR' ? 'bg-primary/10 border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                    className={`flex-1 py-3 rounded-full border items-center justify-center ${jamMasuk === '08:00' && jamKeluar === '17:00' && tempStatus === 'HADIR' ? 'bg-primary/10 border-primary' : 'bg-background border-border'}`}
                                 >
                                     <Typography variant="caption" weight="bold" className={jamMasuk === '08:00' && jamKeluar === '17:00' && tempStatus === 'HADIR' ? 'text-primary' : 'text-textGray'}>Full Day</Typography>
-                                    <Typography className="text-[10px] text-gray-400">08:00 - 17:00</Typography>
+                                    <Typography className="text-[10px] text-textGray">08:00 - 17:00</Typography>
                                 </Pressable>
                                 <Pressable 
                                     onPress={() => {
@@ -546,10 +546,10 @@ export default function AbsensiScreen() {
                                         setJamMasuk('08:00');
                                         setJamKeluar('12:00');
                                     }}
-                                    className={`flex-1 py-3 rounded-full border items-center justify-center ${jamMasuk === '08:00' && jamKeluar === '12:00' ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}
+                                    className={`flex-1 py-3 rounded-full border items-center justify-center ${jamMasuk === '08:00' && jamKeluar === '12:00' ? 'bg-amber-50 border-amber-200' : 'bg-background border-border'}`}
                                 >
                                     <Typography variant="caption" weight="bold" className={jamMasuk === '08:00' && jamKeluar === '12:00' ? 'text-amber-700' : 'text-textGray'}>1/2 Day</Typography>
-                                    <Typography className="text-[10px] text-gray-400">08:00 - 12:00</Typography>
+                                    <Typography className="text-[10px] text-textGray">08:00 - 12:00</Typography>
                                 </Pressable>
                             </View>
                         </>

@@ -511,18 +511,18 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                             updateField('armada_id', '');
                                             setArmadaSearch('');
                                         }}
-                                        className="bg-white px-3 py-1.5 rounded-lg shadow-sm border border-blue-100"
+                                        className="bg-surface px-3 py-1.5 rounded-lg shadow-sm border border-blue-100"
                                     >
                                         <Typography variant="caption" weight="bold" className="text-blue-600">Ganti Armada</Typography>
                                     </Pressable>
                                 </View>
                                 <View className="flex-row space-x-2">
                                     <View className="flex-1">
-                                        <Typography variant="caption" className="text-gray-400 uppercase font-bold mb-1 text-[9px]">Nopol</Typography>
+                                        <Typography variant="caption" className="text-textGray uppercase font-bold mb-1 text-[9px]">Nopol</Typography>
                                         <Typography variant="caption" weight="bold">{formData.nopol}</Typography>
                                     </View>
                                     <View className="flex-1">
-                                        <Typography variant="caption" className="text-gray-400 uppercase font-bold mb-1 text-[9px]">Info</Typography>
+                                        <Typography variant="caption" className="text-textGray uppercase font-bold mb-1 text-[9px]">Info</Typography>
                                         <Typography variant="caption" weight="bold">{formData.info_kendaraan}</Typography>
                                     </View>
                                 </View>
@@ -547,19 +547,19 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                         updateField('armada_id', a.id.toString());
                                                         setArmadaSearch('');
                                                     }}
-                                                    className="px-4 py-2.5 rounded-xl mr-2 mb-2 border border-gray-100 bg-gray-50"
+                                                    className="px-4 py-2.5 rounded-xl mr-2 mb-2 border border-border bg-background"
                                                 >
                                                     <View>
                                                         <Typography
                                                             variant="caption"
                                                             weight="bold"
-                                                            className="text-gray-700"
+                                                            className="text-text"
                                                         >
                                                             {a.nama}
                                                         </Typography>
                                                         <Typography
                                                             variant="caption"
-                                                            className="text-gray-400 font-bold text-[10px]"
+                                                            className="text-textGray font-bold text-[10px]"
                                                         >
                                                             {a.nopol} {a.jenis ? `• ${a.jenis}` : ''}
                                                         </Typography>
@@ -573,7 +573,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 )}
                                 {armadaSearch.length === 0 && (
                                     <View>
-                                        <Typography variant="caption" className="text-gray-400 font-bold mb-2 ml-1">Rekomendasi (Ready)</Typography>
+                                        <Typography variant="caption" className="text-textGray font-bold mb-2 ml-1">Rekomendasi (Ready)</Typography>
                                         <View className="flex-row flex-wrap mb-2">
                                             {readyArmada.length > 0 ? (
                                                 readyArmada.map(a => (
@@ -593,10 +593,10 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                     </Pressable>
                                                 ))
                                             ) : (
-                                                <Typography variant="caption" className="text-gray-400 italic mb-2 ml-1">Semua armada sedang bertugas</Typography>
+                                                <Typography variant="caption" className="text-textGray italic mb-2 ml-1">Semua armada sedang bertugas</Typography>
                                             )}
                                         </View>
-                                        <Typography variant="caption" className="text-gray-400 italic ml-1">Atau cari armada lain di atas...</Typography>
+                                        <Typography variant="caption" className="text-textGray italic ml-1">Atau cari armada lain di atas...</Typography>
                                     </View>
                                 )}
                             </View>
@@ -631,7 +631,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                         updateField('supir_id', '');
                                         setDriverSearch('');
                                     }}
-                                    className="bg-white px-3 py-1.5 rounded-lg shadow-sm"
+                                    className="bg-surface px-3 py-1.5 rounded-lg shadow-sm"
                                 >
                                     <Typography variant="caption" weight="bold" className="text-primary">Ganti</Typography>
                                 </Pressable>
@@ -656,12 +656,12 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                         updateField('supir_id', d.id.toString());
                                                         setDriverSearch('');
                                                     }}
-                                                    className="px-4 py-2.5 rounded-xl mr-2 mb-2 bg-gray-50 flex-row items-center"
+                                                    className="px-4 py-2.5 rounded-xl mr-2 mb-2 bg-background flex-row items-center"
                                                 >
                                                     <Typography
                                                         variant="caption"
                                                         weight="bold"
-                                                        className="text-gray-700"
+                                                        className="text-text"
                                                     >
                                                         {d.nama}
                                                     </Typography>
@@ -674,7 +674,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 )}
                                 {driverSearch.length === 0 && (
                                     <View>
-                                        <Typography variant="caption" className="text-gray-400 font-bold mb-2 ml-1">Rekomendasi Supir (Ready)</Typography>
+                                        <Typography variant="caption" className="text-textGray font-bold mb-2 ml-1">Rekomendasi Supir (Ready)</Typography>
                                         <View className="flex-row flex-wrap mb-2">
                                             {readyDrivers.length > 0 ? (
                                                 readyDrivers.map((d: Supir) => (
@@ -690,10 +690,10 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                     </Pressable>
                                                 ))
                                             ) : (
-                                                <Typography variant="caption" className="text-gray-400 italic mb-2 ml-1">Semua supir sedang bertugas</Typography>
+                                                <Typography variant="caption" className="text-textGray italic mb-2 ml-1">Semua supir sedang bertugas</Typography>
                                             )}
                                         </View>
-                                        <Typography variant="caption" className="text-gray-400 italic ml-1 text-[10px]">Atau cari supir lain di atas...</Typography>
+                                        <Typography variant="caption" className="text-textGray italic ml-1 text-[10px]">Atau cari supir lain di atas...</Typography>
                                     </View>
                                 )}
                             </View>
@@ -712,22 +712,22 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
             {/* Multiple Load Types UI */}
             <View className="flex-row items-center justify-between mb-2 mt-4">
-                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">Daftar Muatan (Rit & Harga)</Typography>
+                <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Daftar Muatan (Rit & Harga)</Typography>
                 <Pressable onPress={addJenisMuatan} className="flex-row items-center bg-primary/5 px-2 py-1 rounded-lg">
                     <Plus size={14} color="#023C69" />
                     <Typography variant="caption" weight="bold" className="text-primary ml-1">Tambah</Typography>
                 </Pressable>
             </View>
 
-            <View className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 mb-4">
+            <View className="bg-gray-50/50 p-4 rounded-2xl border border-border mb-4">
                 {formData.jenis_muatan_list.map((item, index) => (
-                    <View key={index} className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm">
+                    <View key={index} className="bg-surface p-5 rounded-[32px] mb-6 border border-border shadow-sm">
                         <View className="flex-row items-center justify-between mb-4">
                             <View className="flex-row items-center">
                                 <View className="w-8 h-8 bg-primary/10 rounded-xl items-center justify-center mr-3">
                                     <Typography weight="bold" className="text-primary text-xs">{index + 1}</Typography>
                                 </View>
-                                <Typography variant="body1" weight="bold" className="text-gray-800">Detail Muatan</Typography>
+                                <Typography variant="body1" weight="bold" className="text-text">Detail Muatan</Typography>
                             </View>
                             {formData.jenis_muatan_list.length > 1 && (
                                 <Pressable
@@ -741,31 +741,31 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
                         <View className="flex-row gap-3 mb-4">
                             <View className="flex-[3]">
-                                <Typography variant="caption" weight="bold" className="text-gray-400 mb-1.5 uppercase text-[10px] tracking-widest">Jenis Muatan</Typography>
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-1.5 uppercase text-[10px] tracking-widest">Jenis Muatan</Typography>
                                 <Input
                                     placeholder="Contoh: Pasir, Batu"
                                     value={item.jenis}
                                     onChangeText={v => updateJenisMuatan(index, 'jenis', v)}
                                     containerClassName="mb-0"
-                                    className="h-12 bg-gray-50/50 border-gray-100"
+                                    className="h-12 bg-gray-50/50 border-border"
                                 />
                             </View>
                             <View className="flex-1">
-                                <Typography variant="caption" weight="bold" className="text-gray-400 mb-1.5 uppercase text-[10px] tracking-widest text-center">Rit</Typography>
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-1.5 uppercase text-[10px] tracking-widest text-center">Rit</Typography>
                                 <Input
                                     placeholder="1"
                                     keyboardType="numeric"
                                     value={item.ritase}
                                     onChangeText={v => updateJenisMuatan(index, 'ritase', v)}
                                     containerClassName="mb-0"
-                                    className="h-12 bg-gray-50/50 border-gray-100 text-left font-bold text-primary"
+                                    className="h-12 bg-gray-50/50 border-border text-left font-bold text-primary"
                                     style={{ textAlign: 'left' }}
                                 />
                             </View>
                         </View>
 
-                        <View className="mb-4 p-4 bg-gray-50 rounded-[24px]">
-                            <Typography variant="caption" weight="bold" className="text-gray-400 mb-2 uppercase text-[10px] tracking-widest">Rute Pengiriman</Typography>
+                        <View className="mb-4 p-4 bg-background rounded-[24px]">
+                            <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase text-[10px] tracking-widest">Rute Pengiriman</Typography>
                             <View className="flex-row items-center gap-2">
                                 <View className="flex-1">
                                     <Input
@@ -799,22 +799,22 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                 updateJenisMuatan(index, activeSuggestionField.field, suggestion);
                                                 setActiveSuggestionField(null);
                                             }}
-                                            className="px-3 py-1.5 rounded-full mr-2 bg-white border border-gray-100 flex-row items-center shadow-sm"
+                                            className="px-3 py-1.5 rounded-full mr-2 bg-surface border border-border flex-row items-center shadow-sm"
                                         >
                                             <Typography variant="caption" weight="bold" className="text-primary text-[10px]">{suggestion}</Typography>
                                         </Pressable>
                                     ))}
                                     <Pressable
                                         onPress={() => setActiveSuggestionField(null)}
-                                        className="px-2 py-1.5 rounded-lg bg-gray-100"
+                                        className="px-2 py-1.5 rounded-lg bg-background"
                                     >
-                                        <Typography variant="caption" className="text-gray-400 text-[10px]">Tutup</Typography>
+                                        <Typography variant="caption" className="text-textGray text-[10px]">Tutup</Typography>
                                     </Pressable>
                                 </ScrollView>
                             )}
                         </View>
 
-                        <View className="flex-row gap-3 pt-4 border-t border-gray-50">
+                        <View className="flex-row gap-3 pt-4 border-t border-border">
                             <View className="flex-1">
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-1.5 uppercase text-[10px] tracking-widest">Harga Beli</Typography>
                                 <Input
@@ -846,7 +846,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
             {/* Operational Costs Section */}
             <View className="flex-row items-center justify-between mb-2 mt-4">
-                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">Biaya Operasional (Ops)</Typography>
+                <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Biaya Operasional (Ops)</Typography>
                 <Pressable onPress={() => addBiayaOperasional()} className="flex-row items-center bg-orange-50 px-2 py-1 rounded-lg">
                     <PlusCircle size={14} color="#F59E0B" />
                     <Typography variant="caption" weight="bold" className="text-orange-700 ml-1">Tambah</Typography>
@@ -865,7 +865,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                         <Pressable
                             key={btn.val}
                             onPress={() => addBiayaOperasional(btn.val)}
-                            className="px-3 py-1.5 rounded-full bg-white border border-orange-100 shadow-sm"
+                            className="px-3 py-1.5 rounded-full bg-surface border border-orange-100 shadow-sm"
                         >
                             <Typography variant="caption" weight="bold" className="text-orange-600 text-[10px] uppercase">+{btn.label}</Typography>
                         </Pressable>
@@ -878,7 +878,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                     </View>
                 ) : (
                     formData.biaya_operasional.map((item, index) => (
-                        <View key={index} className="flex-row items-center gap-2 mb-3 bg-white p-3 rounded-2xl border border-orange-50">
+                        <View key={index} className="flex-row items-center gap-2 mb-3 bg-surface p-3 rounded-2xl border border-orange-50">
                             <View className="flex-[2]">
                                 <Input
                                     placeholder="Deskripsi"
@@ -910,7 +910,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 )}
             </View>
 
-            <Typography variant="caption" weight="bold" className="mb-2 text-gray-500 mt-2">KEUANGAN & MARGIN</Typography>
+            <Typography variant="caption" weight="bold" className="mb-2 text-textGray mt-2">KEUANGAN & MARGIN</Typography>
             <View className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
                 <View className="flex-row space-x-2">
                     <View className="flex-1">
@@ -921,7 +921,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             value={formData.harga_beli}
                             onChangeText={v => updateField('harga_beli', v)}
                             containerClassName="mb-0"
-                            className="bg-white outline-none"
+                            className="bg-surface outline-none"
                         />
                     </View>
                     <View className="flex-1">
@@ -932,7 +932,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             value={formData.harga_jual}
                             onChangeText={v => updateField('harga_jual', v)}
                             containerClassName="mb-0"
-                            className="bg-white outline-none"
+                            className="bg-surface outline-none"
                         />
                     </View>
                 </View>
@@ -952,13 +952,13 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
             {/* Status Ritase */}
             <View className="flex-row items-center justify-between mb-2 mt-4">
-                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">Status Ritase (Trip Status)</Typography>
+                <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Status Ritase (Trip Status)</Typography>
             </View>
 
             <View className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-4">
                 <View className="flex-row justify-between items-center">
                     <Typography variant="body2">Status Perjalanan</Typography>
-                    <View className="flex-row bg-white rounded-lg p-1 border border-blue-100">
+                    <View className="flex-row bg-surface rounded-lg p-1 border border-blue-100">
                         <Pressable
                             onPress={() => updateField('status', 'PROSES')}
                             className={`px-4 py-1.5 rounded-md ${formData.status === 'PROSES' ? 'bg-blue-100' : ''}`}
@@ -966,7 +966,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             <Typography
                                 variant="caption"
                                 weight={formData.status === 'PROSES' ? 'bold' : 'medium'}
-                                className={formData.status === 'PROSES' ? 'text-blue-700' : 'text-gray-500'}
+                                className={formData.status === 'PROSES' ? 'text-blue-700' : 'text-textGray'}
                             >
                                 PROSES
                             </Typography>
@@ -978,35 +978,35 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             <Typography
                                 variant="caption"
                                 weight={formData.status === 'SELESAI' ? 'bold' : 'medium'}
-                                className={formData.status === 'SELESAI' ? 'text-green-700' : 'text-gray-500'}
+                                className={formData.status === 'SELESAI' ? 'text-green-700' : 'text-textGray'}
                             >
                                 SELESAI
                             </Typography>
                         </Pressable>
                     </View>
                 </View>
-                <Typography variant="caption" className="text-gray-400 mt-2 italic text-[10px]">
+                <Typography variant="caption" className="text-textGray mt-2 italic text-[10px]">
                     * Armada tidak dapat digunakan di ritase lain selama status masih 'PROSES'
                 </Typography>
             </View>
 
             {/* Status & Metode Pembayaran */}
             <View className="flex-row items-center justify-between mb-2 mt-4">
-                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">PEMBAYARAN Muatan</Typography>
+                <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">PEMBAYARAN Muatan</Typography>
                 <Pressable
                     onPress={toggleSplitPayment}
-                    className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                    className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-background border border-border'}`}
                 >
-                    <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                    <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-textGray'}`}>
                         {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                     </Typography>
                 </Pressable>
             </View>
 
-            <View className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4">
+            <View className="bg-background p-4 rounded-xl border border-border mb-4">
                 <View className="flex-row justify-between items-center mb-4">
                     <Typography variant="body2">Status Pembayaran</Typography>
-                    <View className="flex-row bg-white rounded-lg p-1 border border-gray-200">
+                    <View className="flex-row bg-surface rounded-lg p-1 border border-border">
                         <Pressable
                             onPress={() => updateField('status_bayar', 'BELUM_LUNAS')}
                             className={`px-4 py-1.5 rounded-md ${formData.status_bayar === 'BELUM_LUNAS' ? 'bg-orange-100' : ''}`}
@@ -1014,7 +1014,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             <Typography
                                 variant="caption"
                                 weight={formData.status_bayar === 'BELUM_LUNAS' ? 'bold' : 'medium'}
-                                className={formData.status_bayar === 'BELUM_LUNAS' ? 'text-orange-700' : 'text-gray-500'}
+                                className={formData.status_bayar === 'BELUM_LUNAS' ? 'text-orange-700' : 'text-textGray'}
                             >
                                 BELUM_LUNAS
                             </Typography>
@@ -1026,7 +1026,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             <Typography
                                 variant="caption"
                                 weight={formData.status_bayar === 'LUNAS' ? 'bold' : 'medium'}
-                                className={formData.status_bayar === 'LUNAS' ? 'text-green-700' : 'text-gray-500'}
+                                className={formData.status_bayar === 'LUNAS' ? 'text-green-700' : 'text-textGray'}
                             >
                                 Lunas
                             </Typography>
@@ -1038,7 +1038,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                     {isSplitPayment ? (
                         <View className="mb-2">
                             <View className="flex-row justify-between items-center mb-3">
-                                <Typography variant="caption" weight="bold" className="text-gray-400 font-bold">ALOKASI PEMBAYARAN</Typography>
+                                <Typography variant="caption" weight="bold" className="text-textGray font-bold">ALOKASI PEMBAYARAN</Typography>
                                     <Pressable onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
                                         <PlusCircle size={14} color="#023C69" />
                                         <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
@@ -1046,7 +1046,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 </View>
 
                                 {payments.map((p, idx) => (
-                                    <View key={p.id} className="mb-3 p-3 border border-gray-100 rounded-2xl bg-white shadow-sm">
+                                    <View key={p.id} className="mb-3 p-3 border border-border rounded-2xl bg-surface shadow-sm">
                                         <View className="flex-row justify-between items-center mb-3">
                                             <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
                                             <Pressable onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
@@ -1059,9 +1059,9 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                 <Pressable
                                                     key={m}
                                                     onPress={() => updatePaymentRow(p.id, 'metode', m)}
-                                                    className={`px-3 py-1.5 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                                    className={`px-3 py-1.5 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
                                                 >
-                                                    <Typography variant="caption" weight={p.metode === m ? 'bold' : 'medium'} className={p.metode === m ? 'text-primary' : 'text-gray-500'}>{m}</Typography>
+                                                    <Typography variant="caption" weight={p.metode === m ? 'bold' : 'medium'} className={p.metode === m ? 'text-primary' : 'text-textGray'}>{m}</Typography>
                                                 </Pressable>
                                             ))}
                                         </View>
@@ -1085,7 +1085,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                     <View className="items-end">
                                         <Typography weight="bold" className="text-primary">{formatCurrency(totalSplitAmount)}</Typography>
                                         {totalSplitAmount !== calculations.tpmShare && (
-                                            <Typography variant="caption" className={formData.status_bayar === 'LUNAS' ? "text-red-500 font-bold" : "text-gray-500 font-bold"} style={{ fontSize: 9 }}>
+                                            <Typography variant="caption" className={formData.status_bayar === 'LUNAS' ? "text-red-500 font-bold" : "text-textGray font-bold"} style={{ fontSize: 9 }}>
                                                 {totalSplitAmount < calculations.tpmShare ? `Kurang: ${formatCurrency(calculations.tpmShare - totalSplitAmount)}` : `Lebih: ${formatCurrency(totalSplitAmount - calculations.tpmShare)}`}
                                             </Typography>
                                         )}
@@ -1103,21 +1103,21 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                             value={formData.jumlah_bayar}
                                             onChangeText={(t) => updateField('jumlah_bayar', t)}
                                             containerClassName="mb-0"
-                                            className="h-11 bg-white border border-gray-200"
-                                            startIcon={<Typography className="text-gray-400 text-[10px] font-bold">Rp</Typography>}
+                                            className="h-11 bg-surface border border-border"
+                                            startIcon={<Typography className="text-textGray text-[10px] font-bold">Rp</Typography>}
                                         />
                                     </View>
                                 )}
-                                <Typography variant="caption" className="mb-2 text-gray-500">Metode Pembayaran</Typography>
+                                <Typography variant="caption" className="mb-2 text-textGray">Metode Pembayaran</Typography>
                                 <View className="flex-row space-x-2">
                                     {['TUNAI', 'TRANSFER'].map((m) => (
                                         <Pressable
                                             key={m}
                                             onPress={() => updateField('metode_bayar', m)}
-                                            className={`flex-1 py-2 items-center rounded-lg border ${formData.metode_bayar === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                            className={`flex-1 py-2 items-center rounded-lg border ${formData.metode_bayar === m ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
                                         >
                                             <Typography
-                                                className={formData.metode_bayar === m ? 'text-primary uppercase' : 'text-gray-500 uppercase'}
+                                                className={formData.metode_bayar === m ? 'text-primary uppercase' : 'text-textGray uppercase'}
                                                 weight={formData.metode_bayar === m ? 'bold' : 'medium'}
                                                 variant="caption"
                                             >

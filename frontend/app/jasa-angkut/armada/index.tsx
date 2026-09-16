@@ -56,7 +56,7 @@ export default function ArmadaScreen() {
             />
 
             {/* Search & Filter */}
-            <View className="p-4 bg-white border-b border-gray-100">
+            <View className="p-4 bg-surface border-b border-border">
                 <Input
                     placeholder="Cari armada (nama/nopol)..."
                     value={searchQuery}
@@ -123,12 +123,12 @@ export default function ArmadaScreen() {
 const FilterTab = ({ label, active, onPress }: { label: string, active: boolean, onPress: () => void }) => (
     <Pressable
         onPress={onPress}
-        className={`px-4 py-1.5 rounded-full border ${active ? 'bg-primary border-primary' : 'bg-transparent border-gray-200'}`}
+        className={`px-4 py-1.5 rounded-full border ${active ? 'bg-primary border-primary' : 'bg-transparent border-border'}`}
     >
         <Typography
             variant="caption"
             weight="medium"
-            className={active ? 'text-white' : 'text-gray-600'}
+            className={active ? 'text-white' : 'text-textGray'}
         >
             {label}
         </Typography>

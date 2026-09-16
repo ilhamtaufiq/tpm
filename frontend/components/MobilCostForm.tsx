@@ -240,7 +240,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     const renderTabs = () => (
         <View className="px-6 pt-4 mb-4">
             <Typography variant="h3" weight="bold">Manajemen Biaya Unit</Typography>
-            <Typography variant="caption" className="text-gray-400">{activeUnit?.merek} {activeUnit?.model} ({activeUnit?.nomor_plat})</Typography>
+            <Typography variant="caption" className="text-textGray">{activeUnit?.merek} {activeUnit?.model} ({activeUnit?.nomor_plat})</Typography>
 
             <View className="mt-4 p-4 bg-orange-50 rounded-2xl border border-orange-100">
                 <Typography variant="caption" className="text-orange-800 leading-relaxed">
@@ -252,7 +252,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
 
     const renderFormContent = () => (
         <View className="px-6 pb-4">
-            <Card className="bg-white border border-gray-100 p-6 rounded-[32px] shadow-sm mb-8">
+            <Card className="bg-surface border border-border p-6 rounded-[32px] shadow-sm mb-8">
                 <View className="flex-row items-center justify-between mb-6">
                     <View className="flex-row items-center">
                         <View className="w-8 h-8 bg-primary/10 rounded-full items-center justify-center mr-3">
@@ -262,9 +262,9 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                     </View>
                     <Pressable
                         onPress={toggleSplitPayment}
-                        className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                        className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-background border border-border'}`}
                     >
-                        <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                        <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-textGray'}`}>
                             {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                         </Typography>
                     </Pressable>
@@ -283,7 +283,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                 {isSplitPayment ? (
                     <View className="mb-6">
                         <View className="flex-row justify-between items-center mb-3">
-                            <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest pl-2">Alokasi Pembayaran</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest pl-2">Alokasi Pembayaran</Typography>
                             <Pressable onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
                                 <PlusCircle size={14} color="#023C69" />
                                 <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
@@ -291,7 +291,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                         </View>
 
                         {payments.map((p, idx) => (
-                            <View key={p.id} className="mb-3 p-4 border border-gray-100 rounded-2xl bg-gray-50/50">
+                            <View key={p.id} className="mb-3 p-4 border border-border rounded-2xl bg-gray-50/50">
                                 <View className="flex-row justify-between items-center mb-3">
                                     <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
                                     <Pressable onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
@@ -308,7 +308,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                                         <Pressable
                                             key={m.id}
                                             onPress={() => updatePaymentRow(p.id, 'metode', m.id)}
-                                            className={`px-3 py-1.5 rounded-xl border ${p.metode === m.id ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                            className={`px-3 py-1.5 rounded-xl border ${p.metode === m.id ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
                                         >
                                             <Typography variant="caption" weight={p.metode === m.id ? 'bold' : 'medium'} className={p.metode === m.id ? 'text-primary' : 'text-textGray'}>{m.label}</Typography>
                                         </Pressable>
@@ -343,9 +343,9 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                                     <Pressable
                                         key={m.id}
                                         onPress={() => setNewLainnya({ ...newLainnya, metode_bayar: m.id })}
-                                        className={`px-3 py-2 rounded-xl border ${newLainnya.metode_bayar === m.id ? 'border-primary bg-primary/10' : 'border-gray-100'}`}
+                                        className={`px-3 py-2 rounded-xl border ${newLainnya.metode_bayar === m.id ? 'border-primary bg-primary/10' : 'border-border'}`}
                                     >
-                                        <Typography variant="caption" weight="bold" className={newLainnya.metode_bayar === m.id ? 'text-primary' : 'text-gray-400'}>{m.label}</Typography>
+                                        <Typography variant="caption" weight="bold" className={newLainnya.metode_bayar === m.id ? 'text-primary' : 'text-textGray'}>{m.label}</Typography>
                                     </Pressable>
                                 ))}
                             </View>
@@ -388,20 +388,20 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
             </Card>
 
             <View className="mb-4">
-                <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest pl-2 mb-4">RIWAYAT BIAYA ADMIN & PAJAK</Typography>
+                <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest pl-2 mb-4">RIWAYAT BIAYA ADMIN & PAJAK</Typography>
                 {(activeUnit?.biaya_lainnya || []).length === 0 && (
-                    <View className="py-8 items-center bg-gray-50/50 rounded-[28px] border border-dashed border-gray-200">
-                        <Typography className="text-gray-400 italic">Belum ada catatan biaya</Typography>
+                    <View className="py-8 items-center bg-gray-50/50 rounded-[28px] border border-dashed border-border">
+                        <Typography className="text-textGray italic">Belum ada catatan biaya</Typography>
                     </View>
                 )}
                 {(activeUnit?.biaya_lainnya || []).map((item: any) => (
-                    <Card key={item.id} className="mb-4 p-4 flex-row items-center bg-white border border-gray-50 rounded-[24px]">
+                    <Card key={item.id} className="mb-4 p-4 flex-row items-center bg-surface border border-border rounded-[24px]">
                         <View className="w-12 h-12 bg-blue-50/50 rounded-2xl items-center justify-center mr-4">
                             <FileText size={20} color="#023C69" />
                         </View>
                         <View className="flex-1">
                             <Typography weight="bold" className="text-textMain">{item.kategori}</Typography>
-                            <Typography variant="caption" className="text-gray-400 mt-0.5">{item.deskripsi || '-'}</Typography>
+                            <Typography variant="caption" className="text-textGray mt-0.5">{item.deskripsi || '-'}</Typography>
                         </View>
                         <View className="items-end mr-4">
                             <Typography weight="bold" className="text-primary">{formatCurrency(Number(item.jumlah))}</Typography>
@@ -429,11 +429,11 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                             </View>
                             <View className="flex-1">
                                 <Typography weight="bold" className="text-textMain">{item.bisnis_kategori || 'Bengkel'}</Typography>
-                                <Typography variant="caption" className="text-gray-500 mt-0.5">{item.deskripsi || item.nomor_transaksi}</Typography>
+                                <Typography variant="caption" className="text-textGray mt-0.5">{item.deskripsi || item.nomor_transaksi}</Typography>
                             </View>
                             <View className="items-end mr-2">
                                 <Typography weight="bold" className="text-blue-600">{formatCurrency(Number(item.jumlah))}</Typography>
-                                <Typography variant="caption" className="text-gray-400 mt-1">{item.tanggal}</Typography>
+                                <Typography variant="caption" className="text-textGray mt-1">{item.tanggal}</Typography>
                             </View>
                         </Card>
                     ))}
@@ -443,17 +443,17 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
             {/* Show readonly repairs from workshop if any */}
             {(activeUnit?.part_services || []).length > 0 && (
                 <View className="mt-6">
-                    <Typography variant="body2" weight="bold" className="text-gray-400 mb-3 uppercase">Daftar Perbaikan (Read Only)</Typography>
+                    <Typography variant="body2" weight="bold" className="text-textGray mb-3 uppercase">Daftar Perbaikan (Read Only)</Typography>
                     {(activeUnit?.part_services || []).map((item: any) => (
-                        <Card key={item.id} className="mb-3 p-3 flex-row items-center border border-gray-100 opacity-60 bg-gray-50">
-                            <View className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center mr-3">
+                        <Card key={item.id} className="mb-3 p-3 flex-row items-center border border-border opacity-60 bg-background">
+                            <View className="w-10 h-10 bg-background rounded-full items-center justify-center mr-3">
                                 <Wrench size={18} color="#9CA3AF" />
                             </View>
                             <View className="flex-1">
-                                <Typography weight="bold" className="text-xs text-gray-500">{item.deskripsi}</Typography>
-                                <Typography variant="caption" className="text-gray-400">{item.qty} x {formatCurrency(Number(item.harga_satuan))}</Typography>
+                                <Typography weight="bold" className="text-xs text-textGray">{item.deskripsi}</Typography>
+                                <Typography variant="caption" className="text-textGray">{item.qty} x {formatCurrency(Number(item.harga_satuan))}</Typography>
                             </View>
-                            <Typography weight="bold" className="text-xs text-gray-400">{formatCurrency(Number(item.total))}</Typography>
+                            <Typography weight="bold" className="text-xs text-textGray">{formatCurrency(Number(item.total))}</Typography>
                         </Card>
                     ))}
                 </View>
@@ -464,7 +464,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     );
 
     const renderFooter = () => (
-        <View className="p-6 border-t border-gray-100 bg-white">
+        <View className="p-6 border-t border-border bg-surface">
             <View className="flex-row justify-between items-center mb-4">
                 <Typography variant="body1" weight="bold">Total Tambahan Biaya</Typography>
                 <Typography variant="h3" weight="bold" className="text-primary">{formatCurrency(calculateTotal())}</Typography>

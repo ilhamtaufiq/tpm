@@ -130,7 +130,7 @@ export default function OTPScreen() {
                     </View>
 
                     <View className="px-6 -mt-16 mb-8">
-                        <View className="bg-white p-8 rounded-[40px] shadow-2xl border border-gray-50">
+                        <View className="bg-surface p-8 rounded-[40px] shadow-2xl border border-border">
                             <Typography variant="body1" weight="bold" className="text-primary mb-6 text-center uppercase tracking-widest">
                                 KODE KEAMANAN
                             </Typography>
@@ -162,7 +162,7 @@ export default function OTPScreen() {
                             >
                                 <Typography variant="caption" weight="bold" className="text-textGray">
                                     TIDAK MENERIMA KODE?{' '}
-                                    <Typography variant="caption" weight="bold" className={cooldown > 0 ? 'text-gray-400' : 'text-primary'}>
+                                    <Typography variant="caption" weight="bold" className={cooldown > 0 ? 'text-textGray' : 'text-primary'}>
                                         {cooldown > 0 ? `KIRIM ULANG (${cooldown}s)` : 'KIRIM ULANG'}
                                     </Typography>
                                 </Typography>

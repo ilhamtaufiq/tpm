@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, Platform, Modal } from 'react-native';
+import { View, ScrollView, Pressable, Modal } from 'react-native';
 import { appAlert, appConfirm } from '../../utils/appAlert';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, RotateCcw, ChevronRight, SlidersHorizontal, Check, Home, ShieldCheck, Wrench, CarFront, Truck, BarChart3, History, Receipt, User, Plus, X } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { RotateCcw, ChevronRight, SlidersHorizontal, Check, Home, ShieldCheck, Wrench, CarFront, Truck, BarChart3, History, Receipt, User, Plus, X } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
+import { Header } from '../../components/ui/Header';
 import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 import { router } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
@@ -93,18 +94,14 @@ export default function NavigationSettingsScreen() {
 
     if (!isAdmin) {
         return (
-            <SafeAreaView className="flex-1 bg-background">
-                <View className="flex-row items-center px-6 py-4">
-                    <Pressable
-                        onPress={() => router.back()}
-                        className="w-10 h-10 items-center justify-center rounded-2xl bg-surface border border-gray-100 shadow-sm"
-                    >
-                        <ChevronLeft size={24} color={themeColors.text} />
-                    </Pressable>
-                    <View className="flex-1 ml-4">
-                        <Typography variant="h3" weight="bold">Bottom Navigasi</Typography>
-                    </View>
-                </View>
+            <View className="flex-1 bg-background">
+                <Header
+                    title="Bottom Navigasi"
+                    showBackButton
+                    onBackButtonPress={() => router.back()}
+                    showProfile={false}
+                    showBell={false}
+                />
                 <View className="flex-1 px-6 justify-center">
                     <View className="bg-rose-50 border border-rose-100 rounded-[32px] p-6 items-center">
                         <ShieldCheck size={32} color="#EF4444" />
@@ -114,7 +111,7 @@ export default function NavigationSettingsScreen() {
                         </Typography>
                     </View>
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
@@ -131,26 +128,23 @@ export default function NavigationSettingsScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <View className="flex-1 bg-background">
             <View className="flex-1">
-                {/* Header */}
-                <View className="flex-row items-center px-6 py-4">
-                    <Pressable
-                        onPress={() => router.back()}
-                        className="w-10 h-10 items-center justify-center rounded-2xl bg-surface border border-gray-100 shadow-sm"
-                    >
-                        <ChevronLeft size={24} color={themeColors.text} />
-                    </Pressable>
-                    <View className="flex-1 ml-4">
-                        <Typography variant="h3" weight="bold">Bottom Navigasi</Typography>
-                    </View>
-                    <Pressable
-                        onPress={handleReset}
-                        className="w-10 h-10 items-center justify-center rounded-2xl bg-surface border border-gray-100 shadow-sm active:bg-rose-50"
-                    >
-                        <RotateCcw size={20} color={themeColors.secondary} />
-                    </Pressable>
-                </View>
+                <Header
+                    title="Bottom Navigasi"
+                    showBackButton
+                    onBackButtonPress={() => router.back()}
+                    showProfile={false}
+                    showBell={false}
+                    rightElement={
+                        <Pressable
+                            onPress={handleReset}
+                            className="w-10 h-10 items-center justify-center rounded-2xl bg-surface border border-border shadow-sm active:bg-rose-50"
+                        >
+                            <RotateCcw size={20} color={themeColors.secondary} />
+                        </Pressable>
+                    }
+                />
 
                 <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 40) }} showsVerticalScrollIndicator={false}>
                     {/* Bento Info banner */}
@@ -165,9 +159,9 @@ export default function NavigationSettingsScreen() {
                     {/* LIVE INTERACTIVE PREVIEW */}
                     <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mb-3">Live Preview Bottom Bar</Typography>
                     
-                    <View className="bg-surface rounded-[32px] p-4 border border-gray-100 shadow-sm mb-6 items-center justify-center overflow-hidden">
+                    <View className="bg-surface rounded-[32px] p-4 border border-border shadow-sm mb-6 items-center justify-center overflow-hidden">
                         {/* Simulation Bar */}
-                        <View className="w-full bg-white border border-gray-100 rounded-2xl p-2 flex-row items-center justify-between shadow-sm relative h-16">
+                        <View className="w-full bg-surface border border-border rounded-2xl p-2 flex-row items-center justify-between shadow-sm relative h-16">
                             {activeSlots.map((slotId, index) => {
                                 const details = getOptionDetails(slotId);
                                 if (!details) return null;
@@ -183,7 +177,7 @@ export default function NavigationSettingsScreen() {
                                             >
                                                 <Plus size={22} color="white" strokeWidth={3} />
                                             </View>
-                                            <Typography weight="bold" className="text-[8px] text-gray-400 mt-6 uppercase tracking-tighter">
+                                            <Typography weight="bold" className="text-[8px] text-textGray mt-6 uppercase tracking-tighter">
                                                 {details.label.split(' ')[0]}
                                             </Typography>
                                         </View>
@@ -195,7 +189,7 @@ export default function NavigationSettingsScreen() {
                                         <View className="opacity-60 mb-0.5">
                                             <PreviewIcon size={16} color={index === 0 ? themeColors.primary : '#6B7280'} strokeWidth={index === 0 ? 2.5 : 2} />
                                         </View>
-                                        <Typography weight={index === 0 ? "bold" : "medium"} className={`text-[8px] uppercase tracking-tighter ${index === 0 ? 'text-primary' : 'text-gray-400'}`} numberOfLines={1}>
+                                        <Typography weight={index === 0 ? "bold" : "medium"} className={`text-[8px] uppercase tracking-tighter ${index === 0 ? 'text-primary' : 'text-textGray'}`} numberOfLines={1}>
                                             {details.label.split(' ')[0]}
                                         </Typography>
                                     </View>
@@ -218,7 +212,7 @@ export default function NavigationSettingsScreen() {
                                 <Pressable
                                     key={index}
                                     onPress={() => handleOpenPicker(index)}
-                                    className="bg-surface p-5 rounded-[28px] border border-gray-100 shadow-sm flex-row items-center justify-between active:bg-gray-50/50"
+                                    className="bg-surface p-5 rounded-[28px] border border-border shadow-sm flex-row items-center justify-between active:bg-gray-50/50"
                                 >
                                     <View className="flex-row items-center flex-1">
                                         {/* Slot Badge */}
@@ -247,7 +241,7 @@ export default function NavigationSettingsScreen() {
                                                 <Typography variant="caption" weight="bold" className="text-rose-500 text-[8px] uppercase tracking-wider font-bold">FAB+</Typography>
                                             </View>
                                         )}
-                                        <View className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 justify-center items-center shadow-sm">
+                                        <View className="w-8 h-8 rounded-xl bg-background border border-border justify-center items-center shadow-sm">
                                             <ChevronRight size={14} color="#9CA3AF" />
                                         </View>
                                     </View>
@@ -266,7 +260,7 @@ export default function NavigationSettingsScreen() {
                             const positionLabels = ['Aksi Kiri', 'Aksi Tengah', 'Aksi Kanan'];
 
                             return (
-                                <View key={page.id} className="bg-surface p-5 rounded-[28px] border border-gray-100 shadow-sm">
+                                <View key={page.id} className="bg-surface p-5 rounded-[28px] border border-border shadow-sm">
                                     <View className="flex-row items-center mb-4">
                                         <View className="w-9 h-9 bg-primary/5 rounded-xl justify-center items-center mr-4 border border-primary/10">
                                             <PageIcon size={17} color={themeColors.primary} strokeWidth={2.5} />
@@ -296,7 +290,7 @@ export default function NavigationSettingsScreen() {
                                                         setPickerMode('pageAction');
                                                         setPickerVisible(true);
                                                     }}
-                                                    className="bg-gray-50/70 rounded-2xl border border-gray-100 p-4 flex-row items-center"
+                                                    className="bg-gray-50/70 rounded-2xl border border-border p-4 flex-row items-center"
                                                 >
                                                     <View className="w-9 h-9 bg-primary/5 rounded-xl justify-center items-center mr-3 border border-primary/10">
                                                         <Typography weight="bold" className="text-primary text-sm font-outfit-bold">
@@ -340,7 +334,7 @@ export default function NavigationSettingsScreen() {
                         maxHeightRatio={0.85}
                         bottomInset={insets.bottom}
                         style={{ borderTopLeftRadius: 48, borderTopRightRadius: 48 }}
-                        className="border-t border-gray-100 shadow-2xl"
+                        className="border-t border-border shadow-2xl"
                     >
                         {/* Drag Handle */}
                         <View className="items-center pt-4 pb-2">
@@ -372,7 +366,7 @@ export default function NavigationSettingsScreen() {
                             </View>
                             <Pressable
                                 onPress={() => setPickerVisible(false)}
-                                className="w-10 h-10 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
+                                className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
                             >
                                 <X size={18} color="#6B7280" />
                             </Pressable>
@@ -405,7 +399,7 @@ export default function NavigationSettingsScreen() {
                                                 backgroundColor: isSelected ? themeColors.primary + '08' : 'white',
                                                 borderColor: isSelected ? themeColors.primary + '20' : '#F3F4F6'
                                             }}
-                                            className="p-4 rounded-[24px] border flex-row items-center justify-between active:bg-gray-50"
+                                            className="p-4 rounded-[24px] border flex-row items-center justify-between active:bg-background"
                                         >
                                             <View className="flex-row items-center flex-1 mr-4">
                                                 {/* Option Icon Container */}
@@ -433,7 +427,7 @@ export default function NavigationSettingsScreen() {
                                                     <Check size={12} color="white" strokeWidth={3} />
                                                 </View>
                                             ) : (
-                                                <View className="w-6 h-6 rounded-full border-2 border-gray-100" />
+                                                <View className="w-6 h-6 rounded-full border-2 border-border" />
                                             )}
                                         </Pressable>
                                     );
@@ -443,6 +437,6 @@ export default function NavigationSettingsScreen() {
                     </BoundedSheetPanel>
                 </View>
             </Modal>
-        </SafeAreaView>
+        </View>
     );
 }

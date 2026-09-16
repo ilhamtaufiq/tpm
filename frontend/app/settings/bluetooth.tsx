@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, Pressable, ActivityIndicator, Platform, PermissionsAndroid } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Bluetooth, RefreshCw, Printer, Search, CheckCircle, XCircle } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { Bluetooth, RefreshCw, Printer, Search, CheckCircle, XCircle } from 'lucide-react-native';
+import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -210,31 +209,27 @@ export default function BluetoothSettingsScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-            {/* Header */}
-            <View className="px-6 py-4 flex-row items-center border-b border-gray-100 bg-white">
-                <Pressable
-                    onPress={() => router.back()}
-                    className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center mr-4"
-                >
-                    <ChevronLeft size={24} color="#374151" />
-                </Pressable>
-                <View className="flex-1">
-                    <Typography variant="h3" weight="bold">Printer Bluetooth</Typography>
-                    <Typography variant="caption" className="text-textGray">Scan dan hubungkan printer thermal</Typography>
-                </View>
-                <Pressable
-                    onPress={handleScan}
-                    disabled={scanning}
-                    className={`w-10 h-10 ${scanning ? 'bg-gray-100' : 'bg-blue-50'} rounded-full items-center justify-center`}
-                >
-                    {scanning ? (
-                        <ActivityIndicator size="small" color="#3B82F6" />
-                    ) : (
-                        <RefreshCw size={20} color="#3B82F6" />
-                    )}
-                </Pressable>
-            </View>
+        <View className="flex-1 bg-background">
+            <Header
+                title="Printer Bluetooth"
+                subtitle="Scan dan hubungkan printer thermal"
+                showBackButton
+                showProfile={false}
+                showBell={false}
+                rightElement={
+                    <Pressable
+                        onPress={handleScan}
+                        disabled={scanning}
+                        className={`w-10 h-10 ${scanning ? 'bg-background' : 'bg-blue-50'} rounded-full items-center justify-center`}
+                    >
+                        {scanning ? (
+                            <ActivityIndicator size="small" color="#3B82F6" />
+                        ) : (
+                            <RefreshCw size={20} color="#3B82F6" />
+                        )}
+                    </Pressable>
+                }
+            />
 
             <ScrollView className="flex-1 p-6">
 
@@ -258,7 +253,7 @@ export default function BluetoothSettingsScreen() {
                         </View>
                         <Pressable
                             onPress={handleTestPrint}
-                            className="mt-3 bg-white border border-gray-200 py-3 rounded-xl items-center"
+                            className="mt-3 bg-surface border border-border py-3 rounded-xl items-center"
                         >
                             <Typography weight="semibold" className="text-text">Test Print</Typography>
                         </Pressable>
@@ -281,10 +276,10 @@ export default function BluetoothSettingsScreen() {
                                 key={device.inner_mac_address || index}
                                 onPress={() => handleConnect(device)}
                                 disabled={connecting === device.inner_mac_address}
-                                className="bg-white p-4 rounded-2xl border border-gray-100 flex-row items-center justify-between active:bg-gray-50"
+                                className="bg-surface p-4 rounded-2xl border border-border flex-row items-center justify-between active:bg-background"
                             >
                                 <View className="flex-row items-center">
-                                    <View className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center mr-3">
+                                    <View className="w-10 h-10 bg-background rounded-full items-center justify-center mr-3">
                                         <Bluetooth size={20} color="#6B7280" />
                                     </View>
                                     <View>
@@ -311,6 +306,6 @@ export default function BluetoothSettingsScreen() {
                 onConfirm={dialogConfig.onConfirm}
                 onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
             />
-        </SafeAreaView>
+        </View>
     );
 }

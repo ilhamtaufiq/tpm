@@ -53,7 +53,7 @@ export const MobilSelector = ({
             {label && <Typography weight="bold" className="text-textGray/40 text-[10px] uppercase tracking-widest mb-2 px-1">{label}</Typography>}
 
             <Pressable onPress={handleOpen}>
-                <View className="bg-gray-50 rounded-2xl px-4 py-4 border border-gray-100 flex-row items-center">
+                <View className="bg-background rounded-2xl px-4 py-4 border border-border flex-row items-center">
                     <Car size={20} color={value ? '#3B82F6' : '#9CA3AF'} />
 
                     <View className="flex-1 ml-3">
@@ -65,7 +65,7 @@ export const MobilSelector = ({
                                 </Typography>
                             </>
                         ) : (
-                            <Typography className="text-gray-400 text-sm">{placeholder || "Pilih Mobil"}</Typography>
+                            <Typography className="text-textGray text-sm">{placeholder || "Pilih Mobil"}</Typography>
                         )}
                     </View>
 
@@ -92,12 +92,12 @@ export const MobilSelector = ({
 
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold" className="text-primary tracking-tight text-xl">Cari Mobil</Typography>
-                            <Pressable onPress={handleClose} hitSlop={12} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                            <Pressable onPress={handleClose} hitSlop={12} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                                 <X size={20} color="#6B7280" />
                             </Pressable>
                         </View>
 
-                        <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 mb-6">
+                        <View className="flex-row items-center bg-background border border-border rounded-2xl px-4 py-3.5 mb-6">
                             <Search size={20} color="#9CA3AF" />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-textMain font-medium"
@@ -118,7 +118,7 @@ export const MobilSelector = ({
                                 showsVerticalScrollIndicator={false}
                                 renderItem={({ item }) => (
                                     <Pressable onPress={() => handleSelect(item)}>
-                                        <Card className="mb-4 p-5 border border-gray-100 shadow-sm bg-white rounded-[32px] flex-row items-center justify-between">
+                                        <Card className="mb-4 p-5 border border-border shadow-sm bg-surface rounded-[32px] flex-row items-center justify-between">
                                             <View className="flex-1 mr-4">
                                                 <Typography weight="bold" className="text-textMain text-base tracking-tight">{item.merek} {item.model}</Typography>
                                                 <View className="flex-row items-center mt-1.5">
@@ -141,11 +141,11 @@ export const MobilSelector = ({
                                 ListEmptyComponent={
                                     searchQuery.length > 0 ? (
                                         <View className="items-center mt-12">
-                                            <Typography className="text-gray-400 font-medium">Data tidak ditemukan</Typography>
+                                            <Typography className="text-textGray font-medium">Data tidak ditemukan</Typography>
                                         </View>
                                     ) : (
                                         <View className="items-center mt-12">
-                                            <Typography className="text-gray-400 font-medium">Mulai mengetik untuk mencari...</Typography>
+                                            <Typography className="text-textGray font-medium">Mulai mengetik untuk mencari...</Typography>
                                         </View>
                                     )
                                 }

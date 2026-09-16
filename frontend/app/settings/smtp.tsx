@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
-import { ChevronLeft, Server, Mail, Lock, User, Save, Send, ShieldCheck, Info } from 'lucide-react-native';
+import { Server, Mail, Lock, User, Save, Send, ShieldCheck, Info } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
+import { Header } from '../../components/ui/Header';
 import { useRouter } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
 import { AlertDialog } from '../../components/ui/AlertDialog';
@@ -164,20 +165,14 @@ export default function SMTPSettingsScreen() {
             <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
                 <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
 
-                <View className="flex-row items-center justify-between z-10">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Server Email</Typography>
-                            <Typography className="text-white/50 text-[10px] uppercase tracking-widest font-bold mt-0.5">Pengaturan SMTP Gmail</Typography>
-                        </View>
-                    </View>
-                </View>
+                <Header
+                    title="Server Email"
+                    subtitle="Pengaturan SMTP Gmail"
+                    showBackButton
+                    onBackButtonPress={handleBack}
+                    showProfile={false}
+                    showBell={false}
+                />
             </View>
 
             <KeyboardAvoidingView
@@ -192,12 +187,12 @@ export default function SMTPSettingsScreen() {
                     <Animated.View entering={FadeInDown.delay(200)} className="pt-4">
                         
                         {/* SMTP Config Card */}
-                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-gray-50 mb-6">
+                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-border mb-6">
                             <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] mb-6">Konfigurasi Server</Typography>
 
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">SMTP Server</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
                                     <Server size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -211,7 +206,7 @@ export default function SMTPSettingsScreen() {
                             <View className="flex-row gap-x-4 mb-5">
                                 <View className="flex-1">
                                     <Typography variant="caption" className="text-text/40 mb-2 ml-1">Port</Typography>
-                                    <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
+                                    <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
                                         <TextInput
                                             className="flex-1 text-text font-bold text-center"
                                             placeholder="587"
@@ -224,7 +219,7 @@ export default function SMTPSettingsScreen() {
                                 <View className="flex-[2] justify-center">
                                     <Pressable 
                                         onPress={() => setUseTLS(!useTLS)}
-                                        className={`h-14 rounded-2xl flex-row items-center justify-center border ${useTLS ? 'bg-emerald-50 border-emerald-100' : 'bg-background border-gray-100'}`}
+                                        className={`h-14 rounded-2xl flex-row items-center justify-center border ${useTLS ? 'bg-emerald-50 border-emerald-100' : 'bg-background border-border'}`}
                                     >
                                         <ShieldCheck size={18} color={useTLS ? '#10B981' : '#9CA3AF'} />
                                         <Typography weight="bold" className={`ml-2 ${useTLS ? 'text-emerald-700' : 'text-text/40'}`}>
@@ -236,7 +231,7 @@ export default function SMTPSettingsScreen() {
 
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Username (Email Gmail)</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
                                     <Mail size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -251,7 +246,7 @@ export default function SMTPSettingsScreen() {
 
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">App Password</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
                                     <Lock size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -266,7 +261,7 @@ export default function SMTPSettingsScreen() {
 
                             <View className="mb-2">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Nama Pengirim</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
                                     <User size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -296,7 +291,7 @@ export default function SMTPSettingsScreen() {
                             <Pressable
                                 onPress={handleTest}
                                 disabled={isTesting || isSaving}
-                                className={`flex-1 h-16 rounded-[24px] flex-row items-center justify-center border border-primary/20 bg-white shadow-sm ${isTesting ? 'opacity-50' : ''}`}
+                                className={`flex-1 h-16 rounded-[24px] flex-row items-center justify-center border border-primary/20 bg-surface shadow-sm ${isTesting ? 'opacity-50' : ''}`}
                             >
                                 {isTesting ? <ActivityIndicator size="small" color="#023C69" /> : <Send size={18} color="#023C69" />}
                                 <Typography weight="bold" className="text-primary ml-3">Test Konf</Typography>

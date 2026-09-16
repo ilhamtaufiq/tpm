@@ -24,6 +24,7 @@ export default function FinanceLayout() {
                 contentStyle: { backgroundColor: '#F9FAFB' },
             }}
         >
+            <Stack.Screen name="expenses" options={{ headerShown: false }} />
             <Stack.Screen name="akun" options={{ title: 'Daftar Akun & Saldo' }} />
             <Stack.Screen name="mutasi" options={{ title: 'Mutasi Kas & Bank' }} />
             <Stack.Screen name="piutang" options={{ title: 'Kelola Piutang' }} />

@@ -196,7 +196,7 @@ export default function JasaServisScreen() {
     const renderItem = ({ item }: { item: any }) => {
         return (
             <Pressable onPress={() => handleOpenSheet(item)}>
-                <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
+                <View className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center">
                     <View className="w-16 h-16 bg-purple-50 rounded-[20px] items-center justify-center mr-4 border border-purple-100/50">
                         <Tag size={32} color="#8B5CF6" />
                     </View>
@@ -231,7 +231,7 @@ export default function JasaServisScreen() {
                 <Typography variant="h2" weight="bold">
                     {isEditing ? 'Edit Jasa' : 'Tambah Jasa'}
                 </Typography>
-                <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                     <X size={20} color="#6B7280" />
                 </Pressable>
             </View>
@@ -240,7 +240,7 @@ export default function JasaServisScreen() {
                 <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Jasa *</Typography>
                     <TextInput
-                        className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                        className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                         placeholder="Contoh: Ganti Oli"
                         placeholderTextColor="#9CA3AF"
                         value={form.nama}
@@ -252,7 +252,7 @@ export default function JasaServisScreen() {
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Harga Jasa *</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="0"
                             placeholderTextColor="#9CA3AF"
                             keyboardType="numeric"
@@ -263,7 +263,7 @@ export default function JasaServisScreen() {
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Kategori</Typography>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="Servis"
                             placeholderTextColor="#9CA3AF"
                             value={form.kategori}
@@ -275,7 +275,7 @@ export default function JasaServisScreen() {
                 <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Deskripsi (Opsional)</Typography>
                     <TextInput
-                        className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]"
+                        className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]"
                         placeholder="Keterangan tambahan jasa..."
                         placeholderTextColor="#9CA3AF"
                         value={form.deskripsi}
@@ -320,7 +320,7 @@ export default function JasaServisScreen() {
                 showProfile={true}
             >
                 {!sheetVisible && (
-                    <View className="flex-row items-center bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                    <View className="flex-row items-center bg-background h-11 rounded-2xl border border-border">
                         <Search size={18} color="#9CA3AF" className="ml-4" />
                         <TextInput
                             placeholder="Cari jasa..."
@@ -350,10 +350,10 @@ export default function JasaServisScreen() {
                         }
                         ListEmptyComponent={
                             <View className="items-center justify-center py-20 mt-10">
-                                <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-4">
+                                <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-4">
                                     <Tag size={32} color="#D1D5DB" />
                                 </View>
-                                <Typography className="text-gray-400 text-center font-medium">
+                                <Typography className="text-textGray text-center font-medium">
                                     Belum ada data jasa servis.{'\n'}Tap + untuk menambah.
                                 </Typography>
                             </View>
@@ -386,7 +386,7 @@ export default function JasaServisScreen() {
                             onPress={handleCloseSheet}
                         />
                         <View
-                            className="bg-white rounded-t-[32px] shadow-2xl h-[70%]"
+                            className="bg-surface rounded-t-[32px] shadow-2xl h-[70%]"
                             style={{
                                 width: '100%',
                                 maxWidth: 640,

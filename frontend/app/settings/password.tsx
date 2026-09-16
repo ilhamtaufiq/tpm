@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Platform, KeyboardAvoidingView } from 'react-native';
-import { ChevronLeft, Lock, Eye, EyeOff, Save, ShieldCheck } from 'lucide-react-native';
+import { Lock, Eye, EyeOff, Save, ShieldCheck } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
+import { Header } from '../../components/ui/Header';
 import { useRouter } from 'expo-router';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -105,20 +106,14 @@ export default function ChangePasswordScreen() {
                 {/* Decorative Elements */}
                 <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
 
-                <View className="flex-row items-center justify-between mb-8 z-10">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Kata Sandi</Typography>
-                            <Typography className="text-white/50 text-[10px] uppercase tracking-widest font-bold mt-0.5">Keamanan Akun</Typography>
-                        </View>
-                    </View>
-                </View>
+                <Header
+                    title="Kata Sandi"
+                    subtitle="Keamanan Akun"
+                    showBackButton
+                    onBackButtonPress={handleBack}
+                    showProfile={false}
+                    showBell={false}
+                />
 
                 {/* Secure Icon Section */}
                 <Animated.View entering={FadeInUp.delay(200)} className="items-center z-10">
@@ -140,13 +135,13 @@ export default function ChangePasswordScreen() {
                     <Animated.View entering={FadeInDown.delay(400)} className="space-y-6">
 
                         {/* Section: Change Password Form */}
-                        <View className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-50">
+                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-border">
                             <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] mb-6">Ubah Kata Sandi</Typography>
 
                             {/* Current Password */}
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Kata Sandi Saat Ini</Typography>
-                                <View className="flex-row items-center bg-gray-50 h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
                                     <Lock size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -161,12 +156,12 @@ export default function ChangePasswordScreen() {
                                 </View>
                             </View>
 
-                            <View className="h-[1px] bg-gray-100 w-full mb-6" />
+                            <View className="h-[1px] bg-background w-full mb-6" />
 
                             {/* New Password */}
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Kata Sandi Baru</Typography>
-                                <View className="flex-row items-center bg-gray-50 h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
                                     <Lock size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -184,7 +179,7 @@ export default function ChangePasswordScreen() {
                             {/* Confirm New Password */}
                             <View>
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Konfirmasi Kata Sandi Baru</Typography>
-                                <View className="flex-row items-center bg-gray-50 h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-border">
                                     <Lock size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"

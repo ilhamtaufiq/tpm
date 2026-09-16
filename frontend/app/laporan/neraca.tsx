@@ -159,7 +159,7 @@ export default function NeracaScreen() {
     const renderAktivaLancar = () => {
         const al = report?.aktiva_lancar || {} as any;
         return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
                 <View className="bg-emerald-50/70 px-5 py-4 flex-row justify-between items-center border-b border-emerald-100/50 w-full">
                     <View className="flex-row items-center">
                         <View className="w-10 h-10 rounded-full bg-emerald-100/80 items-center justify-center mr-3">
@@ -181,7 +181,7 @@ export default function NeracaScreen() {
                     <View className="mb-4 w-full">
                         <View className="flex-row items-center mb-2">
                             <View className="w-1 h-3.5 bg-emerald-500 rounded-full mr-2" />
-                            <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest text-[10px]">Kas & Bank</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px]">Kas & Bank</Typography>
                         </View>
                         <View className="w-full pl-3">
                             <FinancialRow label="Kas Tunai (Utama)" value={al.kas_tunai} small />
@@ -196,7 +196,7 @@ export default function NeracaScreen() {
                                     indent
                                 />
                             ))}
-                            <View className="h-[1px] bg-slate-100 w-full my-2" />
+                            <View className="h-[1px] bg-background w-full my-2" />
                             <FinancialRow label="Total Kas & Bank" value={al.total_kas_bank} bold color="text-emerald-700" />
                         </View>
                     </View>
@@ -204,7 +204,7 @@ export default function NeracaScreen() {
                     <View className="mb-4 w-full">
                         <View className="flex-row items-center mb-2">
                             <View className="w-1 h-3.5 bg-blue-500 rounded-full mr-2" />
-                            <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest text-[10px]">Piutang Usaha</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px]">Piutang Usaha</Typography>
                         </View>
                         <View className="w-full pl-3">
                             <FinancialRow label="Piutang Lainnya / Manual Unit" value={al.piutang_lainnya} small />
@@ -213,7 +213,7 @@ export default function NeracaScreen() {
                             <FinancialRow label="Piutang Unit Mobil" value={al.piutang_mobil || 0} small />
                             <FinancialRow label="Piutang Jasa Angkut" value={al.piutang_jasa_angkut || 0} small />
                             <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">Total Piutang = akumulasi sejak awal sistem per tanggal sama.</Typography>
-                            <View className="h-[1px] bg-slate-100 w-full my-2" />
+                            <View className="h-[1px] bg-background w-full my-2" />
                             <FinancialRow label="Total Piutang" value={al.total_piutang || 0} bold color="text-indigo-700" />
                         </View>
                     </View>
@@ -221,7 +221,7 @@ export default function NeracaScreen() {
                     <View className="w-full">
                         <View className="flex-row items-center mb-2">
                             <View className="w-1 h-3.5 bg-amber-500 rounded-full mr-2" />
-                            <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest text-[10px]">Persediaan & Stok</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px]">Persediaan & Stok</Typography>
                         </View>
                         <View className="w-full pl-3">
                             <FinancialRow label="Persediaan Sparepart" value={al.persediaan_sparepart} small />
@@ -241,7 +241,7 @@ export default function NeracaScreen() {
     const renderAktivaTetap = () => {
         const at = report?.aktiva_tetap || {} as any;
         return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
                 <View className="bg-indigo-50/70 px-5 py-4 flex-row justify-between items-center border-b border-indigo-100/50 w-full">
                     <View className="flex-row items-center">
                         <View className="w-10 h-10 rounded-full bg-indigo-100/80 items-center justify-center mr-3">
@@ -260,7 +260,7 @@ export default function NeracaScreen() {
                 </View>
 
                 <View className="p-5 w-full">
-                    <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest text-[10px] mb-3">Daftar Aset Aktif</Typography>
+                    <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-3">Daftar Aset Aktif</Typography>
                     <View className="w-full pl-2">
                         {at.detail_aset && at.detail_aset.length > 0 ? (
                             at.detail_aset.map((aset: any, index: number) => (
@@ -271,7 +271,7 @@ export default function NeracaScreen() {
                                 <Typography variant="caption" className="text-slate-400">Belum ada aset terdaftar</Typography>
                             </View>
                         )}
-                        <View className="h-[1px] bg-slate-100 w-full my-3" />
+                        <View className="h-[1px] bg-background w-full my-3" />
                         <FinancialRow label="Total Aktiva Tetap" value={at.total_aktiva_tetap} bold color="text-indigo-700" />
                     </View>
                 </View>
@@ -282,7 +282,7 @@ export default function NeracaScreen() {
     const renderModalSection = () => {
         const m = report?.modal || {} as any;
         return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
                 <View className="bg-violet-50/70 px-5 py-4 flex-row justify-between items-center border-b border-violet-100/50 w-full">
                     <View className="flex-row items-center">
                         <View className="w-10 h-10 rounded-full bg-violet-100/80 items-center justify-center mr-3">
@@ -326,7 +326,7 @@ export default function NeracaScreen() {
     const renderHutangSection = () => {
         const h = report?.hutang || {} as any;
         return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
                 <View className="bg-rose-50/70 px-5 py-4 flex-row justify-between items-center border-b border-rose-100/50 w-full">
                     <View className="flex-row items-center">
                         <View className="w-10 h-10 rounded-full bg-rose-100/80 items-center justify-center mr-3">
@@ -360,7 +360,7 @@ export default function NeracaScreen() {
                         <FinancialRow label="Sisa Kewajiban Booking Mobil" value={h.piutang_booking} small large />
                     )}
 
-                    <View className="h-[1px] bg-slate-100 w-full my-3" />
+                    <View className="h-[1px] bg-background w-full my-3" />
                     <View className="w-full bg-rose-50 p-4 rounded-xl border border-rose-100/50">
                         <FinancialRow label="Total Hutang" value={totalHutangExternal} bold large color="text-rose-800" />
                     </View>
@@ -573,10 +573,10 @@ export default function NeracaScreen() {
             {/* Preview Modal */}
             {showPdfPreview && (
                 <Modal visible={showPdfPreview} animationType="slide">
-                    <SafeAreaView className="flex-1 bg-white">
-                        <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-white">
-                            <Pressable onPress={() => setShowPdfPreview(false)} className="w-10 h-10 items-center justify-center rounded-full bg-slate-50"><X size={20} color="#1e293b" /></Pressable>
-                            <Typography variant="body1" weight="bold" className="text-slate-900">Preview Neraca</Typography>
+                    <SafeAreaView className="flex-1 bg-surface">
+                        <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-surface">
+                            <Pressable onPress={() => setShowPdfPreview(false)} className="w-10 h-10 items-center justify-center rounded-full bg-background"><X size={20} color="#1e293b" /></Pressable>
+                            <Typography variant="body1" weight="bold" className="text-text">Preview Neraca</Typography>
                             <Pressable
                                 onPress={async () => {
                                     if (Platform.OS === 'web') {
@@ -597,7 +597,7 @@ export default function NeracaScreen() {
                                 <Typography variant="caption" weight="bold" className="text-white">CETAK</Typography>
                             </Pressable>
                         </View>
-                        <View className="flex-1 bg-slate-100">
+                        <View className="flex-1 bg-background">
                             {Platform.OS === 'web' ? (
                                 <iframe srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }} title="Neraca Preview" />
                             ) : (

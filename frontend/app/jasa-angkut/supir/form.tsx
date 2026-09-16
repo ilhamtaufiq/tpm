@@ -145,20 +145,20 @@ export default function SupirFormScreen() {
 
     if (loading) {
         return (
-            <View className="flex-1 items-center justify-center bg-gray-50">
+            <View className="flex-1 items-center justify-center bg-background">
                 <ActivityIndicator size="large" color="#0ea5e9" />
             </View>
         );
     }
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-background">
             <Stack.Screen options={{ headerTitle: isEditing ? 'Edit Supir' : 'Tambah Supir Baru' }} />
 
             <ScrollView contentContainerStyle={{ padding: 16 }}>
                 {/* Section: Personal Info */}
                 <Card className="mb-4">
-                    <Text className="font-bold text-gray-900 mb-4">Informasi Pribadi</Text>
+                    <Text className="font-bold text-text mb-4">Informasi Pribadi</Text>
 
                     <Input
                         label="Nama Lengkap *"
@@ -195,7 +195,7 @@ export default function SupirFormScreen() {
 
                 {/* Section: SIM Info */}
                 <Card className="mb-4">
-                    <Text className="font-bold text-gray-900 mb-4">Informasi SIM</Text>
+                    <Text className="font-bold text-text mb-4">Informasi SIM</Text>
 
                     <Input
                         label="Nomor SIM"
@@ -221,7 +221,7 @@ export default function SupirFormScreen() {
 
                 {/* Section: Vehicle Info */}
                 <Card className="mb-4">
-                    <Text className="font-bold text-gray-900 mb-4">Informasi Armada / Kendaraan Bawaan</Text>
+                    <Text className="font-bold text-text mb-4">Informasi Armada / Kendaraan Bawaan</Text>
 
                     <Text className="text-textGray text-sm mb-1 font-medium">Pilih Armada Terdaftar</Text>
                     {loadingArmada ? (
@@ -241,7 +241,7 @@ export default function SupirFormScreen() {
                                         <Typography
                                             variant="caption"
                                             weight={formData.armada_default_id === a.id.toString() ? 'bold' : 'medium'}
-                                            className={formData.armada_default_id === a.id.toString() ? 'text-white' : 'text-gray-600'}
+                                            className={formData.armada_default_id === a.id.toString() ? 'text-white' : 'text-textGray'}
                                         >
                                             {a.nama}
                                         </Typography>
@@ -258,7 +258,7 @@ export default function SupirFormScreen() {
                                 <Typography
                                     variant="caption"
                                     weight={!formData.armada_default_id ? 'bold' : 'medium'}
-                                    className={!formData.armada_default_id ? 'text-white' : 'text-gray-600'}
+                                    className={!formData.armada_default_id ? 'text-white' : 'text-textGray'}
                                 >
                                     Tidak Ada
                                 </Typography>
@@ -283,7 +283,7 @@ export default function SupirFormScreen() {
 
                 {/* Section: Employment */}
                 <Card className="mb-4">
-                    <Text className="font-bold text-gray-900 mb-4">Kepegawaian</Text>
+                    <Text className="font-bold text-text mb-4">Kepegawaian</Text>
 
                     <Input
                         label="Tanggal Bergabung (YYYY-MM-DD)"

@@ -489,8 +489,8 @@ export default function SparePartMasterScreen() {
                     onPress={() => router.push(`/master-data/sparepart/edit/${item.id}`)}
                     className="flex-1"
                 >
-                    <View className={`p-4 rounded-[28px] shadow-sm flex-row items-center ${isLowStock ? 'bg-red-50/50 border border-red-200' : 'bg-white border border-gray-100'}`}>
-                        <View className={`w-20 h-20 rounded-2xl items-center justify-center mr-4 overflow-hidden border ${isLowStock ? 'bg-red-100 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
+                    <View className={`p-4 rounded-[28px] shadow-sm flex-row items-center ${isLowStock ? 'bg-red-50/50 border border-red-200' : 'bg-surface border border-border'}`}>
+                        <View className={`w-20 h-20 rounded-2xl items-center justify-center mr-4 overflow-hidden border ${isLowStock ? 'bg-red-100 border-red-200' : 'bg-background border-border'}`}>
                             {imageUrl ? (
                                 <Image source={{ uri: imageUrl }} className="w-full h-full" resizeMode="cover" />
                             ) : (
@@ -517,7 +517,7 @@ export default function SparePartMasterScreen() {
                                 <Typography className="text-primary font-bold text-base mr-2">
                                     Rp {Number(item.harga_jual).toLocaleString('id-ID')}
                                 </Typography>
-                                <Typography className="text-gray-400 text-xs">/ {item.satuan}</Typography>
+                                <Typography className="text-textGray text-xs">/ {item.satuan}</Typography>
                             </View>
 
                             <View className="flex-row items-center pt-2 mt-2 border-t border-gray-100/50 border-dashed">
@@ -528,7 +528,7 @@ export default function SparePartMasterScreen() {
                                         className="mr-2 px-3"
                                     />
                                 ) : (
-                                    <Typography className="text-textGray text-xs font-semibold px-2 py-1 bg-gray-100 rounded-lg mr-2">
+                                    <Typography className="text-textGray text-xs font-semibold px-2 py-1 bg-background rounded-lg mr-2">
                                         Stok: {item.stok}
                                     </Typography>
                                 )}
@@ -548,7 +548,7 @@ export default function SparePartMasterScreen() {
             {/* Compact Dashboard Stats */}
             <View className="mb-4">
                 <View className="flex-row space-x-3 mb-3">
-                    <View className="flex-1 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex-row items-center">
+                    <View className="flex-1 bg-surface p-4 rounded-3xl border border-border shadow-sm flex-row items-center">
                         <View className="bg-primary/10 p-2 rounded-xl mr-3">
                             <Package size={14} color="#023C69" />
                         </View>
@@ -557,7 +557,7 @@ export default function SparePartMasterScreen() {
                             <Typography variant="h3" weight="bold" className="text-textMain text-lg leading-tight">{stats.total}</Typography>
                         </View>
                     </View>
-                    <View className="flex-1 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex-row items-center">
+                    <View className="flex-1 bg-surface p-4 rounded-3xl border border-border shadow-sm flex-row items-center">
                         <View className="bg-indigo-50 p-2 rounded-xl mr-3">
                             <Coins size={14} color="#4F46E5" />
                         </View>
@@ -610,7 +610,7 @@ export default function SparePartMasterScreen() {
                                 setIsShowingAll(false);
                                 setSelectedIds([]);
                             }}
-                            className="bg-white px-3 py-1 rounded-xl border border-amber-200"
+                            className="bg-surface px-3 py-1 rounded-xl border border-amber-200"
                         >
                             <Typography className="text-amber-700 font-bold text-[10px]">Halaman</Typography>
                         </Pressable>
@@ -626,7 +626,7 @@ export default function SparePartMasterScreen() {
                             onPress={toggleSelectAll}
                             className="flex-row items-center mr-3"
                         >
-                            <View className={`w-5 h-5 rounded border items-center justify-center ${selectedIds.length === sparePartsList.length && sparePartsList.length > 0 ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                            <View className={`w-5 h-5 rounded border items-center justify-center ${selectedIds.length === sparePartsList.length && sparePartsList.length > 0 ? 'bg-primary border-primary' : 'border-border'}`}>
                                 {selectedIds.length === sparePartsList.length && sparePartsList.length > 0 && <Check size={12} color="white" />}
                             </View>
                             <Typography className="ml-2 text-[11px] font-bold text-textGray">Pilih Semua</Typography>
@@ -664,10 +664,10 @@ export default function SparePartMasterScreen() {
                         ) : (
                             <Pressable
                                 onPress={() => setIsExportModalVisible(true)}
-                                className="px-3 py-2 bg-gray-50 rounded-xl flex-row items-center border border-gray-100"
+                                className="px-3 py-2 bg-background rounded-xl flex-row items-center border border-border"
                             >
                                 <Download size={14} color="#4B5563" className="mr-2" />
-                                <Typography className="text-[10px] font-bold text-gray-600">Download XLS</Typography>
+                                <Typography className="text-[10px] font-bold text-textGray">Download XLS</Typography>
                             </Pressable>
                         )}
                     </View>
@@ -686,7 +686,7 @@ export default function SparePartMasterScreen() {
                 onBackButtonPress={handleGoBack}
                 showProfile={true}
             >
-                <View className="flex-row items-center bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                <View className="flex-row items-center bg-background h-11 rounded-2xl border border-border">
                     <Search size={18} color="#9CA3AF" className="ml-4" />
                     <TextInput
                         placeholder="Cari sparepart..."
@@ -707,13 +707,13 @@ export default function SparePartMasterScreen() {
                     <Pressable
                         onPress={() => !isImportProgressVisible && setIsImportModalVisible(true)}
                         disabled={isImportProgressVisible}
-                        className={`w-10 h-10 rounded-2xl items-center justify-center border border-gray-100 mr-2 ${isImportProgressVisible ? 'bg-gray-100 opacity-50' : 'bg-gray-50'}`}
+                        className={`w-10 h-10 rounded-2xl items-center justify-center border border-border mr-2 ${isImportProgressVisible ? 'bg-background opacity-50' : 'bg-background'}`}
                     >
                         <FileUp size={16} color="#023C69" />
                     </Pressable>
                     <Pressable
                         onPress={() => setIsPrintModalVisible(true)}
-                        className="w-10 h-10 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100"
+                        className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-border"
                     >
                         <Printer size={16} color="#023C69" />
                     </Pressable>
@@ -1002,7 +1002,7 @@ export default function SparePartMasterScreen() {
                                             ) : isActive ? (
                                                 <ActivityIndicator size="small" color="white" />
                                             ) : (
-                                                <Typography className="text-gray-400 font-bold text-xs">{i + 1}</Typography>
+                                                <Typography className="text-textGray font-bold text-xs">{i + 1}</Typography>
                                             )}
                                         </View>
                                         <Typography className={`text-[10px] font-bold mt-1.5 ${
@@ -1041,7 +1041,7 @@ export default function SparePartMasterScreen() {
                             </Typography>
 
                             {/* Progress Bar */}
-                            <View className="w-full bg-gray-100 rounded-full h-3 overflow-hidden mb-2">
+                            <View className="w-full bg-background rounded-full h-3 overflow-hidden mb-2">
                                 <View
                                     className="bg-primary h-full rounded-full"
                                     style={{ width: `${importProgress}%` }}
@@ -1066,7 +1066,7 @@ export default function SparePartMasterScreen() {
 
                             {/* Result Stats */}
                             <View className="space-y-3">
-                                <View className="flex-row justify-between items-center bg-gray-50 p-3 rounded-2xl">
+                                <View className="flex-row justify-between items-center bg-background p-3 rounded-2xl">
                                     <Typography className="text-textGray text-sm">Total Baris Diproses</Typography>
                                     <Typography weight="bold" className="text-textMain text-lg">{importResult.total}</Typography>
                                 </View>
@@ -1114,7 +1114,7 @@ export default function SparePartMasterScreen() {
                                             </Typography>
                                         </View>
                                         <View className="flex-row justify-between items-center">
-                                            <Typography className="text-[11px] text-gray-600">Modal di Database</Typography>
+                                            <Typography className="text-[11px] text-textGray">Modal di Database</Typography>
                                             <Typography weight="bold" className="text-[11px]">
                                                 Rp {Number(importResult.total_modal_db || 0).toLocaleString('id-ID')}
                                             </Typography>
@@ -1122,7 +1122,7 @@ export default function SparePartMasterScreen() {
                                         {importResult.total_fix_excel !== undefined && (
                                             <>
                                                 <View className="flex-row justify-between items-center mt-0.5">
-                                                    <Typography className="text-[11px] text-gray-600">Total Fix (Excel)</Typography>
+                                                    <Typography className="text-[11px] text-textGray">Total Fix (Excel)</Typography>
                                                     <Typography weight="bold" className="text-[11px]">
                                                         Rp {Number(importResult.total_fix_excel || 0).toLocaleString('id-ID')}
                                                     </Typography>

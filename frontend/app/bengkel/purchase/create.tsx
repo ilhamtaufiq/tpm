@@ -462,25 +462,25 @@ export default function PurchaseScreen() {
     const tabBarHeight = 60;
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
+        <SafeAreaView className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
 
             {/* Header */}
-            <View className="px-5 py-4 border-b border-gray-100 flex-row items-center justify-between">
+            <View className="px-5 py-4 border-b border-border flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
-                    <Pressable onPress={handleBack} className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center mr-3">
+                    <Pressable onPress={handleBack} className="w-10 h-10 bg-background rounded-full items-center justify-center mr-3">
                         <ChevronLeft size={20} color="#475569" />
                     </Pressable>
                     <View>
                         <Typography variant="h3" weight="bold">{isEditMode ? 'Edit Restock' : 'Restock (Pembelian)'}</Typography>
-                        <Typography className="text-gray-400 text-xs mt-0.5">Pembelian Sparepart</Typography>
+                        <Typography className="text-textGray text-xs mt-0.5">Pembelian Sparepart</Typography>
                     </View>
                 </View>
             </View>
 
             {/* Step 1 Action Bar */}
             {step === 1 && (
-                <View className="px-5 py-3 bg-white border-b border-gray-100">
+                <View className="px-5 py-3 bg-surface border-b border-border">
                     <View className="flex-row items-center justify-between">
                         <ActionIcon
                             active={showPartSearch}
@@ -525,7 +525,7 @@ export default function PurchaseScreen() {
             {isLoadingDetail && (
                 <View className="py-10 items-center justify-center">
                     <ActivityIndicator color="#023C69" />
-                    <Typography className="text-gray-500 mt-3">Memuat data pembelian...</Typography>
+                    <Typography className="text-textGray mt-3">Memuat data pembelian...</Typography>
                 </View>
             )}
 
@@ -548,7 +548,7 @@ export default function PurchaseScreen() {
                                     <Package size={18} color="#023C69" />
                                     <Typography weight="bold" className="ml-2 text-primary uppercase">Katalog Sparepart</Typography>
                                 </View>
-                                {items.length > 0 && <Typography className="text-gray-400 text-xs font-bold">{items.length} item dipilih</Typography>}
+                                {items.length > 0 && <Typography className="text-textGray text-xs font-bold">{items.length} item dipilih</Typography>}
                             </View>
 
                             {isLoadingParts ? (
@@ -562,10 +562,10 @@ export default function PurchaseScreen() {
                                     return (
                                         <View
                                             key={part.id}
-                                            className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}
+                                            className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-blue-50 border-blue-200' : 'bg-surface border-border'}`}
                                         >
                                             <Pressable onPress={() => toggleItem(part)} className="flex-row items-start">
-                                                <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
+                                                <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : 'border-border'}`}>
                                                     {selected && <Check size={16} color="white" />}
                                                 </View>
                                                 <View className="flex-1">
@@ -575,7 +575,7 @@ export default function PurchaseScreen() {
                                                             {part.nama}
                                                         </Typography>
                                                     </View>
-                                                    <Typography className="text-gray-400 text-[11px] mt-1">
+                                                    <Typography className="text-textGray text-[11px] mt-1">
                                                         {part.kode || '-'} • Stok: {isAlwaysReadyStock(part.stok) ? 'Always Ready' : Number(part.stok || 0)}
                                                     </Typography>
                                                     {!selected && (
@@ -590,7 +590,7 @@ export default function PurchaseScreen() {
                                                 <View className="mt-3 pt-3 border-t border-blue-100">
                                                     <View className="flex-row items-center space-x-3">
                                                         <View className="flex-1">
-                                                            <Typography className="text-gray-500 text-[10px] font-bold uppercase mb-1">Qty</Typography>
+                                                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Qty</Typography>
                                                             <QtyControl
                                                                 value={Number(currentItem.qty)}
                                                                 color="blue"
@@ -600,8 +600,8 @@ export default function PurchaseScreen() {
                                                             />
                                                         </View>
                                                         <View className="flex-1">
-                                                            <Typography className="text-gray-500 text-[10px] font-bold uppercase mb-1">Harga Beli</Typography>
-                                                            <View className="flex-row items-center bg-white rounded-xl border border-blue-100 px-3 h-9">
+                                                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Harga Beli</Typography>
+                                                            <View className="flex-row items-center bg-surface rounded-xl border border-blue-100 px-3 h-9">
                                                                 <Typography className="text-blue-600 text-xs font-bold mr-1">Rp</Typography>
                                                                 <TextInput
                                                                     value={currentItem.price}
@@ -635,7 +635,7 @@ export default function PurchaseScreen() {
                 {/* STEP 2: Supplier Info */}
                 {step === 2 && (
                     <View>
-                        <Card variant="outlined" className="p-4 mb-6 border-gray-100 bg-gray-50/30">
+                        <Card variant="outlined" className="p-4 mb-6 border-border bg-gray-50/30">
                             <MasterDataSelector
                                 type="supplier"
                                 label="Informasi Supplier"
@@ -657,7 +657,7 @@ export default function PurchaseScreen() {
                             <Typography variant="body2" className="text-textGray text-sm mb-1 font-medium">Tanggal Pembelian</Typography>
                             <Pressable
                                 onPress={openTanggalPicker}
-                                className="bg-gray-100 rounded-2xl px-4 h-[52px] justify-center border-2 border-transparent"
+                                className="bg-background rounded-2xl px-4 h-[52px] justify-center border-2 border-transparent"
                             >
                                 <View className="flex-row items-center">
                                     <Calendar size={18} color="#767676" />
@@ -685,7 +685,7 @@ export default function PurchaseScreen() {
                     <View>
                         <Typography variant="body1" weight="bold" className="text-textMain mb-4">Review Transaksi</Typography>
 
-                        <View className="bg-slate-50 p-5 rounded-3xl border border-slate-100 mb-5">
+                        <View className="bg-background p-5 rounded-3xl border border-slate-100 mb-5">
                             <SummaryRow label="Supplier" value={selectedSupplier?.nama || '-'} />
                             {nomorFaktur && <SummaryRow label="Faktur" value={nomorFaktur} />}
                             <SummaryRow label="Tanggal" value={tanggalText} />
@@ -722,9 +722,9 @@ export default function PurchaseScreen() {
             </ScrollView>
 
             {/* Bottom Bar */}
-            <View className="absolute left-0 right-0 bg-white border-t border-gray-100 px-5 py-4" style={{ bottom: tabBarBottom }}>
+            <View className="absolute left-0 right-0 bg-surface border-t border-border px-5 py-4" style={{ bottom: tabBarBottom }}>
                 <View className="flex-row items-center justify-between mb-3">
-                    <Typography className="text-gray-400 text-xs font-bold uppercase">{step === 3 ? 'Total Pembelian' : ''}</Typography>
+                    <Typography className="text-textGray text-xs font-bold uppercase">{step === 3 ? 'Total Pembelian' : ''}</Typography>
                     {step === 3 && (
                         <Typography weight="bold" className="text-primary text-lg">{formatCurrency(total)}</Typography>
                     )}
@@ -761,15 +761,15 @@ export default function PurchaseScreen() {
                                 </View>
                                 <View className="flex-1">
                                     <Typography variant="h3" weight="bold" className="text-textMain">Pilih Tanggal</Typography>
-                                    <Typography className="text-gray-400 text-xs mt-0.5">Tanggal pembelian</Typography>
+                                    <Typography className="text-textGray text-xs mt-0.5">Tanggal pembelian</Typography>
                                 </View>
                             </View>
-                            <Pressable onPress={() => setTanggalPickerOpen(false)} className="w-9 h-9 bg-gray-100 rounded-full items-center justify-center">
+                            <Pressable onPress={() => setTanggalPickerOpen(false)} className="w-9 h-9 bg-background rounded-full items-center justify-center">
                                 <X size={17} color="#475569" />
                             </Pressable>
                         </View>
 
-                        <Typography className="text-gray-500 text-[10px] font-bold uppercase mb-1">Tanggal</Typography>
+                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Tanggal</Typography>
                         <TextInput
                             value={tempTanggalText}
                             onChangeText={(value) => {
@@ -780,7 +780,7 @@ export default function PurchaseScreen() {
                             placeholderTextColor="#94A3B8"
                             autoCapitalize="none"
                             keyboardType="numbers-and-punctuation"
-                            className="bg-gray-50 rounded-2xl px-4 h-11 text-sm text-textMain border border-gray-200"
+                            className="bg-background rounded-2xl px-4 h-11 text-sm text-textMain border border-border"
                         />
                         {tanggalError ? (
                             <Typography className="text-rose-500 text-xs mt-2">{tanggalError}</Typography>
@@ -812,9 +812,9 @@ export default function PurchaseScreen() {
                         <View className="flex-row items-center justify-between mb-4">
                             <View>
                                 <Typography variant="h3" weight="bold">Pembayaran</Typography>
-                                <Typography className="text-gray-400 text-xs mt-0.5">Total {formatCurrency(total)}</Typography>
+                                <Typography className="text-textGray text-xs mt-0.5">Total {formatCurrency(total)}</Typography>
                             </View>
-                            <Pressable onPress={() => setPaymentSheetOpen(false)} className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center">
+                            <Pressable onPress={() => setPaymentSheetOpen(false)} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                                 <X size={18} color="#475569" />
                             </Pressable>
                         </View>
@@ -828,7 +828,7 @@ export default function PurchaseScreen() {
                         >
                             {/* Metode Pembayaran */}
                             <View className="mb-6">
-                                <Typography variant="caption" weight="bold" className="text-gray-500 mb-2 uppercase">Metode Pembayaran</Typography>
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase">Metode Pembayaran</Typography>
                                 <View className="flex-row flex-wrap space-x-2">
                                     {[
                                         { label: 'Tunai Bengkel', value: 'BENGKEL_TUNAI' },
@@ -842,9 +842,9 @@ export default function PurchaseScreen() {
                                                 setMetodeBayar(m.value);
                                                 setStatusBayar(m.value === 'KREDIT' ? 'BELUM_LUNAS' : 'LUNAS');
                                             }}
-                                            className={`flex-1 min-w-[45%] mb-2 py-3 rounded-2xl border items-center ${metodeBayar === m.value ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}
+                                            className={`flex-1 min-w-[45%] mb-2 py-3 rounded-2xl border items-center ${metodeBayar === m.value ? 'bg-primary border-primary' : 'bg-surface border-border'}`}
                                         >
-                                            <Typography weight="bold" className={metodeBayar === m.value ? 'text-white' : 'text-gray-500'}>{m.label}</Typography>
+                                            <Typography weight="bold" className={metodeBayar === m.value ? 'text-white' : 'text-textGray'}>{m.label}</Typography>
                                         </Pressable>
                                     ))}
                                 </View>
@@ -873,7 +873,7 @@ export default function PurchaseScreen() {
                                         placeholderTextColor="#94A3B8"
                                         keyboardType="number-pad"
                                         inputMode="numeric"
-                                        className="bg-white rounded-2xl px-4 h-12 text-base text-textMain border border-primary/20"
+                                        className="bg-surface rounded-2xl px-4 h-12 text-base text-textMain border border-primary/20"
                                     />
                                     <View className="flex-row justify-between items-center mt-2 px-1">
                                         <Typography
@@ -915,9 +915,9 @@ export default function PurchaseScreen() {
                             <View className="mb-4">
                                 <Pressable
                                     onPress={() => setIsSplitPayment(!isSplitPayment)}
-                                    className={`self-end px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                                    className={`self-end px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-background border border-border'}`}
                                 >
-                                    <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                                    <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-textGray'}`}>
                                         {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                                     </Typography>
                                 </Pressable>
@@ -926,8 +926,8 @@ export default function PurchaseScreen() {
                             {isSplitPayment && (
                                 <View className="space-y-3 mb-4">
                                     {payments.map((p, idx) => (
-                                        <View key={p.id} className="bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
-                                            <View className="flex-row flex-wrap bg-white border border-gray-200 rounded-xl overflow-hidden mb-2">
+                                        <View key={p.id} className="bg-gray-50/50 p-3 rounded-2xl border border-border">
+                                            <View className="flex-row flex-wrap bg-surface border border-border rounded-xl overflow-hidden mb-2">
                                                 {[
                                                     { label: 'Tunai Bengkel', value: 'BENGKEL_TUNAI' },
                                                     { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
@@ -936,7 +936,7 @@ export default function PurchaseScreen() {
                                                     <Pressable
                                                         key={m.value}
                                                         onPress={() => handleUpdatePaymentRow(p.id, 'sumber', m.value)}
-                                                        className={`flex-1 min-w-[30%] py-2 items-center justify-center border-r border-gray-100 ${p.sumber === m.value ? 'bg-primary' : 'bg-transparent'}`}
+                                                        className={`flex-1 min-w-[30%] py-2 items-center justify-center border-r border-border ${p.sumber === m.value ? 'bg-primary' : 'bg-transparent'}`}
                                                     >
                                                         <Typography weight="bold" className={`text-[9px] ${p.sumber === m.value ? 'text-white' : 'text-textGray'}`}>{m.label}</Typography>
                                                     </Pressable>
@@ -944,7 +944,7 @@ export default function PurchaseScreen() {
                                             </View>
                                             <View className="flex-row items-center space-x-2">
                                                 <View className="flex-1">
-                                                    <Typography className="text-gray-500 text-[10px] font-bold uppercase mb-1">Nominal (Rp)</Typography>
+                                                    <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Nominal (Rp)</Typography>
                                                     <TextInput
                                                         value={p.nominal}
                                                         onChangeText={(v) => handleUpdatePaymentRow(p.id, 'nominal', v)}
@@ -952,7 +952,7 @@ export default function PurchaseScreen() {
                                                         placeholderTextColor="#94A3B8"
                                                         keyboardType="number-pad"
                                                         inputMode="numeric"
-                                                        className="bg-white rounded-xl px-3 h-10 text-sm text-textMain border border-gray-200"
+                                                        className="bg-surface rounded-xl px-3 h-10 text-sm text-textMain border border-border"
                                                     />
                                                 </View>
                                                 <Pressable
@@ -966,7 +966,7 @@ export default function PurchaseScreen() {
                                     ))}
                                     <Pressable
                                         onPress={handleAddPaymentRow}
-                                        className="flex-row items-center justify-center py-2.5 bg-white border border-dashed border-primary/30 rounded-xl"
+                                        className="flex-row items-center justify-center py-2.5 bg-surface border border-dashed border-primary/30 rounded-xl"
                                     >
                                         <Plus size={14} color="#023C69" />
                                         <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah Metode</Typography>
@@ -1013,12 +1013,12 @@ export default function PurchaseScreen() {
                             <Wallet size={22} color="#023C69" />
                         </View>
                         <Typography variant="h3" weight="bold" className="text-textMain">{isEditMode ? 'Simpan Perubahan?' : 'Simpan Pembelian?'}</Typography>
-                        <Typography className="text-gray-500 text-sm mt-2">
+                        <Typography className="text-textGray text-sm mt-2">
                             {submitWithPayment
                                 ? 'Pastikan detail barang, supplier, dan pembayaran sudah benar.'
                                 : 'Transaksi akan disimpan tanpa memproses pembayaran.'}
                         </Typography>
-                        <View className="bg-slate-50 rounded-2xl p-4 mt-4 border border-slate-100">
+                        <View className="bg-background rounded-2xl p-4 mt-4 border border-slate-100">
                             <SummaryRow label="Sparepart" value={`${items.length} item`} />
                             <SummaryRow label="Supplier" value={selectedSupplier?.nama || '-'} />
                             <SummaryRow label="Metode" value={submitWithPayment ? (metodeBayar === 'KREDIT' ? 'Hutang' : (metodeBayar || '-')) : 'Belum diproses'} />
@@ -1026,7 +1026,7 @@ export default function PurchaseScreen() {
                             <SummaryRow label="Total" value={formatCurrency(total)} />
                         </View>
                     </BoundedSheetScrollView>
-                    <View className="flex-row gap-3 px-5 pb-5 pt-3 border-t border-gray-100">
+                    <View className="flex-row gap-3 px-5 pb-5 pt-3 border-t border-border">
                         <Button title="Batal" variant="outline" size="sm" className="flex-1 min-w-0" onPress={() => setConfirmSubmitOpen(false)} />
                         <Button title={isEditMode ? 'Update' : 'Simpan'} size="sm" className="flex-1 min-w-0" onPress={handleSubmit} loading={createPembelianMutation.isPending || updatePembelianMutation.isPending} />
                     </View>
@@ -1051,13 +1051,13 @@ export default function PurchaseScreen() {
                         <Typography variant="h3" weight="bold" className="text-textMain text-center">
                             {isEditMode ? 'Pembelian Berhasil Diupdate' : 'Pembelian Berhasil'}
                         </Typography>
-                        <Typography className="text-gray-500 text-sm mt-2 text-center">
+                        <Typography className="text-textGray text-sm mt-2 text-center">
                             {submitWithPayment
                                 ? 'Transaksi pembelian dan pembayaran berhasil diproses.'
                                 : 'Data pembelian sparepart berhasil disimpan.'}
                         </Typography>
                     </BoundedSheetScrollView>
-                    <View className="w-full px-6 pb-6 pt-2 border-t border-gray-100">
+                    <View className="w-full px-6 pb-6 pt-2 border-t border-border">
                         <Button
                             title="OK"
                             variant="outline"
@@ -1081,7 +1081,7 @@ export default function PurchaseScreen() {
 
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
     return (
-        <View className="flex-row items-center bg-gray-100 rounded-2xl px-3 h-11 mb-3 border border-gray-200">
+        <View className="flex-row items-center bg-background rounded-2xl px-3 h-11 mb-3 border border-border">
             <Search size={16} color="#94A3B8" />
             <TextInput placeholder={placeholder} placeholderTextColor="#94A3B8" className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} />
             {value.length > 0 && (
@@ -1096,10 +1096,10 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
 function ActionIcon({ active, icon, label, onPress }: { active?: boolean; icon: React.ReactNode; label: string; onPress: () => void }) {
     return (
         <Pressable onPress={onPress} className="items-center flex-1">
-            <View className={`w-12 h-12 rounded-2xl items-center justify-center border ${active ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}>
+            <View className={`w-12 h-12 rounded-2xl items-center justify-center border ${active ? 'bg-primary border-primary' : 'bg-background border-border'}`}>
                 {icon}
             </View>
-            <Typography className={`text-[10px] font-bold mt-1 ${active ? 'text-primary' : 'text-gray-500'}`}>{label}</Typography>
+            <Typography className={`text-[10px] font-bold mt-1 ${active ? 'text-primary' : 'text-textGray'}`}>{label}</Typography>
         </Pressable>
     );
 }
@@ -1158,7 +1158,7 @@ function QtyControl({ value, color, onMinus, onPlus, onChangeQty }: {
     };
 
     return (
-        <View className={`flex-row items-center self-start bg-white rounded-xl border ${borderColor} overflow-hidden`}>
+        <View className={`flex-row items-center self-start bg-surface rounded-xl border ${borderColor} overflow-hidden`}>
             <Pressable onPress={(e) => { e.stopPropagation(); onMinus(); }} className="px-3 py-1.5">
                 <Typography className={`font-bold ${textColor}`}>-</Typography>
             </Pressable>
@@ -1187,8 +1187,8 @@ function QtyControl({ value, color, onMinus, onPlus, onChangeQty }: {
 function SummaryRow({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
     return (
         <View className="flex-row justify-between mb-2">
-            <Typography className={muted ? 'text-gray-400 text-xs flex-1 mr-3' : 'text-gray-500 flex-1 mr-3'} numberOfLines={1}>{label}</Typography>
-            <Typography weight="bold" className={muted ? 'text-gray-500 text-xs' : ''}>{value}</Typography>
+            <Typography className={muted ? 'text-textGray text-xs flex-1 mr-3' : 'text-textGray flex-1 mr-3'} numberOfLines={1}>{label}</Typography>
+            <Typography weight="bold" className={muted ? 'text-textGray text-xs' : ''}>{value}</Typography>
         </View>
     );
 }

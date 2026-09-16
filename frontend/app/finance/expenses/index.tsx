@@ -1,17 +1,19 @@
-import React, { useState, useCallback } from 'react';
-import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator, Platform, Modal } from 'react-native';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { appAlert } from '../../../utils/appAlert';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import {
-    ChevronLeft,
     Receipt,
     Plus,
     X,
+    ChevronLeft,
+    ChevronRight,
     Wallet,
     Wrench,
     Package,
@@ -25,6 +27,8 @@ import {
     Car,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { format as formatDateFns, subDays, addDays, subMonths, addMonths, subYears, addYears } from 'date-fns';
+import { id as localeID } from 'date-fns/locale';
 import { usePengeluaranList, useCreatePengeluaran, usePengeluaranSummary } from '../../../hooks/useBengkel';
 import { Header } from '../../../components/ui/Header';
 import { useQueryClient } from '@tanstack/react-query';
@@ -34,6 +38,7 @@ import { AKUN, akunUntukUnit, metodeDariAkun } from '../../../utils/expenseAkun'
 import { ArmadaSelector } from '../../../components/ui/ArmadaSelector';
 import { MobilSelector } from '../../../components/ui/MobilSelector';
 import { SparePartSelector } from '../../../components/ui/SparePartSelector';
+import { getCustomTabBarBottomPadding } from '../../../components/ui/CustomTabBar';
 
 const CATEGORIES = [
     { label: 'Prive', value: 'PRIVE', icon: Wallet, color: '#F59E0B' },
@@ -49,9 +54,19 @@ const BISNIS_KATEGORI = [
 ];
 
 
+const PERIODS = [
+    { id: 'all', label: 'Semua' },
+    { id: 'daily', label: 'Hari' },
+    { id: 'monthly', label: 'Bulan' },
+    { id: 'yearly', label: 'Tahun' },
+] as const;
+
 export default function ExpensesScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
+    const [period, setPeriod] = useState<'all' | 'daily' | 'monthly' | 'yearly'>('all');
+    const [refDate, setRefDate] = useState(new Date());
     const [showForm, setShowForm] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -80,6 +95,50 @@ export default function ExpensesScreen() {
     const createExpenseMutation = useCreatePengeluaran();
 
     const expenses = expensesData?.data || [];
+
+    // Rentang periode relatif ke refDate, yang bisa digeser lewat tombol panah.
+    const filteredExpenses = useMemo(() => {
+        if (period === 'all') return expenses;
+        return expenses.filter((item: any) => {
+            const d = new Date(item.tanggal);
+            if (isNaN(d.getTime())) return false;
+            if (period === 'daily') return d.toDateString() === refDate.toDateString();
+            if (period === 'monthly') return d.getFullYear() === refDate.getFullYear() && d.getMonth() === refDate.getMonth();
+            return d.getFullYear() === refDate.getFullYear();
+        });
+    }, [expenses, period, refDate]);
+
+    const shiftDate = (dir: 1 | -1) => {
+        setRefDate((curr) => {
+            if (period === 'monthly') return dir === 1 ? addMonths(curr, 1) : subMonths(curr, 1);
+            if (period === 'yearly') return dir === 1 ? addYears(curr, 1) : subYears(curr, 1);
+            return dir === 1 ? addDays(curr, 1) : subDays(curr, 1);
+        });
+    };
+
+    const periodLabel = useMemo(() => {
+        if (period === 'daily') return formatDateFns(refDate, 'dd MMM yyyy', { locale: localeID });
+        if (period === 'monthly') return formatDateFns(refDate, 'MMMM yyyy', { locale: localeID });
+        return formatDateFns(refDate, 'yyyy');
+    }, [period, refDate]);
+
+    const sheetRef = useRef<BottomSheet>(null);
+    const snapPoints = useMemo(() => ['95%'], []);
+
+    const openForm = () => {
+        setShowForm(true);
+        if (Platform.OS !== 'web') sheetRef.current?.expand();
+    };
+
+    const closeForm = useCallback(() => {
+        setShowForm(false);
+        if (Platform.OS !== 'web') sheetRef.current?.close();
+    }, []);
+
+    const renderBackdrop = useCallback(
+        (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,
+        []
+    );
 
     const handleBack = () => {
         if (router.canGoBack()) {
@@ -154,7 +213,7 @@ export default function ExpensesScreen() {
                 description: String(payload.deskripsi || ''),
                 onlineFn: () => createExpenseMutation.mutateAsync(payload),
             });
-            setShowForm(false);
+            closeForm();
             setJumlah('');
             setDeskripsi('');
             setKategori('BIAYA_OPERASIONAL');
@@ -198,56 +257,9 @@ export default function ExpensesScreen() {
         }
     };
 
-    return (
-        <View className="flex-1 bg-background">
-            <StatusBar barStyle="dark-content" />
-
-            {/* Global Header Integration */}
-            <Header
-                title="Biaya Operasional"
-                subtitle="Workshop Expenses Control"
-                showBackButton
-                onBackButtonPress={handleBack}
-                rightElement={
-                    <Pressable
-                        onPress={() => setShowForm(!showForm)}
-                        className={`w-11 h-11 rounded-2xl items-center justify-center border ${showForm ? 'bg-gray-900 border-gray-900 active:bg-gray-800' : 'bg-gray-50 border-gray-100 active:bg-gray-100'}`}
-                    >
-                        {showForm ? <X size={20} color="white" /> : <Plus size={24} color="#1F2937" />}
-                    </Pressable>
-                }
-            />
-
-            {/* Main Summary Stat Overlay Card */}
-            <View className="px-6 mt-4 z-10">
-                <View className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100 flex-row items-center">
-                    <View className="w-14 h-14 bg-rose-50 rounded-[18px] items-center justify-center mr-4 border border-rose-100">
-                        <TrendingDown size={28} color="#EF4444" />
-                    </View>
-                    <View className="flex-1">
-                        <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest mb-1">Total Pengeluaran Bulan Ini</Typography>
-                        <Typography variant="h2" weight="bold" className="text-textMain font-bold text-xl tracking-tighter">
-                            {formatCurrency(summaryData?.total_jumlah || 0)}
-                        </Typography>
-                    </View>
-                    <View className="bg-primary/10 px-3 py-1.5 rounded-xl items-center">
-                        <Typography className="text-primary text-[10px] font-black">{summaryData?.count || 0}</Typography>
-                        <Typography className="text-primary text-[8px] font-bold uppercase">Trans</Typography>
-                    </View>
-                </View>
-            </View>
-
-            <ScrollView
-                className="flex-1 mt-4 z-20"
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 100 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
-            >
-                {showForm && (
-                    <View className="px-6 mb-8">
-                        <Card className="p-8 rounded-[48px] shadow-2xl border border-gray-100 bg-white">
-                            <Typography variant="h3" weight="bold" className="mb-6 tracking-tight text-primary">Input Pengeluaran Baru</Typography>
-
+    const renderFormContent = () => (
+        <>
+            <Typography variant="h3" weight="bold" className="mb-6 tracking-tight text-primary">Input Pengeluaran Baru</Typography>
                             <View className="space-y-6">
                                 {/* Kategori Selection */}
                                 <View>
@@ -315,7 +327,7 @@ export default function ExpensesScreen() {
                                     </View>
 
                                     {bisnisKategori === 'jasa_angkut' && (
-                                        <View className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-2">
+                                        <View className="bg-background p-4 rounded-3xl border border-border space-y-2">
                                             <ArmadaSelector
                                                 label="ARMADA (TRUK)"
                                                 placeholder="Pilih Armada..."
@@ -326,7 +338,7 @@ export default function ExpensesScreen() {
                                     )}
                                     
                                     {bisnisKategori === 'bengkel' && (
-                                        <View className="bg-gray-50 p-4 rounded-3xl border border-gray-100">
+                                        <View className="bg-background p-4 rounded-3xl border border-border">
                                             <SparePartSelector
                                                 label="SPAREPART (JIKA ADA)"
                                                 placeholder="Pilih Sparepart..."
@@ -337,7 +349,7 @@ export default function ExpensesScreen() {
                                     )}
 
                                     {bisnisKategori === 'jual_beli_mobil' && (
-                                        <View className="bg-gray-50 p-4 rounded-3xl border border-gray-100">
+                                        <View className="bg-background p-4 rounded-3xl border border-border">
                                             <MobilSelector
                                                 label="UNIT MOBIL"
                                                 placeholder="Pilih Unit Mobil..."
@@ -420,12 +432,12 @@ export default function ExpensesScreen() {
                                 </Pressable>
 
                                 {payMetode === 'SPLIT' && (
-                                    <View className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-3">
+                                    <View className="bg-background p-4 rounded-3xl border border-border space-y-3">
                                         <View className="flex-row justify-between items-center mb-1">
                                             <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Detail Pembayaran</Typography>
                                             <Pressable
                                                 onPress={() => setSplitPayments([...splitPayments, { metode: 'TUNAI', jumlah: '', kas_jenis: 'KAS_UTAMA' }])}
-                                                className="bg-white border border-gray-200 p-2 rounded-xl"
+                                                className="bg-surface border border-border p-2 rounded-xl"
                                             >
                                                 <Plus size={14} color="#023C69" />
                                             </Pressable>
@@ -486,7 +498,7 @@ export default function ExpensesScreen() {
                                             </View>
                                         ))}
 
-                                        <View className="flex-row justify-between items-center mt-2 pt-3 border-t border-gray-200 border-dashed">
+                                        <View className="flex-row justify-between items-center mt-2 pt-3 border-t border-border border-dashed">
                                             <Typography className="text-xs text-textGray">Total Terinput:</Typography>
                                             <Typography weight="bold" className={`text-sm ${splitPayments.reduce((acc, curr) => acc + parseNumber(curr.jumlah), 0) === parseNumber(jumlah)
                                                 ? 'text-green-600'
@@ -501,9 +513,9 @@ export default function ExpensesScreen() {
                                 {/* Force Transaction Toggle */}
                                 <Pressable 
                                     onPress={() => setAllowNegative(!allowNegative)}
-                                    className="flex-row items-center mt-2 mb-2 p-4 bg-gray-50 rounded-[28px] border border-gray-100"
+                                    className="flex-row items-center mt-2 mb-2 p-4 bg-background rounded-[28px] border border-border"
                                 >
-                                    <View className={`w-6 h-6 rounded-md border-2 items-center justify-center mr-3 ${allowNegative ? 'bg-primary border-primary' : 'bg-white border-gray-300'}`}>
+                                    <View className={`w-6 h-6 rounded-md border-2 items-center justify-center mr-3 ${allowNegative ? 'bg-primary border-primary' : 'bg-surface border-border'}`}>
                                         {allowNegative && <Plus size={14} color="white" strokeWidth={4} />}
                                     </View>
                                     <View className="flex-1">
@@ -519,15 +531,97 @@ export default function ExpensesScreen() {
                                     className="h-16 rounded-[28px] shadow-2xl shadow-primary/40"
                                 />
                             </View>
-                        </Card>
+        </>
+    );
+
+    return (
+        <View className="flex-1 bg-background">
+            <StatusBar barStyle="dark-content" />
+
+            {/* Global Header Integration */}
+            <Header
+                title="Biaya Operasional"
+                showBackButton
+                onBackButtonPress={handleBack}
+            />
+
+            {/* Main Summary Stat Overlay Card */}
+            <View className="px-6 mt-4 z-10">
+                <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-border flex-row items-center">
+                    <View className="w-14 h-14 bg-rose-50 rounded-[18px] items-center justify-center mr-4 border border-rose-100">
+                        <TrendingDown size={28} color="#EF4444" />
+                    </View>
+                    <View className="flex-1">
+                        <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest mb-1">Total Pengeluaran Bulan Ini</Typography>
+                        <Typography variant="h2" weight="bold" className="text-rose-500 font-bold text-xl tracking-tighter">
+                            {formatCurrency(summaryData?.total_jumlah || 0)}
+                        </Typography>
+                    </View>
+                </View>
+            </View>
+
+            <ScrollView
+                className="flex-1 mt-4 z-20"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 100 }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+            >
+
+                {/* Period Filter */}
+                <View className="flex-row gap-2 px-6 mt-4">
+                    {PERIODS.map((p) => (
+                        <Pressable
+                            key={p.id}
+                            onPress={() => {
+                                setPeriod(p.id);
+                                setRefDate(new Date());
+                            }}
+                            className={`px-4 py-2 rounded-xl border ${period === p.id ? 'bg-primary border-primary shadow-sm' : 'bg-surface border-border active:bg-background'}`}
+                        >
+                            <Typography weight="bold" className={`text-xs ${period === p.id ? 'text-white' : 'text-textGray'}`}>
+                                {p.label}
+                            </Typography>
+                        </Pressable>
+                    ))}
+                </View>
+
+                {/* Date Navigator — hanya muncul saat periode bukan "Semua" */}
+                {period !== 'all' && (
+                    <View className="px-6 mt-2">
+                        <View className="bg-surface border border-border rounded-2xl p-2 flex-row justify-between items-center shadow-sm">
+                            <Pressable
+                                onPress={() => shiftDate(-1)}
+                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-border active:scale-95"
+                            >
+                                <ChevronLeft size={18} color="#1C1C1C" />
+                            </Pressable>
+
+                            <Pressable
+                                onPress={() => setRefDate(new Date())}
+                                className="items-center flex-1 mx-2 py-1 flex-row justify-center active:opacity-70"
+                            >
+                                <Calendar size={15} color="#023C69" />
+                                <Typography variant="body2" weight="bold" className="text-textMain ml-2 text-xs">
+                                    {periodLabel}
+                                </Typography>
+                                <ChevronRight size={14} color="#9CA3AF" className="ml-1" />
+                            </Pressable>
+
+                            <Pressable
+                                onPress={() => shiftDate(1)}
+                                className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-border active:scale-95"
+                            >
+                                <ChevronRight size={18} color="#1C1C1C" />
+                            </Pressable>
+                        </View>
                     </View>
                 )}
 
                 {/* Heading */}
-                <View className="flex-row items-center justify-between mb-4 mt-6 px-6">
+                <View className="flex-row items-center justify-between mb-3 mt-5 px-6">
                     <Typography variant="h3" weight="bold" className="tracking-tight text-textMain">Riwayat Aktivitas</Typography>
-                    {expenses && expenses.length > 0 && (
-                        <Typography variant="caption" className="text-primary font-bold">{expenses.length} Transaksi</Typography>
+                    {filteredExpenses.length > 0 && (
+                        <Typography variant="caption" className="text-primary font-bold">{filteredExpenses.length} Transaksi</Typography>
                     )}
                 </View>
 
@@ -537,22 +631,22 @@ export default function ExpensesScreen() {
                         <View className="py-20 flex-row justify-center items-center">
                             <ActivityIndicator size="large" color="#023C69" />
                         </View>
-                    ) : expenses.length === 0 ? (
-                        <View className="py-20 items-center bg-white rounded-[32px] border border-gray-50 shadow-sm p-6">
-                            <View className="w-16 h-16 bg-gray-50 rounded-[28px] items-center justify-center mb-6">
+                    ) : filteredExpenses.length === 0 ? (
+                        <View className="py-20 items-center bg-surface rounded-[32px] border border-border shadow-sm p-6">
+                            <View className="w-16 h-16 bg-background rounded-[28px] items-center justify-center mb-6">
                                 <Receipt size={32} color="#D1D5DB" />
                             </View>
-                            <Typography className="text-gray-400 font-bold text-center">Belum ada aktivitas</Typography>
+                            <Typography className="text-textGray font-bold text-center">Belum ada aktivitas</Typography>
                             <Typography className="text-gray-300 text-xs text-center mt-1">Data pengeluaran akan muncul di sini</Typography>
                         </View>
                     ) : (
-                        expenses.map((item: any) => {
+                        filteredExpenses.map((item: any) => {
                             const catInfo = CATEGORIES.find(c => c.value === item.kategori) || CATEGORIES[2];
                             return (
-                                <Card key={item.id} className="mb-4 p-5 border border-gray-50 shadow-sm bg-white rounded-[32px]">
+                                <Card key={item.id} className="mb-4 p-5 border border-border shadow-sm bg-surface rounded-[32px]">
                                     <View className="flex-row items-center justify-between">
                                         <View className="flex-row items-center flex-1 mr-4">
-                                            <View className="w-12 h-12 rounded-2xl items-center justify-center mr-3 bg-gray-50">
+                                            <View className="w-12 h-12 rounded-2xl items-center justify-center mr-3 bg-background">
                                                 <catInfo.icon size={20} color={catInfo.color} />
                                             </View>
                                             <View className="flex-1">
@@ -573,7 +667,7 @@ export default function ExpensesScreen() {
                                             </View>
                                         </View>
                                         <View className="items-end">
-                                            <Typography weight="bold" className="text-primary text-sm tracking-tight mb-1">-{formatNumber(item.jumlah)}</Typography>
+                                            <Typography weight="bold" className="text-rose-500 text-sm tracking-tight mb-1">-{formatNumber(item.jumlah)}</Typography>
                                             <Badge
                                                 label={item.metode_bayar || 'TUNAI'}
                                                 variant={item.metode_bayar?.toUpperCase() === 'TUNAI' ? 'warning' : 'info'}
@@ -586,7 +680,63 @@ export default function ExpensesScreen() {
                         })
                     )}
                 </View>
+                {/* Ruang bawah agar kartu terakhir tidak tertutup FAB */}
+                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 96) }} />
             </ScrollView>
+
+            {/* FAB — melayang di atas CustomTabBar (zIndex 50, tinggi 80+inset) */}
+            {!showForm && (
+                <Pressable
+                    onPress={openForm}
+                    style={{
+                        bottom: insets.bottom + 96,
+                        right: 24,
+                        elevation: 20,
+                        zIndex: 60,
+                    }}
+                    className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95"
+                >
+                    <Plus size={30} color="white" strokeWidth={2.5} />
+                </Pressable>
+            )}
+            {/* Entry UI - Platform Specific */}
+            {Platform.OS === 'web' ? (
+                <Modal visible={showForm} transparent animationType="slide" onRequestClose={closeForm}>
+                    <View className="flex-1 justify-end bg-black/40">
+                        <Pressable className="absolute inset-0" onPress={closeForm} />
+                        <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[95%] self-center overflow-hidden shadow-2xl relative">
+                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <ScrollView style={{ flex: 1 }} className="px-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                                {renderFormContent()}
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
+            ) : (
+                <BottomSheet
+                    ref={sheetRef}
+                    index={-1}
+                    snapPoints={snapPoints}
+                    enablePanDownToClose
+                    enableContentPanningGesture
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
+                    backdropComponent={renderBackdrop}
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    topInset={insets.top}
+                    onClose={() => setShowForm(false)}
+                >
+                    <BottomSheetScrollView
+                        className="px-8"
+                        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 48 }}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                    >
+                        {renderFormContent()}
+                    </BottomSheetScrollView>
+                </BottomSheet>
+            )}
         </View>
     );
 }

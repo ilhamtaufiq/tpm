@@ -221,13 +221,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             <View className="flex-row justify-between items-center mb-6">
                 <View>
                     <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">{title}</Typography>
-                    <Typography variant="caption" className="text-gray-500 font-medium">Selesaikan kewajiban pembayaran</Typography>
+                    <Typography variant="caption" className="text-textGray font-medium">Selesaikan kewajiban pembayaran</Typography>
                 </View>
                 <Pressable
                     onPress={() => setIsSplitPayment(!isSplitPayment)}
-                    className={`px-4 py-2 rounded-2xl border ${isSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200'}`}
+                    className={`px-4 py-2 rounded-2xl border ${isSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-background border-border'}`}
                 >
-                    <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'} uppercase tracking-widest`}>
+                    <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-textGray'} uppercase tracking-widest`}>
                         {isSplitPayment ? 'Split On' : 'Split Off'}
                     </Typography>
                 </Pressable>
@@ -247,11 +247,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 {totalBayar > 0 && (
                     <View className="mt-4 pt-4 border-t border-primary/10">
                         <View className="flex-row justify-between items-center mb-2">
-                            <Typography variant="caption" className="text-gray-400 font-bold uppercase tracking-widest text-[9px]">Total Input</Typography>
+                            <Typography variant="caption" className="text-textGray font-bold uppercase tracking-widest text-[9px]">Total Input</Typography>
                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(totalBayar)}</Typography>
                         </View>
                         <View className="flex-row justify-between items-center">
-                            <Typography variant="caption" className="text-gray-400 font-bold uppercase tracking-widest text-[9px]">Sisa Akhir</Typography>
+                            <Typography variant="caption" className="text-textGray font-bold uppercase tracking-widest text-[9px]">Sisa Akhir</Typography>
                             <Typography variant="body1" weight="bold" className={sisaSetelahBayar < 0 ? "text-rose-600" : "text-primary"}>
                                 {formatCurrency(Math.max(0, sisaSetelahBayar))}
                             </Typography>
@@ -262,7 +262,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
             <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-4 px-1">
-                    <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px]">Rincian Pembayaran</Typography>
+                    <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px]">Rincian Pembayaran</Typography>
                     {isSplitPayment && (
                         <Pressable 
                             onPress={addPayment} 
@@ -275,10 +275,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </View>
 
                 {payments.map((p, idx) => (
-                    <Card key={p.id} variant="outlined" className="p-6 mb-4 border-gray-100 rounded-[28px]">
+                    <Card key={p.id} variant="outlined" className="p-6 mb-4 border-border rounded-[28px]">
                         <View className="flex-row items-center justify-between mb-5">
-                            <View className="bg-gray-100 px-3 py-1 rounded-lg">
-                                <Typography weight="bold" className="text-gray-500 text-[9px] uppercase tracking-widest">Entry #{idx + 1}</Typography>
+                            <View className="bg-background px-3 py-1 rounded-lg">
+                                <Typography weight="bold" className="text-textGray text-[9px] uppercase tracking-widest">Entry #{idx + 1}</Typography>
                             </View>
                             {payments.length > 1 && (
                                 <Pressable 
@@ -343,19 +343,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                             <Typography
                                                 variant="caption"
                                                 weight="bold"
-                                                className={isActive ? 'text-white text-xs' : 'text-gray-700 text-xs'}
+                                                className={isActive ? 'text-white text-xs' : 'text-text text-xs'}
                                             >
                                                 {cfg.label}
                                             </Typography>
                                             <Typography
-                                                className={`text-[9px] font-medium ${isActive ? 'text-white/70' : 'text-gray-400'}`}
+                                                className={`text-[9px] font-medium ${isActive ? 'text-white/70' : 'text-textGray'}`}
                                             >
                                                 {cfg.sublabel}
                                             </Typography>
                                         </View>
                                         {isActive && (
                                             <View className="w-5 h-5 bg-white/30 rounded-full items-center justify-center">
-                                                <View className="w-2.5 h-2.5 bg-white rounded-full" />
+                                                <View className="w-2.5 h-2.5 bg-surface rounded-full" />
                                             </View>
                                         )}
                                     </Pressable>
@@ -425,10 +425,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 {!isSplitPayment && (
                     <Pressable
                         onPress={addPayment}
-                        className="w-full py-5 border-2 border-dashed border-gray-200 rounded-3xl items-center justify-center flex-row bg-gray-50/30"
+                        className="w-full py-5 border-2 border-dashed border-border rounded-3xl items-center justify-center flex-row bg-gray-50/30"
                     >
                         <Plus size={18} color="#9CA3AF" />
-                        <Typography className="text-gray-400 font-bold ml-2 text-xs uppercase tracking-widest">Gunakan Split Payment</Typography>
+                        <Typography className="text-textGray font-bold ml-2 text-xs uppercase tracking-widest">Gunakan Split Payment</Typography>
                     </Pressable>
                 )}
             </View>
@@ -449,7 +449,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     variant="outline"
                     title="Batal"
                     onPress={onClose}
-                    className="flex-1 h-14 rounded-2xl border-gray-200"
+                    className="flex-1 h-14 rounded-2xl border-border"
                 />
                 <Button
                     title={loading ? 'Memproses...' : 'Konfirmasi & Simpan'}
@@ -468,7 +468,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <ModalThemeView style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
                     <ModalFlexBackdrop onPress={onClose} />
                     <View
-                        className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative"
+                        className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative"
                         style={{ flexShrink: 0, zIndex: 2, elevation: 16 }}
                     >
                         <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />

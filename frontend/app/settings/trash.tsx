@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { appAlert } from '../../utils/appAlert';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Trash2, RotateCcw, AlertTriangle, ShieldCheck } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Trash2, RotateCcw, AlertTriangle, ShieldCheck } from 'lucide-react-native';
+import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import { router } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
 import { useTrashList, useRestoreItem, usePermanentDelete, useEmptyTrash } from '../../hooks/useTrash';
 import { format } from 'date-fns';
@@ -125,22 +125,15 @@ export default function TrashScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-            <View className="p-6 bg-surface pb-4 rounded-b-[32px] shadow-sm">
-                <View className="flex-row items-center mb-6">
+        <View className="flex-1 bg-background">
+            <Header
+                title="Sampah"
+                subtitle="Data yang baru saja dihapus"
+                showBackButton
+                showProfile={false}
+                showBell={false}
+                rightElement={
                     <Pressable
-                        onPress={() => router.back()}
-                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center mr-4"
-                    >
-                        <ChevronLeft size={24} color="#1C1C1C" />
-                    </Pressable>
-                    <View className="flex-1">
-                        <Typography variant="h2" weight="bold">Sampah</Typography>
-                        <Typography variant="caption" className="text-textGray mt-1">
-                            Data yang baru saja dihapus
-                        </Typography>
-                    </View>
-                    <Pressable 
                         onPress={handleEmptyTrash}
                         disabled={!items || items.length === 0 || emptyTrashMutation.isPending}
                         className={`w-12 h-12 rounded-2xl items-center justify-center ${
@@ -149,10 +142,10 @@ export default function TrashScreen() {
                     >
                         <Trash2 size={24} color={(!items || items.length === 0) ? "#9CA3AF" : "#EF4444"} />
                     </Pressable>
-                </View>
-
-                <ScrollView 
-                    horizontal 
+                }
+            >
+                <ScrollView
+                    horizontal
                     showsHorizontalScrollIndicator={false}
                     className="flex-grow-0"
                     contentContainerStyle={{ paddingBottom: 8 }}
@@ -162,12 +155,12 @@ export default function TrashScreen() {
                             key={cat.id}
                             onPress={() => setActiveCategory(cat.id)}
                             className={`px-4 py-2.5 rounded-xl mr-2 border ${
-                                activeCategory === cat.id 
-                                ? 'bg-primary border-primary' 
+                                activeCategory === cat.id
+                                ? 'bg-primary border-primary'
                                 : 'bg-gray-50 border-gray-100'
                             }`}
                         >
-                            <Typography 
+                            <Typography
                                 weight="bold"
                                 className={`text-xs ${
                                     activeCategory === cat.id ? 'text-white' : 'text-textGray'
@@ -178,7 +171,7 @@ export default function TrashScreen() {
                         </Pressable>
                     ))}
                 </ScrollView>
-            </View>
+            </Header>
 
             <View className="flex-1 px-6 pt-4">
                 {isLoading ? (
@@ -188,7 +181,7 @@ export default function TrashScreen() {
                 ) : items?.length > 0 ? (
                     <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
                         {items.map((item: any) => (
-                            <Card key={item.id} className="p-4 mb-4 rounded-2xl border border-gray-100 shadow-none bg-surface">
+                            <Card key={item.id} className="p-4 mb-4 rounded-2xl border border-border shadow-none bg-surface">
                                 <View className="flex-row justify-between items-start">
                                     <View className="flex-1 mr-4">
                                         <Typography variant="caption" weight="bold" className="text-primary mb-0.5">
@@ -223,7 +216,7 @@ export default function TrashScreen() {
                     </ScrollView>
                 ) : (
                     <View className="flex-1 items-center justify-center pt-10">
-                        <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-4">
+                        <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-4">
                             <ShieldCheck size={40} color="#9CA3AF" strokeWidth={1.5} />
                         </View>
                         <Typography weight="bold" className="text-textGray">Tempat Sampah Kosong</Typography>
@@ -253,6 +246,6 @@ export default function TrashScreen() {
                 onConfirm={dialogConfig.onConfirm}
                 loading={restoreMutation.isPending || permanentDeleteMutation.isPending || emptyTrashMutation.isPending}
             />
-        </SafeAreaView>
+        </View>
     );
 }

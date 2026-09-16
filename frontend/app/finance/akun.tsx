@@ -269,7 +269,7 @@ export default function AkunKeuanganScreen() {
             <Pressable
                 key={jenis}
                 onPress={() => handleAdjustClick(jenis)}
-                className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
+                className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center"
             >
                 <View className="w-16 h-16 bg-primary/5 rounded-[20px] items-center justify-center mr-4">
                     <Icon size={28} color="#023C69" />
@@ -280,12 +280,12 @@ export default function AkunKeuanganScreen() {
                         <Typography className="text-primary text-[8px] font-bold uppercase tracking-widest opacity-60">
                             {REPORT_CATEGORIES[jenis]}
                         </Typography>
-                        <Typography className="text-gray-400 text-[8px] font-bold uppercase">
+                        <Typography className="text-textGray text-[8px] font-bold uppercase">
                             {STATEMENT_LABELS[jenis]}
                         </Typography>
                     </View>
                     <View className="flex-row items-center justify-between mb-1">
-                        <Typography variant="body1" weight="bold" className="text-gray-800">
+                        <Typography variant="body1" weight="bold" className="text-text">
                             {ACCOUNT_LABELS[jenis]}
                         </Typography>
                         {currentBalance > 0 ? (
@@ -293,13 +293,13 @@ export default function AkunKeuanganScreen() {
                                 <Typography className="text-emerald-600 text-[10px] font-bold uppercase">AKTIF</Typography>
                             </View>
                         ) : (
-                            <View className="bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
-                                <Typography className="text-gray-400 text-[10px] font-bold uppercase">KOSONG</Typography>
+                            <View className="bg-background px-2 py-1 rounded-full border border-border">
+                                <Typography className="text-textGray text-[10px] font-bold uppercase">KOSONG</Typography>
                             </View>
                         )}
                     </View>
 
-                    <Typography className="text-gray-400 text-xs mb-3">Terakhir diperbarui hari ini</Typography>
+                    <Typography className="text-textGray text-xs mb-3">Terakhir diperbarui hari ini</Typography>
 
                     <View className="flex-row items-center justify-between mb-4 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50">
                         <View className="flex-1">
@@ -319,9 +319,9 @@ export default function AkunKeuanganScreen() {
                         </View>
                     </View>
 
-                    <View className="flex-row items-center justify-between pt-3 border-t border-gray-50">
+                    <View className="flex-row items-center justify-between pt-3 border-t border-border">
                         <View className="flex-1">
-                            <Typography className="text-gray-400 text-[10px] uppercase font-bold">Saldo Saat Ini</Typography>
+                            <Typography className="text-textGray text-[10px] uppercase font-bold">Saldo Saat Ini</Typography>
                             <Typography variant="h3" weight="bold" className="text-primary mt-0.5">
                                 {formatCurrency(currentBalance)}
                             </Typography>
@@ -329,7 +329,7 @@ export default function AkunKeuanganScreen() {
                         <View className="flex-row space-x-2">
                             <Pressable
                                 onPress={() => router.push({ pathname: '/finance/mutasi', params: { jenis } })}
-                                className="bg-gray-100 w-10 h-10 rounded-xl items-center justify-center border border-gray-200"
+                                className="bg-background w-10 h-10 rounded-xl items-center justify-center border border-border"
                             >
                                 <History size={18} color="#6B7280" />
                             </Pressable>
@@ -385,7 +385,7 @@ export default function AkunKeuanganScreen() {
             <Pressable
                 key={type}
                 onPress={() => router.push(isPiutang ? '/finance/piutang' : '/finance/hutang')}
-                className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
+                className="bg-surface p-5 rounded-[32px] mb-4 border border-border shadow-sm flex-row items-center"
             >
                 <View className={`w-16 h-16 ${bgColor} rounded-[20px] items-center justify-center mr-4`}>
                     <Icon size={28} color={color} />
@@ -396,12 +396,12 @@ export default function AkunKeuanganScreen() {
                         <Typography className="text-primary text-[8px] font-bold uppercase tracking-widest opacity-60">
                             {REPORT_CATEGORIES[type]}
                         </Typography>
-                        <Typography className="text-gray-400 text-[8px] font-bold uppercase">
+                        <Typography className="text-textGray text-[8px] font-bold uppercase">
                             {STATEMENT_LABELS[type]}
                         </Typography>
                     </View>
                     <View className="flex-row items-center justify-between mb-1">
-                        <Typography variant="body1" weight="bold" className="text-gray-800">
+                        <Typography variant="body1" weight="bold" className="text-text">
                             {ACCOUNT_LABELS[type]}
                         </Typography>
                         <View className="bg-primary/5 px-2 py-1 rounded-full border border-primary/10">
@@ -409,18 +409,18 @@ export default function AkunKeuanganScreen() {
                         </View>
                     </View>
 
-                    <Typography className="text-gray-400 text-xs mb-2">Akumulasi dari seluruh transaksi</Typography>
+                    <Typography className="text-textGray text-xs mb-2">Akumulasi dari seluruh transaksi</Typography>
 
-                    <View className="flex-row items-center justify-between pt-3 border-t border-gray-50">
+                    <View className="flex-row items-center justify-between pt-3 border-t border-border">
                         <View>
-                            <Typography className="text-gray-400 text-[10px] uppercase font-bold">Total {isPiutang ? 'Tagihan' : 'Kewajiban'}</Typography>
+                            <Typography className="text-textGray text-[10px] uppercase font-bold">Total {isPiutang ? 'Tagihan' : 'Kewajiban'}</Typography>
                             <Typography variant="h3" weight="bold" className={`${isPiutang ? 'text-emerald-600' : 'text-rose-600'} mt-0.5`}>
                                 {formatCurrency(nominal || 0)}
                             </Typography>
                         </View>
-                        <View className="bg-gray-50 px-4 py-2 rounded-xl flex-row items-center border border-gray-100">
+                        <View className="bg-background px-4 py-2 rounded-xl flex-row items-center border border-border">
                             <ArrowRightLeft size={14} color="#6B7280" />
-                            <Typography className="text-gray-500 text-xs font-bold ml-2">Detail</Typography>
+                            <Typography className="text-textGray text-xs font-bold ml-2">Detail</Typography>
                         </View>
                     </View>
                 </View>
@@ -438,17 +438,17 @@ export default function AkunKeuanganScreen() {
             </View>
 
             <View className="mb-6">
-                <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-2 ml-1">Akun Terpilih</Typography>
-                <View className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex-row items-center">
-                    <View className="w-10 h-10 bg-white rounded-xl items-center justify-center mr-3 shadow-sm">
+                <Typography className="text-textGray text-[10px] uppercase font-bold mb-2 ml-1">Akun Terpilih</Typography>
+                <View className="bg-background p-4 rounded-2xl border border-border flex-row items-center">
+                    <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center mr-3 shadow-sm">
                         {selectedAccount && React.createElement(ACCOUNT_ICONS[selectedAccount] || Banknote, { size: 20, color: "#023C69" })}
                     </View>
-                    <Typography weight="bold" className="text-gray-800">
+                    <Typography weight="bold" className="text-text">
                         {selectedAccount ? ACCOUNT_LABELS[selectedAccount] : ''}
                     </Typography>
                     <View className="flex-1" />
                     <View className="items-end">
-                        <Typography className="text-gray-400 text-[8px] uppercase font-bold">Saldo Sekarang</Typography>
+                        <Typography className="text-textGray text-[8px] uppercase font-bold">Saldo Sekarang</Typography>
                         <Typography weight="bold" className="text-primary text-xs">
                             {formatCurrency(balances ? (balances[selectedAccount?.toLowerCase() as keyof KasBankAllBalances] as any)?.saldo || 0 : 0)}
                         </Typography>
@@ -464,11 +464,11 @@ export default function AkunKeuanganScreen() {
                         onChangeText={setNewNominal}
                         keyboardType="numeric"
                         placeholder="0"
-                        startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
+                        startIcon={<Typography weight="bold" className="text-textGray">Rp</Typography>}
                     />
                 </View>
-                <View className="w-1/3 pt-8 items-center bg-gray-50 rounded-2xl h-14 justify-center border border-dashed border-gray-300">
-                   <Typography className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Selisih</Typography>
+                <View className="w-1/3 pt-8 items-center bg-background rounded-2xl h-14 justify-center border border-dashed border-border">
+                   <Typography className="text-[10px] text-textGray font-bold uppercase mb-0.5">Selisih</Typography>
                    {(() => {
                        const current = balances ? (balances[selectedAccount?.toLowerCase() as keyof KasBankAllBalances] as any)?.saldo || 0 : 0;
                        const target = parseFloat(newNominal.replace(/[^0-9.-]+/g,"")) || 0;
@@ -533,32 +533,32 @@ export default function AkunKeuanganScreen() {
                 rightElement={
                     <Pressable
                         onPress={() => router.push('/finance/laporan')}
-                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
                     >
                         <BarChart3 size={20} color="#1F2937" />
                     </Pressable>
                 }
             >
                 {/* Total Balance Bento */}
-                <View className="bg-gray-50 p-6 rounded-[32px] border border-gray-100 mt-4">
+                <View className="bg-background p-6 rounded-[32px] border border-border mt-4">
                     <View className="flex-row items-center mb-1">
-                        <Typography className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Total Keseluruhan Saldo</Typography>
+                        <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">Total Keseluruhan Saldo</Typography>
                         <View className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-2 animate-pulse" />
                     </View>
                     <View className="flex-row items-baseline">
-                        <Typography className="text-gray-500 text-lg mr-1 font-bold">Rp</Typography>
-                        <Typography weight="bold" className="text-gray-900 text-4xl">
+                        <Typography className="text-textGray text-lg mr-1 font-bold">Rp</Typography>
+                        <Typography weight="bold" className="text-text text-4xl">
                             {formatCurrency(balances?.total_saldo || 0).replace('Rp', '').trim()}
                         </Typography>
                     </View>
 
-                    <View className="flex-row mt-6 pt-6 border-t border-gray-100">
+                    <View className="flex-row mt-6 pt-6 border-t border-border">
                         <View className="flex-1 flex-row items-center">
                             <View className="w-8 h-8 rounded-full bg-emerald-400/20 items-center justify-center mr-3">
                                 <TrendingUp size={14} color="#10B981" />
                             </View>
                             <View>
-                                <Typography className="text-gray-400 text-[8px] uppercase font-bold">Masuk (Bulan Ini)</Typography>
+                                <Typography className="text-textGray text-[8px] uppercase font-bold">Masuk (Bulan Ini)</Typography>
                                 <Typography className="text-emerald-600 text-xs font-bold">
                                     {formatCurrency(
                                         Object.values(balances || {}).reduce((acc: number, curr: any) => {
@@ -576,7 +576,7 @@ export default function AkunKeuanganScreen() {
                                 <TrendingDown size={14} color="#EF4444" />
                             </View>
                             <View>
-                                <Typography className="text-gray-400 text-[8px] uppercase font-bold">Keluar (Bulan Ini)</Typography>
+                                <Typography className="text-textGray text-[8px] uppercase font-bold">Keluar (Bulan Ini)</Typography>
                                 <Typography className="text-rose-600 text-xs font-bold">
                                     {formatCurrency(
                                         Object.values(balances || {}).reduce((acc: number, curr: any) => {
@@ -601,7 +601,7 @@ export default function AkunKeuanganScreen() {
                 }
             >
                 <View className="mb-6 flex-row items-center justify-between">
-                    <Typography variant="h3" weight="bold" className="text-gray-800">Daftar Rekening</Typography>
+                    <Typography variant="h3" weight="bold" className="text-text">Daftar Rekening</Typography>
                     <Pressable
                         onPress={() => router.push('/finance/laporan')}
                         className="flex-row items-center bg-primary/5 px-3 py-1.5 rounded-full"
@@ -613,7 +613,7 @@ export default function AkunKeuanganScreen() {
 
                 {isLoading ? (
                     [1, 2, 3, 4, 5].map((i) => (
-                        <View key={i} className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 flex-row items-center">
+                        <View key={i} className="bg-surface p-5 rounded-[32px] mb-4 border border-border flex-row items-center">
                             <Skeleton width={64} height={64} borderRadius={20} style={{ marginRight: 16 }} />
                             <View className="flex-1">
                                 <Skeleton width="50%" height={24} style={{ marginBottom: 8 }} />
@@ -626,14 +626,14 @@ export default function AkunKeuanganScreen() {
                     <>
                         {/* Reports & Summaries */}
                         <View className="mb-4">
-                            <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-4 ml-1 tracking-widest">Komponen Laporan Keuangan</Typography>
+                            <Typography className="text-textGray text-[10px] uppercase font-bold mb-4 ml-1 tracking-widest">Komponen Laporan Keuangan</Typography>
                             {renderSummaryItem('PIUTANG')}
                             {renderSummaryItem('HUTANG')}
                         </View>
 
                         <View className="mb-4">
                             <View className="flex-row items-center justify-between mb-4 px-1">
-                                <Typography className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Kas & Rekening Bank</Typography>
+                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">Kas & Rekening Bank</Typography>
                                 {!roleAccount && (
                                     <Pressable
                                         onPress={() => setShowAllAccounts(!showAllAccounts)}
@@ -648,10 +648,10 @@ export default function AkunKeuanganScreen() {
                             {visibleActiveAccounts.map(renderAccountItem)}
                             
                             {!roleAccount && showAllAccounts && (
-                                <View className="mt-4 pt-4 border-t border-gray-100">
+                                <View className="mt-4 pt-4 border-t border-border">
                                     <View className="flex-row items-center mb-4 px-1">
                                         <History size={14} color="#9CA3AF" />
-                                        <Typography className="text-gray-400 text-[10px] uppercase font-bold tracking-widest ml-2">Rekening Legacy / Lama</Typography>
+                                        <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest ml-2">Rekening Legacy / Lama</Typography>
                                     </View>
                                     {LEGACY_ACCOUNTS.map(renderAccountItem)}
                                 </View>

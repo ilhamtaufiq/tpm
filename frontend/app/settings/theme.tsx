@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
-import { ChevronLeft, RotateCcw, Paintbrush, Camera, Trash2, Image as ImageIcon, Check, Sun, Moon } from 'lucide-react-native';
+import { RotateCcw, Paintbrush, Camera, Trash2, Image as ImageIcon, Check, Sun, Moon } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
+import { Header } from '../../components/ui/Header';
 import { router } from 'expo-router';
 import { useUIStore, colorPalettes, findPaletteId, ColorPalette } from '../../store/useUIStore';
 import * as ImagePicker from 'expo-image-picker';
@@ -99,30 +100,25 @@ export default function ThemeSettingsScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <View className="flex-1 bg-background">
             <View className="flex-1">
-                {/* Header */}
-                <View className="flex-row items-center px-6 py-4">
-                    <Pressable
-                        onPress={() => router.back()}
-                        className="w-10 h-10 items-center justify-center rounded-2xl bg-surface border border-gray-100 shadow-sm"
-                    >
-                        <ChevronLeft size={24} color={themeColors.text} />
-                    </Pressable>
-                    <View className="flex-1 ml-4">
-                        <Typography variant="h3" weight="bold">Tampilan</Typography>
-                        <Typography variant="caption" className="text-text/40">
-                            {activePaletteName ? `Palet: ${activePaletteName}` : 'Palet: Kustom'}
-                        </Typography>
-                    </View>
-                    <Pressable
-                        onPress={handleResetTheme}
-                        disabled={isDefault}
-                        className={`w-10 h-10 items-center justify-center rounded-2xl border shadow-sm ${isDefault ? 'bg-gray-50 border-gray-100 opacity-40' : 'bg-surface border-gray-100'}`}
-                    >
-                        <RotateCcw size={20} color={isDefault ? themeColors.textGray : themeColors.secondary} />
-                    </Pressable>
-                </View>
+                <Header
+                    title="Tampilan"
+                    subtitle={activePaletteName ? `Palet: ${activePaletteName}` : 'Palet: Kustom'}
+                    showBackButton
+                    onBackButtonPress={() => router.back()}
+                    showProfile={false}
+                    showBell={false}
+                    rightElement={
+                        <Pressable
+                            onPress={handleResetTheme}
+                            disabled={isDefault}
+                            className={`w-10 h-10 items-center justify-center rounded-2xl border shadow-sm ${isDefault ? 'bg-background border-border opacity-40' : 'bg-surface border-border'}`}
+                        >
+                            <RotateCcw size={20} color={isDefault ? themeColors.textGray : themeColors.secondary} />
+                        </Pressable>
+                    }
+                />
 
                 <ScrollView
                     className="flex-1"
@@ -216,7 +212,7 @@ export default function ThemeSettingsScreen() {
                         })}
                     </View>
 
-                    <View className="mt-2 p-5 bg-surface rounded-[28px] border border-gray-100 shadow-sm mb-8">
+                    <View className="mt-2 p-5 bg-surface rounded-[28px] border border-border shadow-sm mb-8">
                         <Typography variant="caption" weight="bold" className="text-text/40 uppercase tracking-[1.5px] mb-3">
                             Pratinjau Palet Aktif
                         </Typography>
@@ -225,7 +221,7 @@ export default function ThemeSettingsScreen() {
                                 <View key={key} className="flex-1 items-center">
                                     <View
                                         style={{ backgroundColor: themeColors[key] }}
-                                        className="w-full h-10 rounded-xl border border-gray-100"
+                                        className="w-full h-10 rounded-xl border border-border"
                                     />
                                     <Typography variant="caption" className="text-text/40 text-[9px] mt-1.5">
                                         {key === 'textGray' ? 'gray' : key}
@@ -242,8 +238,8 @@ export default function ThemeSettingsScreen() {
                         Latar Belakang Beranda
                     </Typography>
 
-                    <View className="bg-surface p-5 rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
-                        <View className="w-full h-40 bg-gray-100 rounded-2xl mb-4 overflow-hidden items-center justify-center relative">
+                    <View className="bg-surface p-5 rounded-[32px] border border-border shadow-sm overflow-hidden">
+                        <View className="w-full h-40 bg-background rounded-2xl mb-4 overflow-hidden items-center justify-center relative">
                             {user?.home_background ? (
                                 <Image
                                     source={{ uri: getFileUrl(user.home_background) as string }}
@@ -290,6 +286,6 @@ export default function ThemeSettingsScreen() {
                     </View>
                 </ScrollView>
             </View>
-        </SafeAreaView>
+        </View>
     );
 }

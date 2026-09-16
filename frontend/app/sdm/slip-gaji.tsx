@@ -480,7 +480,7 @@ export default function SlipGajiScreen() {
         const currentGajiBersih = currentGajiPokok + currentOvertime - currentKasbon;
 
         return (
-            <Card className="mb-4 p-5 border border-gray-100 shadow-sm overflow-hidden">
+            <Card className="mb-4 p-5 border border-border shadow-sm overflow-hidden">
                 {/* Header Section: Profile & Attendance */}
                 <View className="flex-row items-center justify-between mb-4">
                     <View className="flex-row items-center flex-1 mr-4 min-w-0">
@@ -489,13 +489,13 @@ export default function SlipGajiScreen() {
                         </View>
                         <View className="flex-1 min-w-0">
                             <Typography weight="bold" className="text-textMain text-base" numberOfLines={1}>{item.karyawan_nama}</Typography>
-                            <Typography variant="caption" className="text-gray-400 font-bold" numberOfLines={1}>{item.karyawan_kode}</Typography>
+                            <Typography variant="caption" className="text-textGray font-bold" numberOfLines={1}>{item.karyawan_kode}</Typography>
                         </View>
                     </View>
 
                     <View className="items-end flex-shrink-0">
-                        <Typography className="text-[8px] text-gray-400 font-black uppercase mb-1 tracking-widest text-right">Kehadiran</Typography>
-                        <View className="flex-row items-center bg-gray-50 rounded-xl border border-gray-100 px-3 py-1.5 min-w-[70px] justify-center">
+                        <Typography className="text-[8px] text-textGray font-black uppercase mb-1 tracking-widest text-right">Kehadiran</Typography>
+                        <View className="flex-row items-center bg-background rounded-xl border border-border px-3 py-1.5 min-w-[70px] justify-center">
                             <TextInput
                                 className="text-primary font-black p-0 text-base w-8 text-center"
                                 keyboardType="numeric"
@@ -503,15 +503,15 @@ export default function SlipGajiScreen() {
                                 onChangeText={(v) => handleUpdateAttendance(item.karyawan_id, v)}
                                 selectTextOnFocus
                             />
-                            <Typography className="text-gray-400 text-[10px] font-bold ml-1 uppercase">Hari</Typography>
+                            <Typography className="text-textGray text-[10px] font-bold ml-1 uppercase">Hari</Typography>
                         </View>
                     </View>
                 </View>
 
                 {/* Salary Components Breakdown */}
                 <View className="flex-row flex-wrap gap-2 mb-4">
-                    <View className="bg-gray-50 px-3 py-2 rounded-2xl border border-gray-100 flex-row items-center">
-                        <Typography className="text-[9px] text-gray-400 font-bold uppercase mr-1.5">Base Pay</Typography>
+                    <View className="bg-background px-3 py-2 rounded-2xl border border-border flex-row items-center">
+                        <Typography className="text-[9px] text-textGray font-bold uppercase mr-1.5">Base Pay</Typography>
                         <Typography weight="bold" className="text-[11px] text-textMain">{formatCurrency(item.gaji_pokok_dasar)}</Typography>
                     </View>
                     <View className="bg-primary/5 px-3 py-2 rounded-2xl border border-primary/10 flex-row items-center">
@@ -557,7 +557,7 @@ export default function SlipGajiScreen() {
                 </View>
 
                 {/* Footer Section: Total & Process */}
-                <View className="pt-4 border-t border-gray-100 flex-row items-center justify-between">
+                <View className="pt-4 border-t border-border flex-row items-center justify-between">
                     <View className="flex-1 mr-3">
                         <Typography className="text-[8px] text-textGray/40 font-black uppercase tracking-[2px] mb-1" numberOfLines={1}>Gaji Bersih Diterima</Typography>
                         <Typography weight="bold" className="text-xl sm:text-2xl text-emerald-600 tracking-tighter" numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(currentGajiBersih)}</Typography>
@@ -566,7 +566,7 @@ export default function SlipGajiScreen() {
                     <Pressable
                         onPress={() => handleGenerateSingle(item)}
                         disabled={isGenerating || !!generatingId}
-                        className={`h-14 px-4 sm:px-6 rounded-2xl flex-row items-center justify-center flex-shrink-0 ${isGenerating ? 'bg-gray-100' : 'bg-primary shadow-lg shadow-primary/30'}`}
+                        className={`h-14 px-4 sm:px-6 rounded-2xl flex-row items-center justify-center flex-shrink-0 ${isGenerating ? 'bg-background' : 'bg-primary shadow-lg shadow-primary/30'}`}
                     >
                         {isGenerating ? (
                             <ActivityIndicator size="small" color="#023C69" />
@@ -586,7 +586,7 @@ export default function SlipGajiScreen() {
         const isLunas = item.status?.toUpperCase() === 'LUNAS';
         return (
             <Pressable onPress={() => openDetail(item)} >
-                <Card className="mb-4 p-5 border border-gray-100 shadow-sm">
+                <Card className="mb-4 p-5 border border-border shadow-sm">
                     <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center flex-1 mr-2">
                             <View className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl items-center justify-center mr-3 sm:mr-4 flex-shrink-0 ${isLunas ? 'bg-emerald-50' : 'bg-amber-50'}`}>
@@ -595,10 +595,10 @@ export default function SlipGajiScreen() {
                             <View className="flex-1">
                                 <Typography weight="bold" className="text-textMain text-sm sm:text-base" numberOfLines={1}>{item.karyawan_nama}</Typography>
                                 <View className="flex-row items-center mt-1 flex-wrap">
-                                    <View className="bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100 mr-2">
+                                    <View className="bg-background px-2 py-0.5 rounded-lg border border-border mr-2">
                                         <Typography className="text-primary text-[10px] font-bold">{item.jumlah_hadir} HARI</Typography>
                                     </View>
-                                    <Typography weight="bold" className="text-gray-400 text-xs">
+                                    <Typography weight="bold" className="text-textGray text-xs">
                                         • {formatCurrency(item.gaji_bersih)}
                                     </Typography>
                                 </View>
@@ -632,10 +632,10 @@ export default function SlipGajiScreen() {
             >
                 {/* Range Selection Card - Unified Periode */}
                 <View className="mx-6 mb-4">
-                    <Card className="p-5 rounded-[28px] shadow-xl border border-gray-100 mb-3 bg-white">
+                    <Card className="p-5 rounded-[28px] shadow-xl border border-border mb-3 bg-surface">
                         <Typography className="text-textGray/40 text-[10px] font-black uppercase tracking-[2px] mb-4 text-center">Periode Laporan & Slip</Typography>
                         
-                        <View className="flex-row items-center justify-between pb-4 border-b border-gray-50">
+                        <View className="flex-row items-center justify-between pb-4 border-b border-border">
                             <Pressable
                                 onPress={() => { setDatePickingMode('start'); setShowDatePicker(true); }}
                                 style={({ pressed }) => ({
@@ -649,7 +649,7 @@ export default function SlipGajiScreen() {
                                 <Typography className="text-textMain font-bold text-base">{startDate}</Typography>
                             </Pressable>
                             
-                            <View className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                            <View className="w-10 h-10 bg-background rounded-full items-center justify-center">
                                 <ArrowRight size={16} color="#023C69" />
                             </View>
 
@@ -703,7 +703,7 @@ export default function SlipGajiScreen() {
                 <View className="flex-1">
                     {/* Glassmorphic Search */}
                     <View className="px-6 pt-2 pb-2">
-                        <View className="bg-gray-50 px-5 py-4 rounded-[24px] border border-gray-100 flex-row items-center shadow-inner">
+                        <View className="bg-background px-5 py-4 rounded-[24px] border border-border flex-row items-center shadow-inner">
                             <Search size={20} color="#D1D5DB" strokeWidth={2.5} />
                             <TextInput
                                 className="flex-1 ml-4 text-textMain font-medium"
@@ -719,20 +719,20 @@ export default function SlipGajiScreen() {
                     <View className="flex-row px-6 py-4 gap-2">
                         <Pressable
                             onPress={() => setActiveTab('pending')}
-                            className={`flex-1 py-4 items-center rounded-3xl flex-row justify-center ${activeTab === 'pending' ? 'bg-primary border border-white/10 shadow-lg shadow-primary/30' : 'bg-gray-50'}`}
+                            className={`flex-1 py-4 items-center rounded-3xl flex-row justify-center ${activeTab === 'pending' ? 'bg-primary border border-white/10 shadow-lg shadow-primary/30' : 'bg-background'}`}
                         >
                             <Clock size={18} color={activeTab === 'pending' ? 'white' : '#9CA3AF'} className="mr-2" />
-                            <Typography weight="bold" className={activeTab === 'pending' ? 'text-white' : 'text-gray-400'}>
+                            <Typography weight="bold" className={activeTab === 'pending' ? 'text-white' : 'text-textGray'}>
                                 Belum ({filteredPending.length})
                             </Typography>
                         </Pressable>
 
                         <Pressable
                             onPress={() => setActiveTab('history')}
-                            className={`flex-1 py-4 items-center rounded-3xl flex-row justify-center ${activeTab === 'history' ? 'bg-primary border border-white/10 shadow-lg shadow-primary/30' : 'bg-gray-50'}`}
+                            className={`flex-1 py-4 items-center rounded-3xl flex-row justify-center ${activeTab === 'history' ? 'bg-primary border border-white/10 shadow-lg shadow-primary/30' : 'bg-background'}`}
                         >
                             <CheckCircle2 size={18} color={activeTab === 'history' ? 'white' : '#9CA3AF'} className="mr-2" />
-                            <Typography weight="bold" className={activeTab === 'history' ? 'text-white' : 'text-gray-400'}>
+                            <Typography weight="bold" className={activeTab === 'history' ? 'text-white' : 'text-textGray'}>
                                 Riwayat ({filteredHistory.length})
                             </Typography>
                         </Pressable>
@@ -753,10 +753,10 @@ export default function SlipGajiScreen() {
                                             <ActivityIndicator size="large" color="#023C69" />
                                         ) : (
                                             <>
-                                                <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-6">
+                                                <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-6">
                                                     <CheckCircle2 size={40} color="#D1D5DB" />
                                                 </View>
-                                                <Typography className="text-gray-400 text-center font-medium">
+                                                <Typography className="text-textGray text-center font-medium">
                                                     Semua karyawan minggu ini sudah diproses.
                                                 </Typography>
                                             </>
@@ -777,10 +777,10 @@ export default function SlipGajiScreen() {
                                             <ActivityIndicator size="large" color="#023C69" />
                                         ) : (
                                             <>
-                                                <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-6">
+                                                <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-6">
                                                     <FileText size={40} color="#D1D5DB" />
                                                 </View>
-                                                <Typography className="text-gray-400 text-center font-medium">
+                                                <Typography className="text-textGray text-center font-medium">
                                                     Belum ada riwayat slip gaji untuk periode ini.
                                                 </Typography>
                                             </>
@@ -813,7 +813,7 @@ export default function SlipGajiScreen() {
 
             {/* Summary Panel for History — hide while detail sheet open */}
             {activeTab === 'history' && summary && !selectedSlip && (
-                <View className="absolute left-0 right-0 bg-white p-4 sm:p-6 rounded-t-[40px] sm:rounded-t-[48px] shadow-2xl border-t border-gray-100 flex-row items-center justify-between" style={{ bottom: 85, elevation: 10, zIndex: 50 }}>
+                <View className="absolute left-0 right-0 bg-surface p-4 sm:p-6 rounded-t-[40px] sm:rounded-t-[48px] shadow-2xl border-t border-border flex-row items-center justify-between" style={{ bottom: 85, elevation: 10, zIndex: 50 }}>
                     <View className="flex-1 mr-3">
                         <Typography className="text-textGray/40 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-1" numberOfLines={1}>Total Pengeluaran</Typography>
                         <Typography className="text-textMain text-lg sm:text-xl font-black" numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(summary.total_dibayar + summary.total_belum_dibayar)}</Typography>
@@ -830,7 +830,7 @@ export default function SlipGajiScreen() {
                 <Modal visible={!!selectedSlip} transparent animationType="slide" onRequestClose={() => setSelectedSlip(null)}>
                     <View className="flex-1 justify-end bg-black/40">
                         <Pressable className="absolute inset-0" onPress={() => setSelectedSlip(null)} />
-                        <View className="bg-white rounded-t-[56px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
+                        <View className="bg-surface rounded-t-[56px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                             <ScrollView style={{ flex: 1 }} className="px-10" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {selectedSlip && renderDetailContent()}
@@ -882,7 +882,7 @@ export default function SlipGajiScreen() {
             {/* Date Picker Modal */}
             <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
                 <View className="flex-1 items-center justify-center bg-black/50 px-6">
-                    <Card className="rounded-[40px] overflow-hidden p-0 border border-gray-100 shadow-2xl">
+                    <Card className="rounded-[40px] overflow-hidden p-0 border border-border shadow-2xl">
                         <View className="bg-primary p-6 flex-row justify-between items-center">
                             <Typography weight="bold" className="text-white text-lg">
                                 {datePickingMode === 'start' ? 'Pilih Tanggal Mulai' :
@@ -931,7 +931,7 @@ export default function SlipGajiScreen() {
             <View className="pb-16">
                 <View className="flex-row justify-between items-center mb-10">
                     <Typography variant="h2" weight="bold" className="text-3xl tracking-tight">Payroll Detail</Typography>
-                    <Pressable onPress={() => Platform.OS === 'web' ? setSelectedSlip(null) : bottomSheetRef.current?.close()} className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100">
+                    <Pressable onPress={() => Platform.OS === 'web' ? setSelectedSlip(null) : bottomSheetRef.current?.close()} className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-border">
                         <X size={24} color="#6B7280" />
                     </Pressable>
                 </View>
@@ -945,7 +945,7 @@ export default function SlipGajiScreen() {
                     <Typography variant="h2" weight="bold" className="text-2xl text-textMain text-center">{selectedSlip.karyawan_nama}</Typography>
                     <Typography className="text-textGray mt-1 font-medium text-lg">W{selectedSlip.periode_minggu} • {selectedSlip.periode_tahun}</Typography>
                     {selectedSlip.tanggal_mulai && selectedSlip.tanggal_akhir && (
-                        <Typography className="text-textGray/60 mt-2 font-semibold text-xs bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200/50">
+                        <Typography className="text-textGray/60 mt-2 font-semibold text-xs bg-background px-3 py-1.5 rounded-full border border-gray-200/50">
                             {formatDate(selectedSlip.tanggal_mulai)} – {formatDate(selectedSlip.tanggal_akhir)}
                         </Typography>
                     )}
@@ -960,7 +960,7 @@ export default function SlipGajiScreen() {
                 </View>
 
                 {/* Info Bento Grid */}
-                <View className="bg-gray-50 p-8 rounded-[48px] border border-gray-100 shadow-sm mb-10">
+                <View className="bg-background p-8 rounded-[48px] border border-border shadow-sm mb-10">
                     <View className="flex-row justify-between items-center mb-6 pb-6 border-b border-gray-200/50">
                         <Typography className="text-textGray/60 text-sm font-bold uppercase tracking-widest">Gaji Pokok</Typography>
                         <Typography weight="bold" className="text-textMain text-lg">{formatCurrency(selectedSlip.gaji_pokok)}</Typography>
@@ -1008,7 +1008,7 @@ export default function SlipGajiScreen() {
                                     })}
                                 </View>
                             ) : (
-                                <Typography className="text-gray-400 text-[10px] italic text-center py-1">Tidak ada data absensi</Typography>
+                                <Typography className="text-textGray text-[10px] italic text-center py-1">Tidak ada data absensi</Typography>
                             )}
                         </View>
                     </View>
@@ -1021,7 +1021,7 @@ export default function SlipGajiScreen() {
                         <Typography weight="bold" className="text-rose-500 text-lg">-{formatCurrency(selectedSlip.potongan_kasbon)}</Typography>
                     </View>
 
-                    <View className="bg-white p-6 rounded-[32px] border border-primary/10 flex-row items-center justify-between shadow-xl">
+                    <View className="bg-surface p-6 rounded-[32px] border border-primary/10 flex-row items-center justify-between shadow-xl">
                         <Typography weight="bold" className="text-primary uppercase text-xs tracking-[2px]">Total Gaji Bersih</Typography>
                         <Typography weight="bold" className="text-primary text-2xl tracking-tighter">
                             {formatCurrency(selectedSlip.gaji_bersih)}
@@ -1040,9 +1040,9 @@ export default function SlipGajiScreen() {
                                     }
                                     setIsSplitPayment(!isSplitPayment);
                                 }}
-                                className={`px-4 py-2 rounded-full border ${isSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}
+                                className={`px-4 py-2 rounded-full border ${isSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-background border-border'}`}
                             >
-                                <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-600' : 'text-gray-400'}`}>
+                                <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-600' : 'text-textGray'}`}>
                                     {isSplitPayment ? 'BATALKAN SPLIT' : 'SPLIT PAYMENT?'}
                                 </Typography>
                             </Pressable>
@@ -1051,7 +1051,7 @@ export default function SlipGajiScreen() {
                         {isSplitPayment ? (
                             <View className="mb-6">
                                 {payments.map((p, idx) => (
-                                    <View key={p.id} className="bg-gray-50 p-6 rounded-[32px] border border-gray-100 mb-4">
+                                    <View key={p.id} className="bg-background p-6 rounded-[32px] border border-border mb-4">
                                         <View className="flex-row justify-between items-center mb-4">
                                             <Typography weight="bold" className="text-primary text-xs tracking-widest uppercase">POS PEMBAYARAN #{idx + 1}</Typography>
                                             {payments.length > 1 && (
@@ -1066,15 +1066,15 @@ export default function SlipGajiScreen() {
                                                 <Pressable
                                                     key={m}
                                                     onPress={() => setPayments(payments.map(pay => pay.id === p.id ? { ...pay, metode: m } : pay))}
-                                                    className={`px-4 py-2 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                                    className={`px-4 py-2 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
                                                 >
                                                     <Typography className={p.metode === m ? 'text-primary' : 'text-textGray'} weight="bold" variant="caption">{m}</Typography>
                                                 </Pressable>
                                             ))}
                                         </View>
 
-                                        <View className="bg-white px-4 py-3 rounded-2xl border border-gray-200 flex-row items-center">
-                                            <Typography className="text-gray-400 font-bold mr-2">Rp</Typography>
+                                        <View className="bg-surface px-4 py-3 rounded-2xl border border-border flex-row items-center">
+                                            <Typography className="text-textGray font-bold mr-2">Rp</Typography>
                                             <TextInput
                                                 className="flex-1 text-textMain font-bold text-lg"
                                                 keyboardType="numeric"
@@ -1088,9 +1088,9 @@ export default function SlipGajiScreen() {
 
                                 <Pressable
                                     onPress={() => setPayments([...payments, { id: Date.now() + Math.random(), metode: 'TUNAI', nominal: '0' }])}
-                                    className="flex-row items-center justify-center py-4 rounded-3xl border border-dashed border-gray-300"
+                                    className="flex-row items-center justify-center py-4 rounded-3xl border border-dashed border-border"
                                 >
-                                    <Typography weight="bold" className="text-gray-400 text-xs uppercase">+ TAMBAH METODE</Typography>
+                                    <Typography weight="bold" className="text-textGray text-xs uppercase">+ TAMBAH METODE</Typography>
                                 </Pressable>
 
                                 <View className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/10 flex-row justify-between items-center">
@@ -1104,7 +1104,7 @@ export default function SlipGajiScreen() {
                                     <Pressable
                                         key={m}
                                         onPress={() => setPayMetode(m)}
-                                        className={`flex-1 py-5 items-center rounded-3xl border ${payMetode === m ? 'border-primary bg-primary shadow-2xl shadow-primary/30' : 'border-gray-200 bg-white'}`}
+                                        className={`flex-1 py-5 items-center rounded-3xl border ${payMetode === m ? 'border-primary bg-primary shadow-2xl shadow-primary/30' : 'border-border bg-surface'}`}
                                     >
                                         <Typography className={payMetode === m ? 'text-white' : 'text-textGray'} weight="bold">{m.toUpperCase()}</Typography>
                                     </Pressable>

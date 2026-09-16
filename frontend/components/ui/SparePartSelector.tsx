@@ -65,19 +65,19 @@ export const SparePartSelector = ({
             {label && <Typography weight="medium" className="text-textGray text-sm mb-1">{label}</Typography>}
 
             <Pressable onPress={handleOpen} hitSlop={8}>
-                <View className="bg-gray-100 rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
+                <View className="bg-background rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
                     <Package size={20} color={value ? '#2563EB' : '#9CA3AF'} />
 
                     <View className="flex-1 ml-3">
                         {value ? (
                             <>
                                 <Typography weight="semibold" className="text-text text-base">{value.nama || value.nama_sparepart}</Typography>
-                                <Typography variant="caption" className="text-gray-500">
+                                <Typography variant="caption" className="text-textGray">
                                     {[value.kode_part, value.kode_ean, value.kode].filter(Boolean).join(' • ')} • {isAlwaysReadyStock(value.stok) ? 'Always Ready' : `Stok: ${value.stok}`}
                                 </Typography>
                             </>
                         ) : (
-                            <Typography className="text-gray-400 text-base">{placeholder || "Pilih Sparepart"}</Typography>
+                            <Typography className="text-textGray text-base">{placeholder || "Pilih Sparepart"}</Typography>
                         )}
                     </View>
 
@@ -112,7 +112,7 @@ export const SparePartSelector = ({
                         </View>
 
                         <View className="flex-row items-center space-x-2 mb-4">
-                            <View className="flex-1 flex-row items-center bg-gray-100 rounded-xl px-4 py-3">
+                            <View className="flex-1 flex-row items-center bg-background rounded-xl px-4 py-3">
                                 <Search size={20} color="#9CA3AF" />
                                 <TextInput
                                     className="flex-1 ml-3 text-base text-text font-outfit"
@@ -149,11 +149,11 @@ export const SparePartSelector = ({
                                 showsVerticalScrollIndicator={false}
                                 renderItem={({ item }) => (
                                     <Pressable onPress={() => handleSelect(item)}>
-                                        <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
+                                        <Card className="mb-3 p-4 border border-border flex-row items-center justify-between">
                                             <View className="flex-1 mr-4">
                                                 <Typography weight="semibold" className="text-base">{item.nama}</Typography>
                                                 <View className="flex-row items-center mt-1">
-                                                    <Typography variant="caption" className="text-gray-500 mr-3">
+                                                    <Typography variant="caption" className="text-textGray mr-3">
                                                         {item.kode}
                                                     </Typography>
                                                     <Badge
@@ -174,11 +174,11 @@ export const SparePartSelector = ({
                                 ListEmptyComponent={
                                     searchQuery.length > 0 ? (
                                         <View className="items-center mt-10">
-                                            <Typography className="text-gray-500">Data tidak ditemukan</Typography>
+                                            <Typography className="text-textGray">Data tidak ditemukan</Typography>
                                         </View>
                                     ) : (
                                         <View className="items-center mt-10">
-                                            <Typography className="text-gray-400">Mulai mengetik untuk mencari...</Typography>
+                                            <Typography className="text-textGray">Mulai mengetik untuk mencari...</Typography>
                                         </View>
                                     )
                                 }

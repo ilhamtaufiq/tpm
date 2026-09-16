@@ -117,7 +117,7 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
                 <ModalThemeView style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}>
                     <ModalFlexBackdrop onPress={onClose} />
                     <View
-                        className="bg-white shadow-2xl overflow-hidden"
+                        className="bg-surface shadow-2xl overflow-hidden"
                         style={{
                             width: '100%',
                             maxWidth: webMaxWidth,

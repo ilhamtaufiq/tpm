@@ -90,7 +90,7 @@ export default function NotificationsScreen() {
                 rightElement={(
                     <Pressable
                         onPress={markAllRead}
-                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-border active:bg-background"
                     >
                         <CheckCheck size={20} color="#374151" />
                     </Pressable>
@@ -107,15 +107,15 @@ export default function NotificationsScreen() {
                     </View>
                     <Pressable
                         onPress={clear}
-                        className="h-10 px-4 rounded-2xl bg-gray-50 border border-gray-100 items-center justify-center active:bg-gray-100"
+                        className="h-10 px-4 rounded-2xl bg-background border border-border items-center justify-center active:bg-background"
                     >
-                        <Typography className="text-xs font-bold text-gray-700">Bersihkan</Typography>
+                        <Typography className="text-xs font-bold text-text">Bersihkan</Typography>
                     </Pressable>
                 </View>
 
                 {list.length === 0 ? (
-                    <View className="bg-white border border-gray-100 rounded-3xl p-6 items-center">
-                        <View className="w-14 h-14 rounded-2xl bg-gray-50 items-center justify-center mb-3">
+                    <View className="bg-surface border border-border rounded-3xl p-6 items-center">
+                        <View className="w-14 h-14 rounded-2xl bg-background items-center justify-center mb-3">
                             <Bell size={24} color="#9CA3AF" />
                         </View>
                         <Typography weight="bold" className="text-text mb-1">Belum ada notifikasi</Typography>
@@ -131,7 +131,7 @@ export default function NotificationsScreen() {
                             <Pressable
                                 key={item.id}
                                 onPress={() => openHistory(item)}
-                                className={`rounded-[28px] border p-4 ${item.read ? 'bg-white border-gray-100' : 'bg-indigo-50 border-indigo-100'}`}
+                                className={`rounded-[28px] border p-4 ${item.read ? 'bg-surface border-border' : 'bg-indigo-50 border-indigo-100'}`}
                             >
                                 <View className="flex-row items-start justify-between gap-3">
                                     <View className="flex-1">
@@ -142,8 +142,8 @@ export default function NotificationsScreen() {
                                             {item.message}
                                         </Typography>
                                         <View className="flex-row flex-wrap gap-2 mt-3">
-                                            <View className="px-2.5 py-1 rounded-full bg-gray-100 border border-gray-200">
-                                                <Typography className="text-[10px] font-bold text-gray-700">
+                                            <View className="px-2.5 py-1 rounded-full bg-background border border-border">
+                                                <Typography className="text-[10px] font-bold text-text">
                                                     {meta.entityLabel}
                                                 </Typography>
                                             </View>
@@ -175,7 +175,7 @@ export default function NotificationsScreen() {
                                         {!item.read && <View className="w-2.5 h-2.5 rounded-full bg-red-500" />}
                                         <Pressable
                                             onPress={() => removeNotification(item.id)}
-                                            className="w-9 h-9 rounded-full bg-white border border-gray-100 items-center justify-center active:bg-red-50"
+                                            className="w-9 h-9 rounded-full bg-surface border border-border items-center justify-center active:bg-red-50"
                                         >
                                             <Trash2 size={16} color="#EF4444" />
                                         </Pressable>

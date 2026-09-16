@@ -114,7 +114,7 @@ function CustomerFormModalInner({
                     
                     <View className="flex-row justify-between items-center px-6 mb-6">
                         <Typography variant="h2" weight="bold">Tambah Customer</Typography>
-                        <Pressable onPress={onClose} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                        <Pressable onPress={onClose} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                             <X size={20} color="#6B7280" />
                         </Pressable>
                     </View>
@@ -129,7 +129,7 @@ function CustomerFormModalInner({
                             <View>
                                 <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Customer *</Typography>
                                 <TextInput
-                                    className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                                    className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                     placeholder="Contoh: Budi Santoso"
                                     placeholderTextColor="#9CA3AF"
                                     value={formData.nama}
@@ -144,10 +144,10 @@ function CustomerFormModalInner({
                                         <Pressable
                                             key={tipe}
                                             onPress={() => setFormData({ ...formData, tipe })}
-                                            className={`flex-1 py-3.5 rounded-2xl border ${formData.tipe === tipe ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}
+                                            className={`flex-1 py-3.5 rounded-2xl border ${formData.tipe === tipe ? 'bg-primary border-primary' : 'bg-surface border-border'}`}
                                         >
                                             <Typography
-                                                className={`text-center font-bold text-sm ${formData.tipe === tipe ? 'text-white' : 'text-gray-500'}`}
+                                                className={`text-center font-bold text-sm ${formData.tipe === tipe ? 'text-white' : 'text-textGray'}`}
                                             >
                                                 {tipe === 'perusahaan' ? 'Perusahaan' : 'Perorangan'}
                                             </Typography>
@@ -160,7 +160,7 @@ function CustomerFormModalInner({
                                 <View className="flex-1">
                                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Telepon</Typography>
                                     <TextInput
-                                        className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                                        className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                         placeholder="08xxxxxxxxxx"
                                         placeholderTextColor="#9CA3AF"
                                         value={formData.telepon}
@@ -171,7 +171,7 @@ function CustomerFormModalInner({
                                 <View className="flex-1">
                                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Kota</Typography>
                                     <TextInput
-                                        className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                                        className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                         placeholder="Jakarta"
                                         placeholderTextColor="#9CA3AF"
                                         value={formData.kota}
@@ -183,7 +183,7 @@ function CustomerFormModalInner({
                             <View>
                                 <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Alamat Lengkap</Typography>
                                 <TextInput
-                                    className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]"
+                                    className="bg-background border border-border rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]"
                                     placeholder="Masukan alamat lengkap..."
                                     placeholderTextColor="#9CA3AF"
                                     value={formData.alamat}
@@ -194,7 +194,7 @@ function CustomerFormModalInner({
                             </View>
 
                             {/* Vehicle Management Section */}
-                            <View className="pt-4 border-t border-gray-100">
+                            <View className="pt-4 border-t border-border">
                                 <View className="flex-row justify-between items-center mb-4">
                                     <Typography weight="bold" className="text-base">Data Kendaraan</Typography>
                                     <Pressable
@@ -207,9 +207,9 @@ function CustomerFormModalInner({
                                 </View>
 
                                 {formData.vehicles.map((vehicle, index) => (
-                                    <View key={index} className="bg-gray-50 p-4 rounded-2xl mb-4 border border-gray-100">
+                                    <View key={index} className="bg-background p-4 rounded-2xl mb-4 border border-border">
                                         <View className="flex-row justify-between items-center mb-3">
-                                            <Typography className="text-[10px] font-bold text-gray-400 uppercase">Kendaraan #{index + 1}</Typography>
+                                            <Typography className="text-[10px] font-bold text-textGray uppercase">Kendaraan #{index + 1}</Typography>
                                             <Pressable onPress={() => removeVehicle(index)}>
                                                 <X size={16} color="#EF4444" />
                                             </Pressable>
@@ -217,7 +217,7 @@ function CustomerFormModalInner({
                                         <View className="space-y-3">
                                             <View>
                                                 <TextInput
-                                                    className="bg-white border border-gray-100 rounded-xl px-3 py-2 text-textMain font-medium focus:border-primary"
+                                                    className="bg-surface border border-border rounded-xl px-3 py-2 text-textMain font-medium focus:border-primary"
                                                     placeholder="Plat Nomor (B 1234 ABC)"
                                                     placeholderTextColor="#9CA3AF"
                                                     value={vehicle.plat_nomor}
@@ -227,7 +227,7 @@ function CustomerFormModalInner({
                                             </View>
                                             <View>
                                                 <TextInput
-                                                    className="bg-white border border-gray-100 rounded-xl px-3 py-2 text-textMain font-medium focus:border-primary"
+                                                    className="bg-surface border border-border rounded-xl px-3 py-2 text-textMain font-medium focus:border-primary"
                                                     placeholder="Jenis Unit (Avanza, Xenia, dsb)"
                                                     placeholderTextColor="#9CA3AF"
                                                     value={vehicle.jenis_unit}

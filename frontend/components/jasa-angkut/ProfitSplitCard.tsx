@@ -31,25 +31,25 @@ export const ProfitSplitCard = ({
     const grossProfit = revenue - totalCosts;
 
     return (
-        <Card className="bg-white">
-            <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">
+        <Card className="bg-surface">
+            <Typography variant="caption" weight="medium" className="mb-2 text-textGray">
                 Simulasi Bagi Hasil
             </Typography>
 
             {/* Summary Row */}
-            <View className="flex-row justify-between mb-4 pb-4 border-b border-gray-100">
+            <View className="flex-row justify-between mb-4 pb-4 border-b border-border">
                 <View>
-                    <Typography variant="caption" className="text-gray-400">Total Pendapatan</Typography>
+                    <Typography variant="caption" className="text-textGray">Total Pendapatan</Typography>
                     <Typography variant="body2" weight="bold">{formatCurrency(revenue)}</Typography>
                 </View>
                 <View className="items-end">
-                    <Typography variant="caption" className="text-gray-400">Net Profit (Laba Kotor)</Typography>
+                    <Typography variant="caption" className="text-textGray">Net Profit (Laba Kotor)</Typography>
                     <Typography variant="body2" weight="bold" className="text-green-600">{formatCurrency(grossProfit)}</Typography>
                 </View>
             </View>
 
             {/* The Split Visual */}
-            <View className="flex-row rounded-lg overflow-hidden h-3 mb-3 bg-gray-100">
+            <View className="flex-row rounded-lg overflow-hidden h-3 mb-3 bg-background">
                 <View style={{ flex: percentageTPM, backgroundColor: '#0ea5e9' }} />
                 <View style={{ flex: 100 - percentageTPM, backgroundColor: '#f59e0b' }} />
             </View>
@@ -82,11 +82,11 @@ export const ProfitSplitCard = ({
             </View>
 
             {/* Costs Info */}
-            <View className="mt-3 pt-2 border-t border-dashed border-gray-200">
-                <Typography variant="caption" className="text-gray-400 text-center">
+            <View className="mt-3 pt-2 border-t border-dashed border-border">
+                <Typography variant="caption" className="text-textGray text-center">
                     *Biaya operasional dibebankan ke TPM (tidak mengurangi hak supir)
                 </Typography>
-                <Typography variant="caption" className="text-gray-400 text-center mt-1">
+                <Typography variant="caption" className="text-textGray text-center mt-1">
                     Total Biaya: {formatCurrency(totalCosts)}
                 </Typography>
             </View>

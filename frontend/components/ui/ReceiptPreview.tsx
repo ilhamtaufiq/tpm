@@ -38,12 +38,12 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
             onRequestClose={onClose}
         >
             <View className="flex-1 bg-black/80">
-                <View className="bg-surface px-6 py-4 flex-row items-center justify-between border-b border-gray-200">
+                <View className="bg-surface px-6 py-4 flex-row items-center justify-between border-b border-border">
                     <Typography variant="h3" weight="bold">Preview Struk</Typography>
                     <View className="flex-row items-center" style={{ gap: 12 }}>
                         <Pressable
                             onPress={() => setZoom(Math.max(0.5, zoom - 0.25))}
-                            className="w-10 h-10 bg-gray-100 rounded-xl items-center justify-center"
+                            className="w-10 h-10 bg-background rounded-xl items-center justify-center"
                         >
                             <ZoomOut size={20} color="#374151" />
                         </Pressable>
@@ -52,13 +52,13 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                         </Typography>
                         <Pressable
                             onPress={() => setZoom(Math.min(2, zoom + 0.25))}
-                            className="w-10 h-10 bg-gray-100 rounded-xl items-center justify-center"
+                            className="w-10 h-10 bg-background rounded-xl items-center justify-center"
                         >
                             <ZoomIn size={20} color="#374151" />
                         </Pressable>
                         <Pressable
                             onPress={onClose}
-                            className="w-10 h-10 bg-gray-100 rounded-xl items-center justify-center ml-2"
+                            className="w-10 h-10 bg-background rounded-xl items-center justify-center ml-2"
                         >
                             <X size={20} color="#374151" />
                         </Pressable>
@@ -89,7 +89,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                     </Typography>
                 </ScrollView>
 
-                <View className="bg-surface px-6 py-4 border-t border-gray-200" style={{ gap: 12 }}>
+                <View className="bg-surface px-6 py-4 border-t border-border" style={{ gap: 12 }}>
                     <Button
                         title="Cetak Struk"
                         onPress={onPrint}

@@ -47,7 +47,7 @@ export const FinancialRow = React.memo(({
             <View className="flex-1 pr-2">
                 <Typography
                     variant={small ? 'caption' : 'body2'}
-                    className={`${isDark ? 'text-white/70' : small ? 'text-slate-500' : 'text-slate-600'}`}
+                    className={`${isDark ? 'text-white/70' : small ? 'text-textGray' : 'text-slate-600'}`}
                 >
                     {label}
                 </Typography>

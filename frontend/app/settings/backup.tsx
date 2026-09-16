@@ -66,7 +66,7 @@ function ProgressBar({ progress, color }: { progress: number | null; color: stri
 
     if (progress === null) {
         return (
-            <View className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+            <View className="h-1.5 w-full overflow-hidden rounded-full bg-background">
                 <Animated.View
                     className="h-full rounded-full"
                     style={{
@@ -80,7 +80,7 @@ function ProgressBar({ progress, color }: { progress: number | null; color: stri
     }
 
     return (
-        <View className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+        <View className="h-1.5 w-full overflow-hidden rounded-full bg-background">
             <Animated.View
                 className="h-full rounded-full"
                 style={{
@@ -296,13 +296,13 @@ export default function BackupScreen() {
     };
 
     const renderBackupItem = ({ item }: { item: BackupFile }) => (
-        <View className="p-6 mb-6 rounded-[32px] bg-white border border-slate-100 shadow-sm shadow-slate-200/50">
+        <View className="p-6 mb-6 rounded-[32px] bg-surface border border-slate-100 shadow-sm shadow-slate-200/50">
             <View className="flex-row items-center mb-5">
-                <View className="w-14 h-14 rounded-2xl bg-slate-50 items-center justify-center mr-4 border border-slate-100">
+                <View className="w-14 h-14 rounded-2xl bg-background items-center justify-center mr-4 border border-slate-100">
                     <FileArchive size={28} color="#64748B" strokeWidth={1.5} />
                 </View>
                 <View className="flex-1">
-                    <Typography weight="bold" className="text-slate-900 text-sm mb-0.5" numberOfLines={1}>
+                    <Typography weight="bold" className="text-text text-sm mb-0.5" numberOfLines={1}>
                         {item.filename}
                     </Typography>
                     <Typography className="text-slate-400 text-[10px] font-medium uppercase tracking-wider">
@@ -363,7 +363,7 @@ export default function BackupScreen() {
 
             {/* Standard Bento Action Overlay */}
             <View className="px-6 -mt-6 z-10">
-                <View className="bg-white p-4 rounded-[32px] shadow-xl border border-gray-50 flex-row items-center">
+                <View className="bg-surface p-4 rounded-[32px] shadow-xl border border-border flex-row items-center">
                     <View className="w-14 h-14 bg-primary/10 rounded-2xl items-center justify-center mr-4">
                         <ShieldCheck size={28} color={themeColors.primary} strokeWidth={2} />
                     </View>
@@ -375,7 +375,7 @@ export default function BackupScreen() {
                         <Pressable 
                             onPress={handleUploadBackup}
                             disabled={uploadMutation.isPending}
-                            className={`w-12 h-14 rounded-2xl items-center justify-center border border-slate-100 ${uploadMutation.isPending ? 'bg-slate-50' : 'bg-white active:bg-slate-50'}`}
+                            className={`w-12 h-14 rounded-2xl items-center justify-center border border-slate-100 ${uploadMutation.isPending ? 'bg-background' : 'bg-surface active:bg-background'}`}
                         >
                             {uploadMutation.isPending ? (
                                 <ActivityIndicator size="small" color={themeColors.primary} />
@@ -403,9 +403,9 @@ export default function BackupScreen() {
 
             {busyLabel && (
                 <View className="px-6 pt-4">
-                    <View className="bg-white rounded-2xl border border-slate-100 p-4">
+                    <View className="bg-surface rounded-2xl border border-slate-100 p-4">
                         <View className="flex-row items-center justify-between mb-2">
-                            <Typography className="text-slate-500 text-[10px] font-bold uppercase tracking-wider flex-1" numberOfLines={1}>
+                            <Typography className="text-textGray text-[10px] font-bold uppercase tracking-wider flex-1" numberOfLines={1}>
                                 {busyLabel}
                             </Typography>
                             <Typography className="text-slate-400 text-[10px] font-bold ml-2">
@@ -432,7 +432,7 @@ export default function BackupScreen() {
                         { label: 'STORAGE', value: formatSize(backups?.reduce((acc, curr) => acc + curr.size, 0) || 0), color: '#3B82F6', icon: HardDrive },
                         { label: 'STATUS', value: 'SAFE', color: '#10B981', icon: Shield },
                     ].map((stat) => (
-                        <View key={stat.label} style={{ width: '31%' }} className="bg-white p-3 rounded-[32px] border border-gray-100 shadow-sm items-center">
+                        <View key={stat.label} style={{ width: '31%' }} className="bg-surface p-3 rounded-[32px] border border-border shadow-sm items-center">
                             <View style={{ backgroundColor: stat.color + '15' }} className="w-10 h-10 rounded-2xl items-center justify-center mb-1.5">
                                 <stat.icon size={16} color={stat.color} />
                             </View>
@@ -465,11 +465,11 @@ export default function BackupScreen() {
                         <View key={item.filename}>{renderBackupItem({ item })}</View>
                     ))
                 ) : (
-                    <View className="items-center justify-center p-14 bg-white rounded-[40px] border border-dashed border-slate-200">
-                        <View className="w-20 h-20 bg-slate-50 rounded-full items-center justify-center mb-6">
+                    <View className="items-center justify-center p-14 bg-surface rounded-[40px] border border-dashed border-slate-200">
+                        <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-6">
                             <Database size={40} color="#CBD5E1" strokeWidth={1} />
                         </View>
-                        <Typography weight="bold" className="text-slate-900 text-lg text-center">Belum ada backup</Typography>
+                        <Typography weight="bold" className="text-text text-lg text-center">Belum ada backup</Typography>
                         <Typography className="mt-2 text-slate-400 text-sm text-center px-6">
                             Data cadangan Anda akan muncul di sini setelah Anda membuat backup pertama.
                         </Typography>
@@ -481,13 +481,13 @@ export default function BackupScreen() {
             {/* Restore Password Modal */}
             {selectedBackup && (
                 <View className="absolute inset-0 bg-black/60 items-center justify-center p-6 z-[100]">
-                    <Card className="w-full max-w-sm p-8 rounded-[40px] bg-white">
+                    <Card className="w-full max-w-sm p-8 rounded-[40px] bg-surface">
                         <View className="items-center mb-6">
                             <View className="w-16 h-16 bg-red-50 rounded-full items-center justify-center mb-4">
                                 <AlertTriangle size={32} color="#EF4444" />
                             </View>
                             <Typography variant="h2" weight="bold" className="text-center">Konfirmasi Restore</Typography>
-                            <Typography className="text-gray-500 text-center text-xs mt-2">
+                            <Typography className="text-textGray text-center text-xs mt-2">
                                 Data saat ini akan digantikan oleh backup:
                             </Typography>
                             <Typography weight="bold" className="text-primary text-xs mt-1">
@@ -498,10 +498,10 @@ export default function BackupScreen() {
                         <View className="mb-6">
                             <View className="flex-row items-center mb-2 ml-1">
                                 <Lock size={12} color="#9CA3AF" />
-                                <Typography className="text-gray-400 font-bold text-[10px] uppercase ml-1.5">Password Verifikasi</Typography>
+                                <Typography className="text-textGray font-bold text-[10px] uppercase ml-1.5">Password Verifikasi</Typography>
                             </View>
                             <TextInput
-                                className="bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-textMain font-bold"
+                                className="bg-background border border-border rounded-2xl px-5 py-4 text-textMain font-bold"
                                 placeholder="Masukkan password admin..."
                                 secureTextEntry
                                 value={restorePassword}

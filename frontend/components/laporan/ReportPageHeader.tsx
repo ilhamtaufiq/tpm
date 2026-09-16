@@ -19,7 +19,7 @@ export function ReportPageHeader({
     isExporting,
 }: ReportPageHeaderProps) {
     return (
-        <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
+        <View className="px-6 py-4 flex-row items-center justify-between border-b border-border bg-surface">
             <View className="flex-row items-center flex-1 mr-3">
                 <Pressable onPress={onBack} className="mr-4">
                     <ChevronLeft size={24} color="#1C1C1C" />
@@ -29,7 +29,7 @@ export function ReportPageHeader({
                         {title}
                     </Typography>
                     {subtitle ? (
-                        <Typography className="text-gray-400 text-xs mt-0.5" numberOfLines={1}>
+                        <Typography className="text-textGray text-xs mt-0.5" numberOfLines={1}>
                             {subtitle}
                         </Typography>
                     ) : null}
@@ -39,7 +39,7 @@ export function ReportPageHeader({
                 <Pressable
                     onPress={onExport}
                     disabled={isExporting}
-                    className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100 active:opacity-80"
+                    className="w-10 h-10 bg-background rounded-xl items-center justify-center border border-border active:opacity-80"
                 >
                     {isExporting ? (
                         <ActivityIndicator size="small" color="#023C69" />

@@ -255,21 +255,21 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
     const renderFormContent = () => (
         <View className="px-6 pb-12 pt-4">
             {/* Unit Info Summary */}
-            <Card className="bg-gray-50 border-gray-100 p-4 mb-6">
+            <Card className="bg-background border-border p-4 mb-6">
                 <View className="flex-row items-center mb-2">
                     <TrendingUp size={16} color="#023C69" />
                     <Typography weight="bold" className="ml-2 text-primary text-xs uppercase">Informasi Modal Unit</Typography>
                 </View>
                 <Typography variant="h3" weight="bold">{activeUnit.merek} {activeUnit.model}</Typography>
-                <Typography variant="caption" className="text-gray-500 mb-3">{activeUnit.nomor_plat}</Typography>
+                <Typography variant="caption" className="text-textGray mb-3">{activeUnit.nomor_plat}</Typography>
 
-                <View className="flex-row justify-between border-t border-gray-100 pt-3">
+                <View className="flex-row justify-between border-t border-border pt-3">
                     <View>
-                        <Typography variant="caption" className="text-gray-400">Total Modal</Typography>
+                        <Typography variant="caption" className="text-textGray">Total Modal</Typography>
                         <Typography weight="bold" className="text-sm">{formatCurrency(activeUnit.total_modal)}</Typography>
                     </View>
                     <View className="items-end">
-                        <Typography variant="caption" className="text-gray-400">Tipe Unit</Typography>
+                        <Typography variant="caption" className="text-textGray">Tipe Unit</Typography>
                         <Typography weight="bold" className="text-sm capitalize">{activeUnit.tipe_kepemilikan}</Typography>
                     </View>
                 </View>
@@ -295,9 +295,9 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     </View>
                     <Pressable
                         onPress={toggleSplitPayment}
-                        className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                        className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-background border border-border'}`}
                     >
-                        <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                        <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-textGray'}`}>
                             {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                         </Typography>
                     </Pressable>
@@ -308,7 +308,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 {isSplitPayment ? (
                     <View className="mb-4">
                         <View className="flex-row justify-between items-center mb-3">
-                            <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest pl-2">Alokasi DP/Bayar</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest pl-2">Alokasi DP/Bayar</Typography>
                             <Pressable onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
                                 <PlusCircle size={14} color="#023C69" />
                                 <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
@@ -316,7 +316,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                         </View>
 
                         {payments.map((p, idx) => (
-                            <View key={p.id} className="mb-3 p-4 border border-gray-100 rounded-2xl bg-gray-50/50">
+                            <View key={p.id} className="mb-3 p-4 border border-border rounded-2xl bg-gray-50/50">
                                 <View className="flex-row justify-between items-center mb-3">
                                     <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
                                     <Pressable onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
@@ -329,7 +329,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                                         <Pressable
                                             key={m}
                                             onPress={() => updatePaymentRow(p.id, 'metode', m)}
-                                            className={`flex-1 py-1.5 items-center rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                            className={`flex-1 py-1.5 items-center rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
                                         >
                                             <Typography variant="caption" weight={p.metode === m ? 'bold' : 'medium'} className={p.metode === m ? 'text-primary' : 'text-textGray'}>{m}</Typography>
                                         </Pressable>
@@ -388,15 +388,15 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                         <View className="flex-row space-x-2 mb-4">
                             <Pressable
                                 onPress={() => setMetodeBayar('TUNAI')}
-                                className={`flex-1 py-3.5 items-center rounded-2xl border-2 ${metodeBayar === 'TUNAI' ? 'border-primary bg-primary/10 shadow-sm' : 'border-gray-100'}`}
+                                className={`flex-1 py-3.5 items-center rounded-2xl border-2 ${metodeBayar === 'TUNAI' ? 'border-primary bg-primary/10 shadow-sm' : 'border-border'}`}
                             >
-                                <Typography weight="bold" className={`uppercase ${metodeBayar === 'TUNAI' ? 'text-primary' : 'text-gray-400'}`}>Tunai</Typography>
+                                <Typography weight="bold" className={`uppercase ${metodeBayar === 'TUNAI' ? 'text-primary' : 'text-textGray'}`}>Tunai</Typography>
                             </Pressable>
                             <Pressable
                                 onPress={() => setMetodeBayar('TRANSFER')}
-                                className={`flex-1 py-3.5 items-center rounded-2xl border-2 ${metodeBayar === 'TRANSFER' ? 'border-primary bg-primary/10 shadow-sm' : 'border-gray-100'}`}
+                                className={`flex-1 py-3.5 items-center rounded-2xl border-2 ${metodeBayar === 'TRANSFER' ? 'border-primary bg-primary/10 shadow-sm' : 'border-border'}`}
                             >
-                                <Typography weight="bold" className={`uppercase ${metodeBayar === 'TRANSFER' ? 'text-primary' : 'text-gray-400'}`}>Transfer</Typography>
+                                <Typography weight="bold" className={`uppercase ${metodeBayar === 'TRANSFER' ? 'text-primary' : 'text-textGray'}`}>Transfer</Typography>
                             </Pressable>
                         </View>
 
@@ -425,7 +425,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 </View>
 
                 {operationalCosts.length === 0 && (
-                    <Typography variant="caption" className="text-gray-400 italic mb-4">Tidak ada biaya tambahan operasional.</Typography>
+                    <Typography variant="caption" className="text-textGray italic mb-4">Tidak ada biaya tambahan operasional.</Typography>
                 )}
 
                 {operationalCosts.map((item, index) => (
@@ -474,28 +474,28 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
 
                 <View className="space-y-4">
                     <View className="flex-row justify-between">
-                        <Typography variant="body2" className="text-gray-600">Harga Jual</Typography>
+                        <Typography variant="body2" className="text-textGray">Harga Jual</Typography>
                         <Typography weight="bold" className="text-gray-800">{formatCurrency(parseNumber(hargaJual) || 0)}</Typography>
                     </View>
 
                     <View className="flex-row justify-between">
-                        <Typography variant="body2" className="text-gray-600">Harga Beli Unit</Typography>
+                        <Typography variant="body2" className="text-textGray">Harga Beli Unit</Typography>
                         <Typography weight="bold" className="text-gray-800">{formatCurrency(Number(activeUnit.harga_beli) || 0)}</Typography>
                     </View>
 
                     <View className="flex-row justify-between">
-                        <Typography variant="body2" className="text-gray-600">Biaya Pengeluaran (Pajak, BBN, dll)</Typography>
+                        <Typography variant="body2" className="text-textGray">Biaya Pengeluaran (Pajak, BBN, dll)</Typography>
                         <Typography weight="bold" className="text-gray-800">{formatCurrency(Number(activeUnit.total_biaya) || 0)}</Typography>
                     </View>
 
                     <View className="flex-row justify-between">
-                        <Typography variant="body2" className="text-gray-600">Biaya Sparepart dan Servis</Typography>
+                        <Typography variant="body2" className="text-textGray">Biaya Sparepart dan Servis</Typography>
                         <Typography weight="bold" className="text-gray-800">{formatCurrency(Number(activeUnit.total_part_service) || 0)}</Typography>
                     </View>
 
                     {totalCostsAtSale > 0 && (
                         <View className="flex-row justify-between">
-                            <Typography variant="body2" className="text-gray-600 italic">Biaya Operasional Tambahan</Typography>
+                            <Typography variant="body2" className="text-textGray italic">Biaya Operasional Tambahan</Typography>
                             <Typography weight="bold" className="text-gray-800">{formatCurrency(totalCostsAtSale)}</Typography>
                         </View>
                     )}
@@ -512,7 +512,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     <View className="h-[1px] bg-primary/10 w-full my-1" />
 
                     <View className="flex-row justify-between">
-                        <Typography variant="body2" className="text-gray-600">
+                        <Typography variant="body2" className="text-textGray">
                             { (isSplitPayment ? totalSplitAmount : parseNumber(dp)) >= (parseNumber(hargaJual) || 0) && parseNumber(hargaJual) > 0 ? "Pembayaran (Lunas)" : "DP / Terbayar" }
                         </Typography>
                         <Typography weight="bold" className="text-emerald-600">{formatCurrency(isSplitPayment ? totalSplitAmount : parseNumber(dp))}</Typography>
@@ -528,11 +528,11 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     {activeUnit.tipe_kepemilikan?.toString().toLowerCase() === 'investor' && (
                         <>
                             <View className="flex-row justify-between">
-                                <Typography variant="body2" className="text-gray-600">Modal Investor</Typography>
+                                <Typography variant="body2" className="text-textGray">Modal Investor</Typography>
                                 <Typography weight="bold" className="text-gray-800">{formatCurrency(Number(activeUnit.nominal_investor) || 0)}</Typography>
                             </View>
                             <View className="flex-row justify-between">
-                                <Typography variant="body2" className="text-gray-600">Bagian Laba Investor ({activeUnit.persentase_investor}%)</Typography>
+                                <Typography variant="body2" className="text-textGray">Bagian Laba Investor ({activeUnit.persentase_investor}%)</Typography>
                                 <Typography weight="bold" className="text-gray-800">{formatCurrency(labaInvestor)}</Typography>
                             </View>
                             <View className="flex-row justify-between bg-emerald-50 p-2.5 rounded-2xl border border-emerald-100/50 mb-1">
@@ -570,7 +570,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
             <View style={styles.webContainer}>
                 <View style={styles.header}>
                     <Typography variant="h3" weight="bold">Konfirmasi Penjualan</Typography>
-                    <Typography variant="caption" className="text-gray-400">Pencatatan transaksi penjualan unit mobil</Typography>
+                    <Typography variant="caption" className="text-textGray">Pencatatan transaksi penjualan unit mobil</Typography>
                 </View>
                 <ScrollView style={styles.flex1} showsVerticalScrollIndicator={true}>
                     {renderFormContent()}
@@ -592,7 +592,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
         <View style={styles.mobileContainer}>
             <View style={styles.header}>
                 <Typography variant="h3" weight="bold">Konfirmasi Penjualan</Typography>
-                <Typography variant="caption" className="text-gray-400">Pencatatan transaksi penjualan unit mobil</Typography>
+                <Typography variant="caption" className="text-textGray">Pencatatan transaksi penjualan unit mobil</Typography>
             </View>
             <BottomSheetScrollView
                 style={styles.flex1}

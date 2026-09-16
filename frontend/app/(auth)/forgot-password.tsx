@@ -88,7 +88,7 @@ export default function ForgotPasswordScreen() {
                     </View>
 
                     <View className="px-6 -mt-16 mb-8">
-                        <View className="bg-white p-8 rounded-[40px] shadow-2xl border border-gray-50">
+                        <View className="bg-surface p-8 rounded-[40px] shadow-2xl border border-border">
                             {sent ? (
                                 <View className="items-center py-4">
                                     <View className="w-16 h-16 bg-green-100 rounded-full items-center justify-center mb-4">

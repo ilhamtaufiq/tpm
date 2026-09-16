@@ -38,7 +38,7 @@ const ServiceCard = React.memo(function ServiceCard({
             >
                 <View
                     style={{ backgroundColor: 'white', borderRadius: 20 }}
-                    className="w-14 h-14 items-center justify-center mb-1.5 border border-gray-100 shadow-sm"
+                    className="w-14 h-14 items-center justify-center mb-1.5 border border-border shadow-sm"
                 >
                     <View
                         style={{ backgroundColor: `${menu.color}15` }}
@@ -50,7 +50,7 @@ const ServiceCard = React.memo(function ServiceCard({
                 <Typography
                     variant="caption"
                     weight="bold"
-                    className="text-gray-600 text-[9px] uppercase tracking-tighter text-center"
+                    className="text-textGray text-[9px] uppercase tracking-tighter text-center"
                     numberOfLines={2}
                 >
                     {menu.label}

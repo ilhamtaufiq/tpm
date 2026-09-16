@@ -352,7 +352,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                 {!permission?.granted && scannerMode !== 'web-camera' ? (
                     <View style={styles.permissionContainer}>
                         <Typography variant="h3" weight="bold" className="text-center mb-4">Izin Kamera Diperlukan</Typography>
-                        <Typography className="text-gray-500 text-center mb-8 px-10">
+                        <Typography className="text-textGray text-center mb-8 px-10">
                             {permission && permission.canAskAgain === false
                                 ? 'Izin kamera diblokir permanen. Aktifkan lewat Pengaturan perangkat, atau pakai mode scanner hardware.'
                                 : 'Kami memerlukan akses kamera untuk memindai barcode sparepart secara instan.'}
@@ -366,10 +366,10 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                             <Button title="Berikan Izin" onPress={requestPermission} />
                         )}
                         <Pressable onPress={toggleScannerMode} className="mt-4">
-                            <Typography className="text-gray-400">Pakai Scanner Hardware</Typography>
+                            <Typography className="text-textGray">Pakai Scanner Hardware</Typography>
                         </Pressable>
                         <Pressable onPress={onClose} className="mt-3">
-                            <Typography className="text-gray-400">Batal</Typography>
+                            <Typography className="text-textGray">Batal</Typography>
                         </Pressable>
                     </View>
                 ) : (
@@ -380,7 +380,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                     <AlertTriangle size={40} color="#EF4444" strokeWidth={1} />
                                 </View>
                                 <Typography variant="h3" weight="bold" className="text-white text-center mb-3">Kamera Tidak Tersedia</Typography>
-                                <Typography className="text-gray-400 text-center mb-8">{webCameraError}</Typography>
+                                <Typography className="text-textGray text-center mb-8">{webCameraError}</Typography>
                                 <View className="flex-row space-x-3">
                                     <Button title="Coba Lagi" variant="primary" onPress={() => { setWebCameraError(null); }} />
                                     <Button title="Tutup" variant="secondary" onPress={onClose} />
@@ -395,7 +395,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             <Camera size={32} color="#3B82F6" strokeWidth={1} />
                                         </View>
                                         <Typography variant="h3" weight="bold" className="text-white text-center mb-2">Web Camera</Typography>
-                                        <Typography className="text-gray-400 text-center text-sm">
+                                        <Typography className="text-textGray text-center text-sm">
                                             Arahkan kamera ke barcode/QR code untuk memindai.
                                         </Typography>
                                     </View>
@@ -541,7 +541,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                     <Scan size={64} color="#3B82F6" strokeWidth={1} />
                                 </View>
                                 <Typography variant="h3" weight="bold" className="text-white text-center mb-2">Hardware Mode</Typography>
-                                <Typography className="text-gray-400 text-center mb-10">
+                                <Typography className="text-textGray text-center mb-10">
                                     {continuous
                                         ? 'Scan terus-menerus — arahkan ke barcode berikutnya'
                                         : 'Arahkan hardware scanner ke barcode dan tekan pelatuk scan.'
