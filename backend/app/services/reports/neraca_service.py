@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from typing import Dict, Any, Optional
-from sqlalchemy import func, or_, and_
+from sqlalchemy import func, or_, and_, case
 from app.services.reports.base import BaseReportService
 from app.models.keuangan import KasBank, PiutangUsaha, HutangUsaha, Aset
 
@@ -43,14 +43,22 @@ class NeracaService(BaseReportService):
         first_ever = date(2024, 1, 1) # System start date
         hist = self.get_unit_financial_breakdown(first_ever, as_of_date)
         
-        # Cash & Bank Balances (Latest balance as of as_of_date)
+        # Cash & Bank Balances (as of as_of_date)
+        # Dihitung KRONOLOGIS: sum(masuk) - sum(keluar) s/d tanggal. Jangan baca
+        # `saldo_sesudah` baris terakhir — kolom itu dirantai menurut urutan ID
+        # (urutan input), bukan tanggal. Transaksi backdate ber-ID besar
+        # bertanggal lama menyandera rantai, sehingga snapshot tanggal lampau
+        # membaca saldo yang sudah tercemar mutasi hari setelahnya.
         balances = {}
         for jenis in KasBankJenis:
-            last_kb = self.db.query(KasBank).filter(
+            masuk, keluar = self.db.query(
+                func.coalesce(func.sum(case((KasBank.tipe == KasBankType.MASUK, KasBank.nominal), else_=0)), 0),
+                func.coalesce(func.sum(case((KasBank.tipe == KasBankType.KELUAR, KasBank.nominal), else_=0)), 0),
+            ).filter(
                 KasBank.jenis == jenis,
-                KasBank.tanggal <= as_of_date
-            ).order_by(KasBank.id.desc()).first()
-            balances[jenis.name] = float(last_kb.saldo_sesudah if last_kb else 0)
+                KasBank.tanggal <= as_of_date,
+            ).first()
+            balances[jenis.name] = float(masuk or 0) - float(keluar or 0)
         
         # Categorize balances for report breakdown
         kas_tunai = 0

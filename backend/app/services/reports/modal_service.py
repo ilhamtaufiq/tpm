@@ -117,14 +117,12 @@ class ModalService(BaseReportService):
             try:
                 stored = json.loads(row.value)
                 # Anchor bergeser (import ulang IMP- baru) / rumus berubah → beku ulang.
+                # Nilai beku TIDAK ditimpa saat `computed` bergeser: edit transaksi
+                # bertanggal anchor (mis. koreksi HPP nota 12 Sep) dulu menyeret
+                # modal_awal diam-diam. Kini drift tampil sebagai `selisih`.
                 if (stored.get("as_of") == anchor.isoformat()
                         and stored.get("v") == self.FROZEN_MODAL_AWAL_V):
-                    if abs(float(stored.get("amount", 0)) - computed) > 1:
-                        stored["amount"] = computed
-                        row.value = json.dumps(stored)
-                        self.db.add(row)
-                        self.db.commit()
-                    return computed
+                    return float(stored.get("amount", 0))
             except (ValueError, KeyError, TypeError):
                 pass
         if row is None:
@@ -375,11 +373,18 @@ class ModalService(BaseReportService):
         end_total_cash = 0
         kas_jenis_details = []
         for jenis in KasBankJenis:
-            last_kb = self.db.query(KasBank.saldo_sesudah).filter(
+            # Kronologis (sum masuk - sum keluar s/d tanggal), BUKAN `saldo_sesudah`
+            # baris terakhir: kolom itu dirantai menurut urutan ID (urutan input),
+            # jadi transaksi backdate ber-ID besar bertanggal lama menyandera rantai
+            # dan mencemari snapshot tanggal lampau.
+            masuk, keluar = self.db.query(
+                func.coalesce(func.sum(case((KasBank.tipe == KasBankType.MASUK, KasBank.nominal), else_=0)), 0),
+                func.coalesce(func.sum(case((KasBank.tipe == KasBankType.KELUAR, KasBank.nominal), else_=0)), 0),
+            ).filter(
                 KasBank.jenis == jenis,
-                KasBank.tanggal <= tanggal_sampai
-            ).order_by(KasBank.id.desc()).first()
-            val = float(last_kb[0] if last_kb else 0)
+                KasBank.tanggal <= tanggal_sampai,
+            ).first()
+            val = float(masuk or 0) - float(keluar or 0)
             end_total_cash += val
             kas_jenis_details.append({"jenis": jenis.value, "saldo": val})
 
@@ -910,11 +915,16 @@ class ModalService(BaseReportService):
         balances = {}
         total_all = 0
         for jenis in KasBankJenis:
-            last_kb = self.db.query(KasBank.saldo_sesudah).filter(
+            # Kronologis — lihat catatan di get_report: `saldo_sesudah` dirantai
+            # menurut urutan ID (urutan input), bukan tanggal.
+            masuk, keluar = self.db.query(
+                func.coalesce(func.sum(case((KasBank.tipe == KasBankType.MASUK, KasBank.nominal), else_=0)), 0),
+                func.coalesce(func.sum(case((KasBank.tipe == KasBankType.KELUAR, KasBank.nominal), else_=0)), 0),
+            ).filter(
                 KasBank.jenis == jenis,
-                KasBank.tanggal <= as_of
-            ).order_by(KasBank.id.desc()).first()
-            val = float(last_kb[0] if last_kb else 0)
+                KasBank.tanggal <= as_of,
+            ).first()
+            val = float(masuk or 0) - float(keluar or 0)
             balances[jenis.name] = val
             total_all += val
         

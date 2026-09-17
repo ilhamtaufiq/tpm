@@ -874,6 +874,14 @@ class TransaksiBengkelService:
             SparePartRevaluationRelease.transaksi_id == transaksi_id
         ).delete(synchronize_session=False)
 
+        # 1c. HPP historis: kunci harga beli LAMA per part sebelum detail dihapus.
+        # Tanpa ini, update() menarik `sp.harga_beli` master saat ini, sehingga
+        # nota lama yang di-save ulang menulis ulang biaya historisnya (mis. nota
+        # 12 Sep ikut terubah saat harga master berganti 15 Sep).
+        harga_beli_historis = {
+            d.spare_part_id: Decimal(d.harga_beli) for d in transaksi.detail_parts
+        }
+
         # 2. Delete old details
         self.db.query(DetailTransaksiSpareParts).filter(DetailTransaksiSpareParts.transaksi_id == transaksi_id).delete(synchronize_session=False)
         self.db.query(DetailTransaksiServices).filter(DetailTransaksiServices.transaksi_id == transaksi_id).delete(synchronize_session=False)
@@ -904,13 +912,17 @@ class TransaksiBengkelService:
             harga_jual = item.harga_jual if item.harga_jual else sp.harga_jual
             subtotal = harga_jual * item.qty
             total_parts += subtotal
-            hpp_parts += sp.harga_beli * item.qty
+            # Part yang sudah ada di nota ini tetap memakai biaya historisnya.
+            # Part baru (belum ada di nota) memakai harga master — belum ada
+            # biaya historis pada nota ini untuk dipertahankan.
+            harga_beli = harga_beli_historis.get(item.spare_part_id, sp.harga_beli)
+            hpp_parts += harga_beli * item.qty
             detail_parts_records.append(
                 DetailTransaksiSpareParts(
                     transaksi_id=transaksi.id,
                     spare_part_id=item.spare_part_id,
                     qty=item.qty,
-                    harga_beli=sp.harga_beli,
+                    harga_beli=harga_beli,
                     harga_jual=harga_jual,
                     subtotal=subtotal,
                 )

@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Optional, Dict, Any, List
 from calendar import monthrange
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, case
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
@@ -46,12 +46,17 @@ class KasBankService:
         return f"{prefix}{date_str}{new_num:04d}"
 
     def rebuild_balances(self, jenis: Optional[KasBankJenis] = None) -> Dict[str, int]:
-        """Recalculate saldo_sebelum/saldo_sesudah after orphaned row deletions."""
+        """Recalculate saldo_sebelum/saldo_sesudah after orphaned row deletions.
+
+        Urut KRONOLOGIS (tanggal, lalu id sebagai tie-break), bukan urutan ID:
+        transaksi backdate punya ID besar tapi tanggal lama, sehingga rantai
+        saldo jadi tidak sinkron dengan tanggal transaksinya.
+        """
         query = self.db.query(KasBank)
         if jenis is not None:
             query = query.filter(KasBank.jenis == jenis)
 
-        rows = query.order_by(KasBank.jenis, KasBank.id, KasBank.created_at).all()
+        rows = query.order_by(KasBank.jenis, KasBank.tanggal, KasBank.id, KasBank.created_at).all()
         updated = 0
         last_by_jenis: Dict[Any, Decimal] = {}
 
@@ -70,14 +75,23 @@ class KasBankService:
         jenis: KasBankJenis, 
         as_of: Optional[date] = None
     ) -> Decimal:
-        """Get balance for kas/bank type at a specific date (end of day)."""
-        query = self.db.query(KasBank).filter(KasBank.jenis == jenis)
-        
+        """Get balance for kas/bank type at a specific date (end of day).
+
+        Dihitung kronologis (sum masuk - sum keluar s/d tanggal), BUKAN
+        `saldo_sesudah` baris terakhir: kolom itu dirantai menurut urutan ID
+        (urutan input), jadi transaksi backdate ber-ID besar bertanggal lama
+        menyandera rantai dan membuat saldo tanggal lampau salah.
+        """
+        query = self.db.query(
+            func.coalesce(func.sum(case((KasBank.tipe == KasBankType.MASUK, KasBank.nominal), else_=0)), 0),
+            func.coalesce(func.sum(case((KasBank.tipe == KasBankType.KELUAR, KasBank.nominal), else_=0)), 0),
+        ).filter(KasBank.jenis == jenis)
+
         if as_of:
             query = query.filter(KasBank.tanggal <= as_of)
-            
-        last_record = query.order_by(KasBank.id.desc(), KasBank.created_at.desc()).first()
-        return last_record.saldo_sesudah if last_record else Decimal("0")
+
+        masuk, keluar = query.first()
+        return Decimal(str(float(masuk or 0) - float(keluar or 0)))
 
     def _get_virtual_balance(
         self,
