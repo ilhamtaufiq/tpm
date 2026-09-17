@@ -42,6 +42,10 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
 
     # Pricing
     harga_beli: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    # Harga beli saat unit dibuat. Selisih `harga_beli - harga_beli_awal` =
+    # revaluasi stok: diakui sebagai setoran modal non-kas di Laporan Perubahan
+    # Modal supaya koreksi harga beli tidak memunculkan selisih.
+    harga_beli_awal: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     harga_jual: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 2), nullable=True)
 
     # Purchase Payment (Tracking debt for car purchase)

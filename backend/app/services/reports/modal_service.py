@@ -698,28 +698,25 @@ class ModalService(BaseReportService):
         # `>= flow_dari` pasti ikut menjaringnya → wajib selalu di-skip.
         # Nilainya tetap dihitung untuk komponen display (setoran_mobil/piutang/
         # hutang/aset) di `modal_non_kas`.
+        from app.models.mobil import Mobil as MobilModel
+
         piutang_import = 0.0
         hutang_import = 0.0
         mobil_import = 0.0
-        opening_cars: list = []
-        for mc in opening_cars:
-            has_cash_out = self.db.query(KasBank).filter(
-                KasBank.tipe == KasBankType.KELUAR,
-                KasBank.sumber == KasBankSource.PEMBELIAN_MOBIL,
-                KasBank.keterangan.ilike(f"%{mc.nomor_plat}%")
-            ).first()
-            if not has_cash_out:
-                # Investor-funded cars are funded by hutang investor (pihak ketiga),
-                # not owner capital — jangan dihitung setoran non-kas modal.
-                if mc.tipe_kepemilikan == OwnershipType.INVESTOR:
-                    continue
-                mobil_import += float(mc.harga_beli)
+        # Revaluasi harga beli mobil: koreksi harga stok bukan arus kas, tapi
+        # menaikkan aktiva — tanpa diakui sebagai setoran non-kas, laporan
+        # selisih sebesar koreksinya. Dihitung KUMULATIF termasuk unit yang
+        # sudah terjual: setelah laku, nilainya keluar dari stok tapi sudah
+        # masuk lewat HPP, jadi tidak boleh hilang dari sisi ekuitas.
+        reval_mobil = float(self.db.query(
+            func.coalesce(func.sum(MobilModel.harga_beli - MobilModel.harga_beli_awal), 0)
+        ).filter(MobilModel.deleted_at.is_(None)).scalar() or 0)
 
         # Net non-cash capital from opening import: assets/piutang add capital,
         # hutang funds those assets so it subtracts. Must stay SIGNED (can be
         # negative when imported hutang > imported non-cash assets); clamping
         # to 0 hides the liability and breaks modal_teoritis vs modal_aktual.
-        setoran_non_kas_import = (mobil_import + piutang_import) - hutang_import
+        setoran_non_kas_import = (mobil_import + piutang_import) - hutang_import + reval_mobil
 
         # Aset tetap pada posisi pembuka sudah ada di snapshot modal_awal, dan aset
         # yang dibeli selama periode dibayar kas (kas turun, aset naik → net 0 pada
@@ -749,6 +746,7 @@ class ModalService(BaseReportService):
             "penambahan": {
                 "setoran_modal": setoran_modal,
                 "penyesuaian_harga_beli_sparepart": reval_reserve,
+                "penyesuaian_harga_beli_mobil": reval_mobil,
                 "modal_non_kas": {
                     "total": setoran_non_kas_import,
                     "aset_tetap": modal_aset_tetap_delta,
@@ -760,7 +758,9 @@ class ModalService(BaseReportService):
                     "setoran_mobil": mobil_import,
                     "setoran_piutang": piutang_import,
                     "setoran_hutang": hutang_import,
-                    "setoran_aset": aset_import
+                    "setoran_aset": aset_import,
+                    # Koreksi harga beli unit (revaluasi stok) — komponen `total`.
+                    "revaluasi_mobil": reval_mobil,
                 },
                 "laba_kotor": {
                     "total": laba_kotor,

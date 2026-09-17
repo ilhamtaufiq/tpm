@@ -183,6 +183,7 @@ class MobilService:
             bahan_bakar=data.bahan_bakar,
             kilometer=data.kilometer,
             harga_beli=data.harga_beli,
+            harga_beli_awal=data.harga_beli,
             harga_jual=data.harga_jual,
             tipe_kepemilikan=data.tipe_kepemilikan,
             nama_investor=data.nama_investor,
@@ -510,14 +511,92 @@ class MobilService:
                     detail=f"Nomor plat '{update_data['nomor_plat']}' sudah digunakan",
                 )
 
+        # Koreksi harga beli (diizinkan walau unit sudah ada DP / booking).
+        # Hutang beli yang belum lunas ikut digeser — aset dan kewajiban naik
+        # bersama, jadi bukan setoran modal. Sisanya jadi revaluasi stok
+        # (`harga_beli - harga_beli_awal`) yang ditutup sebagai setoran non-kas
+        # di Laporan Perubahan Modal → laporan tetap balance.
+        harga_baru = update_data.get("harga_beli")
+        harga_berubah = harga_baru is not None and harga_baru != mobil.harga_beli
+        if harga_berubah:
+            self._apply_harga_beli_change(mobil, harga_baru)
+
         for key, value in update_data.items():
             if hasattr(mobil, key):
                 setattr(mobil, key, value)
+
+        if harga_berubah:
+            self._sync_booking_snapshot(mobil)
 
         self.db.commit()
         self.db.refresh(mobil)
         self._emit_change(mobil, "updated")
         return mobil
+
+    def _apply_harga_beli_change(self, mobil: Mobil, harga_baru: Decimal) -> None:
+        """Geser hutang beli terbuka + basis revaluasi saat harga beli dikoreksi."""
+        hutang = (
+            self.db.query(HutangUsaha)
+            .filter(
+                HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
+                HutangUsaha.referensi_id == mobil.id,
+                HutangUsaha.status != HutangStatus.LUNAS,
+                HutangUsaha.status != HutangStatus.BATAL,
+            )
+            .first()
+        )
+        if not hutang:
+            # Tidak ada sisa kewajiban: seluruh selisih = revaluasi stok.
+            return
+
+        sudah_dibayar = mobil.harga_beli - hutang.sisa_hutang
+        if harga_baru < sudah_dibayar:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Harga beli tidak boleh lebih kecil dari yang sudah dibayar "
+                    f"(Rp{sudah_dibayar:,.0f})"
+                ),
+            )
+
+        delta = harga_baru - mobil.harga_beli
+        hutang.nominal_hutang += delta
+        hutang.sisa_hutang = hutang.nominal_hutang - hutang.total_dibayar
+        if hutang.sisa_hutang <= 0:
+            hutang.sisa_hutang = Decimal("0")
+            hutang.status = HutangStatus.LUNAS
+            hutang.tanggal_lunas = hutang.tanggal_lunas or date.today()
+        elif hutang.total_dibayar > 0:
+            hutang.status = HutangStatus.SEBAGIAN
+        else:
+            hutang.status = HutangStatus.BELUM_LUNAS
+
+        # Nilai tambahan didanai hutang, bukan ekuitas → bukan revaluasi.
+        mobil.harga_beli_awal += delta
+
+    def _sync_booking_snapshot(self, mobil: Mobil) -> None:
+        """Segarkan HPP tersimpan transaksi belum lunas (booking) setelah harga beli berubah.
+
+        `hpp` dihitung hidup dari `harga_beli`; tanpa ini `transaksi.total_modal`
+        dan `laba_kotor` basi sampai pelunasan. Laba investor tetap 0 sampai LUNAS.
+        """
+        transaksi = (
+            self.db.query(TransaksiPenjualanMobil)
+            .filter(
+                TransaksiPenjualanMobil.mobil_id == mobil.id,
+                TransaksiPenjualanMobil.status_bayar != PaymentStatus.LUNAS,
+                TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL,
+            )
+            .first()
+        )
+        if not transaksi:
+            return
+
+        hpp = mobil.hpp
+        transaksi.total_modal = hpp
+        transaksi.laba_kotor = transaksi.harga_jual - hpp
+        transaksi.laba_investor = Decimal("0")
+        transaksi.laba_tpm = transaksi.laba_kotor
 
     def update_status(self, mobil_id: int, status: CarStatus) -> Mobil:
         """Update car status."""

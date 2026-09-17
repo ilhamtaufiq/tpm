@@ -94,7 +94,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
         const baseBalance = Number(walletBalances[kasJenis]?.saldo || 0);
         const investorFund = Number(parseNumber(nominalInvestor));
-        
+
         // Matching murni berdasarkan akun
         const isAccountMatch = (
             (kasJenis === 'kas_utama' && investorKasJenis === 'KAS_UTAMA') ||
@@ -110,7 +110,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
         if (Number(amount) > totalAvailable) {
             const diff = Number(amount) - totalAvailable;
             const hasInv = investorFund > 0 && !!namaInvestor;
-            
+
             setDialogConfig({
                 visible: true,
                 title: 'Saldo Tidak Cukup',
@@ -155,7 +155,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
         if (!isEdit) {
             const isDebtWithoutDp = statusBayar === 'BELUM_LUNAS' && parseNumber(dp) <= 0;
-            
+
             if (!isDebtWithoutDp) {
                 if (!sumberBayar) {
                     setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih sumber dana', variant: 'warning' });
@@ -196,11 +196,12 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             persentase_investor: parseFloat(persentaseInvestor) || 0,
             investor_kas_jenis: (namaInvestor && parseNumber(nominalInvestor) > 0) ? investorKasJenis : null,
             harga_jual: parseNumber(hargaJual) || 0,
+            // Harga beli ikut terkirim saat edit (koreksi harga unit, termasuk
+            // yang sudah ada DP). Backend yang menggeser hutang/revaluasi.
+            harga_beli: parseNumber(hargaBeli),
         };
 
         if (!isEdit) {
-            payload.harga_beli = parseNumber(hargaBeli);
-
             let actualMetode = 'TUNAI';
             let kasJenis = 'KAS_UNIT_MOBIL';
 
@@ -619,7 +620,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
     if (Platform.OS === 'web') {
         return (
-            <View style={styles.webContainer}>
+            <View className="bg-surface" style={styles.webContainer}>
                 <View style={styles.header}>
                     <Typography variant="h3" weight="bold">{isEdit ? 'Edit Data Unit' : 'Tambah Unit Baru'}</Typography>
                     <Typography variant="caption" className="text-textGray">Pastikan data unit sesuai dengan STNK/BPKB</Typography>
@@ -641,7 +642,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
     // Keyboard handled by parent BottomSheet (keyboardBehavior="interactive").
     // Do not wrap BottomSheetScrollView in KeyboardAvoidingView — it blocks scroll.
     return (
-        <View style={styles.mobileContainer}>
+        <View className="bg-surface" style={styles.mobileContainer}>
             <View style={styles.header}>
                 <Typography variant="h3" weight="bold">{isEdit ? 'Edit Data Unit' : 'Tambah Unit Baru'}</Typography>
                 <Typography variant="caption" className="text-textGray">Pastikan data unit sesuai dengan STNK/BPKB</Typography>
@@ -672,18 +673,15 @@ const styles = StyleSheet.create({
     },
     webContainer: {
         flex: 1,
-        
         height: '80vh' as any,
     },
     mobileContainer: {
         flex: 1,
-        
     },
     header: {
         paddingHorizontal: 24,
         paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#f3f4f6',
-        
     },
 });

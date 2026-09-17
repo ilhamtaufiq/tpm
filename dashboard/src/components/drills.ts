@@ -548,13 +548,15 @@ export const drillAset = (): DrillSpec => ({
 });
 
 // Penyesuaian (modal_non_kas): komponen SETORAN dari respons laporan — tanpa fetch.
-// total = setoran_mobil + setoran_piutang − setoran_hutang + setoran_aset.
-export const drillModalNonKas = (parts: { setoran_mobil?: number; setoran_piutang?: number; setoran_hutang?: number; setoran_aset?: number }): DrillSpec => {
+// total = setoran_mobil + setoran_piutang − setoran_hutang + setoran_aset + revaluasi mobil.
+export const drillModalNonKas = (parts: { setoran_mobil?: number; setoran_piutang?: number; setoran_hutang?: number; setoran_aset?: number; revaluasi_mobil?: number }): DrillSpec => {
   const rows = [
     { komponen: 'Setoran mobil (non-kas)', amount: Number(parts.setoran_mobil ?? 0) },
     { komponen: 'Piutang saldo awal (impor)', amount: Number(parts.setoran_piutang ?? 0) },
     { komponen: 'Hutang saldo awal (impor, pengurang)', amount: -Number(parts.setoran_hutang ?? 0) },
     { komponen: 'Setoran aset tetap', amount: Number(parts.setoran_aset ?? 0) },
+    // Koreksi harga beli unit (revaluasi stok), termasuk unit yang sudah terjual.
+    { komponen: 'Penyesuaian harga beli mobil', amount: Number(parts.revaluasi_mobil ?? 0) },
   ].filter((r) => r.amount !== 0);
   return {
     key: 'penyesuaian',

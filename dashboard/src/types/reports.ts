@@ -185,8 +185,10 @@ export interface CapitalReport {
   penambahan?: {
     setoran_modal: number;
     penyesuaian_harga_beli_sparepart?: number;
+    /** Kumulatif koreksi harga beli unit (revaluasi stok), termasuk unit terjual. */
+    penyesuaian_harga_beli_mobil?: number;
     investor_funding?: number;
-    modal_non_kas?: { total: number; aset_tetap?: number; stok_part?: number; stok_mobil?: number; piutang?: number; setoran_mobil?: number; setoran_piutang?: number; setoran_hutang?: number; setoran_aset?: number };
+    modal_non_kas?: { total: number; aset_tetap?: number; stok_part?: number; stok_mobil?: number; piutang?: number; setoran_mobil?: number; setoran_piutang?: number; setoran_hutang?: number; setoran_aset?: number; revaluasi_mobil?: number };
   };
   pengurangan?: {
     prive: number;
