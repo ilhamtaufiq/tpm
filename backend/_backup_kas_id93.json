@@ -1,0 +1,21 @@
+[
+  {
+    "id": "93",
+    "nomor_transaksi": "KAS2609150042",
+    "tanggal": "2026-09-16",
+    "jenis": "KAS_UTAMA",
+    "tipe": "KELUAR",
+    "nominal": "3000000.00",
+    "sumber": "PENGELUARAN",
+    "referensi_id": "24",
+    "nomor_referensi": "PGL2609150007",
+    "saldo_sebelum": "5933500.00",
+    "saldo_sesudah": "2933500.00",
+    "keterangan": "Pengeluaran BIAYA_OPERASIONAL: BAYAR APLIKASI TAHAP 3",
+    "catatan": null,
+    "created_by": "1",
+    "created_at": "2026-09-15 19:08:27",
+    "updated_at": "2026-09-15 19:08:27",
+    "metode_bayar": "TRANSFER"
+  }
+]
