@@ -731,24 +731,17 @@ class BaseReportService:
         # 4. Unearned Receivables (Piutang Booking)
         # If a car is BOOKED, we have a Piutang record, but the revenue isn't earned yet.
         # We must neutralize this in the equity calculation.
-        booking_receivables = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).select_from(PiutangUsaha).join(
-            TransaksiPenjualanMobil, PiutangUsaha.referensi_id == TransaksiPenjualanMobil.id
-        ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
-            PiutangUsaha.tanggal <= tanggal_sampai,
-            PiutangUsaha.status != PiutangStatus.BATAL,
-            TransaksiPenjualanMobil.status_bayar != PaymentStatus.LUNAS,
-            TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL,
-            or_(
-                Mobil.status != CarStatus.TERJUAL,
-                Mobil.tanggal_terjual > tanggal_sampai
-            )
-        ).scalar() or 0)
-
         # Note: Bengkel PROSES booking_receivables intentionally excluded.
         # Bengkel PROSES now finalizes finance (piutang + laba), not unearned.
+        #
+        # WAJIB filter `sumber == JUAL_BELI_MOBIL`: `referensi_id` polimorfik
+        # (MuatanJasaAngkut / Kasbon / TransaksiPenjualanMobil), jadi tanpa filter
+        # piutang JA/kasbon yang kebetulan ber-ID sama dengan transaksi mobil
+        # ikut terjaring → kewajiban booking palsu (Rp700.000 pada 15 Sep 2026).
         booking_receivables = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).select_from(PiutangUsaha).join(
             TransaksiPenjualanMobil, PiutangUsaha.referensi_id == TransaksiPenjualanMobil.id
         ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
+            PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL,
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL,
             TransaksiPenjualanMobil.status_bayar != PaymentStatus.LUNAS,
@@ -763,6 +756,7 @@ class BaseReportService:
         booking_payments = float(self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).join(
             TransaksiPenjualanMobil, PiutangUsaha.referensi_id == TransaksiPenjualanMobil.id
         ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
+            PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL,
             PembayaranPiutang.tanggal <= tanggal_sampai,
             TransaksiPenjualanMobil.status_bayar != PaymentStatus.LUNAS,
             TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL,

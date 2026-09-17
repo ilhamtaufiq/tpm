@@ -46,7 +46,10 @@ class ModalService(BaseReportService):
 
     FROZEN_MODAL_AWAL_KEY = "modal_awal_frozen"
     # Naikkan saat rumus modal_awal berubah → baris beku lama dianggap basi.
-    FROZEN_MODAL_AWAL_V = 2
+    # v3: fix filter `sumber` pada piutang booking (base.py) mengubah snapshot
+    # neraca(anchor) — nilai beku v2 ter-capture saat kewajiban phantom
+    # Rp700.000 masih ada, jadi harus dihitung ulang (2.245.258.724,51).
+    FROZEN_MODAL_AWAL_V = 3
 
     def _equity_flow_on(self, d: date) -> float:
         """Pergerakan ekuitas pada SATU hari.
