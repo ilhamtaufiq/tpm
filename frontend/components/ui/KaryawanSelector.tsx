@@ -36,7 +36,7 @@ export const KaryawanSelector = ({
     const filteredKaryawan = React.useMemo(() => {
         if (!allKaryawan) return [];
         if (!searchQuery) return allKaryawan;
-        
+
         const query = searchQuery.toLowerCase();
         return allKaryawan.filter((k: Karyawan) => 
             k.nama.toLowerCase().includes(query) || 
@@ -97,7 +97,7 @@ export const KaryawanSelector = ({
                 onRequestClose={handleClose}
                 statusBarTranslucent
             >
-                <View style={{ flex: 1,  }}>
+                <View className="bg-surface" style={{ flex: 1 }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
                             <View className="w-10 h-1 bg-gray-200 rounded-full" />

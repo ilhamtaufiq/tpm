@@ -851,7 +851,7 @@ export default function SlipGajiScreen() {
                     backdropComponent={(props) => (
                         <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
                     )}
-                    backgroundStyle={{ borderRadius: 48,  }}
+                    backgroundStyle={{ borderRadius: 48 }}
                     // Cards/FABs use shadow (Android elevation); raise sheet above them.
                     containerStyle={{ zIndex: 1000, elevation: 24 }}
                     style={{ zIndex: 1000, elevation: 24 }}

@@ -712,7 +712,7 @@ export default function LaporanKeuanganScreen() {
                     <Modal visible={isSetupModalVisible} transparent animationType="fade">
                         <View style={styles.modalOverlay}>
                             <Pressable className="absolute inset-0" onPress={() => setIsSetupModalVisible(false)} />
-                            <View style={styles.webModalContent}>
+                            <View className="bg-surface" style={styles.webModalContent}>
                                 <View className="flex-row justify-between items-center mb-6">
                                     <Typography variant="h2" weight="bold">Migrasi Data Awal</Typography>
                                     <Pressable onPress={() => setIsSetupModalVisible(false)}>
@@ -735,7 +735,7 @@ export default function LaporanKeuanganScreen() {
                     <Modal visible={isDateModalVisible} transparent animationType="fade">
                         <View style={styles.modalOverlay}>
                             <Pressable className="absolute inset-0" onPress={() => setIsDateModalVisible(false)} />
-                            <View style={styles.webModalContent}>
+                            <View className="bg-surface" style={styles.webModalContent}>
                                 <View className="flex-row justify-between items-center mb-6">
                                     <Typography variant="h2" weight="bold">Pilih Periode Laporan</Typography>
                                     <Pressable onPress={() => setIsDateModalVisible(false)}>
@@ -755,7 +755,7 @@ export default function LaporanKeuanganScreen() {
                         index={-1}
                         snapPoints={setupSnapPoints}
                         enablePanDownToClose
-                        backgroundStyle={{ borderRadius: 48,  }}
+                        backgroundStyle={{ borderRadius: 48 }}
                         onClose={() => {
                             setIsSetupModalVisible(false);
                             setIsSheetOpen(false);
@@ -774,7 +774,7 @@ export default function LaporanKeuanganScreen() {
                         index={-1}
                         snapPoints={dateSnapPoints}
                         enablePanDownToClose
-                        backgroundStyle={{ borderRadius: 48,  }}
+                        backgroundStyle={{ borderRadius: 48 }}
                         onClose={() => {
                             setIsDateModalVisible(false);
                             setIsSheetOpen(false);
@@ -811,7 +811,6 @@ const styles = StyleSheet.create({
         padding: 20
     },
     webModalContent: {
-        
         borderRadius: 32,
         width: '100%',
         maxHeight: '90%',

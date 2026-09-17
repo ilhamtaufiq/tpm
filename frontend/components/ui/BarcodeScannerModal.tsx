@@ -350,7 +350,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                 <StatusBar barStyle="light-content" />
 
                 {!permission?.granted && scannerMode !== 'web-camera' ? (
-                    <View style={styles.permissionContainer}>
+                    <View className="bg-surface" style={styles.permissionContainer}>
                         <Typography variant="h3" weight="bold" className="text-center mb-4">Izin Kamera Diperlukan</Typography>
                         <Typography className="text-textGray text-center mb-8 px-10">
                             {permission && permission.canAskAgain === false
@@ -648,7 +648,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
-        
     },
     cameraContainer: {
         flex: 1,

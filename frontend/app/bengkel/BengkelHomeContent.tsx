@@ -2101,7 +2101,7 @@ export default function BengkelScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48,  }}
+                    backgroundStyle={{ borderRadius: 48 }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onChange={setSheetIndex}
                 >
@@ -2115,7 +2115,7 @@ export default function BengkelScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48,  }}
+                    backgroundStyle={{ borderRadius: 48 }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onClose={handleCloseWallet}
                 >
@@ -2162,7 +2162,7 @@ export default function BengkelScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48,  }}
+                    backgroundStyle={{ borderRadius: 48 }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onClose={() => setIsDateModalVisible(false)}
                 >
@@ -2217,7 +2217,7 @@ export default function BengkelScreen() {
                 animationType="slide"
                 onRequestClose={() => setShowHistoryModal(false)}
             >
-                <View style={{ flex: 1,  }}>
+                <View className="bg-surface" style={{ flex: 1 }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
                             <View className="w-10 h-1 bg-gray-300 rounded-full" />

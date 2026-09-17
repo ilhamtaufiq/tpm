@@ -263,7 +263,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         const beli = parseNumber(formData.harga_beli) || 0;
         const jual = parseNumber(formData.harga_jual) || 0;
         const revenue = jual - beli;
-        
+
         const totalCosts = formData.biaya_operasional.reduce((acc, b) => acc + (parseNumber(b.jumlah) || 0), 0);
         // TPM share after operational costs (tol etc) are deducted - matches ProfitSplitCard logic
         // "dipotong biaya tol" affects the effective tagihan/share that is tracked as piutang
@@ -1151,7 +1151,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
     if (Platform.OS === 'web') {
         return (
-            <View style={styles.webContainer}>
+            <View className="bg-surface" style={styles.webContainer}>
                 <ScrollView style={styles.flex1} showsVerticalScrollIndicator={true}>
                     {renderFormContent()}
                 </ScrollView>
@@ -1169,7 +1169,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     // Keyboard handled by parent BottomSheet (keyboardBehavior="interactive").
     // Do not wrap BottomSheetScrollView in KeyboardAvoidingView — it blocks scroll.
     return (
-        <View style={styles.mobileContainer}>
+        <View className="bg-surface" style={styles.mobileContainer}>
             <BottomSheetScrollView
                 style={styles.flex1}
                 contentContainerStyle={{ paddingBottom: 48 }}
@@ -1196,11 +1196,9 @@ const styles = StyleSheet.create({
     },
     webContainer: {
         flex: 1,
-        
         height: '85vh' as any,
     },
     mobileContainer: {
         flex: 1,
-        
     },
 });

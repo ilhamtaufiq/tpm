@@ -530,7 +530,7 @@ export default function KaryawanScreen() {
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 48,  }}
+                    backgroundStyle={{ borderRadius: 48 }}
                     // Cards/filter use shadow (Android elevation). Without high elevation here,
                     // list items paint above the in-tree BottomSheet and block the form.
                     containerStyle={{ zIndex: 1000, elevation: 24 }}

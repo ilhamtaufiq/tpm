@@ -832,7 +832,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                         onRequestClose={() => setMobilSearchOpen(false)}
                         statusBarTranslucent
                     >
-                        <View style={{ flex: 1,  }}>
+                        <View className="bg-surface" style={{ flex: 1 }}>
                             <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                                 <View className="items-center mb-2">
                                     <View className="w-10 h-1 bg-gray-300 rounded-full" />
@@ -1747,7 +1747,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
     // Web version with regular ScrollView
     if (Platform.OS === 'web' || isPage) {
         return (
-            <View style={isPage ? { flex: 1,  } : styles.webContainer}>
+            <View className="bg-surface" style={isPage ? { flex: 1 } : styles.webContainer}>
                 {/* Header */}
                 {!isPage && (
                     <View style={styles.header}>
@@ -1787,7 +1787,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
     // Mobile: keyboard handled by parent BottomSheet (keyboardBehavior="interactive").
     // Do not wrap BottomSheetScrollView in KeyboardAvoidingView — it blocks scroll.
     return (
-        <View style={styles.mobileContainer}>
+        <View className="bg-surface" style={styles.mobileContainer}>
             <View style={styles.header}>
                 <Typography variant="h3" weight="bold">{initialData ? 'Edit Antrian' : 'Buat Antrian Bengkel'}</Typography>
                 <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
@@ -1826,14 +1826,14 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
 const styles = StyleSheet.create({
     webContainer: {
         flex: 1,
-        
+
         height: '80vh' as any,
         display: 'flex' as any,
         flexDirection: 'column' as any,
     },
     mobileContainer: {
         flex: 1,
-        
+
     },
     header: {
         height: 56,
@@ -1843,7 +1843,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         borderBottomWidth: 1,
         borderBottomColor: '#f3f4f6',
-        
+
     },
     webScrollView: {
         flex: 1,

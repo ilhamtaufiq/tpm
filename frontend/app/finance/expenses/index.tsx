@@ -723,7 +723,7 @@ export default function ExpensesScreen() {
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 48,  }}
+                    backgroundStyle={{ borderRadius: 48 }}
                     topInset={insets.top}
                     onClose={() => setShowForm(false)}
                 >

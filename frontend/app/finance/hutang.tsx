@@ -217,13 +217,13 @@ export default function HutangUsahaScreen() {
                     return false; // Sembunyikan otomatis
                 }
             }
-            
+
             // Accumulate summary for visible items
             if (item.status !== 'LUNAS') {
                 totalSisa += Number(item.sisa_hutang || 0);
                 countBelumLunas++;
             }
-            
+
             return true;
         });
 
@@ -837,7 +837,7 @@ export default function HutangUsahaScreen() {
                     <Modal visible={detailVisible} transparent animationType="slide">
                         <View className="flex-1 justify-end bg-black/50">
                             <Pressable className="absolute inset-0" onPress={() => { setDetailVisible(false); setIsSheetOpen(false); }} />
-                            <View style={styles.sheetContent}>
+                            <View className="bg-surface" style={styles.sheetContent}>
                                 <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                                 <ScrollView
                                     style={{ flex: 1 }}
@@ -853,7 +853,7 @@ export default function HutangUsahaScreen() {
                     <Modal visible={createVisible} transparent animationType="slide">
                         <View className="flex-1 justify-end bg-black/50">
                             <Pressable className="absolute inset-0" onPress={() => { setCreateVisible(false); setIsSheetOpen(false); }} />
-                            <View style={styles.sheetContent}>
+                            <View className="bg-surface" style={styles.sheetContent}>
                                 <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                                 <ScrollView
                                     style={{ flex: 1 }}
@@ -880,7 +880,7 @@ export default function HutangUsahaScreen() {
                         index={-1}
                         backdropComponent={renderBackdrop}
                         handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
-                        backgroundStyle={{ borderRadius: 48,  }}
+                        backgroundStyle={{ borderRadius: 48 }}
                         topInset={insets.top}
                         onClose={() => setIsSheetOpen(false)}
                     >
@@ -903,7 +903,7 @@ export default function HutangUsahaScreen() {
                         index={-1}
                         backdropComponent={renderBackdrop}
                         handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
-                        backgroundStyle={{ borderRadius: 48,  }}
+                        backgroundStyle={{ borderRadius: 48 }}
                         topInset={insets.top}
                         onClose={() => setIsSheetOpen(false)}
                     >
@@ -945,7 +945,6 @@ export default function HutangUsahaScreen() {
 
 const styles = StyleSheet.create({
     sheetContent: {
-        
         width: '100%',
         maxWidth: 640,
         height: '95%',

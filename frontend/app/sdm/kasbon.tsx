@@ -727,7 +727,7 @@ export default function KasbonScreen() {
                         keyboardBlurBehavior="restore"
                         android_keyboardInputMode="adjustResize"
                         backdropComponent={renderBackdrop}
-                        backgroundStyle={{ borderRadius: 48,  }}
+                        backgroundStyle={{ borderRadius: 48 }}
                         // List cards use shadow (Android elevation); raise sheet above them.
                         containerStyle={{ zIndex: 1000, elevation: 24 }}
                         style={{ zIndex: 1000, elevation: 24 }}
@@ -754,7 +754,7 @@ export default function KasbonScreen() {
                         keyboardBlurBehavior="restore"
                         android_keyboardInputMode="adjustResize"
                         backdropComponent={renderBackdrop}
-                        backgroundStyle={{ borderRadius: 48,  }}
+                        backgroundStyle={{ borderRadius: 48 }}
                         containerStyle={{ zIndex: 1000, elevation: 24 }}
                         style={{ zIndex: 1000, elevation: 24 }}
                         topInset={insets.top}

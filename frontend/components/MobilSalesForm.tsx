@@ -567,7 +567,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
 
     if (Platform.OS === 'web') {
         return (
-            <View style={styles.webContainer}>
+            <View className="bg-surface" style={styles.webContainer}>
                 <View style={styles.header}>
                     <Typography variant="h3" weight="bold">Konfirmasi Penjualan</Typography>
                     <Typography variant="caption" className="text-textGray">Pencatatan transaksi penjualan unit mobil</Typography>
@@ -589,7 +589,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
     // Keyboard handled by parent BottomSheet (keyboardBehavior="interactive").
     // Do not wrap BottomSheetScrollView in KeyboardAvoidingView — it blocks scroll.
     return (
-        <View style={styles.mobileContainer}>
+        <View className="bg-surface" style={styles.mobileContainer}>
             <View style={styles.header}>
                 <Typography variant="h3" weight="bold">Konfirmasi Penjualan</Typography>
                 <Typography variant="caption" className="text-textGray">Pencatatan transaksi penjualan unit mobil</Typography>
@@ -620,18 +620,15 @@ const styles = StyleSheet.create({
     },
     webContainer: {
         flex: 1,
-        
         height: '80vh' as any,
     },
     mobileContainer: {
         flex: 1,
-        
     },
     header: {
         paddingHorizontal: 24,
         paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#f3f4f6',
-        
     },
 });

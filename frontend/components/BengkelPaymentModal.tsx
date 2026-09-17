@@ -145,10 +145,10 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
             <ModalThemeView style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
                 <ModalFlexBackdrop onPress={onClose} />
                 <View
+                    className="bg-surface"
                     style={{
                         width: '100%',
                         maxHeight: sheetMaxPx,
-                        
                         borderTopLeftRadius: 48,
                         borderTopRightRadius: 48,
                         padding: 24,

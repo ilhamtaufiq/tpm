@@ -1020,7 +1020,7 @@ export default function PencairanInvestorScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48,  }}
+                    backgroundStyle={{ borderRadius: 48 }}
                     topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >

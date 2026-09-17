@@ -120,7 +120,7 @@ function RootLayoutContent() {
 
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
     const hasHydrated = useAuthStore(state => state.hasHydrated);
-    
+
     const {
         webMobilePreview,
         setWebMobilePreview,
@@ -366,7 +366,7 @@ function RootLayoutContent() {
         const loadingMessage = "Memuat TPM Super App...";
 
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center',  }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: themeColors.background }}>
                 <ActivityIndicator size="large" color="#3b82f6" />
                 <Text style={{ marginTop: 16, fontSize: 14, color: '#666', fontWeight: '600' }}>
                     {loadingMessage}
@@ -410,7 +410,7 @@ function RootLayoutContent() {
                         <Stack.Screen name="monitor" options={{ headerShown: false }} />
                         <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
                     </Stack>
-                    
+
                                     {/* Global Custom Bottom Navigation */}
                     {isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'BENGKEL') && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && segments[0] !== 'receipt' && (
                         <CustomTabBar />
@@ -445,12 +445,12 @@ function RootLayoutContent() {
                 {showMobilePreview ? (
                     <View style={{ flex: 1, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
                         <View
+                            className="bg-background"
                             style={{
                                 width: previewWidth,
                                 height: previewHeight,
                                 maxWidth: '96vw' as any,
                                 maxHeight: '92vh' as any,
-                                
                                 overflow: 'hidden',
                                 position: 'relative',
                                 borderRadius: previewIsLandscape ? 20 : 32,

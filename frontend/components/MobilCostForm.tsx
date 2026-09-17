@@ -475,7 +475,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
 
     if (Platform.OS === 'web') {
         return (
-            <View style={styles.webContainer}>
+            <View className="bg-surface" style={styles.webContainer}>
                 {renderTabs()}
                 <ScrollView style={styles.flex1} showsVerticalScrollIndicator={true}>
                     {renderFormContent()}
@@ -499,7 +499,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     // Keyboard handled by parent BottomSheet (keyboardBehavior="interactive").
     // Do not wrap BottomSheetScrollView in KeyboardAvoidingView — it blocks scroll.
     return (
-        <View style={styles.mobileContainer}>
+        <View className="bg-surface" style={styles.mobileContainer}>
             {renderTabs()}
             <BottomSheetScrollView
                 style={styles.flex1}
@@ -532,11 +532,9 @@ const styles = StyleSheet.create({
     },
     webContainer: {
         flex: 1,
-        
         height: '85vh' as any,
     },
     mobileContainer: {
         flex: 1,
-        
     },
 });

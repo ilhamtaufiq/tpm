@@ -1985,7 +1985,7 @@ export default function JasaAngkutScreen() {
                         enablePanDownToClose
                         keyboardBehavior="interactive"
                         keyboardBlurBehavior="restore"
-                        backgroundStyle={{ borderRadius: 48,  }}
+                        backgroundStyle={{ borderRadius: 48 }}
                         handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                         onChange={setSheetIndex}
                     >
@@ -1999,7 +1999,7 @@ export default function JasaAngkutScreen() {
                         enablePanDownToClose
                         keyboardBehavior="interactive"
                         keyboardBlurBehavior="restore"
-                        backgroundStyle={{ borderRadius: 48,  }}
+                        backgroundStyle={{ borderRadius: 48 }}
                         handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                         onClose={handleCloseWallet}
                     >
@@ -2074,7 +2074,7 @@ export default function JasaAngkutScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48,  }}
+                    backgroundStyle={{ borderRadius: 48 }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onClose={() => setIsDateModalVisible(false)}
                 >

@@ -86,7 +86,7 @@ export const MuatanSelector = ({
 
             {/* Inline Overlay for Search (Replaces Modal to maintain navigation context) */}
             {isOpen && (
-                <View style={[StyleSheet.absoluteFill, { zIndex: 9999,  }]}>
+                <View className="bg-surface" style={[StyleSheet.absoluteFill, { zIndex: 9999 }]}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-4">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full" />

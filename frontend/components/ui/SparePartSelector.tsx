@@ -98,7 +98,7 @@ export const SparePartSelector = ({
                 onRequestClose={handleClose}
                 statusBarTranslucent
             >
-                <View style={{ flex: 1,  }}>
+                <View className="bg-surface" style={{ flex: 1 }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
                             <View className="w-10 h-1 bg-gray-300 rounded-full" />

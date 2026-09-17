@@ -106,7 +106,7 @@ export default function MutasiKasScreen() {
         if (role === 'MOBIL') return ['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_MOBIL'] as KasBankJenis[];
         return ['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL'] as KasBankJenis[];
     }, [role]);
-    
+
     const [selectedFilter, setSelectedFilter] = useState<KasBankJenis | 'all'>((jenis as KasBankJenis) || roleAccount || 'all');
     const [refreshing, setRefreshing] = useState(false);
     const [mode, setMode] = useState<'transfer' | 'modal'>('transfer');
@@ -545,8 +545,8 @@ export default function MutasiKasScreen() {
                     const isIncome = item.tipe === 'MASUK';
                     return (
                         <Pressable
+                            className="bg-surface"
                             style={({ pressed }) => ({
-                                
                                 padding: 20,
                                 borderRadius: 32,
                                 marginBottom: 24,
@@ -731,7 +731,7 @@ export default function MutasiKasScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48,  }}
+                    backgroundStyle={{ borderRadius: 48 }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}

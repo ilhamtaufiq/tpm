@@ -498,7 +498,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             keyboardBlurBehavior="restore"
             android_keyboardInputMode="adjustResize"
             onClose={onClose}
-            backgroundStyle={{ borderRadius: 48,  }}
+            backgroundStyle={{ borderRadius: 48 }}
         >
             <BottomSheetScrollView
                 showsVerticalScrollIndicator

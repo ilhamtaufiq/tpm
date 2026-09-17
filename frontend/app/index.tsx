@@ -74,11 +74,11 @@ export default function Index() {
     if (!isHydrated) {
         return (
             <View
+                className="bg-background"
                 style={{
                     flex: 1,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    
                     padding: 24,
                 }}
             >

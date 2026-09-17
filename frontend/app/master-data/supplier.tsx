@@ -537,7 +537,7 @@ export default function SupplierScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 32,  }}
+                    backgroundStyle={{ borderRadius: 32 }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48 }}
                     topInset={insets.top}
                     onChange={(index) => setSheetVisible(index !== -1)}

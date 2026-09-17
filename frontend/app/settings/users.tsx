@@ -594,7 +594,7 @@ export default function UserManagementScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48,  }}
+                    backgroundStyle={{ borderRadius: 48 }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48 }}
                     topInset={insets.top}
                     onChange={(index) => setSheetVisible(index !== -1)}

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { AlertCircle, Repeat } from 'lucide-react-native';
 import { useMonitorStore } from '../store/useMonitorStore';
+import { useUIStore } from '../store/useUIStore';
 
 interface ErrorBoundaryState {
     hasError: boolean;
@@ -56,7 +57,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                     justifyContent: 'center',
                     alignItems: 'center',
                     padding: 24,
-                    
+                    // Class component: no hook. Read palette directly.
+                    backgroundColor: useUIStore.getState().themeColors.background,
                 }}>
                     {/* Error Icon */}
                     <View style={{

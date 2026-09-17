@@ -646,7 +646,7 @@ export default function AkunKeuanganScreen() {
                                 )}
                             </View>
                             {visibleActiveAccounts.map(renderAccountItem)}
-                            
+
                             {!roleAccount && showAllAccounts && (
                                 <View className="mt-4 pt-4 border-t border-transparent">
                                     <View className="flex-row items-center mb-4 px-1">
@@ -668,7 +668,7 @@ export default function AkunKeuanganScreen() {
                 <Modal visible={isAdjustModalVisible} transparent animationType="fade">
                     <View style={styles.modalOverlay}>
                         <Pressable className="absolute inset-0" onPress={() => setIsAdjustModalVisible(false)} />
-                        <View style={styles.webModalContent}>
+                        <View className="bg-surface" style={styles.webModalContent}>
                             <View className="flex-row justify-between items-center mb-6">
                                 <Typography variant="h2" weight="bold">Penyesuaian Saldo</Typography>
                                 <Pressable onPress={() => setIsAdjustModalVisible(false)}>
@@ -696,7 +696,7 @@ export default function AkunKeuanganScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48,  }}
+                    backgroundStyle={{ borderRadius: 48 }}
                     topInset={insets.top}
                     onClose={() => {
                         setIsAdjustModalVisible(false);
@@ -737,7 +737,6 @@ const styles = StyleSheet.create({
         padding: 20
     },
     webModalContent: {
-        
         borderRadius: 32,
         width: '100%',
         maxHeight: '90%',

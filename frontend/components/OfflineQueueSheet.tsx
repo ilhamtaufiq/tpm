@@ -75,7 +75,7 @@ function OfflineQueueSheetInner() {
         >
             <View style={styles.backdrop}>
                 <Pressable style={StyleSheet.absoluteFill} onPress={() => setSheetOpen(false)} />
-                <View style={styles.sheet}>
+                <View className="bg-surface" style={styles.sheet}>
                     <View style={styles.header}>
                         <View style={styles.headerLeft}>
                             <CloudOff size={18} color="#b45309" />
@@ -195,7 +195,6 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     sheet: {
-        
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         maxHeight: Platform.OS === 'web' ? '85vh' as any : '88%',

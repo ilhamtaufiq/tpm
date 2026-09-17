@@ -599,7 +599,7 @@ export default function NeracaScreen() {
                         </View>
                         <View className="flex-1 bg-background">
                             {Platform.OS === 'web' ? (
-                                <iframe srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none',  }} title="Neraca Preview" />
+                                <iframe srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }} title="Neraca Preview" />
                             ) : (
                                 <WebView originWhitelist={['*']} source={{ html: previewHtml }} style={{ flex: 1 }} />
                             )}

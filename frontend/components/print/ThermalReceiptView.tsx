@@ -191,7 +191,7 @@ ThermalReceiptView.displayName = 'ThermalReceiptView';
 
 const styles = StyleSheet.create({
     root: {
-        
+        backgroundColor: 'white', // kertas struk selalu putih, bukan ikut tema
     },
     center: {
         alignItems: 'center',

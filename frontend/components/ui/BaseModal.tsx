@@ -92,13 +92,12 @@ export const BaseModal = ({
                             transform: [{ translateY: slideAnim }],
                             opacity: opacityAnim,
                             maxHeight: fullScreen ? '100%' : maxHeight,
-                            
                             width: '100%',
                             zIndex: 2,
                             elevation: 24,
                             ...(fullScreen ? { height: '100%', borderRadius: 0 } : { borderRadius: 48, borderWidth: 1, borderColor: '#F3F4F6' }),
                         }}
-                        className={`${fullScreen ? '' : 'sm:max-w-md md:max-w-lg'} shadow-2xl overflow-hidden ${containerClassName}`}
+                        className={`bg-surface ${fullScreen ? '' : 'sm:max-w-md md:max-w-lg'} shadow-2xl overflow-hidden ${containerClassName}`}
                     >
                         {/* Header */}
                         {(title || showCloseButton) && (

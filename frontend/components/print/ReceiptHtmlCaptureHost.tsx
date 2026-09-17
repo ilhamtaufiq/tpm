@@ -130,7 +130,7 @@ export function ReceiptHtmlCaptureHost() {
         >
             <WebView
                 source={{ html: rasterHtml, baseUrl: webViewBaseUrl }}
-                style={{ width: paper.widthPx, height: webViewHeight,  }}
+                style={{ width: paper.widthPx, height: webViewHeight, backgroundColor: '#ffffff' }}
                 pointerEvents="none"
                 onMessage={handleMessage}
                 onError={(event) => handleWebViewError(event.nativeEvent.description || 'WebView gagal render struk.')}

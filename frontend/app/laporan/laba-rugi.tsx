@@ -494,7 +494,7 @@ export default function LabaRugiScreen() {
                     </View>
                     <View className="flex-1 bg-background">
                         {Platform.OS === 'web' ? (
-                            <iframe srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none',  }} title="Laba Rugi Preview" />
+                            <iframe srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }} title="Laba Rugi Preview" />
                         ) : (
                             <WebView originWhitelist={['*']} source={{ html: previewHtml }} style={{ flex: 1 }} />
                         )}

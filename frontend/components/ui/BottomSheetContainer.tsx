@@ -76,7 +76,7 @@ export function BoundedSheetPanel({
 
     return (
         <View
-            className={className}
+            className={`bg-surface ${className ?? ''}`}
             style={[
                 styles.boundedPanel,
                 {
@@ -170,6 +170,7 @@ export function BottomSheetContainer({
         <ModalThemeView style={[styles.root, { backgroundColor: backdropColor }]}>
             <ModalFlexBackdrop onPress={onClose} />
             <View
+                className="bg-surface"
                 style={[
                     styles.panel,
                     {
@@ -180,7 +181,7 @@ export function BottomSheetContainer({
                 ]}
             >
                 {children}
-                {footer ? <View style={styles.footer}>{footer}</View> : null}
+                {footer ? <View className="bg-surface" style={styles.footer}>{footer}</View> : null}
             </View>
         </ModalThemeView>
     );
@@ -188,7 +189,7 @@ export function BottomSheetContainer({
 
 /** Pinned footer area for sheets that manage their own scroll body. */
 export function BottomSheetFooter({ children }: { children: React.ReactNode }) {
-    return <View style={styles.footer}>{children}</View>;
+    return <View className="bg-surface" style={styles.footer}>{children}</View>;
 }
 
 /** Centered dialog — backdrop behind content, buttons stay tappable on Android. */
@@ -214,6 +215,7 @@ export function CenterModalContainer({
                 <Pressable style={[StyleSheet.absoluteFillObject, { zIndex: 0 }]} onPress={onClose} />
             ) : null}
             <View
+                className="bg-surface"
                 style={[
                     styles.centerContent,
                     { maxWidth, maxHeight: maxContentHeight, zIndex: 2, elevation: 24 },
@@ -235,7 +237,7 @@ const styles = StyleSheet.create({
     },
     panel: {
         width: '100%',
-        
+
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
         paddingHorizontal: 20,
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
     },
     boundedPanel: {
         width: '100%',
-        
+
         borderTopLeftRadius: 48,
         borderTopRightRadius: 48,
         overflow: 'hidden',
@@ -258,7 +260,7 @@ const styles = StyleSheet.create({
     footer: {
         flexShrink: 0,
         paddingTop: 12,
-        
+
         zIndex: 3,
         elevation: 24,
     },
@@ -270,7 +272,7 @@ const styles = StyleSheet.create({
     },
     centerContent: {
         width: '100%',
-        
+
         borderRadius: 28,
         overflow: 'hidden',
         flexDirection: 'column',

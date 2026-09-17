@@ -95,7 +95,7 @@ export const AlertDialog = ({
                 </ScrollView>
 
                 <View
-                    style={[styles.footer, { paddingBottom: Math.max(20, insets.bottom + 12) }]}
+                    className="bg-surface" style={[styles.footer, { paddingBottom: Math.max(20, insets.bottom + 12) }]}
                     collapsable={false}
                 >
                     {isConfirm ? (
@@ -167,7 +167,6 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: '#E2E8F0',
-        
     },
     actionButton: {
         width: '100%',
