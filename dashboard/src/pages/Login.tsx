@@ -8,12 +8,16 @@ export default function Login() {
   const { login, token, user } = useAuth();
   const navigate = useNavigate();
 
-  if (token && user) return <Navigate to="/" replace />;
+  // Semua hook WAJIB di atas early-return ini. Menaruh return lebih dulu membuat
+  // jumlah hook berubah antar-render (login berhasil → token terisi sebelum
+  // unmount) → React melempar "Rendered fewer hooks than expected".
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  if (token && user) return <Navigate to="/" replace />;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
