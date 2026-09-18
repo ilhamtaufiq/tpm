@@ -490,7 +490,17 @@ export function Neraca() {
         <div className="p-5">
           <FinancialRow label="Modal" value={m.total_modal} bold large />
           <Drill
-            spec={drillModalKomposisi({ setoran: m.setoran_modal, laba_ditahan: labaAdj, prive: m.prive, total: m.total_modal })}
+            spec={drillModalKomposisi({
+              setoran: m.setoran_modal,
+              laba_ditahan: labaAdj,
+              prive: m.prive,
+              total: m.total_modal,
+              // Penjelas selisih bottom-up vs identity (lihat catatan di drills.ts).
+              // pembayaran_investor tak ada di payload Neraca — ia mutasi periode,
+              // jadi porsinya jatuh ke baris "tak terjelaskan".
+              hutang_investor: h.hutang_investor,
+              hutang_internal: h.hutang_internal,
+            })}
             period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }}
             amountKey="amount"
             total={m.total_modal}

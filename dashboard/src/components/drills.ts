@@ -709,24 +709,43 @@ export const drillLabaPeriode = (units?: Record<string, Record<string, number>>)
 
 // Komposisi Modal Neraca: satu baris "Modal" di laporan, drill buka rinciannya.
 // Baris laporan = `total_modal` = identity (aktiva − hutang), sedangkan
-// setoran_modal/laba_ditahan/prive adalah hitungan bottom-up (`modal_komponen`)
-// yang belum men-net hutang investor. Karena itu selisihnya dipaparkan sebagai
-// baris penutup, bukan disembunyikan — Δ-nya persis hutang investor.
+// setoran_modal/laba_ditahan/prive adalah hitungan bottom-up (`modal_komponen`).
+// Selisihnya BUKAN murni hutang investor — terdekomposisi (terverifikasi pada
+// 7 tanggal) jadi:
+//   gap ≈ −hutang_investor + hutang_internal − pembayaran_investor + sisa
+// - hutang_investor: identity memasukkannya sebagai kewajiban, bottom-up menilai
+//   aset yang didanainya bruto (investor = hutang, by design).
+// - hutang_internal: bottom-up menguranginya (neraca_service.py:294), identity
+//   tidak (:148) — hutang antar-unit bukan kewajiban eksternal.
+// - pembayaran_investor: tidak ikut di bottom-up.
+// Sisanya (kecil, ~0,15% gap) sengaja DITAMPILKAN sebagai baris "tak
+// terjelaskan" alih-alih dipaksa nol — mem-plug-nya menghapus sinyal rekonsiliasi.
 export const drillModalKomposisi = (parts: {
   setoran?: number;
   laba_ditahan?: number;
   prive?: number;
   total?: number;
+  hutang_investor?: number;
+  hutang_internal?: number;
+  pembayaran_investor?: number;
 }): DrillSpec => {
   const n = (v: number | undefined) => Number(v ?? 0);
   const bottomUp = n(parts.setoran) + n(parts.laba_ditahan) - n(parts.prive);
   const gap = n(parts.total) - bottomUp;
+  const explained = -n(parts.hutang_investor) + n(parts.hutang_internal) - n(parts.pembayaran_investor);
+  const unexplained = gap - explained;
   const rows = [
     { komponen: 'Setoran Modal', amount: n(parts.setoran) },
     { komponen: 'Laba Ditahan', amount: n(parts.laba_ditahan) },
     { komponen: 'Prive (Pengambilan Pemilik)', amount: -n(parts.prive) },
-    { komponen: 'Selisih bottom-up vs Aktiva−Hutang (hutang investor)', amount: gap },
-  ].filter((r) => r.amount !== 0);
+    { komponen: 'Subtotal bottom-up (Setoran + Laba Ditahan − Prive)', amount: bottomUp },
+    { komponen: '— Selisih vs Aktiva−Hutang (identity)', amount: gap },
+    { komponen: '    Hutang Investor (identity: kewajiban; bottom-up: bruto)', amount: -n(parts.hutang_investor) },
+    { komponen: '    Hutang Internal (bottom-up kurangi, identity tidak)', amount: n(parts.hutang_internal) },
+    { komponen: '    Pembayaran Investor (tidak ikut bottom-up)', amount: -n(parts.pembayaran_investor) },
+    { komponen: '    Tak terjelaskan (perlu audit transaksi)', amount: unexplained },
+    { komponen: 'Modal (identity: Aktiva − Hutang)', amount: n(parts.total) },
+  ].filter((r) => r.amount !== 0 || r.komponen.startsWith('—'));
   return {
     key: 'modal-komposisi',
     label: 'Rincian modal',
