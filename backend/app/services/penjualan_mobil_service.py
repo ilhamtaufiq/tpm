@@ -9,7 +9,7 @@ from fastapi import HTTPException, status
 
 from app.models.mobil import Mobil, TransaksiPenjualanMobil, MobilBiayaLainnya, InvestorDisbursementDetail
 from app.models.customer import Customer
-from app.models.keuangan import PiutangUsaha, HutangUsaha, HutangStatus, HutangSource
+from app.models.keuangan import PiutangUsaha, PembayaranPiutang, HutangUsaha, HutangStatus, HutangSource
 from app.models.bengkel import (
     TransaksiPenjualanBengkel,
     DetailTransaksiSpareParts,
@@ -424,9 +424,9 @@ class PenjualanMobilService:
                 unit=KasBankSource.JUAL_BELI_MOBIL,
                 referensi_id=None,  # Will update after flushing transaksi
                 nomor_referensi=nomor_transaksi,
-                nominal_piutang=sisa_bayar,
+                nominal_piutang=data.harga_jual,
                 total_dibayar=Decimal("0"),
-                sisa_piutang=sisa_bayar,
+                sisa_piutang=data.harga_jual,
                 status=PiutangStatus.BELUM_LUNAS if data.dp == 0 else PiutangStatus.SEBAGIAN,
                 catatan=f"Piutang penjualan mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
                 created_by=user_id,
@@ -439,6 +439,23 @@ class PenjualanMobilService:
         # Update piutang referensi_id if created
         if status_bayar != PaymentStatus.LUNAS:
             piutang.referensi_id = transaksi.id
+
+            # Record DP as PembayaranPiutang (invariant: Σ pembayaran == total_dibayar).
+            # Kas ditulis di blok #4; jangan panggil process_payment_split (dobel kas + dobel dp).
+            if data.dp > 0:
+                pay_rows = [p for p in (data.payments or []) if p.nominal > 0] or [None]
+                for p in pay_rows:
+                    nom = p.nominal if p is not None else data.dp
+                    metode = p.metode if p is not None else data.metode_bayar
+                    self.db.add(PembayaranPiutang(
+                        piutang_id=piutang.id,
+                        tanggal=data.tanggal,
+                        nominal=nom,
+                        metode_bayar=metode,
+                        catatan=(p.catatan if p and p.catatan else f"DP penjualan mobil {nomor_transaksi}"),
+                        created_by=user_id,
+                    ))
+                    piutang.process_payment(nom)
 
         # 4. Record DP payment to kas/bank if any
         if data.dp > 0:
@@ -802,6 +819,18 @@ class PenjualanMobilService:
                 piutang.tanggal_lunas = date.today()
             else:
                 piutang.status = PiutangStatus.SEBAGIAN
+            # Invarian: Σ PembayaranPiutang == total_dibayar. Kas ditulis di bawah;
+            # jangan panggil process_payment_split (dobel kas + dobel dp).
+            for metode, nominal, _kas_jenis in payments:
+                if nominal > 0:
+                    self.db.add(PembayaranPiutang(
+                        piutang_id=piutang.id,
+                        tanggal=date.today(),
+                        nominal=nominal,
+                        metode_bayar=metode,
+                        catatan=f"Pembayaran cicilan {transaksi.nomor_transaksi}",
+                        created_by=user_id,
+                    ))
 
         # Update car status: BOOKING → TERJUAL when fully paid
         if transaksi.status_bayar == PaymentStatus.LUNAS:
