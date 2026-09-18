@@ -1149,6 +1149,38 @@ class TransaksiBengkelService:
             .first()
         )
 
+    def _attach_pembayaran(
+        self, transaksis: List[TransaksiPenjualanBengkel], nomor_refs: List[str]
+    ) -> None:
+        """Lampirkan baris pembayaran (DP & pelunasan) ke tiap transaksi.
+
+        Sumbernya `pembayaran_piutang` — satu-satunya buku yang mencatat tanggal
+        tiap pembayaran. Transaksi lunas-tunai tanpa piutang tidak punya baris
+        di sini; frontend memakai jumlah_bayar sebagai gantinya.
+        """
+        rows = (
+            self.db.query(PembayaranPiutang.nominal, PembayaranPiutang.tanggal,
+                          PembayaranPiutang.metode_bayar, PembayaranPiutang.catatan,
+                          PiutangUsaha.nomor_referensi)
+            .join(PiutangUsaha, PembayaranPiutang.piutang_id == PiutangUsaha.id)
+            .filter(
+                PiutangUsaha.nomor_referensi.in_(nomor_refs),
+                PiutangUsaha.sumber == PiutangSource.BENGKEL,
+            )
+            .order_by(PembayaranPiutang.tanggal.asc(), PembayaranPiutang.id.asc())
+            .all()
+        )
+        by_nomor: Dict[str, List[Dict[str, Any]]] = {}
+        for nominal, tanggal, metode_bayar, catatan, nomor in rows:
+            by_nomor.setdefault(nomor, []).append({
+                "tanggal": tanggal,
+                "nominal": nominal,
+                "metode_bayar": metode_bayar,
+                "catatan": catatan,
+            })
+        for t in transaksis:
+            t.pembayaran = by_nomor.get(t.nomor_transaksi, [])
+
     def get_list(
         self,
         skip: int = 0,
@@ -1244,13 +1276,15 @@ class TransaksiBengkelService:
                 PiutangUsaha.nomor_referensi.in_(nomor_refs),
                 PiutangUsaha.sumber == PiutangSource.BENGKEL
             ).all()
-            
+
             piutang_map = {p.nomor_referensi: (p.id, p.total_dibayar) for p in piutang_info}
-            
+
             for t in transaksis:
                 info = piutang_map.get(t.nomor_transaksi)
                 if info:
                     t.piutang_id, t.jumlah_bayar = info
+
+            self._attach_pembayaran(transaksis, nomor_refs)
 
         # Calculate pages
         pages = (total + limit - 1) // limit if limit > 0 else 1

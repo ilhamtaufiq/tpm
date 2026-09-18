@@ -47,7 +47,7 @@ import {
     useSparePartsList
 } from '../../hooks/useBengkel';
 import { useMobilList } from '../../hooks/useMobil';
-import { formatCurrency, formatNumber, formatQty } from '../../utils/format';
+import { formatCurrency, formatDateTime, formatNumber, formatQty } from '../../utils/format';
 import {
     buildSoldMobilIdSet,
     formatBengkelWorkStatusLabel,
@@ -892,6 +892,107 @@ export default function QueueScreen() {
                                         </Typography>
                                     </View>
                                 </Card>
+
+                                {/* Timeline: update pengerjaan, DP, pelunasan */}
+                                {(() => {
+                                    const rows: { icon: any; label: string; date?: string | null; amount?: number; metode?: string | null; tone: string }[] = [];
+                                    rows.push({
+                                        icon: Wrench,
+                                        label: 'Update terakhir',
+                                        date: selectedItem?.updated_at || selectedItem?.created_at,
+                                        tone: 'text-primary',
+                                    });
+                                    rows.push({
+                                        icon: Plus,
+                                        label: 'Order dibuat',
+                                        date: selectedItem?.created_at,
+                                        tone: 'text-textGray',
+                                    });
+
+                                    const payments: any[] = Array.isArray(selectedItem?.pembayaran) ? selectedItem.pembayaran : [];
+                                    const isDp = (p: any) => /dp|uang muka|dibayar sebelum tagihan/i.test(String(p?.catatan || ''));
+                                    const dp = payments.filter(isDp);
+                                    const pelunasan = payments.filter((p) => !isDp(p));
+
+                                    const sum = (arr: any[]) => arr.reduce((acc, p) => acc + Number(p?.nominal || 0), 0);
+                                    // Satu metode → namanya; campur → SPLIT.
+                                    const metodeOf = (arr: any[]) => {
+                                        const set = new Set(arr.map((p) => String(p?.metode_bayar || '')).filter(Boolean));
+                                        if (set.size === 0) return null;
+                                        return set.size === 1 ? [...set][0] : 'SPLIT';
+                                    };
+
+                                    // DP selalu dipakai tanggal order dibuat — baris piutang DP bisa
+                                    // dibuat belakangan, created_at = kapan pelanggan bayar muka.
+                                    if (dp.length > 0) {
+                                        rows.push({
+                                            icon: Banknote,
+                                            label: `DP${dp.length > 1 ? ` (${dp.length}x)` : ''}`,
+                                            date: selectedItem?.created_at,
+                                            amount: sum(dp),
+                                            metode: metodeOf(dp),
+                                            tone: 'text-amber-600',
+                                        });
+                                    } else if (Number(selectedItem?.jumlah_bayar || 0) > 0 && selectedItem?.status_bayar === 'CICILAN') {
+                                        rows.push({
+                                            icon: Banknote,
+                                            label: 'DP / pembayaran awal',
+                                            date: selectedItem?.created_at,
+                                            amount: Number(selectedItem.jumlah_bayar || 0),
+                                            metode: selectedItem?.metode_bayar,
+                                            tone: 'text-amber-600',
+                                        });
+                                    }
+
+                                    if (pelunasan.length > 0) {
+                                        rows.push({
+                                            icon: CheckCircle2,
+                                            label: `Pelunasan${pelunasan.length > 1 ? ` (${pelunasan.length}x)` : ''}`,
+                                            date: pelunasan[pelunasan.length - 1]?.tanggal,
+                                            amount: sum(pelunasan),
+                                            metode: metodeOf(pelunasan),
+                                            tone: 'text-emerald-600',
+                                        });
+                                    } else if (selectedItem?.status_bayar === 'LUNAS' && Number(selectedItem?.jumlah_bayar || 0) > 0) {
+                                        rows.push({
+                                            icon: CheckCircle2,
+                                            label: 'Pelunasan',
+                                            date: selectedItem?.updated_at,
+                                            amount: Number(selectedItem.jumlah_bayar || 0),
+                                            metode: selectedItem?.metode_bayar,
+                                            tone: 'text-emerald-600',
+                                        });
+                                    }
+
+                                    return (
+                                        <Card variant="outlined" className="p-4 border-transparent mb-4 bg-surface rounded-2xl">
+                                            <View className="flex-row items-center mb-3">
+                                                <Clock size={15} color="#023C69" />
+                                                <Typography variant="caption" weight="bold" className="ml-2 text-primary uppercase tracking-widest">Info Terakhir</Typography>
+                                            </View>
+                                            {rows.map((row, idx) => {
+                                                const RowIcon = row.icon;
+                                                return (
+                                                    <View key={`${row.label}-${idx}`} className={`flex-row items-center py-2 ${idx > 0 ? 'border-t border-transparent' : ''}`}>
+                                                        <RowIcon size={13} color="#9CA3AF" />
+                                                        <View className="flex-1 ml-2">
+                                                            <Typography variant="caption" weight="semibold" className="text-textMain">{row.label}</Typography>
+                                                            <Typography className="text-textGray text-[10px] mt-0.5">
+                                                                {row.date ? formatDateTime(String(row.date)) : '-'}
+                                                                {row.metode ? ` • ${String(row.metode).replace(/_/g, ' ')}` : ''}
+                                                            </Typography>
+                                                        </View>
+                                                        {row.amount !== undefined && (
+                                                            <Typography variant="body2" weight="bold" className={row.tone}>
+                                                                {formatCurrency(row.amount)}
+                                                            </Typography>
+                                                        )}
+                                                    </View>
+                                                );
+                                            })}
+                                        </Card>
+                                    );
+                                })()}
 
                                 {/* Status Update */}
                                 {['antre', 'proses'].includes(String(selectedItem.status_pengerjaan || '').toLowerCase()) && (

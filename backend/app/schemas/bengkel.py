@@ -350,6 +350,17 @@ class DetailServiceResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PembayaranBengkelRingkas(BaseModel):
+    """Ringkasan baris pembayaran (DP / pelunasan) untuk timeline antrian."""
+
+    tanggal: date
+    nominal: Decimal
+    metode_bayar: Optional[PaymentMethod] = None
+    catatan: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class TransaksiBengkelResponse(BaseModel):
     """Schema for workshop transaction response."""
 
@@ -390,6 +401,8 @@ class TransaksiBengkelResponse(BaseModel):
     piutang_id: Optional[int] = None
     jumlah_bayar: Decimal = Decimal("0")
     created_at: datetime
+    updated_at: Optional[datetime] = None
+    pembayaran: List[PembayaranBengkelRingkas] = []
 
     model_config = {"from_attributes": True}
     
