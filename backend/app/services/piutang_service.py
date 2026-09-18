@@ -286,6 +286,8 @@ class PiutangService:
         sumber: Optional[PiutangSource] = None,
         status: Optional[PiutangStatus] = None,
         overdue_only: bool = False,
+        sebagian_only: bool = False,
+        belum_bayar_only: bool = False,
         tanggal_dari: Optional[date] = None,
         tanggal_sampai: Optional[date] = None,
         sort_by: str = "tanggal",
@@ -319,12 +321,25 @@ class PiutangService:
         if sumber:
             query = query.filter(PiutangUsaha.sumber == sumber)
 
-        # Status filter
+        # Status filter. `BELUM_LUNAS` sengaja melebar ke SEBAGIAN agar pemanggil
+        # lama (dashboard unit) tetap melihat semua yang belum lunas. Filter
+        # terpisah di bawah memisahkan "ada uang masuk" dari "belum bayar sama sekali".
         if status:
             if status == PiutangStatus.BELUM_LUNAS:
                 query = query.filter(PiutangUsaha.status.in_([PiutangStatus.BELUM_LUNAS, PiutangStatus.SEBAGIAN]))
             else:
                 query = query.filter(PiutangUsaha.status == status)
+
+        # Sudah ada pembayaran tapi belum lunas (status SEBAGIAN).
+        if sebagian_only:
+            query = query.filter(PiutangUsaha.status == PiutangStatus.SEBAGIAN)
+
+        # Belum ada uang masuk sama sekali.
+        if belum_bayar_only:
+            query = query.filter(
+                PiutangUsaha.status == PiutangStatus.BELUM_LUNAS,
+                PiutangUsaha.total_dibayar <= 0,
+            )
 
         # Overdue filter
         if overdue_only:
@@ -654,6 +669,16 @@ class PiutangService:
 
         # Calculate counts (Snapshot status is harder, but we can approximate)
         lunas_count = query.filter(PiutangUsaha.status == PiutangStatus.LUNAS).count()
+        sebagian_count = query.filter(PiutangUsaha.status == PiutangStatus.SEBAGIAN).count()
+        # Belum bayar = belum ada uang masuk sama sekali.
+        belum_bayar_count = query.filter(
+            PiutangUsaha.status == PiutangStatus.BELUM_LUNAS,
+            PiutangUsaha.total_dibayar <= 0,
+        ).count()
+        overdue_count = query.filter(
+            PiutangUsaha.tanggal_jatuh_tempo < date.today(),
+            PiutangUsaha.status != PiutangStatus.LUNAS,
+        ).count()
         if tanggal_sampai:
             # Better count: sisa_piutang at that time was 0.
             # But let's keep it simple for now as counts are less critical than values.
@@ -700,7 +725,9 @@ class PiutangService:
             "total_sisa": float(total_sisa_snapshot),
             "jumlah_lunas": lunas_count,
             "jumlah_belum_lunas": query.count() - lunas_count,
-            "jumlah_overdue": 0, # Not snapshot-able easily
+            "jumlah_sebagian": sebagian_count,
+            "jumlah_belum_bayar": belum_bayar_count,
+            "jumlah_overdue": overdue_count,
             "by_sumber": source_summary,
         }
 

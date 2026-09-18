@@ -34,9 +34,13 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { PaymentModal } from '../../components/PaymentModal';
 import { useAuthStore } from '../../store/useAuthStore';
 
-const STATUS_FILTERS: { label: string; value: PiutangStatus | 'all' | 'overdue' }[] = [
-    { label: 'Belum Lunas', value: 'BELUM_LUNAS' },
-    { label: 'Sebagian', value: 'SEBAGIAN' },
+type PiutangFilter = PiutangStatus | 'all' | 'overdue' | 'sebagian' | 'belum_bayar';
+
+// Belum Lunas = sudah ada uang masuk tapi sisa masih ada (status SEBAGIAN).
+// Belum Bayar = belum ada uang masuk sama sekali (total_dibayar 0).
+const STATUS_FILTERS: { label: string; value: PiutangFilter }[] = [
+    { label: 'Belum Lunas', value: 'sebagian' },
+    { label: 'Belum Bayar', value: 'belum_bayar' },
     { label: 'Jatuh Tempo', value: 'overdue' },
     { label: 'Semua', value: 'all' },
     { label: 'Lunas', value: 'LUNAS' },
@@ -46,6 +50,13 @@ const STATUS_BADGE_MAP: Record<PiutangStatus, 'warning' | 'success' | 'info'> = 
     BELUM_LUNAS: 'warning',
     SEBAGIAN: 'info',
     LUNAS: 'success',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+    BELUM_LUNAS: 'Belum Bayar',
+    SEBAGIAN: 'Belum Lunas',
+    LUNAS: 'Lunas',
+    BATAL: 'Dibatalkan',
 };
 
 const SUMBER_LABEL: Record<string, string> = {
@@ -95,7 +106,7 @@ export default function PiutangUsahaScreen() {
     const unitFilter = roleUnitMap[user?.role || ''] || requestedUnit;
     const unitLabel = getUnitDisplayLabel(unitFilter);
     const canCreate = user?.role === 'ADMIN' || user?.role === 'MANAGER' || !!roleUnitMap[user?.role || ''];
-    const [selectedFilter, setSelectedFilter] = useState<PiutangStatus | 'all' | 'overdue'>('BELUM_LUNAS');
+    const [selectedFilter, setSelectedFilter] = useState<PiutangFilter>('belum_bayar');
     const [selectedPiutang, setSelectedPiutang] = useState<Piutang | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'payment'>('detail');
     const [refreshing, setRefreshing] = useState(false);
@@ -105,8 +116,10 @@ export default function PiutangUsahaScreen() {
     // API Hooks
     const { data: listData, isLoading: isLoadingList, refetch: refetchList } = usePiutangList({
         limit: 50,
-        status: selectedFilter === 'all' || selectedFilter === 'overdue' ? undefined : selectedFilter,
+        status: selectedFilter === 'LUNAS' ? 'LUNAS' : undefined,
         overdue_only: selectedFilter === 'overdue',
+        sebagian_only: selectedFilter === 'sebagian',
+        belum_bayar_only: selectedFilter === 'belum_bayar',
         search: search || undefined,
         unit: unitFilter as any,
     });
@@ -217,6 +230,24 @@ export default function PiutangUsahaScreen() {
     }, [piutangListRaw, mobilData, bengkelData, summary]);
 
     const piutangList = filteredList;
+
+    // Angka badge per filter. Sumbernya summary (satu query, unfiltered by status);
+    // list tak bisa dipakai karena dibatasi limit + sudah terfilter server-side.
+    // ponytail: tak memperhitungkan eliminasi virtual JB Mobil terjual — selisih
+    // kecil; kalau perlu presisi, hitung dari fetch list tanpa filter status.
+    const filterCounts = useMemo(() => {
+        if (!summary) return {} as Record<string, number | undefined>;
+        const belumBayar = summary.jumlah_belum_bayar ?? 0;
+        const sebagian = summary.jumlah_sebagian ?? 0;
+        return {
+            belum_bayar: belumBayar,
+            sebagian,
+            overdue: summary.jumlah_overdue,
+            lunas: summary.jumlah_lunas,
+            // overdue himpunan bagian dari belum_bayar+sebagian — jangan dijumlah.
+            all: (summary.jumlah_belum_lunas ?? belumBayar + sebagian) + summary.jumlah_lunas,
+        } as Record<string, number | undefined>;
+    }, [summary]);
 
     const renderBackdrop = useCallback(
         (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,
@@ -528,7 +559,7 @@ export default function PiutangUsahaScreen() {
                         <Typography variant="caption" className="text-textGray">{selectedPiutang.nomor_piutang}</Typography>
                     </View>
                     <Badge
-                        label={selectedPiutang.is_overdue ? 'Jatuh Tempo' : selectedPiutang.status === 'LUNAS' ? 'Lunas' : 'Belum Lunas'}
+                        label={selectedPiutang.is_overdue ? 'Jatuh Tempo' : STATUS_LABEL[selectedPiutang.status] || selectedPiutang.status}
                         variant={selectedPiutang.is_overdue ? 'error' : STATUS_BADGE_MAP[selectedPiutang.status]}
                     />
                 </View>
@@ -680,55 +711,6 @@ export default function PiutangUsahaScreen() {
     );
 
 
-    const renderPiutangItem = ({ item }: { item: Piutang }) => {
-        const progressPercent = item.persentase_terbayar;
-        return (
-            <Pressable onPress={() => handleOpenDetail(item)}>
-                <Card className="mb-3 p-4">
-                    <View className="flex-row justify-between items-start mb-2">
-                        <View className="flex-1 mr-3">
-                            <Typography variant="body2" weight="bold" numberOfLines={1}>
-                                {item.nama_debitur}
-                            </Typography>
-                            <Typography variant="caption" className="text-textGray mt-0.5">
-                                {item.nomor_piutang} • {SUMBER_LABEL[item.sumber as keyof typeof SUMBER_LABEL] || item.sumber}
-                            </Typography>
-                        </View>
-                        <View className="items-end">
-                            <Badge
-                                label={item.is_overdue ? 'Jatuh Tempo' : item.status === 'LUNAS' ? 'Lunas' : item.status === 'SEBAGIAN' ? 'Sebagian' : 'Belum Lunas'}
-                                variant={item.is_overdue ? 'error' : STATUS_BADGE_MAP[item.status]}
-                            />
-                        </View>
-                    </View>
-
-                    <View className="flex-row justify-between items-center mb-2">
-                        <Typography variant="caption" className="text-textGray">
-                            Sisa: <Typography variant="caption" weight="bold" className="text-red-600">{formatCurrency(item.sisa_piutang)}</Typography>
-                        </Typography>
-                        <Typography variant="caption" className="text-textGray">
-                            dari {formatCurrency(item.nominal_piutang)}
-                        </Typography>
-                    </View>
-
-                    {/* Progress Bar */}
-                    <View className="h-2 bg-background rounded-full overflow-hidden">
-                        <View
-                            className="h-full bg-primary rounded-full"
-                            style={{ width: `${progressPercent}%` }}
-                        />
-                    </View>
-
-                    {item.tanggal_jatuh_tempo && (
-                        <Typography variant="caption" className={`mt-2 ${item.is_overdue ? 'text-red-500' : 'text-textGray'}`}>
-                            {item.is_overdue ? '⚠️ ' : ''}Jatuh tempo: {formatDate(item.tanggal_jatuh_tempo)}
-                        </Typography>
-                    )}
-                </Card>
-            </Pressable>
-        );
-    };
-
     return (
         <View className="flex-1 bg-surface">
             <Header
@@ -751,21 +733,32 @@ export default function PiutangUsahaScreen() {
                 <View className="px-6 mt-4">
                     <View className="bg-surface p-3 rounded-[24px] border border-transparent shadow-sm flex-col">
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-3 space-x-2 pb-1">
-                            {STATUS_FILTERS.map((filter) => (
-                                <Pressable
-                                    key={filter.value}
-                                    onPress={() => setSelectedFilter(filter.value)}
-                                    className={`px-4 py-2 rounded-xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-primary shadow-sm' : 'bg-background border border-transparent'}`}
-                                >
-                                    <Typography
-                                        variant="caption"
-                                        weight="bold"
-                                        className={`text-[10px] uppercase tracking-wider ${selectedFilter === filter.value ? 'text-white font-bold' : 'text-textGray'}`}
+                            {STATUS_FILTERS.map((filter) => {
+                                const isActive = selectedFilter === filter.value;
+                                const count = filterCounts[filter.value];
+                                return (
+                                    <Pressable
+                                        key={filter.value}
+                                        onPress={() => setSelectedFilter(filter.value)}
+                                        className={`px-4 py-2 rounded-xl mr-2 flex-row items-center ${isActive ? 'bg-primary border border-primary shadow-sm' : 'bg-background border border-transparent'}`}
                                     >
-                                        {filter.label}
-                                    </Typography>
-                                </Pressable>
-                            ))}
+                                        <Typography
+                                            variant="caption"
+                                            weight="bold"
+                                            className={`text-[10px] uppercase tracking-wider ${isActive ? 'text-white font-bold' : 'text-textGray'}`}
+                                        >
+                                            {filter.label}
+                                        </Typography>
+                                        {count !== undefined && (
+                                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                                <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : 'text-textGray'}`}>
+                                                    {formatNumber(count)}
+                                                </Typography>
+                                            </View>
+                                        )}
+                                    </Pressable>
+                                );
+                            })}
                         </ScrollView>
 
                         <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
@@ -806,7 +799,7 @@ export default function PiutangUsahaScreen() {
                                 </View>
                                 <View className={isOverdue ? "bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100" : item.status === 'LUNAS' ? "bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100" : "bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100"}>
                                     <Typography weight="bold" className={isOverdue ? "text-rose-600 text-[10px]" : item.status === 'LUNAS' ? "text-emerald-600 text-[10px]" : "text-blue-600 text-[10px]"}>
-                                        {isOverdue ? 'JATUH TEMPO' : item.status.toUpperCase()}
+                                        {isOverdue ? 'JATUH TEMPO' : (STATUS_LABEL[item.status] || item.status).toUpperCase()}
                                     </Typography>
                                 </View>
                             </View>

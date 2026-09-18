@@ -128,6 +128,10 @@ export interface PiutangSummary {
     jumlah_lunas: number;
     jumlah_belum_lunas: number;
     jumlah_overdue: number;
+    // Belum ada uang masuk sama sekali.
+    jumlah_belum_bayar?: number;
+    // Sudah ada uang masuk, sisa masih ada.
+    jumlah_sebagian?: number;
     by_sumber: Record<string, { count: number; total: number }>;
 }
 
@@ -307,6 +311,8 @@ export const keuanganService = {
         sumber?: PiutangSource;
         status?: PiutangStatus;
         overdue_only?: boolean;
+        sebagian_only?: boolean;
+        belum_bayar_only?: boolean;
         tanggal_dari?: string;
         tanggal_sampai?: string;
         unit?: KasBankSource;
