@@ -91,7 +91,13 @@ export const AlertDialog = ({
                     </View>
 
                     <Text style={styles.titleText}>{title}</Text>
-                    <Text style={styles.messageText}>{message}</Text>
+                    <Text style={styles.messageText}>
+                        {typeof message === 'string'
+                            ? message
+                            : (typeof message === 'object' && message !== null
+                                ? ((message as any).message || JSON.stringify(message))
+                                : String(message || ''))}
+                    </Text>
                 </ScrollView>
 
                 <View

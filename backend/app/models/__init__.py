@@ -1,4 +1,4 @@
-from app.models.user import User
+from app.models.user import User, LoginOtp
 from app.models.supplier import Supplier
 from app.models.customer import Customer
 from app.models.bengkel import (
@@ -42,6 +42,7 @@ from app.models.system_setting import SystemSetting
 
 __all__ = [
     "User",
+    "LoginOtp",
     "Supplier",
     "Customer",
     "SparePart",

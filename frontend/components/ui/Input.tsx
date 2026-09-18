@@ -20,17 +20,18 @@ export const Input = ({ label, error, containerClassName, innerContainerClassNam
             <View
                 className={cn(
                     'bg-surface rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center',
-                    isFocused && 'border-primary bg-surface',
+                    isFocused && 'border-primary',
                     error && 'border-secondary',
                     innerContainerClassName
                 )}
             >
                 {startIcon && <View className="mr-2">{startIcon}</View>}
                 <TextInput
-                    className={cn('text-text text-base flex-1', className)}
+                    className={cn('text-text text-base flex-1 min-w-0', className)}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                     placeholderTextColor="#9CA3AF"
+                    style={[{ outlineStyle: 'none' } as any, props.style]}
                     {...props}
                 />
                 {endIcon && <View className="ml-2">{endIcon}</View>}

@@ -5,7 +5,8 @@ export default function AuthLayout() {
     const { isAuthenticated, hasHydrated } = useAuthStore();
 
     if (hasHydrated && isAuthenticated) {
-        return <Redirect href="/(tabs)/home" />;
+        // `/` saja — app/index.tsx sudah merutekan per-role.
+        return <Redirect href="/" />;
     }
 
     return (

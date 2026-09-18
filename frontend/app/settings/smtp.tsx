@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
-import { Server, Mail, Lock, User, Save, Send, ShieldCheck, Info } from 'lucide-react-native';
+import { Server, Mail, Lock, User, Save, Send, ShieldCheck, Info, Eye, EyeOff } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { useRouter } from 'expo-router';
@@ -19,6 +19,7 @@ export default function SMTPSettingsScreen() {
     const [port, setPort] = useState('587');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [senderName, setSenderName] = useState('TPM Business');
     const [useTLS, setUseTLS] = useState(true);
 
@@ -44,13 +45,13 @@ export default function SMTPSettingsScreen() {
     const fetchSettings = async () => {
         try {
             const data = await settingsService.getSettings();
-            if (data.smtp) {
-                setServer(data.smtp.server);
-                setPort(data.smtp.port.toString());
-                setUsername(data.smtp.username);
+            if (data?.smtp) {
+                setServer(data.smtp.server || 'smtp.gmail.com');
+                setPort(data.smtp.port ? String(data.smtp.port) : '587');
+                setUsername(data.smtp.username || '');
                 setPassword(data.smtp.password || '');
-                setSenderName(data.smtp.sender_name);
-                setUseTLS(data.smtp.use_tls);
+                setSenderName(data.smtp.sender_name || 'TPM Business');
+                setUseTLS(data.smtp.use_tls ?? true);
             }
         } catch (error) {
             console.error('Failed to fetch settings:', error);
@@ -251,11 +252,22 @@ export default function SMTPSettingsScreen() {
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
                                         placeholder="xxxx xxxx xxxx xxxx"
-                                        secureTextEntry
+                                        secureTextEntry={!showPassword}
                                         autoCapitalize="none"
                                         value={password}
                                         onChangeText={setPassword}
                                     />
+                                    <Pressable
+                                        onPress={() => setShowPassword(!showPassword)}
+                                        className="p-1"
+                                        hitSlop={8}
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff size={18} color="#9CA3AF" />
+                                        ) : (
+                                            <Eye size={18} color="#9CA3AF" />
+                                        )}
+                                    </Pressable>
                                 </View>
                             </View>
 

@@ -28,10 +28,16 @@ export function inferAlertVariant(title: string): AlertVariant {
     return 'info';
 }
 
-export function appAlert(title: string, message: string, options?: Partial<Omit<AppAlertOptions, 'title' | 'message'>>) {
+export function appAlert(title: string, message: any, options?: Partial<Omit<AppAlertOptions, 'title' | 'message'>>) {
+    const safeMessage = typeof message === 'string'
+        ? message
+        : (typeof message === 'object' && message !== null
+            ? (message.message || message.msg || JSON.stringify(message))
+            : String(message || ''));
+
     const payload: AppAlertOptions = {
         title,
-        message,
+        message: safeMessage,
         variant: options?.variant ?? inferAlertVariant(title),
         type: options?.type ?? 'alert',
         ...options,
@@ -43,7 +49,7 @@ export function appAlert(title: string, message: string, options?: Partial<Omit<
     }
 
     if (typeof globalThis.alert === 'function') {
-        globalThis.alert(`${title}\n\n${message}`);
+        globalThis.alert(`${title}\n\n${safeMessage}`);
     }
 }
 

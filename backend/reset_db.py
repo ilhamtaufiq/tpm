@@ -75,8 +75,7 @@ def _ensure_single_admin(db) -> None:
         admin.expo_push_token = None
         admin.reset_token = None
         admin.reset_token_expires = None
-        admin.otp_code = None
-        admin.otp_expires = None
+        # OTP login kini di tabel `login_otps` (terhapus lewat TRUNCATE).
         admin.last_login = None
         # Password tidak diubah jika admin sudah ada (biar login tetap sama)
         keep_id = admin.id

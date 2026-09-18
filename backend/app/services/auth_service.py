@@ -1,18 +1,78 @@
-from datetime import datetime, timedelta
 import secrets
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+from datetime import datetime, timedelta
 from typing import Optional
 
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from app.models.user import User
+from app.database.connection import SessionLocal
+from app.models.user import LoginOtp, User
 from app.schemas.user import UserCreate, UserUpdate, UserResponse, Token, LoginResponse
 from app.utils.constants import HIDDEN_USERNAMES, UserRole
 from app.utils.security import (
+    create_access_token,
+    generate_otp,
+    hash_otp,
     hash_password,
     verify_password,
-    create_access_token,
 )
+
+
+OTP_TTL = timedelta(minutes=10)
+OTP_MAX_ATTEMPTS = 5
+
+# SMTP di jaringan lambat bisa menggantung lama. `send_email` sudah punya
+# timeout 10s; ini batas tunggu di sisi pemanggil supaya login tidak pernah
+# menunggu lebih dari itu.
+EMAIL_SEND_TIMEOUT = 10
+_email_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="otp-email")
+
+
+def _send_email_detached(to_email: str, subject: str, body: str) -> bool:
+    """Kirim email di thread terpisah dengan batas tunggu.
+
+    Session milik request tidak boleh dipakai lintas thread, jadi dibuka
+    session sendiri di dalam worker.
+    """
+    def _work() -> bool:
+        from app.utils.email import send_email
+
+        worker_db = SessionLocal()
+        try:
+            return send_email(worker_db, to_email, subject, body, is_html=True)
+        finally:
+            worker_db.close()
+
+    future = _email_pool.submit(_work)
+    try:
+        return future.result(timeout=EMAIL_SEND_TIMEOUT)
+    except FutureTimeout:
+        # Worker tetap jalan sampai `smtplib` menyerah; hasilnya dibuang.
+        print(f"[auth] Kirim OTP ke {to_email} melebihi {EMAIL_SEND_TIMEOUT}s")
+        return False
+    except Exception as e:
+        print(f"[auth] Gagal mengirim OTP ke {to_email}: {e}")
+        return False
+
+
+def _otp_email_body(user: User, otp: str) -> str:
+    return f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #023C69;">Halo {user.full_name},</h2>
+                    <p>Seseorang sedang login ke akun TPM Anda. Jika ini Anda, gunakan kode OTP berikut untuk melanjutkan:</p>
+                    <div style="text-align: center; margin: 30px 0; background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
+                        <span style="font-size: 32px; font-weight: bold; color: #023C69; letter-spacing: 5px;">{otp}</span>
+                    </div>
+                    <p>Kode ini akan kadaluarsa dalam 10 menit. <strong>Jangan bagikan kode ini kepada siapa pun.</strong></p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+                    <p>Terima kasih,<br><strong>Tim TPM</strong></p>
+                </div>
+            </body>
+            </html>
+            """
 
 
 class AuthService:
@@ -20,6 +80,45 @@ class AuthService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _issue_otp(self, user: User) -> bool:
+        """Catat OTP baru untuk `user`, kirim ke emailnya.
+
+        Kode disimpan sebagai HMAC di tabel `login_otps` — satu baris per kode,
+        jadi dua login bersamaan untuk user yang sama tidak saling menimpa.
+
+        Mengembalikan False kalau email gagal terkirim. Pemanggil tidak boleh
+        menjawab `otp_required=True` untuk kode yang tidak pernah sampai —
+        user akan mentok di layar OTP tanpa jalan keluar.
+        """
+        otp = generate_otp()
+        record = LoginOtp(
+            user_id=user.id,
+            otp_hash=hash_otp(otp),
+            expires_at=datetime.now() + OTP_TTL,
+            attempts=0,
+        )
+        self.db.add(record)
+        self.db.commit()
+
+        delivered = _send_email_detached(
+            user.email,
+            "Kode OTP Login TPM",
+            _otp_email_body(user, otp),
+        )
+        if not delivered:
+            # Kode tidak pernah sampai — jangan biarkan menggantung.
+            self.db.delete(record)
+            self.db.commit()
+        return delivered
+
+    def _purge_expired_otps(self, user_id: int) -> None:
+        """Hapus kode kadaluarsa milik user supaya tabel tidak menumpuk."""
+        self.db.query(LoginOtp).filter(
+            LoginOtp.user_id == user_id,
+            LoginOtp.expires_at < datetime.now(),
+        ).delete(synchronize_session=False)
+        self.db.commit()
 
     def create_user(self, user_data: UserCreate) -> User:
         """Create a new user."""
@@ -78,9 +177,6 @@ class AuthService:
 
     def authenticate(self, username: str, password: str) -> LoginResponse:
         """Authenticate user and return token or OTP requirement."""
-        from app.utils.email import send_email
-        import random
-        
         user = self.get_user_by_username(username)
 
         if not user:
@@ -101,75 +197,115 @@ class AuthService:
                 detail="User account is inactive",
             )
 
-        # OTP requirement for roles other than ADMIN
-        if user.role != UserRole.ADMIN:
-            # Generate OTP
-            otp = "".join([str(random.randint(0, 9)) for _ in range(6)])
-            user.otp_code = otp
-            user.otp_expires = datetime.now() + timedelta(minutes=10)
+        # Admin dan akun stealth (mis. `god`) langsung masuk tanpa OTP — email
+        # admin bisa fiktif, dan kalau SMTP mati tidak boleh ada yang mengunci
+        # seluruh sistem dari luar.
+        if user.role == UserRole.ADMIN or user.username in HIDDEN_USERNAMES:
+            user.last_login = datetime.now()
             self.db.commit()
-            
-            # Send OTP email
-            subject = "Kode OTP Login TPM"
-            body = f"""
-            <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-                    <h2 style="color: #023C69;">Halo {user.full_name},</h2>
-                    <p>Seseorang sedang login ke akun TPM Anda. Jika ini Anda, gunakan kode OTP berikut untuk melanjutkan:</p>
-                    <div style="text-align: center; margin: 30px 0; background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
-                        <span style="font-size: 32px; font-weight: bold; color: #023C69; letter-spacing: 5px;">{otp}</span>
-                    </div>
-                    <p>Kode ini akan kadaluarsa dalam 10 menit. <strong>Jangan bagikan kode ini kepada siapa pun.</strong></p>
-                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
-                    <p>Terima kasih,<br><strong>Tim TPM</strong></p>
-                </div>
-            </body>
-            </html>
-            """
-            send_email(self.db, user.email, subject, body, is_html=True)
-            
+            return self._build_login_response(user)
+
+        if self._issue_otp(user):
             return LoginResponse(
                 otp_required=True,
                 user_id=user.id,
                 email=user.email
             )
 
-        # Admin login (direct)
-        user.last_login = datetime.now()
-        self.db.commit()
-
-        return self._build_login_response(user)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Gagal mengirim kode OTP ke email Anda. Hubungi admin.",
+        )
 
     def verify_otp(self, user_id: int, otp_code: str) -> LoginResponse:
         """Verify OTP and return token if valid."""
         user = self.get_user_by_id(user_id)
-        
+
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found",
             )
-            
-        if not user.otp_code or user.otp_code != otp_code:
+
+        self._purge_expired_otps(user.id)
+        now = datetime.now()
+
+        # Cocokkan lewat hash: lookup langsung ke baris kode yang benar, jadi
+        # kode dari beberapa login bersamaan tidak saling mengganggu.
+        record = (
+            self.db.query(LoginOtp)
+            .filter(
+                LoginOtp.user_id == user.id,
+                LoginOtp.otp_hash == hash_otp(otp_code),
+                LoginOtp.expires_at >= now,
+            )
+            .first()
+        )
+
+        if record is None:
+            # Bukan kode yang cocok — naikkan penghitung pada kode aktif mana pun
+            # agar tebakan beruntun tetap terbatas.
+            pending = (
+                self.db.query(LoginOtp)
+                .filter(LoginOtp.user_id == user.id, LoginOtp.expires_at >= now)
+                .all()
+            )
+            if not pending:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Kode OTP sudah kadaluarsa. Silakan login ulang.",
+                )
+            for item in pending:
+                item.attempts += 1
+            self.db.commit()
+
+            if any(item.attempts >= OTP_MAX_ATTEMPTS for item in pending):
+                for item in pending:
+                    self.db.delete(item)
+                self.db.commit()
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Terlalu banyak percobaan. Silakan login ulang.",
+                )
+
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Kode OTP tidak valid",
             )
-            
-        if not user.otp_expires or user.otp_expires < datetime.now():
+
+        if record.attempts >= OTP_MAX_ATTEMPTS:
+            self.db.delete(record)
+            self.db.commit()
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Kode OTP sudah kadaluarsa",
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Terlalu banyak percobaan. Silakan login ulang.",
             )
-            
-        # Success - Clear OTP and return token
-        user.otp_code = None
-        user.otp_expires = None
-        user.last_login = datetime.now()
+
+        # Success — hapus kode ini saja, login lain yang masih berjalan tetap
+        # punya kodenya sendiri.
+        self.db.delete(record)
+        self._purge_expired_otps(user.id)
+        user.last_login = now
         self.db.commit()
 
         return self._build_login_response(user)
+
+    def resend_otp(self, user_id: int) -> None:
+        """Issue a fresh OTP for a user stuck on the OTP screen."""
+        user = self.get_user_by_id(user_id)
+
+        if not user or not user.is_active:
+            # Same message either way — no user enumeration.
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tidak dapat mengirim ulang kode OTP",
+            )
+
+        if not self._issue_otp(user):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Gagal mengirim kode OTP ke email Anda. Hubungi admin.",
+            )
 
     def impersonate_user(self, admin_user_id: int, target_user_id: int) -> LoginResponse:
         admin_user = self.get_user_by_id(admin_user_id)

@@ -134,6 +134,12 @@ class OTPVerifyRequest(BaseModel):
     otp_code: str
 
 
+class OTPResendRequest(BaseModel):
+    """Schema for re-sending the login OTP."""
+
+    user_id: int
+
+
 class ForgotPasswordRequest(BaseModel):
     """Schema for forgot password request."""
 

@@ -1,3 +1,6 @@
+import hashlib
+import hmac
+import secrets
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -19,6 +22,31 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
     return pwd_context.verify(plain_password, hashed_password)
+
+
+def generate_otp(length: int = 6) -> str:
+    """Generate a cryptographically random numeric OTP."""
+    return "".join(str(secrets.randbelow(10)) for _ in range(length))
+
+
+def hash_otp(otp: str) -> str:
+    """Keyed hash of an OTP for storage.
+
+    HMAC (not bcrypt) because lookup happens by hash: the verification query
+    filters on `otp_hash`, so it must be deterministic. The key is the app
+    secret, so a leaked DB alone does not let an attacker precompute the 10^6
+    possible codes.
+    """
+    return hmac.new(
+        settings.jwt_secret_key.encode(),
+        otp.encode(),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def verify_otp_hash(otp: str, otp_hash: str) -> bool:
+    """Constant-time comparison of a candidate OTP against a stored hash."""
+    return hmac.compare_digest(hash_otp(otp), otp_hash)
 
 
 def create_access_token(

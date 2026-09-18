@@ -1,7 +1,9 @@
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Request, status, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
+
+from app.utils import rate_limit
 
 from app.api.deps import DBSession, CurrentUser, AdminUser
 from app.schemas.user import (
@@ -13,6 +15,7 @@ from app.schemas.user import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
     LoginResponse,
+    OTPResendRequest,
     OTPVerifyRequest,
     PushTokenRegisterRequest,
     ChangePasswordRequest,
@@ -24,6 +27,16 @@ from app.services.auth_service import AuthService
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+# Batas per IP. Longgar untuk login karena satu kantor biasanya keluar lewat
+# satu IP publik (NAT) — batas ketat di sini akan memblokir karyawan yang sah.
+# Penahan brute-force kode ada di `verify_otp` + `OTP_MAX_ATTEMPTS` per kode.
+LOGIN_LIMIT = 20
+LOGIN_WINDOW = 900
+RESEND_OTP_LIMIT = 5
+RESEND_OTP_WINDOW = 900
+VERIFY_OTP_LIMIT = 10
+VERIFY_OTP_WINDOW = 900
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -43,6 +56,7 @@ def register(
 
 @router.post("/login", response_model=LoginResponse)
 def login(
+    request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: DBSession,
 ):
@@ -51,12 +65,14 @@ def login(
 
     Uses OAuth2 password flow.
     """
+    rate_limit.check(request, "login", LOGIN_LIMIT, LOGIN_WINDOW)
     service = AuthService(db)
     return service.authenticate(form_data.username, form_data.password)
 
 
 @router.post("/login/json", response_model=LoginResponse)
 def login_json(
+    request: Request,
     login_data: UserLogin,
     db: DBSession,
 ):
@@ -65,20 +81,38 @@ def login_json(
 
     Alternative to OAuth2 form for easier frontend integration.
     """
+    rate_limit.check(request, "login", LOGIN_LIMIT, LOGIN_WINDOW)
     service = AuthService(db)
     return service.authenticate(login_data.username, login_data.password)
 
 
 @router.post("/verify-otp", response_model=LoginResponse)
 def verify_otp(
+    request: Request,
     data: OTPVerifyRequest,
     db: DBSession,
 ):
     """
     Verify OTP and get access token.
     """
+    rate_limit.check(request, "verify-otp", VERIFY_OTP_LIMIT, VERIFY_OTP_WINDOW)
     service = AuthService(db)
     return service.verify_otp(data.user_id, data.otp_code)
+
+
+@router.post("/resend-otp")
+def resend_otp(
+    request: Request,
+    data: OTPResendRequest,
+    db: DBSession,
+):
+    """
+    Re-issue the login OTP for a user still on the OTP screen.
+    """
+    rate_limit.check(request, "resend-otp", RESEND_OTP_LIMIT, RESEND_OTP_WINDOW)
+    service = AuthService(db)
+    service.resend_otp(data.user_id)
+    return {"message": "Kode OTP telah dikirim ulang ke email Anda."}
 
 
 @router.get("/me", response_model=UserResponse)

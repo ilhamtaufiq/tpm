@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../utils/api';
 import { useAuthStore } from '../../store/useAuthStore';
+import { getErrorMessage } from '../../utils/error';
 import { ShieldAlert, ArrowLeft, CheckCircle2 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
@@ -83,66 +84,73 @@ export default function OTPScreen() {
 
             const { access_token, user } = response.data;
             setAuth(user, access_token);
-            router.replace('/(tabs)/home');
+            // `/` saja — app/index.tsx sudah merutekan per-role.
+            router.replace('/');
         } catch (error: any) {
             if (__DEV__) {
                 console.error('OTP verification error:', error.response?.data || error.message);
             }
-            appAlert('Gagal', 'Kode OTP salah atau sudah kadaluarsa');
+            appAlert('Gagal', getErrorMessage(error, 'Kode OTP salah atau sudah kadaluarsa'));
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <View className="flex-1 bg-[#F8F9FA]">
+        <View className="flex-1 bg-background w-full">
             <StatusBar style="light" />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                className="flex-1"
+                className="flex-1 w-full"
             >
                 <ScrollView
                     contentContainerStyle={{ flexGrow: 1 }}
                     bounces={false}
                     showsVerticalScrollIndicator={false}
+                    className="w-full"
                 >
-                    <View className="bg-primary pt-24 pb-32 px-8 rounded-b-[48px] shadow-2xl items-center relative overflow-hidden">
-                        <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-surface/5 rounded-full" />
-                        <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-surface/5 rounded-full" />
+                    <View className="w-full bg-primary pt-20 pb-28 px-6 rounded-b-[48px] shadow-2xl items-center relative overflow-hidden">
+                        <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-white/5 rounded-full" />
+                        <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-white/5 rounded-full" />
 
                         <Pressable
                             onPress={() => router.replace('/(auth)/login')}
-                            className="absolute top-16 left-6 p-2 rounded-full bg-surface/10"
+                            className="absolute top-12 left-5 p-2.5 rounded-full bg-white/10 border border-white/20 z-10"
                         >
-                            <ArrowLeft size={24} color="white" />
+                            <ArrowLeft size={22} color="white" />
                         </Pressable>
 
-                        <View className="w-20 h-20 bg-surface/10 rounded-[28px] items-center justify-center mb-6 border border-white/20">
+                        <View className="w-20 h-20 bg-white/10 rounded-[28px] items-center justify-center mb-4 border border-white/20">
                             <ShieldAlert size={40} color="white" strokeWidth={1.5} />
                         </View>
 
                         <Typography variant="h2" weight="bold" className="text-white text-center leading-tight">
                             Verifikasi OTP
                         </Typography>
-                        <Typography className="text-white/60 text-sm mt-2 font-medium text-left px-4">
-                            Masukkan kode 6 digit yang telah kami kirimkan ke email {email}.
+                        <Typography className="text-white/80 text-sm mt-2 font-medium text-center px-4 leading-relaxed">
+                            Masukkan 6 digit kode yang telah dikirim ke email:{'\n'}
+                            <Typography weight="bold" className="text-white text-sm">
+                                {email || 'Anda'}
+                            </Typography>
                         </Typography>
                     </View>
 
-                    <View className="px-6 -mt-16 mb-8">
-                        <View className="bg-surface p-8 rounded-[40px] shadow-2xl border border-transparent">
-                            <Typography variant="body1" weight="bold" className="text-primary mb-6 text-center uppercase tracking-widest">
+                    <View className="w-full px-6 -mt-14 mb-8 items-center">
+                        <View className="w-full bg-surface p-7 rounded-[36px] shadow-2xl border border-border/50">
+                            <Typography variant="body2" weight="bold" className="text-textGray mb-4 text-center uppercase tracking-widest text-xs">
                                 KODE KEAMANAN
                             </Typography>
 
                             <Input
-                                placeholder="000 000"
+                                placeholder="000000"
                                 keyboardType="number-pad"
                                 autoFocus
                                 value={otp}
                                 onChangeText={(t) => setOtp(t.replace(/[^0-9]/g, ''))}
-                                className="text-center text-3xl font-bold tracking-[10px]"
-                                containerClassName="mb-8"
+                                className="text-center text-3xl font-bold text-text"
+                                style={[{ letterSpacing: 8, outlineStyle: 'none' } as any]}
+                                innerContainerClassName="bg-background border-border py-3 rounded-2xl w-full"
+                                containerClassName="mb-6 w-full"
                                 maxLength={6}
                             />
 
@@ -151,31 +159,33 @@ export default function OTPScreen() {
                                 onPress={handleVerify}
                                 loading={loading}
                                 size="lg"
-                                className="shadow-lg shadow-primary/30 h-14 rounded-2xl"
+                                className="shadow-lg shadow-primary/30 h-14 rounded-2xl w-full"
                                 icon={<CheckCircle2 size={20} color="white" />}
                             />
 
-                            <Pressable
-                                onPress={handleResend}
-                                disabled={cooldown > 0}
-                                className="mt-4 items-center"
-                            >
-                                <Typography variant="caption" weight="bold" className="text-textGray">
-                                    TIDAK MENERIMA KODE?{' '}
-                                    <Typography variant="caption" weight="bold" className={cooldown > 0 ? 'text-textGray' : 'text-primary'}>
-                                        {cooldown > 0 ? `KIRIM ULANG (${cooldown}s)` : 'KIRIM ULANG'}
+                            <View className="mt-6 gap-y-3 items-center w-full">
+                                <Pressable
+                                    onPress={handleResend}
+                                    disabled={cooldown > 0}
+                                    className="py-1 items-center"
+                                >
+                                    <Typography variant="caption" weight="bold" className="text-textGray text-xs text-center">
+                                        TIDAK MENERIMA KODE?{' '}
+                                        <Typography variant="caption" weight="bold" className={cooldown > 0 ? 'text-textGray/50' : 'text-primary'}>
+                                            {cooldown > 0 ? `KIRIM ULANG (${cooldown}s)` : 'KIRIM ULANG'}
+                                        </Typography>
                                     </Typography>
-                                </Typography>
-                            </Pressable>
+                                </Pressable>
 
-                            <Pressable
-                                onPress={() => router.replace('/(auth)/login')}
-                                className="mt-4 items-center"
-                            >
-                                <Typography variant="caption" weight="bold" className="text-textGray">
-                                    BUKAN AKUN ANDA? <Typography variant="caption" weight="bold" className="text-primary">KEMBALI KE LOGIN</Typography>
-                                </Typography>
-                            </Pressable>
+                                <Pressable
+                                    onPress={() => router.replace('/(auth)/login')}
+                                    className="py-1 items-center"
+                                >
+                                    <Typography variant="caption" weight="bold" className="text-textGray text-xs text-center">
+                                        BUKAN AKUN ANDA? <Typography variant="caption" weight="bold" className="text-primary">KEMBALI KE LOGIN</Typography>
+                                    </Typography>
+                                </Pressable>
+                            </View>
                         </View>
                     </View>
                 </ScrollView>

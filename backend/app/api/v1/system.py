@@ -5,6 +5,7 @@ from sqlalchemy import inspect, text
 from app.api.deps import DBSession, AdminUser
 from app.database.connection import engine
 from app.database.base import Base
+from app.models.user import LoginOtp
 from app.utils.security import hash_password
 from app.utils.constants import HIDDEN_USERNAMES, UserRole
 
@@ -69,8 +70,7 @@ def reset_database(db: DBSession, current_user: AdminUser):
             admin.expo_push_token = None
             admin.reset_token = None
             admin.reset_token_expires = None
-            admin.otp_code = None
-            admin.otp_expires = None
+            db.query(LoginOtp).filter(LoginOtp.user_id == admin.id).delete()
             admin.last_login = None
             # User stealth (mis. `god`) dipertahankan — hak akses admin, tersembunyi.
             deleted = db.query(User).filter(
