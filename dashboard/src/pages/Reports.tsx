@@ -339,7 +339,7 @@ export function Neraca() {
     }),
     { harga_beli: 0, biaya_persiapan: 0, perbaikan_external: 0, perbaikan_internal: 0 },
   );
-  const labaAdj = m.laba_ditahan ?? r.cross_validation?.retained_earnings ?? 0;
+  const labaAdj = m.laba_ditahan ?? r.cross_validation?.retained_earnings ?? r.cross_validation?.laba_bersih_from_base ?? 0;
   const unitCashDetails = Array.isArray(al.unit_cash_details)
     ? al.unit_cash_details
     : Object.entries(al.unit_details || {}).map(([unit, total_cash]) => ({ unit, total_cash: Number(total_cash || 0) }));
@@ -386,7 +386,7 @@ export function Neraca() {
 
       <Card title="Rekonsiliasi antar Laporan" sub="Cek silang per tanggal yang sama" icon={Scale}>
         <div className="grid gap-2 text-xs sm:grid-cols-3">
-          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Laba Ditahan <b className="font-mono tabular-nums">{formatCurrencyDisplay(labaAdj)}</b> = akumulasi Laba Bersih Laba Rugi − Prive <b>sejak awal sistem</b> (bandingkan akumulasi, bukan satu periode)</p>
+          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Laba Ditahan <b className="font-mono tabular-nums">{formatCurrencyDisplay(labaAdj)}</b> = akumulasi laba laba rugi <b>belum dikurangi Prive</b> sejak awal sistem — Prive tampil sebagai baris terpisah di bawah (bandingkan akumulasi, bukan satu periode)</p>
           <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Total Modal <b className="font-mono tabular-nums">{formatCurrencyDisplay(m.total_modal)}</b> vs Modal Akhir Modal periode sama: selisih wajar = <b>hutang investor</b> (Modal keluarkan investor dari kewajiban, Neraca memasukkannya)</p>
           <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Prive <b className="font-mono tabular-nums">{formatCurrencyDisplay(m.prive)}</b> = <b>kumulatif</b>; Prive Laba Rugi = periode berjalan saja</p>
         </div>
@@ -568,9 +568,16 @@ export function Modal() {
   const pengembalianModal = r.pengurangan?.pengembalian_modal || 0;
   const priveTotal = prive + pengembalianModal;
   const modalAkhir = r.modal_akhir || 0;
-  // Investor = hutang (bukan aliran modal) — selaras xlsx.
-  const perubahanBersih = setoranKas + modalNonKas + labaBersih - priveTotal;
+  // info.laba_operasional = laba SEBELUM prive. `laba_bersih` sudah net prive —
+  // memakainya di sini lalu mengurangkan prive lagi menghitung prive dua kali.
+  const labaOperasional = r.info?.laba_operasional ?? labaBersih + priveTotal;
+  // Investor = hutang (bukan aliran modal) — selaras xlsx. Laba investor sudah
+  // dipotong di dalam laba_operasional.
+  const perubahanBersih = setoranKas + modalNonKas + labaOperasional - priveTotal;
   const expectedAliran = modalAwal + perubahanBersih;
+  // Mutasi dihitung kumulatif sejak posisi pembuka (modal awal beku); bila
+  // periode terpilih menjangkau sebelum itu, angkanya beda dengan Laba Rugi.
+  const coversBeforeOpening = !!r.modal_awal_flow_dari && r.modal_awal_flow_dari > period.tanggal_dari;
   const expected = r.info?.validasi?.modal_teoritis ?? expectedAliran;
   const selisih = r.info?.validasi?.selisih ?? r.selisih ?? modalAkhir - expected;
   const isBalanced = r.is_balanced ?? Math.abs(selisih) < 100;
@@ -603,7 +610,7 @@ export function Modal() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           ['Modal Awal', modalAwal, 'Saldo awal periode'],
-          ['Laba Bersih', labaBersih, 'Laba periode berjalan'],
+          ['Laba Operasional', labaOperasional, 'Sebelum prive'],
           ['Setoran', setoranKas + modalNonKas, 'Kas + non-kas'],
           ['Prive', priveTotal, 'Penarikan pemilik'],
         ].map(([label, value, sub]) => (
@@ -620,6 +627,7 @@ export function Modal() {
           <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Laba Bersih <b className="font-mono tabular-nums">{formatCurrencyDisplay(labaBersih)}</b> = Laba Bersih Laba Rugi periode sama</p>
           <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Modal Akhir <b className="font-mono tabular-nums">{formatCurrencyDisplay(modalAkhir)}</b> vs Total Modal Neraca per akhir periode: selisih wajar = <b>hutang investor</b> (lihat catatan investor di atas)</p>
           <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Prive <b className="font-mono tabular-nums">{formatCurrencyDisplay(priveTotal)}</b> = angka Prive Laba Rugi periode sama</p>
+          <p className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600">Modal Awal <b className="font-mono tabular-nums">{formatCurrencyDisplay(modalAwal)}</b> = posisi pembuka <b>beku</b>; mutasi dihitung kumulatif sejak {r.modal_awal_flow_dari ?? r.modal_awal_as_of ?? period.tanggal_dari}</p>
         </div>
       </Card>
 
@@ -649,22 +657,34 @@ export function Modal() {
           total={setoranKas + modalNonKas}
         />
         <p className="mt-1 pl-6 text-[11px] text-slate-400">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</p>
-        <FinancialRow label="Laba/Rugi Periode" value={labaBersih} small indent isNegative={labaBersih < 0} />
+        <FinancialRow label="Laba/Rugi Periode" value={labaOperasional} small indent isNegative={labaOperasional < 0} />
+        <p className="mt-1 pl-6 text-[11px] text-slate-400">* sebelum prive — prive dikurangkan di baris berikutnya</p>
         <Drill
           spec={drillLabaPeriode(r.info?.units as Record<string, Record<string, number>> | undefined)}
           period={period}
           amountKey="amount"
-          total={labaBersih}
+          total={labaOperasional}
         />
         <FinancialRow label="Prive/ Pengambilan Pemilik" value={-priveTotal} small indent isNegative={priveTotal > 0} />
         {/* total = prive + pengembalian_modal (nilai baris), bukan `prive` saja. */}
         {priveTotal > 0 && <Drill spec={drillPrive()} period={period} amountKey="nominal" total={priveTotal} />}
         <p className="mt-1 pl-6 text-[11px] text-slate-400">* pengambilan pemilik dan akun ini hanya muncul di laporan perubahan modal saja, karena sifat nya mengurangi kumulatif antar modal dan laba/rugi</p>
-        <FinancialRow label="Laba Investor Jual Beli Mobil" value={labaInvestor} small indent />
-        {labaInvestor !== 0 && <Drill spec={drillInvestor()} period={period} amountKey="nominal" total={labaInvestor} />}
+        {labaInvestor !== 0 && (
+          <>
+            <FinancialRow label="Info: Laba Investor Jual Beli Mobil" value={labaInvestor} small indent />
+            <Drill spec={drillInvestor()} period={period} amountKey="nominal" total={labaInvestor} />
+            <p className="mt-1 pl-6 text-[11px] text-slate-400">* sudah dipotong di laba operasional (investor = hutang, bukan baris ekuitas)</p>
+          </>
+        )}
 
         <div className="my-2 h-px w-full bg-slate-100" />
         <FinancialRow label="Perubahan Bersih Modal (Aliran)" value={perubahanBersih} bold />
+        <p className="mt-1 text-[11px] text-slate-400">* = setoran + laba operasional − prive. Dana/pembayaran investor adalah hutang, bukan aliran ekuitas.</p>
+        {coversBeforeOpening && (
+          <p className="mt-1 text-[11px] text-amber-700">
+            * mutasi di atas kumulatif sejak {r.modal_awal_flow_dari} (posisi pembuka), bukan sejak {period.tanggal_dari} — karena itu angkanya bisa berbeda dengan Laba Rugi periode yang sama.
+          </p>
+        )}
         <FinancialRow label="Modal Akhir Periode (Teoritis)" value={expected} bold color="text-indigo-700" />
 
         <div className="my-3 h-px w-full bg-slate-100" />

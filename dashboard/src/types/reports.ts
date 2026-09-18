@@ -199,6 +199,8 @@ export interface CapitalReport {
   modal_akhir: number;
   info?: {
     laba_bersih: number;
+    /** Laba operasional (sebelum prive) — komponen aliran ekuitas. */
+    laba_operasional?: number;
     laba_investor: number;
     diskon_penjualan_bengkel?: number;
     validasi?: { modal_teoritis?: number; modal_aktual?: number; selisih?: number; status: string };
@@ -219,4 +221,10 @@ export interface CapitalReport {
    * besar sebesar angka ini — tampilkan sebagai baris pengurang agar cocok.
    */
   modal_awal_penyesuaian?: number;
+  /**
+   * Tanggal mulai perhitungan mutasi (= posisi pembuka/beku). Bila lebih besar
+   * dari tanggal_dari filter, angka laba kumulatif sejak tanggal itu — tak akan
+   * sama dengan Laba Rugi periode yang sama.
+   */
+  modal_awal_flow_dari?: string;
 }
