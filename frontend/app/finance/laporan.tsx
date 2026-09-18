@@ -332,17 +332,13 @@ export default function LaporanKeuanganScreen() {
         const bengkel = units.bengkel || {};
         const jasaAngkut = units.jasa_angkut || {};
         const mobil = units.mobil || {};
-        const totalRevenue = (bengkel.revenue || 0) + (jasaAngkut.revenue || 0) + (mobil.revenue || 0);
-        const labaKotor = (bengkel.laba_kotor || 0) + ((mobil.revenue || 0) - (mobil.hpp || 0) - (mobil.beban_operasional || 0) - (mobil.maintenance || 0)) + (jasaAngkut.revenue || 0);
-        const totalBeban = (summary.total_beban_umum || 0)
-            + (bengkel.beban_operasional || 0)
-            + (bengkel.beban_gaji || 0)
-            + (bengkel.beban_lembur || 0)
-            + (jasaAngkut.beban_operasional || 0)
-            + (jasaAngkut.maintenance || 0)
-            + (jasaAngkut.beban_umum || 0)
-            + (mobil.beban_umum || 0)
-            + (mobil.sharing_investor || 0);
+        // Pakai angka backend apa adanya. Menurunkan ulang dari field per unit
+        // ganda-hitung komponen yang sudah masuk HPP (ja.maintenance sudah ada di
+        // ja_laba_kotor; b_ops/gaji/lembur sudah ada di laba bersih unit). Backend
+        // juga sudah memisahkan beban unit vs overhead pusat.
+        const totalRevenue = summary.total_revenue ?? 0;
+        const labaKotor = summary.total_laba_kotor ?? 0;
+        const totalBeban = (summary.total_beban_operasional || 0) + (summary.total_beban_umum || 0);
         const labaBersih = summary.laba_bersih ?? 0;
 
         return (
@@ -407,7 +403,7 @@ export default function LaporanKeuanganScreen() {
                             ['Bengkel', (bengkel.beban_operasional || 0) + (bengkel.beban_gaji || 0) + (bengkel.beban_lembur || 0)],
                             ['Jasa Angkut', (jasaAngkut.beban_operasional || 0) + (jasaAngkut.maintenance || 0) + (jasaAngkut.beban_umum || 0)],
                             ['Jual Beli Mobil', (mobil.beban_umum || 0) + (mobil.sharing_investor || 0)],
-                            ['Pusat / Umum', summary.total_beban_umum || 0],
+                            ['Operasional Pusat', summary.total_beban_umum || 0],
                             ['Prive', summary.prive || 0],
                         ] as Array<[string, number]>).map(([key, value]) => (
                             <View key={key} className="flex-row items-center p-4 border-b border-transparent">
@@ -438,12 +434,16 @@ export default function LaporanKeuanganScreen() {
 
         const penambahan = capitalData.penambahan || {};
         const pengurangan = capitalData.pengurangan || {};
-        const modalNonKas = (penambahan.modal_non_kas?.total || 0) + (penambahan.modal_non_kas?.stok_mobil || 0);
-        const investorFunding = penambahan.investor_funding || 0;
+        // modal_non_kas.total sudah termasuk stok_mobil (ia ringkasan dari
+        // setoran_mobil + setoran_piutang − setoran_hutang). Menambahkannya lagi
+        // seperti dulu (total + stok_mobil) menghitung stok dua kali.
+        const modalNonKas = penambahan.modal_non_kas?.total || 0;
         const labaBersih = capitalData.info?.laba_bersih ?? capitalData.laba_ditahan_periode ?? 0;
         const prive = (pengurangan.prive || 0) + (pengurangan.pengembalian_modal || 0);
-        const pembayaranInvestor = pengurangan.pembayaran_investor || 0;
-        const perubahanBersih = (penambahan.setoran_modal || 0) + modalNonKas + investorFunding + labaBersih - prive - pembayaranInvestor;
+        const labaOperasional = capitalData.info?.laba_operasional ?? (labaBersih + prive);
+        // Dana & pembayaran investor = hutang, bukan aliran ekuitas (selaras
+        // modal_service.raw_theoretical). laba_operasional sudah net dari laba investor.
+        const perubahanBersih = (penambahan.setoran_modal || 0) + modalNonKas + labaOperasional - prive;
 
         return (
             <View className="space-y-6">
@@ -470,20 +470,12 @@ export default function LaporanKeuanganScreen() {
                             <Typography weight="bold" className="text-emerald-600">{formatCurrency(modalNonKas)}</Typography>
                         </View>
                         <View className="flex-row justify-between items-center bg-background p-4 rounded-2xl">
-                            <Typography className="text-textGray">Dana Investor Mobil</Typography>
-                            <Typography weight="bold" className="text-emerald-600">{formatCurrency(investorFunding)}</Typography>
-                        </View>
-                        <View className="flex-row justify-between items-center bg-background p-4 rounded-2xl">
-                            <Typography className="text-textGray">Laba Bersih Operasional</Typography>
-                            <Typography weight="bold" className="text-emerald-600">{formatCurrency(labaBersih)}</Typography>
+                            <Typography className="text-textGray">Laba Operasional Periode</Typography>
+                            <Typography weight="bold" className="text-emerald-600">{formatCurrency(labaOperasional)}</Typography>
                         </View>
                         <View className="flex-row justify-between items-center bg-rose-50 p-4 rounded-2xl">
                             <Typography className="text-rose-800">Prive / Penarikan</Typography>
                             <Typography weight="bold" className="text-rose-600">({formatCurrency(prive)})</Typography>
-                        </View>
-                        <View className="flex-row justify-between items-center bg-rose-50 p-4 rounded-2xl">
-                            <Typography className="text-rose-800">Pembayaran Investor Mobil</Typography>
-                            <Typography weight="bold" className="text-rose-600">({formatCurrency(pembayaranInvestor)})</Typography>
                         </View>
                     </View>
                 </View>

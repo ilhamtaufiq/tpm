@@ -81,7 +81,7 @@ export default function LabaRugiScreen() {
         if (navigation.canGoBack()) {
             navigation.goBack();
         } else {
-            router.replace('/(tabs)/home');
+            router.replace('/laporan');
         }
     }, [navigation, router]);
 
@@ -306,10 +306,6 @@ export default function LabaRugiScreen() {
                         <Typography variant="caption" className="text-slate-400 text-[11px] mb-2 px-1">Info: persiapan semua stok {formatCurrency(mobilPrepData.all)} (belum terjual {formatCurrency(mobilPrepData.all - mobilPrepData.sold)}).</Typography>
                     )}
 
-                    {mobilPrepData.all > mobilPrepData.sold && (
-                        <Typography variant="caption" className="text-slate-400 text-[11px] mb-2 px-1">Info: persiapan semua stok {formatCurrency(mobilPrepData.all)} (belum terjual {formatCurrency(mobilPrepData.all - mobilPrepData.sold)}).</Typography>
-                    )}
-
                     <View className="p-1 px-3 mb-4">
                         <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-widest text-[10px]">III. Beban Umum Unit</Typography>
                         {(unit.sharing_investor || 0) > 0 && (
@@ -347,7 +343,7 @@ export default function LabaRugiScreen() {
             </View>
 
             <View className="p-5 w-full">
-                <FinancialRow label="Total Beban Umum & Lainnya" value={reportData?.summary?.total_beban_umum || 0} isNegative bold large color="text-slate-800" />
+                <FinancialRow label="Total Beban Operasional Pusat" value={reportData?.summary?.total_beban_umum || 0} isNegative bold large color="text-slate-800" />
                 {(reportData?.summary?.internal_profit_elimination || 0) > 0 && (
                     <FinancialRow
                         label="Info Laba Internal Mobil Belum Terjual"
@@ -472,19 +468,8 @@ export default function LabaRugiScreen() {
                     <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-surface">
                         <Pressable onPress={() => setShowPdfPreview(false)} className="w-10 h-10 items-center justify-center rounded-full bg-background"><X size={20} color="#1e293b" /></Pressable>
                         <Typography variant="body1" weight="bold" className="text-text">Preview Laba Rugi</Typography>
-                        <Pressable 
-                            onPress={async () => {
-                                if (Platform.OS === 'web') {
-                                    const printWindow = window.open('', '_blank');
-                                    if (printWindow) {
-                                        printWindow.document.write(previewHtml);
-                                        printWindow.document.close();
-                                        printWindow.print();
-                                    }
-                                } else {
-                                    await Print.printAsync({ html: previewHtml });
-                                }
-                            }}
+                        <Pressable
+                            onPress={() => handleExportPDF('print')}
                             className="flex-row items-center px-4 py-2 rounded-xl shadow-sm"
                             style={{ backgroundColor: '#4f46e5' }}
                         >

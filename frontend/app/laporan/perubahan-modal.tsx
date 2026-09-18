@@ -1,7 +1,7 @@
 import { appAlert } from '../../utils/appAlert';
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Platform, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useNavigation } from 'expo-router';
 import {
     ArrowUpRight, ArrowDownLeft, Wallet,
@@ -21,6 +21,7 @@ import { useCapitalReport } from '../../hooks/useKeuangan';
 import { buildCapitalExportHtml } from '../../utils/reportTemplates';
 import { FinancialRow } from '../../components/ui/FinancialRow';
 import { CapitalReport } from '../../types/reports';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import {
     ReportPageHeader,
     ReportDateControls,
@@ -30,6 +31,7 @@ import {
 } from '../../components/laporan';
 
 export default function LaporanPerubahanModalScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const navigation = useNavigation();
     const [filterType, setFilterType] = useState<ReportFilterType>('monthly');
@@ -96,9 +98,12 @@ export default function LaporanPerubahanModalScreen() {
                 modalAwal: 0,
                 setoranKas: 0,
                 modalNonKas: 0,
+                labaOperasional: 0,
                 labaBersih: 0,
                 labaInvestor: 0,
                 diskonPenjualanBengkel: 0,
+                flowDari: undefined,
+                coversBeforeOpening: false,
                 prive: 0,
                 modalAkhir: 0,
                 perubahanBersih: 0,
@@ -115,17 +120,21 @@ export default function LaporanPerubahanModalScreen() {
         const penyesuaianHargaBeli = r.penambahan?.penyesuaian_harga_beli_sparepart || 0;
         const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
-        const labaOperasional = (r.info as any)?.laba_operasional ?? r.info?.laba_bersih ?? 0;
+        // info.laba_operasional = laba SEBELUM prive (period_profit_sot). Inilah
+        // komponen aliran ekuitas — bukan laba_bersih yang sudah dipotong prive.
+        const labaOperasional = r.info?.laba_operasional ?? r.info?.laba_bersih ?? 0;
         const labaBersih = r.info?.laba_bersih ?? (labaOperasional - prive);
         // Laba investor hanya diakui setelah penjualan mobil LUNAS/TERJUAL (bukan saat DP/booking).
+        // Sudah dipotong di dalam labaOperasional — di sini hanya info rekonsiliasi.
         const labaInvestor = r.info?.laba_investor || 0;
         // Sudah net di laba_bersih; tampilkan untuk rekonsiliasi (bukan baris penambah/pengurang ekuitas).
         const diskonPenjualanBengkel = r.info?.diskon_penjualan_bengkel || 0;
         const modalAkhir = r.modal_akhir || 0;
 
-        // Investor = hutang (bukan aliran modal) — selaras xlsx & dashboard.
-        const perubahanBersihAliran =
-            setoranKas + modalNonKas + labaOperasional + labaInvestor - prive;
+        // Investor = hutang, BUKAN aliran modal — dana & pembayaran investor tidak
+        // masuk rumus ini (selaras modal_service.raw_theoretical). labaInvestor
+        // sudah dikurangkan di dalam laba_operasional (base.py: laba_mobil_tpm).
+        const perubahanBersihAliran = setoranKas + modalNonKas + labaOperasional - prive;
         const expectedModalAkhirAliran = modalAwal + perubahanBersihAliran;
 
         const validasi = r.info?.validasi;
@@ -138,9 +147,14 @@ export default function LaporanPerubahanModalScreen() {
             setoranKas,
             penyesuaianHargaBeli,
             modalNonKas,
+            labaOperasional,
             labaBersih,
             labaInvestor,
             diskonPenjualanBengkel,
+            flowDari: r.modal_awal_flow_dari,
+            // Periode terpilih menjangkau sebelum posisi pembuka → mutasi bersifat
+            // kumulatif, jadi laba di sini ≠ Laba Rugi periode yang sama.
+            coversBeforeOpening: !!r.modal_awal_flow_dari && r.modal_awal_flow_dari > reportParams.tanggal_dari,
             prive,
             modalAkhir,
             perubahanBersih: perubahanBersihAliran,
@@ -150,7 +164,7 @@ export default function LaporanPerubahanModalScreen() {
             isBalanced,
             status: isBalanced ? 'BALANCE' : 'UNBALANCED',
         };
-    }, [report]);
+    }, [report, reportParams.tanggal_dari]);
 
     const handleExportPDF = async (mode: 'preview' | 'download' | 'print' = 'preview') => {
         if (!report) return;
@@ -222,7 +236,7 @@ export default function LaporanPerubahanModalScreen() {
 
             <ScrollView
                 className="flex-1"
-                contentContainerStyle={{ paddingBottom: 100 }}
+                contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 40) }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RNRefreshControl refreshing={isLoading} onRefresh={refetch} colors={[themeColors.primary]} />}
             >
@@ -310,17 +324,18 @@ export default function LaporanPerubahanModalScreen() {
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest">Penambahan</Typography>
                                 <FinancialRow label="Penambahan Modal" value={equity.setoranKas + equity.modalNonKas} color="text-emerald-700" />
                                 <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</Typography>
-                                {equity.labaBersih >= 0 && (
+                                {equity.labaOperasional >= 0 && (
                                     <>
-                                        <FinancialRow label="Laba/Rugi Periode" value={equity.labaBersih} color="text-emerald-700" />
-                                        {equity.diskonPenjualanBengkel > 0 && (
-                                            <View className="mb-2 pl-1">
-                                                <Typography variant="caption" className="text-textGray text-[11px]">
-                                                    · info: diskon bengkel {formatCurrency(equity.diskonPenjualanBengkel)} sudah di laba (bukan baris modal terpisah)
-                                                </Typography>
-                                            </View>
-                                        )}
+                                        <FinancialRow label="Laba Operasional Periode" value={equity.labaOperasional} color="text-emerald-700" />
+                                        <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* sebelum prive — prive dikurangkan di bawah</Typography>
                                     </>
+                                )}
+                                {equity.diskonPenjualanBengkel > 0 && (
+                                    <View className="mb-2 pl-1">
+                                        <Typography variant="caption" className="text-textGray text-[11px]">
+                                            · info: diskon bengkel {formatCurrency(equity.diskonPenjualanBengkel)} sudah di laba (bukan baris modal terpisah)
+                                        </Typography>
+                                    </View>
                                 )}
                             </View>
 
@@ -328,19 +343,15 @@ export default function LaporanPerubahanModalScreen() {
                                 <Typography variant="caption" weight="bold" className="text-rose-600 mb-2 uppercase tracking-widest">Pengurangan</Typography>
                                 <FinancialRow label="Prive/ Pengambilan Pemilik" value={equity.prive} isNegative />
                                 <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* pengambilan pemilik dan akun ini hanya muncul di laporan perubahan modal saja, karena sifat nya mengurangi kumulatif antar modal dan laba/rugi</Typography>
-                                {equity.labaBersih < 0 && (
-                                    <>
-                                        <FinancialRow label="Rugi Periode" value={Math.abs(equity.labaBersih)} isNegative />
-                                        {equity.diskonPenjualanBengkel > 0 && (
-                                            <View className="mb-2 pl-1">
-                                                <Typography variant="caption" className="text-textGray text-[11px]">
-                                                    · info: diskon bengkel {formatCurrency(equity.diskonPenjualanBengkel)} sudah di laba (bukan baris modal terpisah)
-                                                </Typography>
-                                            </View>
-                                        )}
-                                    </>
+                                {equity.labaOperasional < 0 && (
+                                    <FinancialRow label="Rugi Operasional Periode" value={Math.abs(equity.labaOperasional)} isNegative />
                                 )}
-                                <FinancialRow label="Laba Investor Jual Beli Mobil" value={equity.labaInvestor} color={equity.labaInvestor < 0 ? "text-rose-600" : "text-emerald-700"} />
+                                {equity.labaInvestor !== 0 && (
+                                    <FinancialRow label="Info: Laba Investor Jual Beli Mobil" value={equity.labaInvestor} isNegative={equity.labaInvestor > 0} color="text-slate-400" />
+                                )}
+                                {equity.labaInvestor !== 0 && (
+                                    <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">· sudah dipotong di laba operasional (investor = hutang, bukan baris ekuitas)</Typography>
+                                )}
                             </View>
 
                             <View className="mt-4 pt-5 border-t-2 border-slate-100">
@@ -349,6 +360,11 @@ export default function LaporanPerubahanModalScreen() {
                                 <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">
                                     * akun beku: modal awal = (total aktiva − total hutang) pada posisi pembuka{report.modal_awal_as_of ? ` (${report.modal_awal_as_of})` : ''}, tidak berubah oleh transaksi setelahnya — perubahan aset/hutang masuk ke Modal Akhir.
                                 </Typography>
+                                {equity.coversBeforeOpening && (
+                                    <Typography variant="caption" className="text-amber-700 text-[10px] mt-1">
+                                        * mutasi di atas kumulatif sejak {equity.flowDari} (posisi pembuka), bukan sejak {reportParams.tanggal_dari}. Karena itu angkanya bisa berbeda dengan Laba Rugi periode yang sama.
+                                    </Typography>
+                                )}
                             </View>
                         </Card>
 

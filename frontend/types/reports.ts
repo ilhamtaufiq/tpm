@@ -147,7 +147,9 @@ export interface LabaRugiReport {
         total_revenue: number;
         total_hpp: number;
         total_laba_kotor: number;
+        /** Σ pengurang laba kotor seluruh unit (bukan overhead pusat). */
         total_beban_operasional: number;
+        /** Overhead pusat saja. */
         total_beban_umum: number;
         internal_elimination?: number;
         internal_profit_elimination?: number;
@@ -249,6 +251,8 @@ export interface CapitalReport {
         eliminasi_internal?: number;
         eliminasi_profit_internal?: number;
         laba_bersih: number;
+        /** Laba operasional (sebelum prive) — komponen aliran ekuitas. */
+        laba_operasional?: number;
         units: {
             bengkel: UnitBreakdown;
             jasa_angkut: UnitBreakdown;
@@ -292,4 +296,10 @@ export interface CapitalReport {
      * bertanggal tepat di hari saldo awal.
      */
     modal_awal_penyesuaian?: number;
+    /**
+     * Tanggal mulai perhitungan mutasi (= posisi pembuka/beku). Bila lebih besar
+     * dari tanggal_dari filter, angka laba di sini kumulatif sejak tanggal itu —
+     * tak akan sama dengan Laba Rugi periode yang sama.
+     */
+    modal_awal_flow_dari?: string;
 }

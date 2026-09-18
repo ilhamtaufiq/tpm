@@ -911,7 +911,13 @@ class ModalService(BaseReportService):
             },
             "selisih": selisih,
             "is_balanced": abs(selisih) < 100,
-            "laba_ditahan_periode": period_profit_sot
+            "laba_ditahan_periode": period_profit_sot,
+            # Mutasi (termasuk laba) dihitung KUMULATIF sejak anchor karena modal
+            # awal beku — bukan sejak tanggal_dari. UI memakai ini untuk memberi
+            # tahu pengguna saat periode terpilih menjangkau sebelum posisi
+            # pembuka, kondisi di mana laba di sini tak akan sama dengan Laba
+            # Rugi periode yang sama.
+            "modal_awal_flow_dari": flow_dari.isoformat(),
         }
     def get_kas_bank_balances(self, as_of: date) -> Dict[str, float]:
         """Get snapshot of all cash/bank balances at end of date"""

@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, startOfMonth, startOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { formatCurrency } from './format';
 import { NeracaReport, LabaRugiReport, CapitalReport } from '../types/reports';
@@ -260,18 +260,25 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
 
 export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterType: string) => {
     const formattedDate = format(date, filterType === 'daily' ? 'd MMMM yyyy' : (filterType === 'monthly' ? 'MMMM yyyy' : 'yyyy'), { locale: localeID });
-    
+    // Mutasi modal dihitung kumulatif sejak posisi pembuka (modal awal beku) —
+    // bila periode terpilih menjangkau sebelum itu, laba di dokumen ini BUKAN
+    // laba periode terpilih dan tak akan sama dengan Laporan Laba Rugi.
+    const periodeDari = format(
+        filterType === 'daily' ? date : (filterType === 'monthly' ? startOfMonth(date) : startOfYear(date)),
+        'yyyy-MM-dd'
+    );
+    const coversBeforeOpening = !!data.modal_awal_flow_dari && data.modal_awal_flow_dari > periodeDari;
+
     const modalAwal = data.modal_awal || 0;
     const setoranKas = data.penambahan?.setoran_modal || 0;
     const penyesuaianHargaBeli = data.penambahan?.penyesuaian_harga_beli_sparepart || 0;
     const modalNonKas = data.penambahan?.modal_non_kas?.total || 0;
-    const investorFunding = data.penambahan?.investor_funding || 0;
     const labaBersih = data.info?.laba_bersih ?? data.laba_ditahan_periode ?? 0;
     const diskonPenjualanBengkel = data.info?.diskon_penjualan_bengkel || 0;
     const prive = (data.pengurangan?.prive || 0) + (data.pengurangan?.pengembalian_modal || 0);
-    const pembayaranInvestor = data.pengurangan?.pembayaran_investor || 0;
+    const labaOperasional = data.info?.laba_operasional ?? (labaBersih + prive);
     const modalAkhir = data.modal_akhir || 0;
-    const perubahanBersih = setoranKas + modalNonKas + investorFunding + labaBersih - prive - pembayaranInvestor;
+    const perubahanBersih = setoranKas + modalNonKas + labaOperasional - prive;
     const expectedModalAkhirAliran = modalAwal + perubahanBersih;
     const validasi = data.info?.validasi;
     const expectedModalAkhir = validasi?.modal_teoritis ?? expectedModalAkhirAliran;
@@ -316,15 +323,10 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Setoran Modal Non-Kas</td>
                     <td class="amount">${formatCurrency(modalNonKas)}</td>
                 </tr>` : ''}
-                ${investorFunding > 0 ? `
+                ${labaOperasional >= 0 ? `
                 <tr>
-                    <td>Dana Investor Mobil</td>
-                    <td class="amount">${formatCurrency(investorFunding)}</td>
-                </tr>` : ''}
-                ${labaBersih >= 0 ? `
-                <tr>
-                    <td>Laba Bersih Periode</td>
-                    <td class="amount positive">${formatCurrency(labaBersih)}</td>
+                    <td>Laba Operasional Periode</td>
+                    <td class="amount positive">${formatCurrency(labaOperasional)}</td>
                 </tr>` : ''}
                 ${diskonPenjualanBengkel > 0 ? `
                 <tr>
@@ -342,21 +344,25 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Prive / Pengambilan Pemilik</td>
                     <td class="amount">${formatCurrency(0)}</td>
                 </tr>`}
-                ${labaBersih < 0 ? `
+                ${labaOperasional < 0 ? `
                 <tr>
-                    <td>Rugi Periode</td>
-                    <td class="amount negative">(${formatCurrency(Math.abs(labaBersih))})</td>
-                </tr>` : ''}
-                ${pembayaranInvestor > 0 ? `
-                <tr>
-                    <td>Pembayaran Investor Mobil</td>
-                    <td class="amount negative">(${formatCurrency(pembayaranInvestor)})</td>
+                    <td>Rugi Operasional Periode</td>
+                    <td class="amount negative">(${formatCurrency(Math.abs(labaOperasional))})</td>
                 </tr>` : ''}
 
                 <tr class="total-row">
                     <td>PERUBAHAN BERSIH MODAL</td>
                     <td class="amount">${formatCurrency(perubahanBersih)}</td>
                 </tr>
+                <tr>
+                    <td style="padding-left: 18px; color: #64748b; font-size: 11px;">* = setoran + laba operasional − prive. Dana/pembayaran investor adalah hutang, bukan aliran ekuitas.</td>
+                    <td class="amount" style="font-size: 11px; color: #64748b;"></td>
+                </tr>
+                ${coversBeforeOpening ? `
+                <tr>
+                    <td style="padding-left: 18px; color: #b45309; font-size: 11px;">* mutasi kumulatif sejak ${data.modal_awal_flow_dari} (posisi pembuka), bukan sejak ${periodeDari} — laba di sini berbeda dengan Laporan Laba Rugi periode terpilih.</td>
+                    <td class="amount" style="font-size: 11px; color: #b45309;"></td>
+                </tr>` : ''}
                 ${(((data as any).info?.aset?.kas_jenis_details) || []).filter((d: any) => Number(d.saldo || 0) !== 0).length > 0 ? `
                 <tr class="section-title"><td colspan="2">POSISI KAS PER AKUN (INFO)</td></tr>
                 ${(((data as any).info?.aset?.kas_jenis_details) || []).filter((d: any) => Number(d.saldo || 0) !== 0).map((d: any) => `

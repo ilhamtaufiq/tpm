@@ -249,9 +249,9 @@ export function LabaRugi() {
         'Laba/ Rugi Bersih Unit',
       )}
 
-      <Card title="Biaya Operasional Pusat" sub="Beban umum & lainnya" icon={Wallet}>
-        <FinancialRow label="Total Beban Umum & Lainnya" value={r.summary.total_beban_umum} isNegative bold large />
-        <Drill spec={drillPengeluaranUnit('umum', 'beban umum pusat')} period={period} amountKey="jumlah" total={r.summary.total_beban_umum} />
+      <Card title="Biaya Operasional Pusat" sub="Tidak termasuk beban unit" icon={Wallet}>
+        <FinancialRow label="Total Beban Operasional Pusat" value={r.summary.total_beban_umum} isNegative bold large />
+        <Drill spec={drillPengeluaranUnit('umum', 'beban operasional pusat')} period={period} amountKey="jumlah" total={r.summary.total_beban_umum} />
         {(r.summary.internal_profit_elimination || 0) > 0 && (
           <FinancialRow label="Info Laba Internal Mobil Belum Terjual" value={r.summary.internal_profit_elimination || 0} small color="text-amber-700" />
         )}

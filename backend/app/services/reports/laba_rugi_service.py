@@ -87,6 +87,15 @@ class LabaRugiService(BaseReportService):
         total_laba_kotor = b_laba_kotor + ja_laba_kotor + m_laba_kotor
         total_hpp = total_revenue - total_laba_kotor
 
+        # Σ seluruh pengurang laba kotor per unit (beban ops unit, JA overhead,
+        # mobil overhead − sharing + pendapatan lain). Diturunkan dari selisih
+        # laba_kotor − laba_bersih tiap unit, BUKAN dijumlah manual — agar rekap
+        # `revenue − hpp − beban_unit − beban_pusat = laba_operasional` selalu
+        # foot apa pun perubahan rumus laba di atas. Menjumlahkan field
+        # beban_operasional unit secara manual justru ganda-hitung komponen yang
+        # sudah masuk total_hpp (JA trip/repairs, mobil prep).
+        total_beban_unit = total_laba_kotor - (b_laba_bersih + ja_laba_bersih + m_laba_bersih)
+
         # 4. SUMMARY
         overhead_pusat = b["common_expenses"]
         prive = data["prive_global"]
@@ -176,7 +185,11 @@ class LabaRugiService(BaseReportService):
                 "total_revenue": total_revenue,
                 "total_hpp": total_hpp,
                 "total_laba_kotor": total_laba_kotor,
-                "total_beban_operasional": overhead_pusat,
+                # Dua field bernilai SAMA membuat UI yang menjumlahkan keduanya
+                # menghitung overhead pusat dua kali (dan tetap tak nyambung ke
+                # laba_operasional). total_beban_operasional = Σ beban ketiga
+                # unit; total_beban_umum = overhead pusat saja.
+                "total_beban_operasional": total_beban_unit,
                 "total_beban_umum": overhead_pusat,
                 "internal_elimination": elimination,
                 "internal_profit_elimination": internal_jbm_profit,
