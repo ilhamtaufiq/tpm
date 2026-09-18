@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency } from '../../utils/format';
 import { getBarcodeSearchQuery } from '../../utils/barcodeScan';
 import { isAlwaysReadyStock } from '../../utils/sparepartStock';
+import { usePlaceholderColor } from '../../utils/themeStyles';
 
 interface SparePartSelectorProps {
     value?: any; // Selected object or null
@@ -26,6 +27,7 @@ export const SparePartSelector = ({
     placeholder
 }: SparePartSelectorProps) => {
     const insets = useSafeAreaInsets();
+    const placeholderColor = usePlaceholderColor();
     const [searchQuery, setSearchQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -107,20 +109,20 @@ export const SparePartSelector = ({
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold">Cari Sparepart</Typography>
                             <Pressable onPress={handleClose} hitSlop={12}>
-                                <X size={24} color="#6B7280" />
+                                <X size={24} color={placeholderColor} />
                             </Pressable>
                         </View>
 
                         <View className="flex-row items-center space-x-2 mb-4">
                             <View className="flex-1 flex-row items-center bg-background rounded-xl px-4 py-3">
-                                <Search size={20} color="#9CA3AF" />
+                                <Search size={20} color={placeholderColor} />
                                 <TextInput
                                     className="flex-1 ml-3 text-base text-text font-outfit"
                                     placeholder="Ketik nama sparepart..."
                                     value={searchQuery}
                                     onChangeText={setSearchQuery}
                                     autoFocus
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={placeholderColor}
                                 />
                             </View>
                             <TouchableOpacity 

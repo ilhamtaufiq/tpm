@@ -41,6 +41,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { FILE_URL } from '../../utils/api';
 import { isAlwaysReadyStock } from '../../utils/sparepartStock';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 type StockFilter = 'ALL' | 'low' | 'available' | 'empty' | 'always';
 
@@ -52,6 +53,8 @@ const getPartStockStatus = (part: any): 'always' | 'low' | 'empty' | 'ok' => {
 };
 
 export default function InventoryScreen() {
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
     const [search, setSearch] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [selectedPart, setSelectedPart] = useState<any>(null);
@@ -919,8 +922,8 @@ export default function InventoryScreen() {
                     snapPoints={['65%', '85%']}
                     enablePanDownToClose
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 48 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     onChange={setSheetIndex}
                 >
                     <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 24, paddingTop: 12 }}>

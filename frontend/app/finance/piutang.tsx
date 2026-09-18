@@ -33,6 +33,7 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PaymentModal } from '../../components/PaymentModal';
 import { useAuthStore } from '../../store/useAuthStore';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 type PiutangFilter = PiutangStatus | 'all' | 'overdue' | 'sebagian' | 'belum_bayar';
 
@@ -93,6 +94,8 @@ const getUnitKasJenis = (unit?: string) => {
 
 export default function PiutangUsahaScreen() {
     const insets = useSafeAreaInsets();
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
     const { user } = useAuthStore();
     const params = useLocalSearchParams<{ unit?: string }>();
     const roleUnitMap: Record<string, typeof FINANCE_UNITS[number]> = {
@@ -763,13 +766,13 @@ export default function PiutangUsahaScreen() {
                         </ScrollView>
 
                         <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
-                            <Search size={16} color="#9CA3AF" />
+                            <Search size={16} color={placeholder} />
                             <TextInput
                                 className="flex-1 ml-3 text-xs text-textMain font-semibold h-full"
                                 placeholder="Cari nama debitur atau invoice..."
                                 value={search}
                                 onChangeText={setSearch}
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={placeholder}
                                 clearButtonMode="while-editing"
                             />
                         </View>
@@ -942,8 +945,8 @@ export default function PiutangUsahaScreen() {
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 48 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >
@@ -987,8 +990,8 @@ export default function PiutangUsahaScreen() {
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 48 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >

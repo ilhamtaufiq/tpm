@@ -1,6 +1,7 @@
 import { View, Pressable as RNPressable, Platform, ScrollView } from 'react-native';
 import { Typography } from './Typography';
 import { cn } from './Card';
+import { useUIStore } from '../../store/useUIStore';
 
 interface TabItem {
     label: string;
@@ -31,6 +32,7 @@ export const Tabs = ({
     variant = 'segmented',
     scrollable = false,
 }: TabsProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const Container = scrollable ? ScrollView : View;
     const containerProps = scrollable ? { 
         horizontal: true, 
@@ -43,7 +45,7 @@ export const Tabs = ({
             {...containerProps}
             className={cn(
                 "flex-row items-center",
-                variant === 'segmented' ? "bg-surface/80 p-1.5 rounded-[24px] border border-gray-200/50" : "gap-x-2",
+                variant === 'segmented' ? "bg-background p-1.5 rounded-[24px] border border-transparent" : "gap-x-2",
                 className
             )}
         >
@@ -65,9 +67,9 @@ export const Tabs = ({
                         className={cn(
                             "py-2.5",
                             variant === 'segmented' ? "flex-1 px-2" : "px-5",
-                            isActive && variant === 'segmented' ? "bg-surface shadow-sm border border-gray-100" : "",
+                            isActive && variant === 'segmented' ? "bg-surface shadow-sm border border-transparent" : "",
                             isActive && variant === 'pill' ? "bg-primary border border-primary" : "",
-                            !isActive && variant === 'pill' ? "bg-surface border border-gray-100" : "",
+                            !isActive && variant === 'pill' ? "bg-surface border border-transparent" : "",
                             scrollable ? "flex-none" : ""
                         )}
                     >
@@ -75,7 +77,7 @@ export const Tabs = ({
                             <View className={cn("mr-2", isActive ? "opacity-100" : "opacity-40")}>
                                 <Icon
                                     size={16}
-                                    color={isActive ? (variant === 'pill' ? "white" : "#023C69") : "#6B7280"}
+                                    color={isActive ? (variant === 'pill' ? "white" : themeColors.primary) : themeColors.textGray}
                                     strokeWidth={isActive ? 2.5 : 2}
                                 />
                             </View>
@@ -85,7 +87,7 @@ export const Tabs = ({
                             weight={isActive ? "bold" : "medium"}
                             className={cn(
                                 "tracking-tight uppercase text-[9px]",
-                                isActive ? (variant === 'pill' ? "text-white" : "text-[#023C69]") : "text-gray-500"
+                                isActive ? (variant === 'pill' ? "text-white" : "text-primary") : "text-textGray"
                             )}
                         >
                             {item.label}
@@ -93,11 +95,11 @@ export const Tabs = ({
                         {(item.count !== undefined || item.badge !== undefined) && (
                             <View className={cn(
                                 "ml-1.5 px-1.5 min-w-[18px] h-4 rounded-full items-center justify-center",
-                                isActive ? (variant === 'pill' ? "bg-white/25" : "bg-primary/20") : "bg-gray-200/70"
+                                isActive ? (variant === 'pill' ? "bg-white/25" : "bg-primary/20") : "bg-background"
                             )}>
                                 <Typography className={cn(
                                     "text-[9px] font-bold",
-                                    isActive ? (variant === 'pill' ? "text-white" : "text-[#023C69]") : "text-gray-600"
+                                    isActive ? (variant === 'pill' ? "text-white" : "text-primary") : "text-textGray"
                                 )}>
                                     {item.count ?? item.badge}
                                 </Typography>

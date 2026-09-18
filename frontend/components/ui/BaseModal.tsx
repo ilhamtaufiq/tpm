@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Typography } from './Typography';
 import { X } from 'lucide-react-native';
 import { ModalThemeView } from './ModalThemeView';
+import { findPaletteBorder, useUIStore } from '../../store/useUIStore';
 
 interface BaseModalProps {
     visible: boolean;
@@ -31,6 +32,8 @@ export const BaseModal = ({
 }: BaseModalProps) => {
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(300)).current;
+    const themeColors = useUIStore((s) => s.themeColors);
+    const borderColor = findPaletteBorder(themeColors);
 
     const [shouldRender, setShouldRender] = React.useState(visible);
 
@@ -95,7 +98,7 @@ export const BaseModal = ({
                             width: '100%',
                             zIndex: 2,
                             elevation: 24,
-                            ...(fullScreen ? { height: '100%', borderRadius: 0 } : { borderRadius: 48, borderWidth: 1, borderColor: '#F3F4F6' }),
+                            ...(fullScreen ? { height: '100%', borderRadius: 0 } : { borderRadius: 48, borderWidth: 1, borderColor }),
                         }}
                         className={`bg-surface ${fullScreen ? '' : 'sm:max-w-md md:max-w-lg'} shadow-2xl overflow-hidden ${containerClassName}`}
                     >
@@ -113,7 +116,7 @@ export const BaseModal = ({
                                         onPress={onClose}
                                         className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-transparent"
                                     >
-                                        <X size={20} color="#6B7280" />
+                                        <X size={20} color={themeColors.textGray} />
                                     </Pressable>
                                 )}
                             </View>

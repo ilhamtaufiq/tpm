@@ -3,6 +3,7 @@ import { View, Pressable, TextInput } from 'react-native';
 import { ChevronLeft, ChevronRight, Calendar, Search, X } from 'lucide-react-native';
 import { Typography } from '../ui/Typography';
 import { REPORT_FILTER_LABELS, ReportFilterType } from './types';
+import { useUIStore } from '../../store/useUIStore';
 
 interface ReportDateControlsProps {
     filterType: ReportFilterType;
@@ -29,6 +30,7 @@ export function ReportDateControls({
     showFilterTabs = true,
     className = 'mb-4',
 }: ReportDateControlsProps) {
+    const { themeColors } = useUIStore();
     return (
         <View className={`bg-surface border border-transparent rounded-2xl p-4 ${className}`}>
             {showFilterTabs && (
@@ -59,11 +61,11 @@ export function ReportDateControls({
                     onPress={onPrev}
                     className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent"
                 >
-                    <ChevronLeft size={20} color="#1C1C1C" />
+                    <ChevronLeft size={20} color={themeColors.text} />
                 </Pressable>
 
                 <View className="flex-row items-center">
-                    <Calendar size={16} color="#023C69" />
+                    <Calendar size={16} color={themeColors.primary} />
                     <Typography variant="body2" weight="bold" className="text-textMain ml-2 capitalize">
                         {formattedDate}
                     </Typography>
@@ -73,16 +75,16 @@ export function ReportDateControls({
                     onPress={onNext}
                     className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent"
                 >
-                    <ChevronRight size={20} color="#1C1C1C" />
+                    <ChevronRight size={20} color={themeColors.text} />
                 </Pressable>
             </View>
 
             {onSearchChange !== undefined && (
                 <View className="mt-4 flex-row items-center bg-background border border-transparent rounded-2xl px-4 h-12">
-                    <Search size={18} color="#9CA3AF" />
+                    <Search size={18} color={themeColors.textGray} />
                     <TextInput
                         placeholder={searchPlaceholder}
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={themeColors.textGray}
                         className="flex-1 ml-3 text-sm font-medium text-textMain"
                         value={search}
                         onChangeText={onSearchChange}

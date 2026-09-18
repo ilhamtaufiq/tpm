@@ -345,24 +345,22 @@ export default function BackupScreen() {
 
     return (
         <View className="flex-1 bg-[#F9FAFB]">
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="dark-content" />
 
             <Header
                 title="Backup & Restore"
-                subtitle="Data Management"
-                showBackButton={true}
+                showBackButton
                 rightElement={
-                    <Pressable 
-                        onPress={onRefresh} 
-                        className="w-11 h-11 bg-surface/10 rounded-2xl items-center justify-center border border-white/5"
+                    <Pressable
+                        onPress={onRefresh}
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
-                        {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={24} color="white" />}
+                        {refreshing ? <ActivityIndicator size="small" color="#1F2937" /> : <RefreshCw size={20} color="#1F2937" />}
                     </Pressable>
                 }
             />
 
-            {/* Standard Bento Action Overlay */}
-            <View className="px-6 -mt-6 z-10">
+            <View className="px-6 mt-4 z-10">
                 <View className="bg-surface p-4 rounded-[32px] shadow-xl border border-transparent flex-row items-center">
                     <View className="w-14 h-14 bg-primary/10 rounded-2xl items-center justify-center mr-4">
                         <ShieldCheck size={28} color={themeColors.primary} strokeWidth={2} />

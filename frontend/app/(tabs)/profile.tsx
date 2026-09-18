@@ -3,7 +3,7 @@ import React from 'react';
 import { View, ScrollView, Pressable, Platform, Image, StatusBar, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw, SlidersHorizontal, UserPlus, Bell } from 'lucide-react-native';
+import { User, Trash2, LogOut, ChevronRight, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw, SlidersHorizontal, UserPlus, Bell } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 
@@ -201,30 +201,7 @@ export default function ProfileScreen() {
                 />
             )}
 
-            <Header
-                title="Pengaturan"
-                subtitle="Konfigurasi & Manajemen Sistem"
-                showProfile={false}
-                leftElement={
-                    <View className="w-11 h-11 bg-background rounded-2xl p-0.5 border border-transparent overflow-hidden relative">
-                        <View className="w-full h-full bg-surface rounded-2xl items-center justify-center overflow-hidden">
-                            {user?.profile_picture ? (
-                                <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
-                            ) : (
-                                <User size={22} color={themeColors.primary} strokeWidth={2.5} />
-                            )}
-                        </View>
-                    </View>
-                }
-                rightElement={
-                    <Pressable
-                        onPress={() => router.push('/settings/profile')}
-                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
-                    >
-                        <Settings size={20} color="#1F2937" />
-                    </Pressable>
-                }
-            />
+            <Header title="Pengaturan" />
 
 
             <ScrollView

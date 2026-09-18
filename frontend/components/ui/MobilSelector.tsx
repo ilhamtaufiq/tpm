@@ -6,6 +6,7 @@ import { Search, Car, X, Check } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { mobilService } from '../../services/mobil';
+import { usePlaceholderColor } from '../../utils/themeStyles';
 
 interface MobilSelectorProps {
     value?: any; // Selected object or null
@@ -21,6 +22,7 @@ export const MobilSelector = ({
     placeholder
 }: MobilSelectorProps) => {
     const insets = useSafeAreaInsets();
+    const placeholderColor = usePlaceholderColor();
     const [searchQuery, setSearchQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
 
@@ -93,19 +95,19 @@ export const MobilSelector = ({
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold" className="text-primary tracking-tight text-xl">Cari Mobil</Typography>
                             <Pressable onPress={handleClose} hitSlop={12} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                                <X size={20} color="#6B7280" />
+                                <X size={20} color={placeholderColor} />
                             </Pressable>
                         </View>
 
                         <View className="flex-row items-center bg-background border border-transparent rounded-2xl px-4 py-3.5 mb-6">
-                            <Search size={20} color="#9CA3AF" />
+                            <Search size={20} color={placeholderColor} />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-textMain font-medium"
                                 placeholder="Ketik merek, model, atau nopol..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                                 autoFocus
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={placeholderColor}
                             />
                         </View>
 

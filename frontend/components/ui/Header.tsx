@@ -33,7 +33,7 @@ interface HeaderProps {
 
 export const Header = ({
     title,
-    subtitle,
+    subtitle: _subtitle,
     showBackButton = false,
     onBackButtonPress,
     showSearch = false,
@@ -161,19 +161,9 @@ export const Header = ({
                                     </Typography>
                                 </View>
                             ) : (
-                                <>
-                                    {subtitle && (
-                                        <View className="flex-row items-center mb-0.5">
-                                            <View style={{ backgroundColor: themeColors.primary }} className="w-1.5 h-1.5 rounded-full mr-2" />
-                                            <Typography className="text-textGray text-[9px] uppercase tracking-widest font-bold">
-                                                {subtitle}
-                                            </Typography>
-                                        </View>
-                                    )}
-                                    <Typography variant="h2" weight="bold" className="text-text text-xl tracking-tighter" numberOfLines={1}>
-                                        {title}
-                                    </Typography>
-                                </>
+                                <Typography variant="h2" weight="bold" className="text-text text-xl tracking-tighter" numberOfLines={1}>
+                                    {title}
+                                </Typography>
                             )}
                         </View>
                     </View>
@@ -231,7 +221,7 @@ export const Header = ({
                                 {user?.profile_picture ? (
                                     <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
                                 ) : (
-                                    <User size={22} color={themeColors.primary} strokeWidth={2.5} />
+                                    <User size={22} color={themeColors.text} strokeWidth={2.5} />
                                 )}
                             </View>
                         </Pressable>
@@ -248,7 +238,7 @@ export const Header = ({
                                     {user?.profile_picture ? (
                                         <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
                                     ) : (
-                                        <User size={22} color={themeColors.primary} strokeWidth={2.5} />
+                                        <User size={22} color={themeColors.text} strokeWidth={2.5} />
                                     )}
                                 </View>
                             </Pressable>
@@ -262,7 +252,7 @@ export const Header = ({
                         onPress={() => setIsSearchOpen(true)}
                         className="bg-background h-11 rounded-2xl flex-row items-center px-4 border border-transparent mt-2 active:bg-background"
                     >
-                        <Search size={18} color="#9CA3AF" />
+                        <Search size={18} color={themeColors.textGray} />
                         <Typography className="text-textGray ml-3 font-medium text-sm flex-1" numberOfLines={1}>
                             {searchPlaceholder}
                         </Typography>
@@ -307,11 +297,11 @@ export const Header = ({
                                 value={query}
                                 onChangeText={setQuery}
                                 className="flex-1 ml-3 h-full text-text font-bold"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={themeColors.textGray}
                             />
                             {query.length > 0 && (
                                 <Pressable onPress={() => setQuery('')}>
-                                    <X size={18} color="#9CA3AF" />
+                                    <X size={18} color={themeColors.textGray} />
                                 </Pressable>
                             )}
                         </View>
@@ -325,7 +315,7 @@ export const Header = ({
                         {query.trim() === '' ? (
                             <View className="p-12 items-center">
                                 <View className="w-24 h-24 bg-background rounded-[32px] items-center justify-center mb-6">
-                                    <Search size={48} color="#D1D5DB" strokeWidth={1.5} />
+                                    <Search size={48} color={themeColors.textGray} strokeWidth={1.5} />
                                 </View>
                                 <Typography weight="bold" className="text-text tracking-tight text-center text-lg">Quick Search</Typography>
                                 <Typography variant="caption" className="text-textGray text-center mt-2 max-w-[200px]">Temukan akses cepat ke fitur dan laporan operasional TPM</Typography>
@@ -349,7 +339,7 @@ export const Header = ({
                                                 <Typography variant="caption" className="text-textGray" numberOfLines={1}>{route.description}</Typography>
                                             </View>
                                             <View className="w-8 h-8 rounded-full bg-background items-center justify-center" >
-                                                <ChevronRight size={16} color="#D1D5DB" />
+                                                <ChevronRight size={16} color={themeColors.textGray} />
                                             </View>
                                         </Pressable>
                                     );
@@ -399,7 +389,7 @@ export const Header = ({
                             }}
                             className="flex-row items-center p-3 rounded-2xl active:bg-background"
                         >
-                            <User size={16} color="#6B7280" strokeWidth={2.2} />
+                            <User size={16} color={themeColors.textGray} strokeWidth={2.2} />
                             <Typography className="text-textGray text-xs font-medium ml-2">
                                 Ubah Profile
                             </Typography>

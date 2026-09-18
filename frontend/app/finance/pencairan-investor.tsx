@@ -47,11 +47,14 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { printReportHTML } from '../../utils/printReport';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 const escapeHtml = (str: any) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
 
 export default function PencairanInvestorScreen() {
     const insets = useSafeAreaInsets();
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
     const [search, setSearch] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -697,13 +700,13 @@ export default function PencairanInvestorScreen() {
             <View className="px-6 mt-4">
                 <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-transparent shadow-sm">
                     <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-background">
-                        <Search size={18} color="#9CA3AF" />
-                        <TextInput 
-                            placeholder={`Cari di ${activeTab === 'PENDING' ? 'daftar tunggu' : 'riwayat'}...`} 
+                        <Search size={18} color={placeholder} />
+                        <TextInput
+                            placeholder={`Cari di ${activeTab === 'PENDING' ? 'daftar tunggu' : 'riwayat'}...`}
                             className="flex-1 ml-3 text-sm font-semibold text-textMain"
                             value={search}
                             onChangeText={setSearch}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={placeholder}
                         />
                     </View>
                 </View>
@@ -1020,7 +1023,8 @@ export default function PencairanInvestorScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >

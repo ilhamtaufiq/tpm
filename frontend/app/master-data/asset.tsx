@@ -29,6 +29,7 @@ import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom
 import { formatCurrency } from '../../utils/format';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 const KATEGORI_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -41,6 +42,8 @@ const KATEGORI_FILTERS = [
 ];
 
 export default function AssetScreen() {
+    const chrome = useSheetChrome({ borderRadius: 32 });
+    const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
@@ -553,7 +556,8 @@ export default function AssetScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 32 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     topInset={insets.top}
                     onClose={() => setSheetVisible(false)}
                 >

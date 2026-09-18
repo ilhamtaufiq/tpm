@@ -68,6 +68,7 @@ import {
 import { useKasBankBalances, useCreateTransaction, useTransfer, useUnitWalletHistory, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -118,7 +119,8 @@ const BengkelServiceCard = React.memo(function BengkelServiceCard({
 });
 
 export default function BengkelScreen() {
-
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
     const { action } = useLocalSearchParams<{ action?: string }>();
     const user = useAuthStore(state => state.user);
     const bengkelMenus = useMemo(() => ([
@@ -2101,8 +2103,8 @@ export default function BengkelScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     onChange={setSheetIndex}
                 >
                     {sheetIndex >= 0 ? renderBottomSheetContent() : null}
@@ -2115,8 +2117,8 @@ export default function BengkelScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     onClose={handleCloseWallet}
                 >
                     <BottomSheetScrollView showsVerticalScrollIndicator={false}>
@@ -2162,8 +2164,8 @@ export default function BengkelScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     onClose={() => setIsDateModalVisible(false)}
                 >
                     <BottomSheetScrollView showsVerticalScrollIndicator={false}>

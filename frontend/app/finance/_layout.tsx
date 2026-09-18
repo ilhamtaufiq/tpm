@@ -25,11 +25,11 @@ export default function FinanceLayout() {
             }}
         >
             <Stack.Screen name="expenses" options={{ headerShown: false }} />
-            <Stack.Screen name="akun" options={{ title: 'Daftar Akun & Saldo' }} />
-            <Stack.Screen name="mutasi" options={{ title: 'Mutasi Kas & Bank' }} />
-            <Stack.Screen name="piutang" options={{ title: 'Kelola Piutang' }} />
-            <Stack.Screen name="hutang" options={{ title: 'Kelola Hutang' }} />
-            <Stack.Screen name="hutang-investor" options={{ title: 'Hutang Investor' }} />
+            <Stack.Screen name="akun" options={{ headerShown: false }} />
+            <Stack.Screen name="mutasi" options={{ headerShown: false }} />
+            <Stack.Screen name="piutang" options={{ headerShown: false }} />
+            <Stack.Screen name="hutang" options={{ headerShown: false }} />
+            <Stack.Screen name="hutang-investor" options={{ headerShown: false }} />
         </Stack>
     );
 }

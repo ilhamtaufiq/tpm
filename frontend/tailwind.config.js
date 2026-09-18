@@ -19,6 +19,7 @@ module.exports = {
                 text: "var(--color-text)",
                 textMain: "var(--color-text)",
                 textGray: "var(--color-text-gray)",
+                border: "var(--color-border)",
                 gopayBlue: "#00ADEF",
             },
             borderRadius: {

@@ -3,7 +3,6 @@ import { View, ScrollView, Pressable, TextInput, StatusBar, Platform, KeyboardAv
 import { Server, Mail, Lock, User, Save, Send, ShieldCheck, Info, Eye, EyeOff } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
-import { useRouter } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -11,7 +10,6 @@ import { settingsService } from '../../services/settings';
 import { getErrorMessage } from '../../utils/error';
 
 export default function SMTPSettingsScreen() {
-    const router = useRouter();
     const { themeColors } = useUIStore();
 
     // Form States
@@ -57,14 +55,6 @@ export default function SMTPSettingsScreen() {
             console.error('Failed to fetch settings:', error);
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const handleBack = () => {
-        if (router.canGoBack()) {
-            router.back();
-        } else {
-            router.replace('/(tabs)/profile');
         }
     };
 
@@ -160,28 +150,21 @@ export default function SMTPSettingsScreen() {
 
     return (
         <View className="flex-1 bg-background">
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="dark-content" />
 
-            {/* Header */}
-            <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
-                <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-surface/10 rounded-full blur-[80px]" />
-
-                <Header
-                    title="Server Email"
-                    subtitle="Pengaturan SMTP Gmail"
-                    showBackButton
-                    onBackButtonPress={handleBack}
-                    showProfile={false}
-                    showBell={false}
-                />
-            </View>
+            <Header
+                title="Server Email"
+                showBackButton
+                showProfile={false}
+                showBell={false}
+            />
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 className="flex-1"
             >
                 <ScrollView
-                    className="flex-1 -mt-8"
+                    className="flex-1"
                     contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 150 }}
                     showsVerticalScrollIndicator={false}
                 >

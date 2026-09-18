@@ -7,15 +7,12 @@ import {
     Wallet,
     CreditCard,
     Banknote,
-    Plus,
     RefreshCw,
     Info,
-    ArrowRightLeft,
     TrendingUp,
     TrendingDown,
     Calendar,
     FileText,
-    BarChart3,
     X,
     Building2,
     Wrench,
@@ -35,6 +32,8 @@ import { formatCurrency } from '../../utils/format';
 import { Header } from '../../components/ui/Header';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { useUIStore } from '../../store/useUIStore';
+import { useSheetChrome } from '../../utils/themeStyles';
 
 const ACCOUNT_ICONS: Record<string, any> = {
     CASH: Wallet,
@@ -64,44 +63,6 @@ const ACCOUNT_LABELS: Record<string, string> = {
     KAS_UNIT_MOBIL: 'Mobil (Cash)',
 };
 
-const REPORT_CATEGORIES: Record<string, string> = {
-    CASH: 'Neraca: Aktiva Lancar',
-    BANK_BCA: 'Neraca: Aktiva Lancar',
-    BANK_MANDIRI: 'Neraca: Aktiva Lancar',
-    BANK_BRI: 'Neraca: Aktiva Lancar',
-    BANK_LAINNYA: 'Neraca: Aktiva Lancar',
-    PIUTANG: 'Neraca: Aktiva Lancar',
-    HUTANG: 'Neraca: Kewajiban',
-    KAS_UTAMA: 'Neraca: Aktiva Lancar',
-    BANK_UTAMA: 'Neraca: Aktiva Lancar',
-    KAS_UNIT_BENGKEL: 'Neraca: Aktiva Lancar',
-    KAS_UNIT_JASA_ANGKUT: 'Neraca: Aktiva Lancar',
-    KAS_UNIT_MOBIL: 'Neraca: Aktiva Lancar',
-};
-
-const STATEMENT_LABELS: Record<string, string> = {
-    CASH: 'Kas & Setara Kas',
-    BANK_BCA: 'Bank & Simpanan',
-    BANK_MANDIRI: 'Bank & Simpanan',
-    BANK_BRI: 'Bank & Simpanan',
-    BANK_LAINNYA: 'Bank & Simpanan',
-    PIUTANG: 'Tagihan Pelanggan',
-    HUTANG: 'Kewajiban Supplier',
-    KAS_UTAMA: 'Kas & Setara Kas',
-    BANK_UTAMA: 'Bank & Simpanan',
-    KAS_UNIT_BENGKEL: 'Unit Operasional',
-    KAS_UNIT_JASA_ANGKUT: 'Unit Operasional',
-    KAS_UNIT_MOBIL: 'Unit Operasional',
-};
-
-const ACCOUNT_CATEGORIES: Record<string, string> = {
-    CASH: 'Kas & Setara Kas',
-    BANK_BCA: 'Perbankan',
-    BANK_MANDIRI: 'Perbankan',
-    BANK_BRI: 'Perbankan',
-    BANK_LAINNYA: 'Perbankan',
-};
-
 const ACTIVE_ACCOUNTS: KasBankJenis[] = [
     'KAS_UTAMA',
     'BANK_UTAMA',
@@ -121,6 +82,8 @@ const LEGACY_ACCOUNTS: KasBankJenis[] = [
 export default function AkunKeuanganScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const { themeColors } = useUIStore();
+    const chrome = useSheetChrome();
     const user = useAuthStore(state => state.user);
     const role = user?.role;
     const roleAccount = useMemo(() => {
@@ -137,8 +100,6 @@ export default function AkunKeuanganScreen() {
     }, [role]);
     const visibleActiveAccounts = useMemo(() => roleAccount ? [roleAccount] : ACTIVE_ACCOUNTS, [roleAccount]);
     const [balances, setBalances] = useState<KasBankAllBalances | null>(null);
-    const [piutangSummary, setPiutangSummary] = useState<any>(null);
-    const [hutangSummary, setHutangSummary] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showAllAccounts, setShowAllAccounts] = useState(false);
@@ -183,14 +144,8 @@ export default function AkunKeuanganScreen() {
 
     const fetchData = useCallback(async () => {
         try {
-            const [balanceData, piutangData, hutangData] = await Promise.all([
-                keuanganService.getKasBankBalances(),
-                keuanganService.getPiutangSummary(roleUnit ? { unit: roleUnit as any } : undefined),
-                keuanganService.getHutangSummary(roleUnit ? { unit: roleUnit as any } : undefined)
-            ]);
+            const balanceData = await keuanganService.getKasBankBalances();
             setBalances(balanceData);
-            setPiutangSummary(piutangData);
-            setHutangSummary(hutangData);
         } catch (error) {
             console.error('Error fetching data:', error);
             appAlert('Error', 'Gagal memuat data keuangan');
@@ -198,7 +153,7 @@ export default function AkunKeuanganScreen() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [roleUnit]);
+    }, []);
 
     useEffect(() => {
         fetchData();
@@ -259,172 +214,49 @@ export default function AkunKeuanganScreen() {
         const Icon = ACCOUNT_ICONS[jenis] || Banknote;
         const currentBalance = accountData?.saldo || 0;
 
-        // Visibility Logic: Always show active ones. Legacy only if saldo > 0 or showAll is true.
         const isActive = visibleActiveAccounts.includes(jenis);
         const shouldHide = !isActive && currentBalance === 0 && !showAllAccounts;
 
         if (shouldHide) return null;
 
         return (
-            <Pressable
+            <View
                 key={jenis}
-                onPress={() => handleAdjustClick(jenis)}
-                className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center"
+                className="bg-surface p-5 rounded-[24px] mb-4 border border-transparent shadow-sm"
             >
-                <View className="w-16 h-16 bg-primary/5 rounded-[20px] items-center justify-center mr-4">
-                    <Icon size={28} color="#023C69" />
+                <View className="flex-row items-center mb-3">
+                    <View className="w-11 h-11 bg-primary/5 rounded-2xl items-center justify-center mr-3">
+                        <Icon size={22} color="#023C69" />
+                    </View>
+                    <Typography variant="body1" weight="bold" className="text-text flex-1">
+                        {ACCOUNT_LABELS[jenis]}
+                    </Typography>
                 </View>
 
-                <View className="flex-1">
-                    <View className="flex-row items-center justify-between mb-0.5">
-                        <Typography className="text-primary text-[8px] font-bold uppercase tracking-widest opacity-60">
-                            {REPORT_CATEGORIES[jenis]}
-                        </Typography>
-                        <Typography className="text-textGray text-[8px] font-bold uppercase">
-                            {STATEMENT_LABELS[jenis]}
-                        </Typography>
-                    </View>
-                    <View className="flex-row items-center justify-between mb-1">
-                        <Typography variant="body1" weight="bold" className="text-text">
-                            {ACCOUNT_LABELS[jenis]}
-                        </Typography>
-                        {currentBalance > 0 ? (
-                            <View className="bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
-                                <Typography className="text-emerald-600 text-[10px] font-bold uppercase">AKTIF</Typography>
-                            </View>
-                        ) : (
-                            <View className="bg-background px-2 py-1 rounded-full border border-transparent">
-                                <Typography className="text-textGray text-[10px] font-bold uppercase">KOSONG</Typography>
-                            </View>
-                        )}
-                    </View>
-
-                    <Typography className="text-textGray text-xs mb-3">Terakhir diperbarui hari ini</Typography>
-
-                    <View className="flex-row items-center justify-between mb-4 bg-surface/50 p-3 rounded-2xl border border-gray-100/50">
-                        <View className="flex-1">
-                            <View className="flex-row items-center mb-0.5">
-                                <View className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5" />
-                                <Typography className="text-emerald-600 text-[8px] font-bold uppercase">Masuk</Typography>
-                            </View>
-                            <Typography weight="bold" className="text-emerald-700 text-xs">{formatCurrency(accountData?.total_masuk_bulan_ini || 0)}</Typography>
-                        </View>
-                        <View className="w-[1px] h-6 bg-gray-200 mx-3" />
-                        <View className="flex-1">
-                            <View className="flex-row items-center mb-0.5">
-                                <View className="w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5" />
-                                <Typography className="text-rose-600 text-[8px] font-bold uppercase">Keluar</Typography>
-                            </View>
-                            <Typography weight="bold" className="text-rose-700 text-xs">{formatCurrency(accountData?.total_keluar_bulan_ini || 0)}</Typography>
-                        </View>
-                    </View>
-
-                    <View className="flex-row items-center justify-between pt-3 border-t border-transparent">
-                        <View className="flex-1">
-                            <Typography className="text-textGray text-[10px] uppercase font-bold">Saldo Saat Ini</Typography>
-                            <Typography variant="h3" weight="bold" className="text-primary mt-0.5">
-                                {formatCurrency(currentBalance)}
-                            </Typography>
-                        </View>
-                        <View className="flex-row space-x-2">
-                            <Pressable
-                                onPress={() => router.push({ pathname: '/finance/mutasi', params: { jenis } })}
-                                className="bg-background w-10 h-10 rounded-xl items-center justify-center border border-transparent"
-                            >
-                                <History size={18} color="#6B7280" />
-                            </Pressable>
-                            <Pressable
-                                onPress={() => handleAdjustClick(jenis)}
-                                className="bg-primary/10 px-4 py-2 rounded-xl flex-row items-center h-10"
-                            >
-                                <RefreshCw size={14} color="#023C69" />
-                                <Typography className="text-primary text-xs font-bold ml-2">Ubah</Typography>
-                            </Pressable>
-                        </View>
-                    </View>
-
-                    {jenis === 'KAS_UNIT_MOBIL' && (
-                        <View className="flex-row items-center justify-between pt-3 mt-3 border-t border-purple-100/60 bg-purple-50/50 p-3 rounded-2xl">
-                            <View className="flex-row items-center">
-                                <Landmark size={16} color="#7C3AED" />
-                                <Typography className="text-purple-900 text-xs font-bold ml-2">Investor</Typography>
-                            </View>
-                            <View className="flex-row space-x-2">
-                                <Pressable
-                                    onPress={() => router.push('/finance/pencairan-investor')}
-                                    className="bg-purple-600 px-3 py-1.5 rounded-xl flex-row items-center"
-                                >
-                                    <TrendingUp size={12} color="white" />
-                                    <Typography className="text-white text-[10px] font-bold ml-1">Tarik Dana</Typography>
-                                </Pressable>
-                                <Pressable
-                                    onPress={() => router.push('/finance/hutang-investor')}
-                                    className="bg-purple-100 px-3 py-1.5 rounded-xl flex-row items-center border border-purple-200"
-                                >
-                                    <Typography className="text-purple-700 text-[10px] font-bold">Laporan Hutang</Typography>
-                                </Pressable>
-                            </View>
-                        </View>
-                    )}
-                </View>
-            </Pressable>
-        );
-    };
-
-    const renderSummaryItem = (type: 'PIUTANG' | 'HUTANG') => {
-        const isPiutang = type === 'PIUTANG';
-        const data = isPiutang ? piutangSummary : hutangSummary;
-        const nominal = isPiutang ? data?.total_sisa : data?.total_sisa;
-        const Icon = isPiutang ? TrendingUp : TrendingDown;
-        const color = isPiutang ? '#059669' : '#DC2626';
-        const bgColor = isPiutang ? 'bg-emerald-50' : 'bg-rose-50';
-
-        if (!data) return null;
-
-        return (
-            <Pressable
-                key={type}
-                onPress={() => router.push(isPiutang ? '/finance/piutang' : '/finance/hutang')}
-                className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center"
-            >
-                <View className={`w-16 h-16 ${bgColor} rounded-[20px] items-center justify-center mr-4`}>
-                    <Icon size={28} color={color} />
-                </View>
-
-                <View className="flex-1">
-                    <View className="flex-row items-center justify-between mb-0.5">
-                        <Typography className="text-primary text-[8px] font-bold uppercase tracking-widest opacity-60">
-                            {REPORT_CATEGORIES[type]}
-                        </Typography>
-                        <Typography className="text-textGray text-[8px] font-bold uppercase">
-                            {STATEMENT_LABELS[type]}
+                {/* Ringkasan Minimalis: Masuk, Keluar, Saldo */}
+                <View className="bg-background p-3.5 rounded-2xl border border-transparent flex-row items-center justify-between">
+                    <View className="flex-1 items-center">
+                        <Typography className="text-emerald-600 text-[10px] font-bold uppercase mb-0.5">Masuk</Typography>
+                        <Typography weight="bold" className="text-emerald-700 text-xs">
+                            {formatCurrency(accountData?.total_masuk_bulan_ini || 0)}
                         </Typography>
                     </View>
-                    <View className="flex-row items-center justify-between mb-1">
-                        <Typography variant="body1" weight="bold" className="text-text">
-                            {ACCOUNT_LABELS[type]}
+                    <View className="w-[1px] h-7 bg-gray-200" />
+                    <View className="flex-1 items-center">
+                        <Typography className="text-rose-600 text-[10px] font-bold uppercase mb-0.5">Keluar</Typography>
+                        <Typography weight="bold" className="text-rose-700 text-xs">
+                            {formatCurrency(accountData?.total_keluar_bulan_ini || 0)}
                         </Typography>
-                        <View className="bg-primary/5 px-2 py-1 rounded-full border border-primary/10">
-                            <Typography className="text-primary text-[10px] font-bold uppercase">MODAL KERJA</Typography>
-                        </View>
                     </View>
-
-                    <Typography className="text-textGray text-xs mb-2">Akumulasi dari seluruh transaksi</Typography>
-
-                    <View className="flex-row items-center justify-between pt-3 border-t border-transparent">
-                        <View>
-                            <Typography className="text-textGray text-[10px] uppercase font-bold">Total {isPiutang ? 'Tagihan' : 'Kewajiban'}</Typography>
-                            <Typography variant="h3" weight="bold" className={`${isPiutang ? 'text-emerald-600' : 'text-rose-600'} mt-0.5`}>
-                                {formatCurrency(nominal || 0)}
-                            </Typography>
-                        </View>
-                        <View className="bg-background px-4 py-2 rounded-xl flex-row items-center border border-transparent">
-                            <ArrowRightLeft size={14} color="#6B7280" />
-                            <Typography className="text-textGray text-xs font-bold ml-2">Detail</Typography>
-                        </View>
+                    <View className="w-[1px] h-7 bg-gray-200" />
+                    <View className="flex-1 items-center">
+                        <Typography className="text-primary text-[10px] font-bold uppercase mb-0.5">Saldo</Typography>
+                        <Typography weight="bold" className="text-primary text-xs">
+                            {formatCurrency(currentBalance)}
+                        </Typography>
                     </View>
                 </View>
-            </Pressable>
+            </View>
         );
     };
 
@@ -527,17 +359,8 @@ export default function AkunKeuanganScreen() {
 
             <Header
                 title="Akun Keuangan"
-                subtitle="Daftar Saldo Kas & Bank"
                 showBackButton
                 onBackButtonPress={() => router.back()}
-                rightElement={
-                    <Pressable
-                        onPress={() => router.push('/finance/laporan')}
-                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
-                    >
-                        <BarChart3 size={20} color="#1F2937" />
-                    </Pressable>
-                }
             >
                 {/* Total Balance Bento */}
                 <View className="bg-background p-6 rounded-[32px] border border-transparent mt-4">
@@ -623,41 +446,32 @@ export default function AkunKeuanganScreen() {
                         </View>
                     ))
                 ) : (
-                    <>
-                        {/* Reports & Summaries */}
-                        <View className="mb-4">
-                            <Typography className="text-textGray text-[10px] uppercase font-bold mb-4 ml-1 tracking-widest">Komponen Laporan Keuangan</Typography>
-                            {renderSummaryItem('PIUTANG')}
-                            {renderSummaryItem('HUTANG')}
-                        </View>
-
-                        <View className="mb-4">
-                            <View className="flex-row items-center justify-between mb-4 px-1">
-                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">Kas & Rekening Bank</Typography>
-                                {!roleAccount && (
-                                    <Pressable
-                                        onPress={() => setShowAllAccounts(!showAllAccounts)}
-                                        className="bg-primary/5 px-2 py-1 rounded-lg"
-                                    >
-                                        <Typography className="text-primary text-[10px] font-bold">
-                                            {showAllAccounts ? 'Sembunyikan Saldo 0' : 'Tampilkan Semua'}
-                                        </Typography>
-                                    </Pressable>
-                                )}
-                            </View>
-                            {visibleActiveAccounts.map(renderAccountItem)}
-
-                            {!roleAccount && showAllAccounts && (
-                                <View className="mt-4 pt-4 border-t border-transparent">
-                                    <View className="flex-row items-center mb-4 px-1">
-                                        <History size={14} color="#9CA3AF" />
-                                        <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest ml-2">Rekening Legacy / Lama</Typography>
-                                    </View>
-                                    {LEGACY_ACCOUNTS.map(renderAccountItem)}
-                                </View>
+                    <View className="mb-4">
+                        <View className="flex-row items-center justify-between mb-4 px-1">
+                            <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">Kas & Rekening Bank</Typography>
+                            {!roleAccount && (
+                                <Pressable
+                                    onPress={() => setShowAllAccounts(!showAllAccounts)}
+                                    className="bg-primary/5 px-2 py-1 rounded-lg"
+                                >
+                                    <Typography className="text-primary text-[10px] font-bold">
+                                        {showAllAccounts ? 'Sembunyikan Saldo 0' : 'Tampilkan Semua'}
+                                    </Typography>
+                                </Pressable>
                             )}
                         </View>
-                    </>
+                        {visibleActiveAccounts.map(renderAccountItem)}
+
+                        {!roleAccount && showAllAccounts && (
+                            <View className="mt-4 pt-4 border-t border-transparent">
+                                <View className="flex-row items-center mb-4 px-1">
+                                    <History size={14} color="#9CA3AF" />
+                                    <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest ml-2">Rekening Legacy / Lama</Typography>
+                                </View>
+                                {LEGACY_ACCOUNTS.map(renderAccountItem)}
+                            </View>
+                        )}
+                    </View>
                 )}
 
                 <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
@@ -696,7 +510,8 @@ export default function AkunKeuanganScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     topInset={insets.top}
                     onClose={() => {
                         setIsAdjustModalVisible(false);

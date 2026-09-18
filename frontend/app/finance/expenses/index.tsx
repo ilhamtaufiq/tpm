@@ -39,6 +39,7 @@ import { ArmadaSelector } from '../../../components/ui/ArmadaSelector';
 import { MobilSelector } from '../../../components/ui/MobilSelector';
 import { SparePartSelector } from '../../../components/ui/SparePartSelector';
 import { getCustomTabBarBottomPadding } from '../../../components/ui/CustomTabBar';
+import { useSheetChrome } from '../../../utils/themeStyles';
 
 const CATEGORIES = [
     { label: 'Prive', value: 'PRIVE', icon: Wallet, color: '#F59E0B' },
@@ -64,6 +65,7 @@ const PERIODS = [
 export default function ExpensesScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const chrome = useSheetChrome();
 
     const [period, setPeriod] = useState<'all' | 'daily' | 'monthly' | 'yearly'>('all');
     const [refDate, setRefDate] = useState(new Date());
@@ -723,7 +725,8 @@ export default function ExpensesScreen() {
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 48 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     topInset={insets.top}
                     onClose={() => setShowForm(false)}
                 >

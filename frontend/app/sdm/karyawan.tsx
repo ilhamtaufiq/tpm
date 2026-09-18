@@ -34,6 +34,7 @@ import { offlineAwareWrite } from '../../services/offlineQueue';
 import { useCreateKaryawan, useUpdateKaryawan } from '../../hooks/useSDM';
 import { Header } from '../../components/ui/Header';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 const STATUS_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -53,6 +54,8 @@ const getStatusBadge = (status: EmployeeStatus) => {
 };
 
 export default function KaryawanScreen() {
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -530,7 +533,8 @@ export default function KaryawanScreen() {
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 48 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     // Cards/filter use shadow (Android elevation). Without high elevation here,
                     // list items paint above the in-tree BottomSheet and block the form.
                     containerStyle={{ zIndex: 1000, elevation: 24 }}

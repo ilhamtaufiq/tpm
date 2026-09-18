@@ -26,6 +26,7 @@ import { offlineAwareWrite } from '../../services/offlineQueue';
 import { appAlert } from '../../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 interface JasaServisForm {
     id?: number;
@@ -43,6 +44,8 @@ const INITIAL_FORM: JasaServisForm = {
 };
 
 export default function JasaServisScreen() {
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -411,8 +414,8 @@ export default function JasaServisScreen() {
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 48 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     topInset={insets.top}
                     onChange={(index) => setSheetVisible(index !== -1)}
                     onClose={() => setSheetVisible(false)}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, Pressable } from 'react-native';
-import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Header } from '../../../components/ui/Header';
 import { Typography } from '../../../components/ui/Typography';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
@@ -153,7 +154,12 @@ export default function SupirFormScreen() {
 
     return (
         <View className="flex-1 bg-background">
-            <Stack.Screen options={{ headerTitle: isEditing ? 'Edit Supir' : 'Tambah Supir Baru' }} />
+            <Header
+                title={isEditing ? 'Edit Supir' : 'Tambah Supir'}
+                showBackButton
+                showProfile={false}
+                showBell={false}
+            />
 
             <ScrollView contentContainerStyle={{ padding: 16 }}>
                 {/* Section: Personal Info */}

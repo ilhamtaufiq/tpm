@@ -28,6 +28,7 @@ import { getErrorMessage } from '../../utils/error';
 import { PaymentModal } from '../../components/PaymentModal';
 import { Header } from '../../components/ui/Header';
 import { useAuthStore } from '../../store/useAuthStore';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 const STATUS_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -36,6 +37,8 @@ const STATUS_FILTERS = [
 ];
 
 export default function KasbonScreen() {
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { user } = useAuthStore();
@@ -741,7 +744,8 @@ export default function KasbonScreen() {
                         keyboardBlurBehavior="restore"
                         android_keyboardInputMode="adjustResize"
                         backdropComponent={renderBackdrop}
-                        backgroundStyle={{ borderRadius: 48 }}
+                        backgroundStyle={chrome.backgroundStyle}
+                        handleIndicatorStyle={chrome.handleIndicatorStyle}
                         // List cards use shadow (Android elevation); raise sheet above them.
                         containerStyle={{ zIndex: 1000, elevation: 24 }}
                         style={{ zIndex: 1000, elevation: 24 }}
@@ -768,7 +772,8 @@ export default function KasbonScreen() {
                         keyboardBlurBehavior="restore"
                         android_keyboardInputMode="adjustResize"
                         backdropComponent={renderBackdrop}
-                        backgroundStyle={{ borderRadius: 48 }}
+                        backgroundStyle={chrome.backgroundStyle}
+                        handleIndicatorStyle={chrome.handleIndicatorStyle}
                         containerStyle={{ zIndex: 1000, elevation: 24 }}
                         style={{ zIndex: 1000, elevation: 24 }}
                         topInset={insets.top}

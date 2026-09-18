@@ -143,7 +143,6 @@ export default function ArmadaFormScreen() {
             <Header
                 title={isEdit ? 'Edit Armada' : 'Armada Baru'}
                 showBackButton
-                onBackButtonPress={() => router.back()}
                 showProfile={false}
                 showBell={false}
                 rightElement={isEdit ? (

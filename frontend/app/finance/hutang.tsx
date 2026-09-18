@@ -33,6 +33,7 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PaymentModal } from '../../components/PaymentModal';
 import { useAuthStore } from '../../store/useAuthStore';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 const STATUS_FILTERS: { label: string; value: HutangStatus | 'all' }[] = [
     { label: 'Semua', value: 'all' },
@@ -81,6 +82,8 @@ const getUnitKasJenis = (unit?: string) => {
 
 export default function HutangUsahaScreen() {
     const insets = useSafeAreaInsets();
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
     const { user } = useAuthStore();
     const params = useLocalSearchParams<{ unit?: string }>();
     const roleUnitMap: Record<string, typeof FINANCE_UNITS[number]> = {
@@ -764,13 +767,13 @@ export default function HutangUsahaScreen() {
                         </ScrollView>
 
                         <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
-                            <Search size={16} color="#9CA3AF" />
+                            <Search size={16} color={placeholder} />
                             <TextInput
                                 className="flex-1 ml-3 text-xs text-textMain font-semibold h-full"
                                 placeholder="Cari nama kreditur atau nomor hutang..."
                                 value={search}
                                 onChangeText={setSearch}
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={placeholder}
                                 clearButtonMode="while-editing"
                             />
                         </View>
@@ -900,8 +903,8 @@ export default function HutangUsahaScreen() {
                         android_keyboardInputMode="adjustResize"
                         index={-1}
                         backdropComponent={renderBackdrop}
-                        handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
-                        backgroundStyle={{ borderRadius: 48 }}
+                        handleIndicatorStyle={chrome.handleIndicatorStyle}
+                        backgroundStyle={chrome.backgroundStyle}
                         topInset={insets.top}
                         onClose={() => setIsSheetOpen(false)}
                     >
@@ -923,8 +926,8 @@ export default function HutangUsahaScreen() {
                         android_keyboardInputMode="adjustResize"
                         index={-1}
                         backdropComponent={renderBackdrop}
-                        handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
-                        backgroundStyle={{ borderRadius: 48 }}
+                        handleIndicatorStyle={chrome.handleIndicatorStyle}
+                        backgroundStyle={chrome.backgroundStyle}
                         topInset={insets.top}
                         onClose={() => setIsSheetOpen(false)}
                     >

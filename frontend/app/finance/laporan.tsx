@@ -32,11 +32,13 @@ import { formatCurrency } from '../../utils/format';
 import { Header } from '../../components/ui/Header';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSheetChrome } from '../../utils/themeStyles';
 
 type ReportType = 'LABA_RUGI' | 'MODAL' | 'NERACA';
 
 export default function LaporanKeuanganScreen() {
     const insets = useSafeAreaInsets();
+    const chrome = useSheetChrome();
     const router = useRouter();
     const [reportType, setReportType] = useState<ReportType>('LABA_RUGI');
     const [isLoading, setIsLoading] = useState(true);
@@ -747,7 +749,8 @@ export default function LaporanKeuanganScreen() {
                         index={-1}
                         snapPoints={setupSnapPoints}
                         enablePanDownToClose
-                        backgroundStyle={{ borderRadius: 48 }}
+                        backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                         onClose={() => {
                             setIsSetupModalVisible(false);
                             setIsSheetOpen(false);
@@ -766,7 +769,8 @@ export default function LaporanKeuanganScreen() {
                         index={-1}
                         snapPoints={dateSnapPoints}
                         enablePanDownToClose
-                        backgroundStyle={{ borderRadius: 48 }}
+                        backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                         onClose={() => {
                             setIsDateModalVisible(false);
                             setIsSheetOpen(false);

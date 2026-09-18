@@ -1079,14 +1079,13 @@ export default function MobilInventoryScreen() {
     };
 
     const unitStats = useMemo(() => {
-        if (inventorySummary) {
-            return {
-                total: inventorySummary.total_mobil || 0,
-                tersedia: inventorySummary.per_status?.TERSEDIA || inventorySummary.per_status?.tersedia || 0,
-                terjual: inventorySummary.per_status?.TERJUAL || inventorySummary.per_status?.terjual || 0
-            };
-        }
-        return { total: 0, tersedia: 0, terjual: 0 };
+        const per = inventorySummary?.per_status || {};
+        return {
+            semua: inventorySummary?.total_mobil || 0,
+            tersedia: per.TERSEDIA || per.tersedia || 0,
+            booking: per.BOOKING || per.booking || 0,
+            terjual: per.TERJUAL || per.terjual || 0,
+        };
     }, [inventorySummary]);
 
     return (
@@ -1149,17 +1148,26 @@ export default function MobilInventoryScreen() {
                             { id: 'tersedia', label: 'Tersedia' },
                             { id: 'booking', label: 'Terbooking' },
                             { id: 'terjual', label: 'Terjual' },
-                        ].map((chip) => (
-                            <Pressable 
+                        ].map((chip) => {
+                            const isActive = activeTab === chip.id;
+                            const count = unitStats[chip.id as keyof typeof unitStats];
+                            return (
+                            <Pressable
                                 key={chip.id}
                                 onPress={() => setActiveTab(chip.id as 'semua' | 'tersedia' | 'booking' | 'terjual')}
-                                className={`px-4 py-2 rounded-xl mr-2 ${activeTab === chip.id ? 'bg-primary' : 'bg-background border border-transparent'}`}
+                                className={`px-4 py-2 rounded-xl mr-2 flex-row items-center ${isActive ? 'bg-primary' : 'bg-background border border-transparent'}`}
                             >
-                                <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${activeTab === chip.id ? 'text-white font-bold' : 'text-textGray'}`}>
+                                <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${isActive ? 'text-white font-bold' : 'text-textGray'}`}>
                                     {chip.label}
                                 </Typography>
+                                <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                    <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : 'text-textGray'}`}>
+                                        {formatNumber(count)}
+                                    </Typography>
+                                </View>
                             </Pressable>
-                        ))}
+                            );
+                        })}
                     </ScrollView>
                 </View>
 

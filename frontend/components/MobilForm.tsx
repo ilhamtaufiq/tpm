@@ -68,11 +68,15 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
         { id: Date.now() + Math.random(), metode: 'TUNAI', sumber: 'UNIT_TUNAI', jumlah: '' }
     ]);
 
+    const [confirmedPriceChange, setConfirmedPriceChange] = useState(false);
+
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
         title: string;
         message: string;
         variant: 'success' | 'error' | 'warning' | 'info';
+        type?: 'alert' | 'confirm';
+        onConfirm?: () => void;
     }>({
         visible: false,
         title: '',
@@ -259,35 +263,58 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             }
         };
 
-        void (async () => {
-            try {
-                const result = await offlineAwareWrite(queryClient, {
-                    type: isEdit ? 'mobil.update' : 'mobil.create',
-                    payload: isEdit ? { id: initialData.id, data: payload } : payload,
-                    label: isEdit ? 'Update mobil' : 'Mobil baru',
-                    description: String(payload.plat_nomor || ''),
-                    onlineFn: () =>
-                        isEdit
-                            ? updateMutation.mutateAsync({ id: initialData.id, data: payload })
-                            : createMutation.mutateAsync(payload),
-                });
-                if (result.mode === 'offline') {
-                    setDialogConfig({
-                        visible: true,
-                        title: 'Offline Mode',
-                        message: isEdit
-                            ? 'Update data mobil tersimpan di antrean offline (perangkat).'
-                            : 'Mobil baru tersimpan di antrean offline (perangkat).',
-                        variant: 'info',
+        const isBookedOrSold = isEdit && ['BOOKING', 'TERJUAL'].includes(String(initialData?.status || '').toUpperCase());
+        const isHargaJualChanged = isEdit && parseNumber(hargaJual) !== Number(initialData?.harga_jual || 0);
+
+        const runSubmit = () => {
+            void (async () => {
+                try {
+                    const result = await offlineAwareWrite(queryClient, {
+                        type: isEdit ? 'mobil.update' : 'mobil.create',
+                        payload: isEdit ? { id: initialData.id, data: payload } : payload,
+                        label: isEdit ? 'Update mobil' : 'Mobil baru',
+                        description: String(payload.plat_nomor || ''),
+                        onlineFn: () =>
+                            isEdit
+                                ? updateMutation.mutateAsync({ id: initialData.id, data: payload })
+                                : createMutation.mutateAsync(payload),
                     });
-                    setTimeout(() => onSuccess?.(), 1500);
-                    return;
+                    if (result.mode === 'offline') {
+                        setDialogConfig({
+                            visible: true,
+                            title: 'Offline Mode',
+                            message: isEdit
+                                ? 'Update data mobil tersimpan di antrean offline (perangkat).'
+                                : 'Mobil baru tersimpan di antrean offline (perangkat).',
+                            variant: 'info',
+                        });
+                        setTimeout(() => onSuccess?.(), 1500);
+                        return;
+                    }
+                    mutateOptions.onSuccess();
+                } catch (err: any) {
+                    mutateOptions.onError(err);
                 }
-                mutateOptions.onSuccess();
-            } catch (err: any) {
-                mutateOptions.onError(err);
-            }
-        })();
+            })();
+        };
+
+        if (isBookedOrSold && isHargaJualChanged && !confirmedPriceChange) {
+            setDialogConfig({
+                visible: true,
+                title: 'Peringatan Laporan Keuangan',
+                message: `Mobil ini berstatus ${initialData.status}. Perubahan harga jual hanya memperbarui master data unit dan TIDAK mengubah nominal transaksi/laporan keuangan yang sudah tercatat.\n\nYakin ingin memperbarui harga jual?`,
+                variant: 'warning',
+                type: 'confirm',
+                onConfirm: () => {
+                    setConfirmedPriceChange(true);
+                    setDialogConfig((p) => ({ ...p, visible: false }));
+                    runSubmit();
+                }
+            });
+            return;
+        }
+
+        runSubmit();
     };
 
     const renderFormContent = () => (
@@ -388,8 +415,21 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                         containerClassName="mt-4"
                         keyboardType="numeric"
                         value={hargaJual}
-                        onChangeText={(v) => setHargaJual(formatNumber(v))}
+                        onChangeText={(v) => {
+                            setHargaJual(formatNumber(v));
+                            setConfirmedPriceChange(false);
+                        }}
                     />
+
+                    {isEdit && ['BOOKING', 'TERJUAL'].includes(String(initialData?.status || '').toUpperCase()) && (
+                        <View className="mt-2 p-3 bg-amber-50 rounded-xl border border-amber-200 flex-row items-start space-x-2">
+                            <Info size={16} color="#D97706" style={{ marginTop: 2 }} />
+                            <Typography variant="caption" className="flex-1 text-amber-800 text-[11px] leading-4">
+                                <Typography weight="bold" className="text-amber-900 text-[11px]">Peringatan: </Typography>
+                                Mobil berstatus <Typography weight="bold" className="text-amber-900 text-[11px]">{initialData.status}</Typography>. Edit harga jual di sini hanya mengubah master data unit, <Typography weight="bold" className="text-amber-900 text-[11px]">tidak otomatis mengubah transaksi penjualan</Typography> yang sudah terjadi dan dapat berbeda dari Laporan Keuangan.
+                            </Typography>
+                        </View>
+                    )}
 
                         {!isEdit && (
                         <View className="mt-4">
@@ -633,6 +673,8 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                     title={dialogConfig.title}
                     message={dialogConfig.message}
                     variant={dialogConfig.variant}
+                    type={dialogConfig.type}
+                    onConfirm={dialogConfig.onConfirm}
                     onClose={() => setDialogConfig(p => ({ ...p, visible: false }))}
                 />
             </View>

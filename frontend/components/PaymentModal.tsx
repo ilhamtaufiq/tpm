@@ -15,6 +15,7 @@ import { getErrorMessage } from '../utils/error';
 import { keuanganService } from '../services/keuangan';
 import { ModalFlexBackdrop } from './ui/BottomSheetContainer';
 import { ModalThemeView } from './ui/ModalThemeView';
+import { useSheetChrome } from '../utils/themeStyles';
 
 interface PaymentModalProps {
     visible: boolean;
@@ -49,6 +50,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [allBalances, setAllBalances] = useState<any>(null);
     const queryClient = useQueryClient();
+    const chrome = useSheetChrome();
 
     React.useEffect(() => {
         if (visible) {
@@ -498,7 +500,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             keyboardBlurBehavior="restore"
             android_keyboardInputMode="adjustResize"
             onClose={onClose}
-            backgroundStyle={{ borderRadius: 48 }}
+            backgroundStyle={chrome.backgroundStyle}
+            handleIndicatorStyle={chrome.handleIndicatorStyle}
         >
             <BottomSheetScrollView
                 showsVerticalScrollIndicator

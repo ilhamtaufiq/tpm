@@ -40,6 +40,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { Header } from '../../components/ui/Header';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 const ROLE_OPTIONS = [
     { label: 'Admin', value: 'ADMIN', color: '#EF4444', icon: Shield },
@@ -64,6 +65,8 @@ export default function UserManagementScreen() {
     const [viewMode, setViewMode] = useState<'detail' | 'form'>('detail');
     const [refreshing, setRefreshing] = useState(false);
     const { themeColors } = useUIStore();
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
 
     // API Hooks
     const { data: userData, isLoading, refetch } = useUserList();
@@ -594,8 +597,8 @@ export default function UserManagementScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     topInset={insets.top}
                     onChange={(index) => setSheetVisible(index !== -1)}
                     onClose={() => setSheetVisible(false)}

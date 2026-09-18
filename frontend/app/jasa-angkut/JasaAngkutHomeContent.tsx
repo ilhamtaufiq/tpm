@@ -65,6 +65,7 @@ import {
 
 import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 import { useDeferredReady } from '../../hooks/useDeferredReady';
 import { MuatanForm } from '../../components/jasa-angkut/MuatanForm';
 import { PaymentModal } from '../../components/PaymentModal';
@@ -115,6 +116,8 @@ function getTripFinancials(trip: Muatan) {
 }
 
 export default function JasaAngkutScreen() {
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
     // UI States (Moved up to prevent use-before-declaration)
     const [searchQuery, setSearchQuery] = useState('');
     const [groupBy, setGroupBy] = useState<'armada' | 'supir'>('armada');
@@ -1985,8 +1988,8 @@ export default function JasaAngkutScreen() {
                         enablePanDownToClose
                         keyboardBehavior="interactive"
                         keyboardBlurBehavior="restore"
-                        backgroundStyle={{ borderRadius: 48 }}
-                        handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                        backgroundStyle={chrome.backgroundStyle}
+                        handleIndicatorStyle={chrome.handleIndicatorStyle}
                         onChange={setSheetIndex}
                     >
                         {sheetIndex >= 0 ? renderBottomSheetContent() : null}
@@ -1999,8 +2002,8 @@ export default function JasaAngkutScreen() {
                         enablePanDownToClose
                         keyboardBehavior="interactive"
                         keyboardBlurBehavior="restore"
-                        backgroundStyle={{ borderRadius: 48 }}
-                        handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                        backgroundStyle={chrome.backgroundStyle}
+                        handleIndicatorStyle={chrome.handleIndicatorStyle}
                         onClose={handleCloseWallet}
                     >
                         <BottomSheetScrollView showsVerticalScrollIndicator={false}>
@@ -2074,8 +2077,8 @@ export default function JasaAngkutScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     onClose={() => setIsDateModalVisible(false)}
                 >
                     <BottomSheetScrollView showsVerticalScrollIndicator={false}>

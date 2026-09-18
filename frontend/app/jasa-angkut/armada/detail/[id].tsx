@@ -36,10 +36,7 @@ export default function ArmadaDetailScreen() {
                         >
                             <ChevronLeft size={24} color="#1C1C1C" />
                         </TouchableOpacity>
-                        <View>
-                            <Typography variant="h3" weight="bold">Detail Armada</Typography>
-                            <Typography variant="caption" className="text-textGray">Statistik & Riwayat</Typography>
-                        </View>
+                        <Typography variant="h3" weight="bold">Detail Armada</Typography>
                     </View>
 
                     <TouchableOpacity

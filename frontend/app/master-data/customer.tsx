@@ -34,6 +34,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 const TYPE_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -51,6 +52,8 @@ export default function CustomerScreen() {
     const [viewMode, setViewMode] = useState<'detail' | 'form'>('detail');
     const [refreshing, setRefreshing] = useState(false);
     const { themeColors } = useUIStore();
+    const chrome = useSheetChrome({ borderRadius: 32 });
+    const placeholder = usePlaceholderColor();
 
     // API Hooks
     const { data: listData, isLoading, refetch } = useCustomerList({
@@ -719,8 +722,8 @@ export default function CustomerScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 32 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     topInset={insets.top}
                     onChange={(index) => setSheetVisible(index !== -1)}
                     onClose={() => setSheetVisible(false)}

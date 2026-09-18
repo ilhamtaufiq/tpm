@@ -7,6 +7,7 @@ import { Search, Truck, X, Check } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { jasaAngkutService } from '../../services/jasaAngkut';
+import { usePlaceholderColor } from '../../utils/themeStyles';
 
 interface ArmadaSelectorProps {
     value?: any; // Selected object or null
@@ -22,6 +23,7 @@ export const ArmadaSelector = ({
     placeholder
 }: ArmadaSelectorProps) => {
     const insets = useSafeAreaInsets();
+    const placeholderColor = usePlaceholderColor();
     const [searchQuery, setSearchQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
 
@@ -94,19 +96,19 @@ export const ArmadaSelector = ({
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold">Cari Armada</Typography>
                             <Pressable onPress={handleClose} hitSlop={12}>
-                                <X size={24} color="#6B7280" />
+                                <X size={24} color={placeholderColor} />
                             </Pressable>
                         </View>
 
                         <View className="flex-row items-center bg-background rounded-xl px-4 py-3 mb-4">
-                            <Search size={20} color="#9CA3AF" />
+                            <Search size={20} color={placeholderColor} />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-text font-outfit"
                                 placeholder="Ketik nama atau nopol armada..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                                 autoFocus
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={placeholderColor}
                                 autoCapitalize="characters"
                             />
                         </View>

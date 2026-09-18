@@ -13,7 +13,6 @@ interface ReportPageHeaderProps {
 
 export function ReportPageHeader({
     title,
-    subtitle,
     onBack,
     onExport,
     isExporting,
@@ -28,11 +27,6 @@ export function ReportPageHeader({
                     <Typography variant="h2" weight="bold" numberOfLines={1}>
                         {title}
                     </Typography>
-                    {subtitle ? (
-                        <Typography className="text-textGray text-xs mt-0.5" numberOfLines={1}>
-                            {subtitle}
-                        </Typography>
-                    ) : null}
                 </View>
             </View>
             {onExport ? (

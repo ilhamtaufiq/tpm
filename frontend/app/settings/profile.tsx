@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useUIStore } from '../../store/useUIStore';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { authService } from '../../services/auth';
 import { getErrorMessage } from '../../utils/error';
@@ -147,59 +147,48 @@ export default function ProfileSettingsScreen() {
 
     return (
         <View className="flex-1 bg-background">
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="dark-content" />
 
-            {/* Pattern 1: Premium Curved Header */}
-            <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
-                {/* Decorative Elements */}
-                <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-surface/10 rounded-full blur-[80px]" />
-
-                <Header
-                    title="Ubah Profil"
-                    subtitle="Edit Data Akun"
-                    showBackButton
-                    onBackButtonPress={handleBack}
-                    showProfile={false}
-                    showBell={false}
-                />
-
-                {/* Avatar Section */}
-                <Animated.View entering={FadeInUp.delay(200)} className="items-center z-10">
-                    <View className="relative">
-                        <View className="w-28 h-28 bg-surface rounded-[36px] items-center justify-center shadow-2xl border-4 border-white/20 overflow-hidden">
-                            {image ? (
-                                <Image source={{ uri: image }} className="w-full h-full" />
-                            ) : (
-                                <User size={60} color={themeColors.primary} strokeWidth={1.5} />
-                            )}
-                            {isPicking && (
-                                <View className="absolute inset-0 bg-black/20 items-center justify-center">
-                                    <ActivityIndicator color="white" />
-                                </View>
-                            )}
-                        </View>
-                        <Pressable
-                            onPress={pickImage}
-                            disabled={isPicking}
-                            className="absolute bottom-0 right-0 w-10 h-10 bg-secondary rounded-2xl items-center justify-center border-2 border-white shadow-lg"
-                        >
-                            <Camera size={20} color="white" />
-                        </Pressable>
-                    </View>
-                </Animated.View>
-            </View>
-
+            <Header
+                title="Ubah Profil"
+                showBackButton
+                showProfile={false}
+                showBell={false}
+            />
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 className="flex-1"
             >
                 <ScrollView
-                    className="flex-1 -mt-8"
+                    className="flex-1"
                     contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 112) }}
                     showsVerticalScrollIndicator={false}
                 >
-                    <Animated.View entering={FadeInDown.delay(400)} className="space-y-6">
+                    <Animated.View entering={FadeInDown.delay(200)} className="space-y-6">
+                        <View className="items-center pt-6">
+                            <View className="relative">
+                                <View className="w-28 h-28 bg-surface rounded-[36px] items-center justify-center shadow-sm border border-transparent overflow-hidden">
+                                    {image ? (
+                                        <Image source={{ uri: image }} className="w-full h-full" />
+                                    ) : (
+                                        <User size={60} color={themeColors.primary} strokeWidth={1.5} />
+                                    )}
+                                    {isPicking && (
+                                        <View className="absolute inset-0 bg-black/20 items-center justify-center">
+                                            <ActivityIndicator color="white" />
+                                        </View>
+                                    )}
+                                </View>
+                                <Pressable
+                                    onPress={pickImage}
+                                    disabled={isPicking}
+                                    className="absolute bottom-0 right-0 w-10 h-10 bg-secondary rounded-2xl items-center justify-center border-2 border-white shadow-lg"
+                                >
+                                    <Camera size={20} color="white" />
+                                </Pressable>
+                            </View>
+                        </View>
 
                         {/* Section: Personal Info */}
                         <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-transparent">

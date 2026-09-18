@@ -485,13 +485,6 @@ class MobilService:
         """Update car information."""
         mobil = self.get_by_id(mobil_id)
 
-        # Cannot update sold car (except some fields)
-        if mobil.status == CarStatus.TERJUAL:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tidak dapat mengubah data mobil yang sudah terjual",
-            )
-
         update_data = data.model_dump(exclude_unset=True)
 
         # Check duplicate plate if changing

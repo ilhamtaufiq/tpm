@@ -36,6 +36,7 @@ import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 import { Image } from 'react-native';
 import { getFileUrl } from '../../utils/image';
 
@@ -48,6 +49,8 @@ interface AdjustmentForm {
 }
 
 export default function UserCashManagementScreen() {
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
     const currentUser = useAuthStore(state => state.user);
     const isAdmin = currentUser?.role === 'ADMIN';
@@ -258,13 +261,13 @@ export default function UserCashManagementScreen() {
                     <View className="px-6 mt-4">
                         <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-transparent shadow-sm">
                             <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-background">
-                                <Search size={18} color="#9CA3AF" />
-                                <TextInput 
-                                    placeholder="Cari nama atau username..." 
+                                <Search size={18} color={placeholder} />
+                                <TextInput
+                                    placeholder="Cari nama atau username..."
                                     className="flex-1 ml-3 text-sm font-semibold text-textMain"
                                     value={searchQuery}
                                     onChangeText={setSearchQuery}
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={placeholder}
                                 />
                             </View>
                         </View>
@@ -313,7 +316,8 @@ export default function UserCashManagementScreen() {
                 keyboardBlurBehavior="restore"
                 android_keyboardInputMode="adjustResize"
                 backdropComponent={renderBackdrop}
-                handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                backgroundStyle={chrome.backgroundStyle}
+                handleIndicatorStyle={chrome.handleIndicatorStyle}
                 topInset={insets.top}
                 onClose={() => setForm(null)}
             >

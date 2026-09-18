@@ -16,6 +16,7 @@ import { formatCurrency } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { useSheetChrome } from '../../utils/themeStyles';
 import {
     ReportPageHeader,
     ReportStatsBento,
@@ -28,6 +29,7 @@ import {
 const escapeHtml = (str: any) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
 
 export default function PembelianMobilReportScreen() {
+    const chrome = useSheetChrome({ borderRadius: 32 });
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const [filterType, setFilterType] = useState<ReportFilterType>('monthly');
@@ -350,7 +352,8 @@ export default function PembelianMobilReportScreen() {
                 backdropComponent={({ style }) => (
                     <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
                 )}
-                backgroundStyle={{ borderRadius: 32 }}
+                backgroundStyle={chrome.backgroundStyle}
+    handleIndicatorStyle={chrome.handleIndicatorStyle}
             >
                 <BottomSheetView className="flex-1 px-6 pb-6">
                     <View className="flex-row justify-between items-center mb-6">

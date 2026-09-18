@@ -5,7 +5,7 @@ import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { useRouter } from 'expo-router';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { authService } from '../../services/auth';
 import { getErrorMessage } from '../../utils/error';
 
@@ -98,37 +98,22 @@ export default function ChangePasswordScreen() {
     };
 
     return (
-        <View className="flex-1 bg-[#F8F9FA]">
-            <StatusBar barStyle="light-content" />
+        <View className="flex-1 bg-background">
+            <StatusBar barStyle="dark-content" />
 
-            {/* Pattern 1: Premium Curved Header */}
-            <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
-                {/* Decorative Elements */}
-                <View className="absolute top-[-50] right-[-30] w-[200] h-[200] bg-surface/10 rounded-full blur-[80px]" />
-
-                <Header
-                    title="Kata Sandi"
-                    subtitle="Keamanan Akun"
-                    showBackButton
-                    onBackButtonPress={handleBack}
-                    showProfile={false}
-                    showBell={false}
-                />
-
-                {/* Secure Icon Section */}
-                <Animated.View entering={FadeInUp.delay(200)} className="items-center z-10">
-                    <View className="w-24 h-24 bg-surface/10 rounded-[32px] items-center justify-center border border-white/20">
-                        <ShieldCheck size={48} color="white" strokeWidth={1.5} />
-                    </View>
-                </Animated.View>
-            </View>
+            <Header
+                title="Kata Sandi"
+                showBackButton
+                showProfile={false}
+                showBell={false}
+            />
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 className="flex-1"
             >
                 <ScrollView
-                    className="flex-1 -mt-8"
+                    className="flex-1"
                     contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
                     showsVerticalScrollIndicator={false}
                 >

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
+import { useUIStore } from '../../store/useUIStore';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
@@ -39,6 +40,7 @@ import { Tabs } from '../../components/ui/Tabs';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useSheetChrome } from '../../utils/themeStyles';
 
 const ACCOUNT_FILTERS: { label: string; value: KasBankJenis | 'all' }[] = [
     { label: 'Semua', value: 'all' },
@@ -64,6 +66,8 @@ const JENIS_LABEL: Record<KasBankJenis, string> = {
 
 export default function MutasiKasScreen() {
     const insets = useSafeAreaInsets();
+    const chrome = useSheetChrome();
+    const { themeColors } = useUIStore();
     const { action, jenis } = useLocalSearchParams<{ 
         action?: string, 
         jenis?: string,
@@ -141,14 +145,7 @@ export default function MutasiKasScreen() {
         saldo_akhir: txData?.saldo_akhir || 0,
     };
 
-    const handleGoBack = () => {
-        if (router.canGoBack()) {
-            router.back();
-        } else {
-            router.replace('/finance');
-        }
-    };
-
+    
     const { data: userData } = useUserList({ limit: 100 });
     const users = userData?.data || [];
 
@@ -501,9 +498,6 @@ export default function MutasiKasScreen() {
         <View className="flex-1 bg-surface">
             <Header
                 title="Mutasi Kas"
-                subtitle="Ringkasan Arus Keuangan"
-                showBackButton
-                onBackButtonPress={handleGoBack}
                 rightElement={
                     <Pressable
                         onPress={onRefresh}
@@ -633,7 +627,7 @@ export default function MutasiKasScreen() {
                                     onPress={() => router.push('/finance/akun')}
                                     className="bg-primary/5 px-4 py-2 rounded-xl border border-primary/10 flex-row items-center"
                                 >
-                                    <Building2 size={16} color="#023C69" />
+                                    <Building2 size={16} color={themeColors.primary} />
                                     <Typography className="text-primary text-xs font-bold ml-2">Detail Akun</Typography>
                                 </Pressable>
                             </View>
@@ -714,7 +708,7 @@ export default function MutasiKasScreen() {
                     <View className="flex-1 justify-end bg-black/40">
                         <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                         <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                             <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {renderSheetContent()}
                             </ScrollView>
@@ -731,8 +725,8 @@ export default function MutasiKasScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 48 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     topInset={insets.top}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >

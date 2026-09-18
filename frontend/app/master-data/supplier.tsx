@@ -29,8 +29,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 export default function SupplierScreen() {
+    const chrome = useSheetChrome({ borderRadius: 32 });
+    const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -537,8 +540,8 @@ export default function SupplierScreen() {
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
-                    backgroundStyle={{ borderRadius: 32 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     topInset={insets.top}
                     onChange={(index) => setSheetVisible(index !== -1)}
                     onClose={() => setSheetVisible(false)}

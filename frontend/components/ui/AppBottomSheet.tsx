@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from 'expo-router';
 import { ModalFlexBackdrop } from './BottomSheetContainer';
 import { ModalThemeView } from './ModalThemeView';
+import { useSheetChrome } from '../../utils/themeStyles';
 
 export interface AppBottomSheetRef {
     open: (index?: number) => void;
@@ -50,6 +51,7 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
     const insets = useSafeAreaInsets();
     const navigation = useNavigation();
     const isOpen = index !== -1;
+    const chrome = useSheetChrome({ borderRadius, handleWidth: 40 });
 
     useImperativeHandle(ref, () => ({
         open: (snapIndex = 0) => {
@@ -131,7 +133,7 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
                         }}
                     >
                         {/* Handle indicator */}
-                        <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                        <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                         {scrollable ? (
                             <ScrollView
                                 contentContainerStyle={{
@@ -164,8 +166,8 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
             keyboardBlurBehavior="restore"
             android_keyboardInputMode="adjustResize"
             backdropComponent={renderBackdrop}
-            backgroundStyle={{ borderRadius }}
-            handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 40 }}
+            backgroundStyle={chrome.backgroundStyle}
+            handleIndicatorStyle={chrome.handleIndicatorStyle}
             topInset={insets.top}
             onChange={handleSheetChange}
         >

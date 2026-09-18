@@ -274,12 +274,7 @@ export default function ReportsScreen() {
                     <Pressable onPress={handleGoBack} className="mr-4">
                         <ChevronLeft size={24} color="#1C1C1C" />
                     </Pressable>
-                    <View>
-                        <Typography variant="h2" weight="bold">Pusat Laporan</Typography>
-                        <Typography className="text-textGray text-xs mt-0.5">
-                            Analisa performa & data bisnis
-                        </Typography>
-                    </View>
+                    <Typography variant="h2" weight="bold">Pusat Laporan</Typography>
                 </View>
             </View>
 

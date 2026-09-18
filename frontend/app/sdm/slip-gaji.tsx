@@ -31,6 +31,7 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { Header } from '../../components/ui/Header';
+import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 // Helper to get current week number
 const getWeekNumber = (d: Date): number => {
@@ -68,6 +69,8 @@ const getDayName = (dateString: string): string => {
 };
 
 export default function SlipGajiScreen() {
+    const chrome = useSheetChrome();
+    const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const now = new Date();
@@ -861,7 +864,8 @@ export default function SlipGajiScreen() {
                     backdropComponent={(props) => (
                         <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
                     )}
-                    backgroundStyle={{ borderRadius: 48 }}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
                     // Cards/FABs use shadow (Android elevation); raise sheet above them.
                     containerStyle={{ zIndex: 1000, elevation: 24 }}
                     style={{ zIndex: 1000, elevation: 24 }}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ViewProps, StyleProp, ViewStyle } from 'react-native';
 import { vars } from 'nativewind';
-import { useUIStore } from '../../store/useUIStore';
+import { findPaletteBorder, useUIStore } from '../../store/useUIStore';
 
 /**
  * React Native Modal renders outside the app root, so NativeWind CSS variables
@@ -22,6 +22,7 @@ export const ModalThemeView = ({
         '--color-surface': themeColors.surface,
         '--color-text': themeColors.text,
         '--color-text-gray': themeColors.textGray,
+        '--color-border': findPaletteBorder(themeColors),
     });
 
     return (
