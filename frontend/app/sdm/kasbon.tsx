@@ -63,6 +63,12 @@ export default function KasbonScreen() {
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
     const [selectedKasbon, setSelectedKasbon] = useState<Kasbon | null>(null);
 
+    const filterCounts = useMemo(() => ({
+        all: summary?.count_total,
+        BELUM_LUNAS: summary?.count_belum_lunas,
+        LUNAS: summary?.count_lunas,
+    } as Record<string, number | undefined>), [summary]);
+
     // Filtered List
     const filteredKasbonList = useMemo(() => {
         let list = kasbonList;
@@ -562,24 +568,32 @@ export default function KasbonScreen() {
             <View className="px-6 -mt-14 z-10">
                 <View className="bg-surface p-2 rounded-3xl shadow-xl border border-transparent flex-col">
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
-                        {STATUS_FILTERS.map((filter) => (
-                            <Pressable
-                                key={filter.key}
-                                onPress={() => {
-                                    setSelectedFilter(filter.key as any);
-                                    // loadData is called in useEffect when filter changes
-                                }}
-                                className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.key ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-background border border-transparent'}`}
-                            >
-                                <Typography
-                                    variant="caption"
-                                    weight="bold"
-                                    className={selectedFilter === filter.key ? 'text-white' : 'text-textGray'}
+                        {STATUS_FILTERS.map((filter) => {
+                            const isActive = selectedFilter === filter.key;
+                            const count = filterCounts[filter.key];
+                            return (
+                                <Pressable
+                                    key={filter.key}
+                                    onPress={() => setSelectedFilter(filter.key as any)}
+                                    className={`px-5 py-2.5 rounded-2xl mr-2 flex-row items-center ${isActive ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-background border border-transparent'}`}
                                 >
-                                    {filter.label}
-                                </Typography>
-                            </Pressable>
-                        ))}
+                                    <Typography
+                                        variant="caption"
+                                        weight="bold"
+                                        className={isActive ? 'text-white' : 'text-textGray'}
+                                    >
+                                        {filter.label}
+                                    </Typography>
+                                    {count !== undefined && (
+                                        <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                            <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : 'text-textGray'}`}>
+                                                {formatNumber(count)}
+                                            </Typography>
+                                        </View>
+                                    )}
+                                </Pressable>
+                            );
+                        })}
                     </ScrollView>
 
                     <View className="flex-row items-center px-4 bg-background h-14 rounded-2xl border border-transparent">

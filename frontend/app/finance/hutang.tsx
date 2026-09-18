@@ -227,8 +227,8 @@ export default function HutangUsahaScreen() {
             return true;
         });
 
-        return { 
-            filteredList: filtered, 
+        return {
+            filteredList: filtered,
             localSummary: {
                 total_sisa: totalSisa,
                 jumlah_belum_lunas: countBelumLunas,
@@ -237,6 +237,16 @@ export default function HutangUsahaScreen() {
     }, [hutangListRaw, mobilData, bengkelData, summary]);
 
     const hutangList = filteredList;
+
+    const filterCounts = useMemo(() => {
+        if (!summary) return {} as Record<string, number | undefined>;
+        return {
+            all: (summary.jumlah_belum_lunas ?? 0) + (summary.jumlah_lunas ?? 0),
+            BELUM_LUNAS: summary.jumlah_belum_lunas,
+            SEBAGIAN: (summary as any).jumlah_sebagian,
+            LUNAS: summary.jumlah_lunas,
+        } as Record<string, number | undefined>;
+    }, [summary]);
 
     const renderBackdrop = useCallback(
         (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,
@@ -725,21 +735,32 @@ export default function HutangUsahaScreen() {
                 <View className="px-6 mt-4">
                     <View className="bg-surface p-3 rounded-[24px] border border-transparent shadow-sm flex-col">
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-3 space-x-2 pb-1">
-                            {STATUS_FILTERS.map((filter) => (
-                                <Pressable
-                                    key={filter.value}
-                                    onPress={() => setSelectedFilter(filter.value)}
-                                    className={`px-4 py-2 rounded-xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-primary shadow-sm' : 'bg-background border border-transparent'}`}
-                                >
-                                    <Typography
-                                        variant="caption"
-                                        weight="bold"
-                                        className={`text-[10px] uppercase tracking-wider ${selectedFilter === filter.value ? 'text-white font-bold' : 'text-textGray'}`}
+                            {STATUS_FILTERS.map((filter) => {
+                                const isActive = selectedFilter === filter.value;
+                                const count = filterCounts[filter.value];
+                                return (
+                                    <Pressable
+                                        key={filter.value}
+                                        onPress={() => setSelectedFilter(filter.value)}
+                                        className={`px-4 py-2 rounded-xl mr-2 flex-row items-center ${isActive ? 'bg-primary border border-primary shadow-sm' : 'bg-background border border-transparent'}`}
                                     >
-                                        {filter.label}
-                                    </Typography>
-                                </Pressable>
-                            ))}
+                                        <Typography
+                                            variant="caption"
+                                            weight="bold"
+                                            className={`text-[10px] uppercase tracking-wider ${isActive ? 'text-white font-bold' : 'text-textGray'}`}
+                                        >
+                                            {filter.label}
+                                        </Typography>
+                                        {count !== undefined && (
+                                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                                <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : 'text-textGray'}`}>
+                                                    {formatNumber(count)}
+                                                </Typography>
+                                            </View>
+                                        )}
+                                    </Pressable>
+                                );
+                            })}
                         </ScrollView>
 
                         <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">

@@ -69,6 +69,22 @@ export default function AssetScreen() {
     const totalAssets = listData?.total || 0;
     const totalValue = listData?.total_value || 0;
 
+    const categoryCounts = useMemo(() => {
+        const map: Record<string, number> = { all: totalAssets };
+        if (statsData?.by_kategori) {
+            Object.entries(statsData.by_kategori).forEach(([cat, data]: [string, any]) => {
+                map[cat] = data?.count ?? 0;
+            });
+        } else if (assetList.length > 0) {
+            assetList.forEach((a: Asset) => {
+                if (a.kategori) {
+                    map[a.kategori] = (map[a.kategori] || 0) + 1;
+                }
+            });
+        }
+        return map;
+    }, [statsData, assetList, totalAssets]);
+
     // Form state
     const [formData, setFormData] = useState({
         nama: '',
@@ -476,17 +492,28 @@ export default function AssetScreen() {
             {!sheetVisible && (
                 <View className="px-6 mt-1">
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
-                        {KATEGORI_FILTERS.map((filter) => (
-                            <Pressable
-                                key={filter.key}
-                                onPress={() => setSelectedFilter(filter.key)}
-                                className={`mr-3 px-5 py-2.5 rounded-2xl border ${selectedFilter === filter.key ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
-                            >
-                                <Typography className={selectedFilter === filter.key ? 'text-white' : 'text-textGray'} weight={selectedFilter === filter.key ? 'bold' : 'medium'} variant="caption">
-                                    {filter.label}
-                                </Typography>
-                            </Pressable>
-                        ))}
+                        {KATEGORI_FILTERS.map((filter) => {
+                            const isActive = selectedFilter === filter.key;
+                            const count = categoryCounts[filter.key];
+                            return (
+                                <Pressable
+                                    key={filter.key}
+                                    onPress={() => setSelectedFilter(filter.key)}
+                                    className={`mr-3 px-5 py-2.5 rounded-2xl border flex-row items-center ${isActive ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
+                                >
+                                    <Typography className={isActive ? 'text-white' : 'text-textGray'} weight={isActive ? 'bold' : 'medium'} variant="caption">
+                                        {filter.label}
+                                    </Typography>
+                                    {count !== undefined && (
+                                        <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                            <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : 'text-textGray'}`}>
+                                                {count}
+                                            </Typography>
+                                        </View>
+                                    )}
+                                </Pressable>
+                            );
+                        })}
                     </ScrollView>
                 </View>
             )}

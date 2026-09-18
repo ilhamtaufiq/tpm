@@ -667,11 +667,16 @@ export default function QueueScreen() {
                         <Pressable
                             key={filter.id}
                             onPress={() => setQueueWorkStatusFilter(filter.id as any)}
-                            className={`px-4 py-2 rounded-full border mr-2 ${isActive ? filter.active : filter.inactive}`}
+                            className={`px-4 py-2 rounded-full border mr-2 flex-row items-center ${isActive ? filter.active : filter.inactive}`}
                         >
                             <Typography variant="caption" weight="bold" className={isActive ? 'text-white' : filter.text}>
-                                {filter.label} ({filter.count})
+                                {filter.label}
                             </Typography>
+                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : filter.text}`}>
+                                    {formatNumber(filter.count)}
+                                </Typography>
+                            </View>
                         </Pressable>
                     );
                 })}
@@ -693,11 +698,16 @@ export default function QueueScreen() {
                         <Pressable
                             key={filter.id}
                             onPress={() => setQueuePaymentFilter(filter.id as any)}
-                            className={`px-4 py-2 rounded-full border mr-2 ${isActive ? filter.active : filter.inactive}`}
+                            className={`px-4 py-2 rounded-full border mr-2 flex-row items-center ${isActive ? filter.active : filter.inactive}`}
                         >
                             <Typography variant="caption" weight="bold" className={isActive ? 'text-white' : filter.text}>
-                                {filter.label} ({filter.count})
+                                {filter.label}
                             </Typography>
+                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : filter.text}`}>
+                                    {formatNumber(filter.count)}
+                                </Typography>
+                            </View>
                         </Pressable>
                     );
                 })}

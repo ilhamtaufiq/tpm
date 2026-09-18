@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import api from './api';
 
 export type PublicReceiptType = 'bengkel' | 'jasa_angkut' | 'mobil';
 
@@ -15,6 +16,23 @@ function stripTrailingSlash(url: string): string {
     return url.replace(/\/+$/, '');
 }
 
+function getApiOrigin(): string | null {
+    const apiBase = api?.defaults?.baseURL;
+    if (!apiBase) return null;
+    try {
+        const fullUrl = apiBase.startsWith('http://') || apiBase.startsWith('https://')
+            ? apiBase
+            : `http://${apiBase}`;
+        const url = new URL(fullUrl);
+        if (url.hostname) {
+            return url.origin;
+        }
+    } catch {
+        // Fall back gracefully if api.defaults.baseURL cannot be parsed
+    }
+    return null;
+}
+
 /**
  * Frontend app origin for /receipt/... pages (not the API host).
  * On local dev the API may be :8000 while the Expo web app is :8081.
@@ -25,16 +43,24 @@ export function getPublicReceiptBaseUrl(override?: string | null): string {
         return custom;
     }
 
-    if (typeof window !== 'undefined' && window.location?.origin) {
+    if (typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null') {
         return window.location.origin;
     }
 
-    const hostUri = Constants.expoConfig?.hostUri;
+    const hostUri =
+        Constants.expoConfig?.hostUri ||
+        Constants.expoGoConfig?.debuggerHost ||
+        (Constants.manifest as any)?.debuggerHost;
     if (hostUri) {
         const [host, port = '8081'] = hostUri.split(':');
         if (host) {
             return `http://${host}:${port}`;
         }
+    }
+
+    const apiOrigin = getApiOrigin();
+    if (apiOrigin) {
+        return apiOrigin;
     }
 
     return PRODUCTION_FALLBACK;

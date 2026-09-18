@@ -50,52 +50,6 @@ const isValidDateString = (value: string) => {
     return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 };
 
-function levenshteinDistance(a: string, b: string): number {
-    if (a.length === 0) return b.length;
-    if (b.length === 0) return a.length;
-    const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
-    for (let i = 0; i <= a.length; i++) dp[i][0] = i;
-    for (let j = 0; j <= b.length; j++) dp[0][j] = j;
-    for (let i = 1; i <= a.length; i++) {
-        for (let j = 1; j <= b.length; j++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            dp[i][j] = Math.min(
-                dp[i - 1][j] + 1,
-                dp[i][j - 1] + 1,
-                dp[i - 1][j - 1] + cost
-            );
-        }
-    }
-    return dp[a.length][b.length];
-}
-
-function calculateFuzzyScore(itemText: string, token: string): number {
-    const text = itemText.toLowerCase();
-    const tok = token.toLowerCase();
-
-    if (!tok) return 0;
-    if (text.startsWith(tok)) return 100;
-
-    const words = text.split(/\s+/).filter(Boolean);
-    if (words.some(w => w.startsWith(tok))) return 80;
-    if (text.includes(tok)) return 60;
-
-    // Toleransi typo (Fuzzy distance) untuk kata >= 3 karakter
-    if (tok.length >= 3) {
-        const maxDist = tok.length <= 4 ? 1 : 2;
-        let minDist = Infinity;
-        for (const w of words) {
-            const dist = levenshteinDistance(w, tok);
-            if (dist < minDist) minDist = dist;
-        }
-        if (minDist <= maxDist) {
-            return 40 - minDist * 10;
-        }
-    }
-
-    return 0;
-}
-
 export default function BengkelTransaksiScreen() {
     const insets = useSafeAreaInsets();
     const queryClient = useQueryClient();
@@ -168,8 +122,8 @@ export default function BengkelTransaksiScreen() {
         hasNextPage: hasNextPartsPage,
         isFetchingNextPage: isFetchingNextPartsPage,
     } = useSparePartsList({
-        limit: 5000,
-        sort_by: 'stok_nama',
+        limit: debouncedPartSearch ? 300 : 50,
+        sort_by: debouncedPartSearch ? undefined : 'stok_nama',
         sort_order: 'asc',
         search: debouncedPartSearch || undefined,
     });
@@ -450,29 +404,18 @@ export default function BengkelTransaksiScreen() {
             });
         }
         const tokens = q.split(/\s+/).filter(Boolean);
-
-        const scored = services
-            .map((service: any) => {
-                const searchTarget = `${service.nama || ''} ${service.kategori || ''} ${service.deskripsi || ''}`;
-                let totalScore = 0;
-                for (const token of tokens) {
-                    const score = calculateFuzzyScore(searchTarget, token);
-                    if (score === 0) return null;
-                    totalScore += score;
-                }
-                return { service, score: totalScore };
+        return services
+            .filter((service: any) => {
+                const searchTarget = `${service.nama || ''} ${service.kategori || ''} ${service.deskripsi || ''}`.toLowerCase();
+                return tokens.every(token => searchTarget.includes(token));
             })
-            .filter(Boolean) as { service: any; score: number }[];
-
-        return scored
             .sort((a, b) => {
-                const aSelected = Boolean(selectedServices[String(a.service.id)]);
-                const bSelected = Boolean(selectedServices[String(b.service.id)]);
+                const aSelected = Boolean(selectedServices[String(a.service?.id || a.id)]);
+                const bSelected = Boolean(selectedServices[String(b.service?.id || b.id)]);
                 if (aSelected && !bSelected) return -1;
                 if (!aSelected && bSelected) return 1;
-                return b.score - a.score || (a.service.nama || '').localeCompare(b.service.nama || '');
-            })
-            .map(s => s.service);
+                return (a.nama || '').localeCompare(b.nama || '');
+            });
     }, [services, debouncedServiceSearch, selectedServices]);
 
     const visibleParts = useMemo(() => {
@@ -486,30 +429,31 @@ export default function BengkelTransaksiScreen() {
                 return 0;
             });
         }
-        const tokens = q.split(/\s+/).filter(Boolean);
 
-        const scored = parts
-            .map((p: any) => {
-                const searchTarget = `${p.nama || ''} ${p.kode || ''} ${p.kode_part || ''} ${p.barcode || ''} ${p.kategori || ''} ${p.merek || ''} ${p.lokasi_rak || ''} ${p.catatan || ''}`;
-                let totalScore = 0;
-                for (const token of tokens) {
-                    const score = calculateFuzzyScore(searchTarget, token);
-                    if (score === 0) return null;
-                    totalScore += score;
-                }
-                return { part: p, score: totalScore };
-            })
-            .filter(Boolean) as { part: any; score: number }[];
+        const filtered = parts.filter((p: any) => {
+            if (selectedParts[p.id]) return true;
+            const searchTarget = `${p.nama || ''} ${p.kode || ''} ${p.kode_part || ''} ${p.barcode || ''} ${p.kategori || ''} ${p.merek || ''} ${p.lokasi_rak || ''} ${p.catatan || ''}`.toLowerCase();
+            return searchTarget.includes(q);
+        });
 
-        return scored
-            .sort((a, b) => {
-                const aSelected = Boolean(selectedParts[a.part.id]);
-                const bSelected = Boolean(selectedParts[b.part.id]);
-                if (aSelected && !bSelected) return -1;
-                if (!aSelected && bSelected) return 1;
-                return b.score - a.score || (a.part.nama || '').localeCompare(b.part.nama || '');
-            })
-            .map(s => s.part);
+        return filtered.sort((a, b) => {
+            const aSelected = Boolean(selectedParts[a.id]);
+            const bSelected = Boolean(selectedParts[b.id]);
+            if (aSelected && !bSelected) return -1;
+            if (!aSelected && bSelected) return 1;
+
+            const nameA = (a.nama || '').toLowerCase();
+            const nameB = (b.nama || '').toLowerCase();
+            const codeA = (a.kode || '').toLowerCase();
+            const codeB = (b.kode || '').toLowerCase();
+
+            // Prioritas awalan kata/kode (r -> ru -> dst)
+            const scoreA = nameA.startsWith(q) || codeA.startsWith(q) ? 3 : nameA.split(/\s+/).some(w => w.startsWith(q)) ? 2 : nameA.includes(q) || codeA.includes(q) ? 1 : 0;
+            const scoreB = nameB.startsWith(q) || codeB.startsWith(q) ? 3 : nameB.split(/\s+/).some(w => w.startsWith(q)) ? 2 : nameB.includes(q) || codeB.includes(q) ? 1 : 0;
+
+            if (scoreA !== scoreB) return scoreB - scoreA;
+            return nameA.localeCompare(nameB);
+        });
     }, [parts, debouncedPartSearch, selectedParts]);
     const visibleServices = serviceSearch.trim() || showServiceCatalog ? filteredServices : filteredServices.slice(0, 10);
     const getEditablePaymentStatus = (item: any) => {

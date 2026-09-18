@@ -27,6 +27,7 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
+import { formatNumber } from '../../utils/format';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useUIStore } from '../../store/useUIStore';
 import { useQueryClient } from '@tanstack/react-query';
@@ -623,21 +624,30 @@ export default function CustomerScreen() {
             {!sheetVisible && (
                 <View className="px-6 mt-1">
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
-                        {TYPE_FILTERS.map((filter) => (
-                            <Pressable
-                                key={filter.key}
-                                onPress={() => setSelectedFilter(filter.key)}
-                                className={`mr-3 px-5 py-2.5 rounded-2xl border ${selectedFilter === filter.key ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-surface border-transparent'}`}
-                            >
-                                <Typography
-                                    className={selectedFilter === filter.key ? 'text-white' : 'text-textGray'}
-                                    weight={selectedFilter === filter.key ? 'bold' : 'medium'}
-                                    variant="caption"
+                        {TYPE_FILTERS.map((filter) => {
+                            const isActive = selectedFilter === filter.key;
+                            const count = filter.key === 'all' ? stats.total : filter.key === 'perorangan' ? stats.perorangan : stats.perusahaan;
+                            return (
+                                <Pressable
+                                    key={filter.key}
+                                    onPress={() => setSelectedFilter(filter.key)}
+                                    className={`mr-3 px-5 py-2.5 rounded-2xl border flex-row items-center ${isActive ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-surface border-transparent'}`}
                                 >
-                                    {filter.label}
-                                </Typography>
-                            </Pressable>
-                        ))}
+                                    <Typography
+                                        className={isActive ? 'text-white' : 'text-textGray'}
+                                        weight={isActive ? 'bold' : 'medium'}
+                                        variant="caption"
+                                    >
+                                        {filter.label}
+                                    </Typography>
+                                    <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                        <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : 'text-textGray'}`}>
+                                            {formatNumber(count)}
+                                        </Typography>
+                                    </View>
+                                </Pressable>
+                            );
+                        })}
                     </ScrollView>
                 </View>
             )}

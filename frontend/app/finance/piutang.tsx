@@ -243,6 +243,7 @@ export default function PiutangUsahaScreen() {
             belum_bayar: belumBayar,
             sebagian,
             overdue: summary.jumlah_overdue,
+            LUNAS: summary.jumlah_lunas,
             lunas: summary.jumlah_lunas,
             // overdue himpunan bagian dari belum_bayar+sebagian — jangan dijumlah.
             all: (summary.jumlah_belum_lunas ?? belumBayar + sebagian) + summary.jumlah_lunas,

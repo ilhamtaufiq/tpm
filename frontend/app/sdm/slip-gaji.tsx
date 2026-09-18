@@ -723,8 +723,13 @@ export default function SlipGajiScreen() {
                         >
                             <Clock size={18} color={activeTab === 'pending' ? 'white' : '#9CA3AF'} className="mr-2" />
                             <Typography weight="bold" className={activeTab === 'pending' ? 'text-white' : 'text-textGray'}>
-                                Belum ({filteredPending.length})
+                                Belum
                             </Typography>
+                            <View className={`ml-2 px-2 py-0.5 rounded-full items-center justify-center ${activeTab === 'pending' ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                <Typography className={`text-[10px] font-bold ${activeTab === 'pending' ? 'text-white' : 'text-textGray'}`}>
+                                    {filteredPending.length}
+                                </Typography>
+                            </View>
                         </Pressable>
 
                         <Pressable
@@ -733,8 +738,13 @@ export default function SlipGajiScreen() {
                         >
                             <CheckCircle2 size={18} color={activeTab === 'history' ? 'white' : '#9CA3AF'} className="mr-2" />
                             <Typography weight="bold" className={activeTab === 'history' ? 'text-white' : 'text-textGray'}>
-                                Riwayat ({filteredHistory.length})
+                                Riwayat
                             </Typography>
+                            <View className={`ml-2 px-2 py-0.5 rounded-full items-center justify-center ${activeTab === 'history' ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                <Typography className={`text-[10px] font-bold ${activeTab === 'history' ? 'text-white' : 'text-textGray'}`}>
+                                    {filteredHistory.length}
+                                </Typography>
+                            </View>
                         </Pressable>
                     </View>
 

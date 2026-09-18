@@ -6,6 +6,8 @@ interface TabItem {
     label: string;
     value: string;
     icon?: any;
+    count?: number;
+    badge?: number | string;
 }
 
 interface TabsProps {
@@ -88,6 +90,19 @@ export const Tabs = ({
                         >
                             {item.label}
                         </Typography>
+                        {(item.count !== undefined || item.badge !== undefined) && (
+                            <View className={cn(
+                                "ml-1.5 px-1.5 min-w-[18px] h-4 rounded-full items-center justify-center",
+                                isActive ? (variant === 'pill' ? "bg-white/25" : "bg-primary/20") : "bg-gray-200/70"
+                            )}>
+                                <Typography className={cn(
+                                    "text-[9px] font-bold",
+                                    isActive ? (variant === 'pill' ? "text-white" : "text-[#023C69]") : "text-gray-600"
+                                )}>
+                                    {item.count ?? item.badge}
+                                </Typography>
+                            </View>
+                        )}
                     </RNPressable>
                 );
             })}
