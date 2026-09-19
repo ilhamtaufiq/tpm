@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable } from 'react-native';
+import { View, ScrollView, Pressable, Modal, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
-import { RotateCcw, Paintbrush, Camera, Trash2, Image as ImageIcon, Check, Sun, Moon } from 'lucide-react-native';
+import { RotateCcw, Paintbrush, Camera, Trash2, Image as ImageIcon, Check, Sun, Moon, Pencil, X } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { router } from 'expo-router';
-import { useUIStore, colorPalettes, findPaletteId, ColorPalette } from '../../store/useUIStore';
+import { useUIStore, colorPalettes, findPaletteId, ColorPalette, ThemeColors } from '../../store/useUIStore';
 import * as ImagePicker from 'expo-image-picker';
 import { authService } from '../../services/auth';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -21,15 +21,45 @@ const isDarkPalette = (palette: ColorPalette) => {
     return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
 };
 
+const PRESET_SWATCHES = [
+    '#023C69', '#EE2737', '#F9F9F9', '#FFFFFF', '#1C1C1C', '#767676',
+    '#0369A1', '#06B6D4', '#047857', '#F59E0B', '#4338CA', '#EC4899',
+    '#6D28D9', '#C2410C', '#BE123C', '#334155', '#1E1B4B', '#18181B',
+    '#0F172A', '#121212', '#E5E7EB', '#64748B', '#A1A1AA', '#38BDF8',
+];
+
 export default function ThemeSettingsScreen() {
-    const { themeColors, setPalette, resetTheme } = useUIStore();
+    const { themeColors, setPalette, setThemeColor, resetTheme } = useUIStore();
     const { user, setAuth, token } = useAuthStore();
     const insets = useSafeAreaInsets();
     const [isUploading, setIsUploading] = useState(false);
 
+    // Custom color edit state
+    const [editingColorKey, setEditingColorKey] = useState<keyof ThemeColors | null>(null);
+    const [hexInput, setHexInput] = useState('');
+
     const activePaletteId = findPaletteId(themeColors);
     const isDefault = activePaletteId === 'tpm';
     const activePaletteName = colorPalettes.find((p) => p.id === activePaletteId)?.name;
+
+    const handleOpenColorEditor = (key: keyof ThemeColors) => {
+        setEditingColorKey(key);
+        setHexInput(themeColors[key] || '#000000');
+    };
+
+    const handleSaveCustomColor = () => {
+        if (!editingColorKey) return;
+        let cleanHex = hexInput.trim();
+        if (!cleanHex.startsWith('#')) {
+            cleanHex = `#${cleanHex}`;
+        }
+        if (!/^#([A-Fa-f0-9]{6})$/.test(cleanHex)) {
+            appAlert("Format Warna Salah", "Masukkan kode warna hex valid 6 digit (contoh: #023C69).");
+            return;
+        }
+        setThemeColor(editingColorKey, cleanHex.toUpperCase());
+        setEditingColorKey(null);
+    };
 
     const pickBackground = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -113,7 +143,7 @@ export default function ThemeSettingsScreen() {
                         <Pressable
                             onPress={handleResetTheme}
                             disabled={isDefault}
-                            className={`w-10 h-10 items-center justify-center rounded-2xl border shadow-sm ${isDefault ? 'bg-background border-transparent opacity-40' : 'bg-surface border-transparent'}`}
+                            className={`w-10 h-10 items-center justify-center rounded-2xl border border-border shadow-sm ${isDefault ? 'bg-background opacity-40' : 'bg-surface'}`}
                         >
                             <RotateCcw size={20} color={isDefault ? themeColors.textGray : themeColors.secondary} />
                         </Pressable>
@@ -129,18 +159,18 @@ export default function ThemeSettingsScreen() {
                     }}
                     showsVerticalScrollIndicator={false}
                 >
-                    <View className="bg-surface p-6 rounded-[32px] mb-8 items-center border border-transparent shadow-sm">
+                    <View className="bg-surface p-6 rounded-[32px] mb-8 items-center border border-border shadow-sm">
                         <View className="w-16 h-16 bg-primary rounded-full items-center justify-center mb-4 shadow-lg">
                             <Paintbrush size={32} color="white" />
                         </View>
                         <Typography variant="h4" weight="bold" className="text-text text-center">Kustomisasi Tema</Typography>
                         <Typography variant="caption" className="text-textGray text-center mt-1">
-                            Pilih palet warna — seluruh aplikasi langsung menyesuaikan
+                            Pilih palet warna atau sesuaikan warna individual — seluruh aplikasi langsung menyesuaikan
                         </Typography>
                     </View>
 
                     <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[2px] ml-4 mb-4">
-                        Palet Warna
+                        Palet Warna Preset
                     </Typography>
 
                     <View className="flex-row flex-wrap justify-between">
@@ -212,25 +242,38 @@ export default function ThemeSettingsScreen() {
                         })}
                     </View>
 
-                    <View className="mt-2 p-5 bg-surface rounded-[28px] border border-transparent shadow-sm mb-8">
-                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[1.5px] mb-3">
-                            Pratinjau Palet Aktif
-                        </Typography>
+                    <View className="mt-2 p-5 bg-surface rounded-[28px] border border-border shadow-sm mb-8">
+                        <View className="flex-row justify-between items-center mb-3">
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[1.5px]">
+                                Pratinjau & Kustom Warna Active
+                            </Typography>
+                            <Typography variant="caption" className="text-primary text-[11px] italic">
+                                Ketik/Klik warna untuk edit
+                            </Typography>
+                        </View>
                         <View className="flex-row items-center gap-2">
                             {(['primary', 'secondary', 'background', 'surface', 'text', 'textGray'] as const).map((key) => (
-                                <View key={key} className="flex-1 items-center">
+                                <Pressable
+                                    key={key}
+                                    onPress={() => handleOpenColorEditor(key)}
+                                    className="flex-1 items-center active:opacity-70"
+                                >
                                     <View
                                         style={{ backgroundColor: themeColors[key] }}
-                                        className="w-full h-10 rounded-xl border border-transparent"
-                                    />
-                                    <Typography variant="caption" className="text-textGray text-[9px] mt-1.5">
+                                        className="w-full h-11 rounded-xl border border-border items-center justify-center relative shadow-sm"
+                                    >
+                                        <View className="bg-black/20 rounded-full p-1">
+                                            <Pencil size={11} color="white" />
+                                        </View>
+                                    </View>
+                                    <Typography variant="caption" weight="medium" className="text-textGray text-[9px] mt-1.5">
                                         {key === 'textGray' ? 'gray' : key}
                                     </Typography>
-                                </View>
+                                </Pressable>
                             ))}
                         </View>
                         <Typography variant="caption" className="text-textGray mt-4 text-center">
-                            Perubahan langsung diterapkan ke seluruh halaman aplikasi.
+                            Tekan warna di atas untuk mengubah kode warna HEX secara custom.
                         </Typography>
                     </View>
 
@@ -238,7 +281,7 @@ export default function ThemeSettingsScreen() {
                         Latar Belakang Beranda
                     </Typography>
 
-                    <View className="bg-surface p-5 rounded-[32px] border border-transparent shadow-sm overflow-hidden">
+                    <View className="bg-surface p-5 rounded-[32px] border border-border shadow-sm overflow-hidden">
                         <View className="w-full h-40 bg-background rounded-2xl mb-4 overflow-hidden items-center justify-center relative">
                             {user?.home_background ? (
                                 <Image
@@ -286,6 +329,84 @@ export default function ThemeSettingsScreen() {
                     </View>
                 </ScrollView>
             </View>
+
+            {/* Modal Kustomisasi Warna */}
+            <Modal
+                visible={!!editingColorKey}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setEditingColorKey(null)}
+            >
+                <View className="flex-1 bg-black/50 justify-center items-center p-6">
+                    <View className="bg-surface w-full max-w-sm rounded-[32px] p-6 border border-border shadow-xl">
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Typography variant="h4" weight="bold" className="text-text">
+                                Edit Warna: {editingColorKey === 'textGray' ? 'gray' : editingColorKey}
+                            </Typography>
+                            <Pressable onPress={() => setEditingColorKey(null)} className="p-2 rounded-full bg-background">
+                                <X size={18} color={themeColors.textGray} />
+                            </Pressable>
+                        </View>
+
+                        {/* Custom Hex Preview */}
+                        <View className="flex-row items-center gap-4 mb-6 bg-background p-4 rounded-2xl border border-border">
+                            <View
+                                style={{ backgroundColor: /^#([A-Fa-f0-9]{6})$/.test(hexInput.trim()) ? hexInput.trim() : (editingColorKey ? themeColors[editingColorKey] : '#000') }}
+                                className="w-14 h-14 rounded-2xl border border-border shadow-md justify-center items-center"
+                            />
+                            <View className="flex-1">
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-1 uppercase tracking-wider">
+                                    Kode Hex
+                                </Typography>
+                                <TextInput
+                                    value={hexInput}
+                                    onChangeText={setHexInput}
+                                    placeholder="#000000"
+                                    placeholderTextColor={themeColors.textGray}
+                                    autoCapitalize="characters"
+                                    maxLength={7}
+                                    className="bg-surface text-text font-outfit-bold text-base px-3 py-2 rounded-xl border border-border"
+                                />
+                            </View>
+                        </View>
+
+                        {/* Quick Presets */}
+                        <Typography variant="caption" weight="bold" className="text-textGray mb-3 uppercase tracking-wider">
+                            Pilihan Warna Cepat
+                        </Typography>
+                        <View className="flex-row flex-wrap gap-2 mb-6">
+                            {PRESET_SWATCHES.map((color) => (
+                                <Pressable
+                                    key={color}
+                                    onPress={() => setHexInput(color)}
+                                    style={{ backgroundColor: color }}
+                                    className="w-8 h-8 rounded-full border border-border justify-center items-center"
+                                >
+                                    {hexInput.toUpperCase() === color.toUpperCase() && (
+                                        <Check size={14} color={color === '#FFFFFF' || color === '#F9F9F9' ? '#000000' : '#FFFFFF'} />
+                                    )}
+                                </Pressable>
+                            ))}
+                        </View>
+
+                        {/* Modal Action Buttons */}
+                        <View className="flex-row gap-3">
+                            <Pressable
+                                onPress={() => setEditingColorKey(null)}
+                                className="flex-1 bg-background h-12 rounded-2xl items-center justify-center border border-border"
+                            >
+                                <Typography weight="bold" className="text-textGray">Batal</Typography>
+                            </Pressable>
+                            <Pressable
+                                onPress={handleSaveCustomColor}
+                                className="flex-1 bg-primary h-12 rounded-2xl items-center justify-center"
+                            >
+                                <Typography weight="bold" className="text-white">Simpan Warna</Typography>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }

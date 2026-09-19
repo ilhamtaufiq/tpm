@@ -17,7 +17,8 @@ import {
     AlertCircle,
     ArrowUpRight,
     ArrowDownRight,
-    Car
+    Car,
+    ChevronDown
 } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
@@ -45,6 +46,7 @@ import {
 } from '../utils/sharePublicReceipt';
 import { getErrorMessage } from '../utils/error';
 import { useAuthStore } from '../store/useAuthStore';
+import { ModalThemeView } from './ui/ModalThemeView';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -98,20 +100,33 @@ const DetailRow = ({ label, value, icon: Icon, color = '#6B7280' }: { label: str
 );
 
 const BentoSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
-    <View className="bg-surface rounded-[32px] p-6 mb-4 shadow-sm border border-gray-50/50">
+    <View className="bg-surface rounded-[32px] p-6 mb-4 shadow-sm border border-border">
         <Typography className="text-primary text-[10px] font-bold tracking-[2px] uppercase mb-4 opacity-50">{title}</Typography>
         {children}
     </View>
 );
 
 function TransactionDetailModalInner({ item, visible, onClose }: TransactionDetailModalProps) {
-    const primaryColor = useUIStore((s) => s.themeColors.primary);
+    const themeColors = useUIStore((s) => s.themeColors);
+    const primaryColor = themeColors.primary;
     const [loading, setLoading] = useState(false);
     const [details, setDetails] = useState<any>(null);
     const [subDetails, setSubDetails] = useState<any>(null);
     const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
     const [printing, setPrinting] = useState(false);
+    const [canScrollMore, setCanScrollMore] = useState(false);
     const user = useAuthStore(state => state.user);
+
+    const handleScroll = (event: any) => {
+        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+        const isNearBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 40;
+        setCanScrollMore(!isNearBottom && contentSize.height > layoutMeasurement.height + 20);
+    };
+
+    const handleContentSizeChange = (_w: number, contentHeight: number) => {
+        const visibleScrollHeight = SCREEN_HEIGHT * 0.9 - 100;
+        setCanScrollMore(contentHeight > visibleScrollHeight + 20);
+    };
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
         title: string;
@@ -402,13 +417,53 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                     const tipeW = subDetails.jenis_kendaraan || subDetails.tipe_motor || '';
                     const unitW = platW || tipeW ? `${platW}${tipeW ? ` • ${tipeW}` : ''}` : '-';
                     return (
-                        <BentoSection title="Detail Bengkel">
-                            <DetailRow label="Unit" value={unitW} icon={Car} color="#3B82F6" />
-                            <DetailRow label="Customer" value={subDetails.nama_customer || subDetails.customer_nama || subDetails.customer?.nama || '-'} icon={User} color="#F59E0B" />
-                            {subDetails.mekanik_nama ? <DetailRow label="Mekanik" value={subDetails.mekanik_nama} icon={User} color="#8B5CF6" /> : null}
-                            {subDetails.kilometer ? <DetailRow label="Kilometer" value={`${subDetails.kilometer} KM`} icon={Hash} color="#6366F1" /> : null}
-                            <DetailRow label="Status" value={subDetails.status_pengerjaan || subDetails.status_bayar || 'SELESAI'} color="#6366F1" />
-                        </BentoSection>
+                        <>
+                            <BentoSection title="Detail Bengkel">
+                                <DetailRow label="Unit" value={unitW} icon={Car} color="#3B82F6" />
+                                <DetailRow label="Customer" value={subDetails.nama_customer || subDetails.customer_nama || subDetails.customer?.nama || '-'} icon={User} color="#F59E0B" />
+                                {subDetails.mekanik_nama ? <DetailRow label="Mekanik" value={subDetails.mekanik_nama} icon={User} color="#8B5CF6" /> : null}
+                                {subDetails.kilometer ? <DetailRow label="Kilometer" value={`${subDetails.kilometer} KM`} icon={Hash} color="#6366F1" /> : null}
+                                <DetailRow label="Status" value={subDetails.status_pengerjaan || subDetails.status_bayar || 'SELESAI'} color="#6366F1" />
+                            </BentoSection>
+                            {(subDetails?.detail_parts?.length > 0 || subDetails?.detail_services?.length > 0) && (
+                                <BentoSection title="Item & Jasa">
+                                    {subDetails?.detail_parts?.map((part: any, idx: number) => (
+                                        <View key={`part-${idx}`} className="flex-row justify-between items-start py-3 border-b border-transparent">
+                                            <View className="flex-1">
+                                                <Typography variant="body2" weight="bold">{part.spare_part?.nama || part.spare_part_nama || 'Sparepart'}</Typography>
+                                                {(part.catatan || part.deskripsi) && (
+                                                    <Typography variant="caption" className="text-textGray mt-0.5">{part.catatan || part.deskripsi}</Typography>
+                                                )}
+                                                <Typography variant="caption" className="text-textGray mt-0.5">{part.qty} x {formatCurrency(part.harga_jual)}</Typography>
+                                            </View>
+                                            <Typography variant="body2" weight="bold">{formatCurrency(part.subtotal)}</Typography>
+                                        </View>
+                                    ))}
+                                    {subDetails?.detail_services?.map((service: any, idx: number) => (
+                                        <View key={`service-${idx}`} className="flex-row justify-between items-start py-3 border-b border-transparent last:border-0">
+                                            <View className="flex-1">
+                                                <Typography variant="body2" weight="bold">{service.nama_jasa}</Typography>
+                                                {service.deskripsi && (
+                                                    <Typography variant="caption" className="text-textGray mt-0.5">{service.deskripsi}</Typography>
+                                                )}
+                                                <Typography variant="caption" className="text-textGray mt-0.5">{service.qty} x {formatCurrency(service.harga)}</Typography>
+                                            </View>
+                                            <Typography variant="body2" weight="bold">{formatCurrency(service.subtotal)}</Typography>
+                                        </View>
+                                    ))}
+                                    <View className="flex-row justify-between mt-4">
+                                        <Typography variant="body2" weight="bold" className="text-primary">Subtotal</Typography>
+                                        <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(subDetails?.subtotal)}</Typography>
+                                    </View>
+                                    {subDetails?.diskon > 0 && (
+                                        <View className="flex-row justify-between mt-1">
+                                            <Typography variant="body2" className="text-rose-500">Diskon</Typography>
+                                            <Typography variant="body2" className="text-rose-500">-{formatCurrency(subDetails?.diskon)}</Typography>
+                                        </View>
+                                    )}
+                                </BentoSection>
+                            )}
+                        </>
                     );
                 default:
                     return null;
@@ -462,14 +517,6 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                 </BentoSection>
 
                 {renderFinancialSubDetails()}
-
-                {(details?.keterangan || details?.catatan) && (
-                    <BentoSection title="Keterangan">
-                        <Typography variant="body2" className="text-textGray leading-6">
-                            {details?.keterangan || details?.catatan || '-'}
-                        </Typography>
-                    </BentoSection>
-                )}
             </>
         );
     };
@@ -490,6 +537,9 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                         <View key={`part-${idx}`} className="flex-row justify-between items-start py-3 border-b border-transparent">
                             <View className="flex-1">
                                 <Typography variant="body2" weight="bold">{part.spare_part?.nama || 'Sparepart'}</Typography>
+                                {(part.catatan || part.deskripsi) && (
+                                    <Typography variant="caption" className="text-textGray mt-0.5">{part.catatan || part.deskripsi}</Typography>
+                                )}
                                 <Typography variant="caption" className="text-textGray mt-0.5">{part.qty} x {formatCurrency(part.harga_jual)}</Typography>
                             </View>
                             <Typography variant="body2" weight="bold">{formatCurrency(part.subtotal)}</Typography>
@@ -499,6 +549,9 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                         <View key={`service-${idx}`} className="flex-row justify-between items-start py-3 border-b border-transparent last:border-0">
                             <View className="flex-1">
                                 <Typography variant="body2" weight="bold">{service.nama_jasa}</Typography>
+                                {service.deskripsi && (
+                                    <Typography variant="caption" className="text-textGray mt-0.5">{service.deskripsi}</Typography>
+                                )}
                                 <Typography variant="caption" className="text-textGray mt-0.5">{service.qty} x {formatCurrency(service.harga)}</Typography>
                             </View>
                             <Typography variant="body2" weight="bold">{formatCurrency(service.subtotal)}</Typography>
@@ -581,6 +634,19 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
     const statusConfig = getStatusConfig(item.status);
     const receiptUnit = resolveReceiptUnit(item, subDetails);
 
+    const displayKeterangan =
+        subDetails?.catatan ||
+        subDetails?.keterangan ||
+        subDetails?.deskripsi ||
+        subDetails?.catatan_pembayaran ||
+        details?.catatan ||
+        details?.keterangan ||
+        details?.deskripsi ||
+        details?.catatan_pembayaran ||
+        details?.catatan_transaksi ||
+        (item as any)?.catatan ||
+        (item as any)?.keterangan;
+
     return (
         <Modal
             visible={visible}
@@ -588,13 +654,18 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
             transparent={Platform.OS !== 'android'}
             onRequestClose={onClose}
         >
-            <View className="flex-1 bg-black/60 justify-end">
+            <ModalThemeView className="flex-1 bg-black/60 justify-end">
                 <View
-                    className="bg-[#F8F9FA] rounded-t-[48px] overflow-hidden"
+                    className="bg-background rounded-t-[48px] overflow-hidden"
                     style={{ height: SCREEN_HEIGHT * 0.9 }}
                 >
+                    {/* Drag handle */}
+                    <View className="items-center pt-3 pb-1">
+                        <View className="w-12 h-1.5 bg-border/60 rounded-full" />
+                    </View>
+
                     {/* Header */}
-                    <View className="px-8 pt-10 pb-6 flex-row items-center justify-between">
+                    <View className="px-8 pt-4 pb-4 flex-row items-center justify-between">
                         <View>
                             <Typography variant="caption" className="text-textGray font-bold tracking-[3px] uppercase">Detail Transaksi</Typography>
                             <Typography variant="h2" weight="bold" className="text-text tracking-tighter mt-1">
@@ -603,9 +674,9 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                         </View>
                         <Pressable
                             onPress={onClose}
-                            className="bg-surface w-12 h-12 rounded-2xl items-center justify-center shadow-sm border border-transparent"
+                            className="bg-surface w-12 h-12 rounded-2xl items-center justify-center shadow-sm border border-border"
                         >
-                            <X size={20} color="#121212" />
+                            <X size={20} color={themeColors.text} />
                         </Pressable>
                     </View>
 
@@ -614,7 +685,10 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                         showsVerticalScrollIndicator
                         nestedScrollEnabled
                         keyboardShouldPersistTaps="handled"
-                        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 220 }}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}
+                        onContentSizeChange={handleContentSizeChange}
+                        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 60 }}
                     >
                         {loading ? (
                             <View className="py-20 items-center justify-center">
@@ -656,6 +730,12 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                                         (item.type === 'workshop' || item.source === 'bengkel' || item.source === 'BENGKEL') ? renderWorkshopDetail() :
                                             renderFinancialDetail()}
 
+                                <BentoSection title="Keterangan">
+                                    <Typography variant="body2" className="text-textGray leading-6">
+                                        {displayKeterangan || '-'}
+                                    </Typography>
+                                </BentoSection>
+
                                 {receiptUnit && (
                                     <View className="flex-row gap-4 mt-4">
                                         <Pressable
@@ -683,22 +763,17 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                         )}
                     </ScrollView>
 
-                    {/* Bottom Button */}
-                    {!loading && (
-                        <SafeAreaView className="absolute bottom-10 left-8 right-8">
-                            <Pressable
-                                onPress={onClose}
-                                style={({ pressed }) => ({
-                                    opacity: pressed ? 0.9 : 1
-                                })}
-                                className="bg-primary h-16 rounded-[24px] flex-row items-center justify-center shadow-2xl"
-                            >
-                                <Typography weight="bold" className="text-white text-base">Tutup Detail</Typography>
-                            </Pressable>
-                        </SafeAreaView>
+                    {/* Floating Scroll Indicator Prompt */}
+                    {canScrollMore && !loading && (
+                        <View className="absolute bottom-5 self-center bg-surface/95 border border-border px-4 py-2 rounded-full flex-row items-center space-x-2 shadow-lg">
+                            <Typography variant="caption" className="text-textGray font-bold text-[10px] uppercase tracking-widest mr-1">
+                                Gulir ke bawah
+                            </Typography>
+                            <ChevronDown size={14} color={themeColors.text} />
+                        </View>
                     )}
                 </View>
-            </View>
+            </ModalThemeView>
             <AlertDialog
                 visible={dialogConfig.visible}
                 title={dialogConfig.title}

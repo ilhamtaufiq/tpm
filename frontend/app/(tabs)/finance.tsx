@@ -196,7 +196,7 @@ export default function FinanceTab() {
                 className="flex-1 px-6 pt-6"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 32) }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
             >
                 {/* Period Filter Bar */}
                 <View className="bg-surface border border-transparent rounded-3xl p-4 mb-6 shadow-sm">
@@ -236,7 +236,7 @@ export default function FinanceTab() {
                             </Pressable>
 
                             <View className="flex-row items-center">
-                                <Calendar size={15} color="themeColors.primary" />
+                                <Calendar size={15} color={themeColors.primary} />
                                 <Typography variant="body2" weight="bold" className="text-textMain ml-2 capitalize">
                                     {formattedDate}
                                 </Typography>
@@ -266,7 +266,7 @@ export default function FinanceTab() {
                             <Typography className="text-primary text-[9px] font-bold">Laba Rugi</Typography>
                         </View>
                     </View>
-                    <Typography variant="h1" weight="bold" className="text-textMain text-3xl mb-6 tracking-tighter">
+                    <Typography variant="h1" weight="bold" className="text-textMain text-3xl mb-6 tracking-tighter" numberOfLines={1} adjustsFontSizeToFit>
                         {formatCurrency(totalLabaBersih)}
                     </Typography>
 
@@ -421,11 +421,11 @@ export default function FinanceTab() {
                         <View className="flex-row items-center justify-between">
                             <View className="flex-row items-center">
                                 <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3">
-                                    <BarChart3 size={20} color="themeColors.primary" />
+                                    <BarChart3 size={20} color={themeColors.primary} />
                                 </View>
                                 <View>
                                     <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Total Kas & Bank</Typography>
-                                    <Typography weight="bold" className="text-primary text-xl tracking-tight">
+                                    <Typography weight="bold" className="text-primary text-xl tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
                                         {formatCurrency(dashboard?.kas_bank?.total_saldo || 0)}
                                     </Typography>
                                 </View>

@@ -382,7 +382,7 @@ export default function HistoryTab() {
                                 onPress={() => setDatePickerModalOpen(true)}
                                 className="items-center flex-1 mx-2 py-1 flex-row justify-center active:opacity-70"
                             >
-                                <Calendar size={15} color="themeColors.primary" />
+                                <Calendar size={15} color={themeColors.primary} />
                                 <Typography variant="body2" weight="bold" className="text-textMain ml-2 text-xs">
                                     {getFormattedDateText()}
                                 </Typography>
@@ -439,11 +439,11 @@ export default function HistoryTab() {
                 className="flex-1 mt-4"
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 40) }}
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
             >
                 {isLoading ? (
                     <View className="py-20 items-center">
-                        <ActivityIndicator size="large" color="themeColors.primary" />
+                        <ActivityIndicator size="large" color={themeColors.primary} />
                         <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MENYINGKRONKAN DATA...</Typography>
                     </View>
                 ) : filteredList.length === 0 ? (

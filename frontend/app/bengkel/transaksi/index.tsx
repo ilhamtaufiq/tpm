@@ -411,7 +411,7 @@ export default function BengkelTransaksiScreen() {
                 const searchTarget = `${service.nama || ''} ${service.kategori || ''} ${service.deskripsi || ''}`.toLowerCase();
                 return tokens.every(token => searchTarget.includes(token));
             })
-            .sort((a, b) => {
+            .sort((a: any, b: any) => {
                 const aSelected = Boolean(selectedServices[String(a.service?.id || a.id)]);
                 const bSelected = Boolean(selectedServices[String(b.service?.id || b.id)]);
                 if (aSelected && !bSelected) return -1;
@@ -450,8 +450,8 @@ export default function BengkelTransaksiScreen() {
             const codeB = (b.kode || '').toLowerCase();
 
             // Prioritas awalan kata/kode (r -> ru -> dst)
-            const scoreA = nameA.startsWith(q) || codeA.startsWith(q) ? 3 : nameA.split(/\s+/).some(w => w.startsWith(q)) ? 2 : nameA.includes(q) || codeA.includes(q) ? 1 : 0;
-            const scoreB = nameB.startsWith(q) || codeB.startsWith(q) ? 3 : nameB.split(/\s+/).some(w => w.startsWith(q)) ? 2 : nameB.includes(q) || codeB.includes(q) ? 1 : 0;
+            const scoreA = nameA.startsWith(q) || codeA.startsWith(q) ? 3 : nameA.split(/\s+/).some((w: string) => w.startsWith(q)) ? 2 : nameA.includes(q) || codeA.includes(q) ? 1 : 0;
+            const scoreB = nameB.startsWith(q) || codeB.startsWith(q) ? 3 : nameB.split(/\s+/).some((w: string) => w.startsWith(q)) ? 2 : nameB.includes(q) || codeB.includes(q) ? 1 : 0;
 
             if (scoreA !== scoreB) return scoreB - scoreA;
             return nameA.localeCompare(nameB);
@@ -999,7 +999,7 @@ export default function BengkelTransaksiScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-surface">
+        <SafeAreaView className="flex-1 bg-background">
             <StatusBar barStyle="dark-content" />
             <View className="px-5 py-4 border-b border-transparent flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
@@ -1018,7 +1018,7 @@ export default function BengkelTransaksiScreen() {
                     <View className="flex-row items-center justify-between">
                         <ActionIcon
                             active={showPartSearch}
-                            icon={<Search size={20} color={showPartSearch ? 'white' : themeColors.primary} />}
+                            icon={<Search size={20} color={showPartSearch ? 'white' : themeColors.text} />}
                             label="Search"
                             onPress={() => {
                                 setShowPartSearch(prev => !prev);
@@ -1027,24 +1027,24 @@ export default function BengkelTransaksiScreen() {
                         />
                         <ActionIcon
                             active={!!editTransactionId}
-                            icon={<ClipboardList size={20} color={editTransactionId ? 'white' : themeColors.primary} />}
+                            icon={<ClipboardList size={20} color={editTransactionId ? 'white' : themeColors.text} />}
                             label="Open Trx"
                             onPress={() => setExistingSheetOpen(true)}
                         />
                         <ActionIcon
                             active={transaksiMode === 'servis' ? selectedPartList.length > 0 : selectedServiceList.length > 0}
-                            icon={<Plus size={21} color={(transaksiMode === 'servis' ? selectedPartList.length > 0 : selectedServiceList.length > 0) ? 'white' : themeColors.primary} />}
+                            icon={<Plus size={21} color={(transaksiMode === 'servis' ? selectedPartList.length > 0 : selectedServiceList.length > 0) ? 'white' : themeColors.text} />}
                             label={transaksiMode === 'servis' ? 'Sparepart' : 'Servis'}
                             onPress={() => transaksiMode === 'servis' ? setPartSheetOpen(true) : setServiceSheetOpen(true)}
                         />
                         <ActionIcon
-                            icon={<BarcodeIcon size={20} color={themeColors.primary} />}
+                            icon={<BarcodeIcon size={20} color={themeColors.text} />}
                             label="Scan"
                             onPress={() => { setScanLog([]); setScannerOpen(true); }}
                         />
                         <ActionIcon
                             active={showDiscountInput || discountAmount > 0}
-                            icon={<Percent size={20} color={showDiscountInput || discountAmount > 0 ? 'white' : themeColors.primary} />}
+                            icon={<Percent size={20} color={showDiscountInput || discountAmount > 0 ? 'white' : themeColors.text} />}
                             label="Diskon"
                             onPress={() => setShowDiscountInput(prev => !prev)}
                         />
@@ -1082,7 +1082,8 @@ export default function BengkelTransaksiScreen() {
 
             <ScrollView
                 className="flex-1"
-                contentContainerStyle={{ padding: 20, paddingBottom: tabBarHeight + 140 }}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ padding: 20, paddingBottom: tabBarHeight + 190 }}
                 onScroll={handlePartsScroll}
                 scrollEventThrottle={16}
             >
@@ -1097,7 +1098,7 @@ export default function BengkelTransaksiScreen() {
                                 </Pressable>
                             </View>
                             {selectedPartList.map(row => (
-                                <View key={`selected-part-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-blue-50 border-blue-100">
+                                <View key={`selected-part-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-blue-500/10 border-blue-500/30">
                                     <View className="flex-row items-start">
                                         <Package size={18} color="#2563EB" />
                                         <View className="flex-1 ml-2">
@@ -1129,7 +1130,7 @@ export default function BengkelTransaksiScreen() {
                                 </Pressable>
                             </View>
                             {selectedServiceList.map(row => (
-                                <View key={`selected-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-emerald-50 border-emerald-100">
+                                <View key={`selected-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-emerald-500/10 border-emerald-500/30">
                                     <View className="flex-row items-start">
                                         <Wrench size={18} color="#059669" />
                                         <View className="flex-1 ml-2 mr-2">
@@ -1157,7 +1158,7 @@ export default function BengkelTransaksiScreen() {
                                 </View>
                             ))}
                             {openBillServiceList.filter((obs: any) => !selectedServices[String(obs.item.id)]).map((row: any) => (
-                                <View key={`open-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-amber-50 border-amber-100">
+                                <View key={`open-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-amber-500/10 border-amber-500/30">
                                     <View className="flex-row items-start">
                                         <Wrench size={18} color="#D97706" />
                                         <View className="flex-1 ml-2 mr-2">
@@ -1191,7 +1192,7 @@ export default function BengkelTransaksiScreen() {
                                 <Typography className="text-textGray text-xs font-bold">{selectedPartList.length} item</Typography>
                             </View>
                             {selectedPartList.map(row => (
-                                <View key={`editing-selected-part-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-blue-50 border-blue-100">
+                                <View key={`editing-selected-part-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-blue-500/10 border-blue-500/30">
                                     <View className="flex-row items-start">
                                         <Package size={18} color="#2563EB" />
                                         <View className="flex-1 ml-2">
@@ -1216,11 +1217,11 @@ export default function BengkelTransaksiScreen() {
 
                         {showParts && (
                         <View className="w-full">
-                            {isPartsLoading ? <ActivityIndicator color="themeColors.primary" /> : visibleParts.map((part: any) => {
+                            {isPartsLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleParts.map((part: any) => {
                                 const selected = selectedParts[part.id];
                                 const outOfStock = !selected && !isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0;
                                 return (
-                                    <Pressable key={part.id} disabled={outOfStock} onPress={() => togglePart(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-background border-transparent opacity-60' : selected ? 'bg-blue-50 border-blue-200' : 'bg-surface border-transparent'}`}>
+                                    <Pressable key={part.id} disabled={outOfStock} onPress={() => togglePart(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-background border-transparent opacity-60' : selected ? 'bg-blue-500/10 border-blue-500/40' : 'bg-surface border-transparent'}`}>
                                         <View className="flex-row items-start">
                                             <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : outOfStock ? 'bg-background border-transparent' : 'border-transparent'}`}>
                                                 {selected && <Check size={16} color="white" />}
@@ -1248,7 +1249,7 @@ export default function BengkelTransaksiScreen() {
                             })}
                             {isFetchingNextPartsPage && (
                                 <View className="py-4">
-                                    <ActivityIndicator color="themeColors.primary" />
+                                    <ActivityIndicator color={themeColors.primary} />
                                 </View>
                             )}
                         </View>
@@ -1256,10 +1257,10 @@ export default function BengkelTransaksiScreen() {
 
                         {showServiceCatalog && (
                         <View className="w-full">
-                            {isJasaLoading ? <ActivityIndicator color="themeColors.primary" /> : visibleServices.map((service: any) => {
+                            {isJasaLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleServices.map((service: any) => {
                                 const selected = selectedServices[String(service.id)];
                                 return (
-                                    <View key={`service-${service.id}`} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-50 border-emerald-200' : 'bg-surface border-transparent'}`}>
+                                    <View key={`service-${service.id}`} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-surface border-transparent'}`}>
                                         <View className="flex-row items-start">
                                             <Pressable onPress={() => toggleService(service)} className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-emerald-600 border-emerald-600' : 'border-transparent'}`}>
                                                 {selected && <Check size={16} color="white" />}
@@ -1354,7 +1355,7 @@ export default function BengkelTransaksiScreen() {
                                     placeholder="Cari customer, nomor transaksi, atau plat..."
                                 />
                                 {isOpenCustomerTransactionsLoading ? (
-                                    <ActivityIndicator color="themeColors.primary" />
+                                    <ActivityIndicator color={themeColors.primary} />
                                 ) : openCustomerTransactions.length === 0 ? (
                                     <View className="bg-background border border-transparent rounded-2xl p-4">
                                         <Typography className="text-textGray text-sm text-center">Tidak ada transaksi customer dengan status proses.</Typography>
@@ -1370,7 +1371,7 @@ export default function BengkelTransaksiScreen() {
                                         : 'text-amber-700';
 
                                     return (
-                                        <Pressable key={item.id} onPress={() => setSelectedCustomerTransaction(item)} className={`p-4 rounded-2xl border mb-3 ${active ? 'bg-primary/5 border-primary/20' : 'bg-surface border-transparent'}`}>
+                                        <Pressable key={item.id} onPress={() => setSelectedCustomerTransaction(item)} className={`p-4 rounded-2xl border mb-3 ${active ? 'bg-primary/15 border-primary/40' : 'bg-surface border-transparent'}`}>
                                             <View className="flex-row items-start">
                                                 <View className={`w-11 h-11 rounded-2xl items-center justify-center mr-3 ${active ? 'bg-primary' : 'bg-background'}`}>
                                                     <User size={18} color={active ? 'white' : '#64748B'} />
@@ -1391,7 +1392,7 @@ export default function BengkelTransaksiScreen() {
                                                         {formatCurrency(item.total_biaya || item.total_bayar || 0)}
                                                     </Typography>
                                                 </View>
-                                                {active ? <CheckCircle2 size={20} color="themeColors.primary" /> : null}
+                                                {active ? <CheckCircle2 size={20} color={themeColors.primary} /> : null}
                                             </View>
                                         </Pressable>
                                     );
@@ -1447,11 +1448,11 @@ export default function BengkelTransaksiScreen() {
                             <View>
                                 <Typography className="text-textGray text-xs font-bold uppercase mb-3">Armada Aktif</Typography>
                                 {isArmadaLoading ? (
-                                    <ActivityIndicator color="themeColors.primary" />
+                                    <ActivityIndicator color={themeColors.primary} />
                                 ) : armadaList.map((armada: any) => {
                                     const active = selectedArmada?.id === armada.id;
                                     return (
-                                        <Pressable key={armada.id} onPress={() => setSelectedArmada(armada)} className={`p-4 rounded-2xl border mb-3 flex-row items-center ${active ? 'bg-emerald-50 border-emerald-200' : 'bg-surface border-transparent'}`}>
+                                        <Pressable key={armada.id} onPress={() => setSelectedArmada(armada)} className={`p-4 rounded-2xl border mb-3 flex-row items-center ${active ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-surface border-transparent'}`}>
                                             <Truck size={22} color={active ? '#10B981' : '#94A3B8'} />
                                             <View className="flex-1 ml-3">
                                                 <Typography weight="bold" className="text-textMain">{armada.nama || '-'}</Typography>
@@ -1469,7 +1470,7 @@ export default function BengkelTransaksiScreen() {
                         {kategori === 'jual_beli_mobil' && mobilList.map((mobil: any) => {
                             const active = selectedMobil?.id === mobil.id;
                             return (
-                                <Pressable key={mobil.id} onPress={() => setSelectedMobil(mobil)} className={`p-4 rounded-2xl border mb-3 flex-row items-center ${active ? 'bg-amber-50 border-amber-200' : 'bg-surface border-transparent'}`}>
+                                <Pressable key={mobil.id} onPress={() => setSelectedMobil(mobil)} className={`p-4 rounded-2xl border mb-3 flex-row items-center ${active ? 'bg-amber-500/10 border-amber-500/40' : 'bg-surface border-transparent'}`}>
                                     <Car size={22} color={active ? '#D97706' : '#94A3B8'} />
                                     <View className="flex-1 ml-3">
                                         <Typography weight="bold" className="text-textMain">{mobil.nomor_plat || '-'}</Typography>
@@ -1570,8 +1571,8 @@ export default function BengkelTransaksiScreen() {
                 )}
             </ScrollView>
 
-            <View className="absolute left-0 right-0 bg-surface border-t border-transparent px-5 py-4" style={{ bottom: tabBarHeight }}>
-                <View className="flex-row items-center justify-between mb-3">
+            <View className="absolute left-0 right-0 bg-surface border-t border-slate-100 shadow-lg px-5 py-3" style={{ bottom: tabBarHeight }}>
+                <View className="flex-row items-center justify-between mb-2.5">
                     <Typography className="text-textGray text-xs font-bold uppercase">{existingDp > 0 ? 'Sisa Bayar' : 'Total Transaksi'}</Typography>
                     <View className="items-end">
                         {existingDp > 0 && (
@@ -1585,30 +1586,29 @@ export default function BengkelTransaksiScreen() {
                     </View>
                 </View>
                 {step === 3 && !isEditLocked ? (
-                    <View className="gap-2">
+                    <View className="flex-row gap-2">
                         {step > 1 && (
                             <Button
                                 title="Kembali"
                                 variant="outline"
                                 size="sm"
-                                className="w-full"
                                 onPress={() => setStep(prev => Math.max(1, prev - 1) as 1 | 2 | 3)}
                             />
                         )}
                         <Button
-                            title={transactionToUpdateId ? 'Update Transaksi' : 'Simpan Transaksi'}
+                            title={transactionToUpdateId ? 'Update' : 'Simpan'}
                             variant="secondary"
                             size="sm"
-                            className="w-full"
+                            className="flex-1 min-w-0"
                             onPress={() => confirmSubmit(false)}
                             loading={createMutation.isPending || updateMutation.isPending || updatePaymentMutation.isPending}
                         />
                         <Button
-                            title="Lanjut Pembayaran"
+                            title="Bayar"
                             size="sm"
-                            className="w-full"
+                            className="flex-1 min-w-0"
                             onPress={openPaymentSheet}
-                            icon={<Wallet size={16} color="white" />}
+                            icon={<Wallet size={15} color="white" />}
                         />
                     </View>
                 ) : (
@@ -1829,7 +1829,7 @@ export default function BengkelTransaksiScreen() {
                             contentContainerStyle={{ padding: 20, paddingBottom: 12 }}
                         >
                             <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-4">
-                                <Wallet size={22} color="themeColors.primary" />
+                                <Wallet size={22} color={themeColors.primary} />
                             </View>
                             <Typography variant="h3" weight="bold" className="text-textMain">{transactionToUpdateId ? 'Update Transaksi?' : 'Simpan Transaksi?'}</Typography>
                             <Typography className="text-textGray text-sm mt-2">
@@ -1965,7 +1965,7 @@ export default function BengkelTransaksiScreen() {
                         >
                             {isExistingTransactionsLoading ? (
                                 <View className="py-8">
-                                    <ActivityIndicator color="themeColors.primary" />
+                                    <ActivityIndicator color={themeColors.primary} />
                                 </View>
                             ) : existingTransactions.length === 0 ? (
                                 <View className="py-8 items-center">
@@ -1993,7 +1993,7 @@ export default function BengkelTransaksiScreen() {
                                     <Pressable key={`existing-${item.id}`} onPress={() => handleSelectExistingTransaction(item)} className="mb-3 p-3 rounded-2xl border bg-surface border-transparent">
                                         <View className="flex-row items-start">
                                             <View className="w-10 h-10 rounded-2xl bg-primary/10 items-center justify-center mr-3">
-                                                <ClipboardList size={19} color="themeColors.primary" />
+                                                <ClipboardList size={19} color={themeColors.primary} />
                                             </View>
                                             <View className="flex-1">
                                                 <View className="flex-row items-center justify-between">
@@ -2083,11 +2083,11 @@ export default function BengkelTransaksiScreen() {
                             onScroll={handlePartsScroll}
                             scrollEventThrottle={16}
                         >
-                            {isPartsLoading ? <ActivityIndicator color="themeColors.primary" /> : visibleParts.map((part: any) => {
+                            {isPartsLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleParts.map((part: any) => {
                                 const selected = selectedParts[part.id];
                                 const outOfStock = !selected && !isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0;
                                 return (
-                                    <Pressable key={`sheet-part-${part.id}`} disabled={outOfStock} onPress={() => togglePart(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-background border-transparent opacity-60' : selected ? 'bg-blue-50 border-blue-200' : 'bg-surface border-transparent'}`}>
+                                    <Pressable key={`sheet-part-${part.id}`} disabled={outOfStock} onPress={() => togglePart(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-background border-transparent opacity-60' : selected ? 'bg-blue-500/10 border-blue-500/40' : 'bg-surface border-transparent'}`}>
                                         <View className="flex-row items-start">
                                             <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : outOfStock ? 'bg-background border-transparent' : 'border-transparent'}`}>
                                                 {selected && <Check size={16} color="white" />}
@@ -2115,7 +2115,7 @@ export default function BengkelTransaksiScreen() {
                             })}
                             {isFetchingNextPartsPage && (
                                 <View className="py-4">
-                                    <ActivityIndicator color="themeColors.primary" />
+                                    <ActivityIndicator color={themeColors.primary} />
                                 </View>
                             )}
                         </BoundedSheetScrollView>
@@ -2143,10 +2143,10 @@ export default function BengkelTransaksiScreen() {
                             contentBottomPad={16}
                             showsVerticalScrollIndicator={false}
                         >
-                            {isJasaLoading ? <ActivityIndicator color="themeColors.primary" /> : visibleServices.map((service: any) => {
+                            {isJasaLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleServices.map((service: any) => {
                                 const selected = selectedServices[String(service.id)];
                                 return (
-                                    <Pressable key={`sheet-service-${service.id}`} onPress={() => toggleService(service)} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-50 border-emerald-200' : 'bg-surface border-transparent'}`}>
+                                    <Pressable key={`sheet-service-${service.id}`} onPress={() => toggleService(service)} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-surface border-transparent'}`}>
                                         <View className="flex-row items-start">
                                             <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-emerald-600 border-emerald-600' : 'border-transparent'}`}>
                                                 {selected && <Check size={16} color="white" />}

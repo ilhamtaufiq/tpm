@@ -11,6 +11,7 @@ import { useNotificationStore } from '../../store/useNotificationStore';
 import { useUIStore } from '../../store/useUIStore';
 import { getFileUrl } from '../../utils/image';
 import { AlertDialog } from './AlertDialog';
+import { ModalThemeView } from './ModalThemeView';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -283,13 +284,13 @@ export const Header = ({
                 transparent={true}
                 onRequestClose={() => setIsSearchOpen(false)}
             >
-                <View className="flex-1 bg-surface">
+                <ModalThemeView className="flex-1 bg-surface">
                     {/* Modal Header */}
-                    <View 
-                        className="pb-4 px-6 border-b border-transparent flex-row items-center"
+                    <View
+                        className="pb-4 px-6 border-b border-border flex-row items-center"
                         style={{ paddingTop: Math.max(insets.top, 16) + 16 }}
                     >
-                        <View className="flex-1 bg-background h-12 rounded-2xl flex-row items-center px-4 border border-primary/20">
+                        <View className="flex-1 bg-background h-12 rounded-2xl flex-row items-center px-4 border border-border">
                             <Search size={20} color={themeColors.primary} />
                             <TextInput
                                 autoFocus
@@ -329,7 +330,7 @@ export const Header = ({
                                         <Pressable
                                             key={route.id}
                                             onPress={() => handleNavigate(route.path)}
-                                            className="flex-row items-center py-5 bg-surface mb-4 rounded-[28px] px-5 border border-transparent shadow-sm"
+                                            className="flex-row items-center py-5 bg-surface mb-4 rounded-[28px] px-5 border border-border shadow-sm"
                                         >
                                             <View className="bg-primary/5 w-14 h-14 rounded-2xl items-center justify-center mr-4">
                                                 <Icon size={24} color={themeColors.primary} />
@@ -355,7 +356,7 @@ export const Header = ({
                             </View>
                         )}
                     </ScrollView>
-                </View>
+                </ModalThemeView>
             </Modal>
 
             {/* User Dropdown Menu */}
@@ -365,20 +366,21 @@ export const Header = ({
                 animationType="fade"
                 onRequestClose={() => setUserMenuVisible(false)}
             >
-                <View className="flex-1" style={{ pointerEvents: 'box-none' }}>
-                    {/* Transparent Backdrop to close the menu */}
-                    <Pressable 
-                        className="absolute inset-0 bg-black/5" 
+                <ModalThemeView className="flex-1 relative">
+                    {/* Fullscreen Backdrop overlay — tap anywhere outside closes menu */}
+                    <Pressable
+                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}
                         onPress={() => setUserMenuVisible(false)}
                     />
 
                     {/* Floating Dropdown Menu Card */}
                     <View
-                        className="bg-surface rounded-3xl border border-transparent shadow-2xl p-2 absolute w-[180px]"
+                        className="bg-surface rounded-3xl border border-border shadow-2xl p-2 absolute w-[190px]"
                         style={{
                             top: Math.max(insets.top, 16) + 56, // positions it perfectly right below the header avatar
                             right: 24,
-                            elevation: 10,
+                            elevation: 16,
+                            zIndex: 10,
                         }}
                     >
                         {/* Option: Profile Settings */}
@@ -387,10 +389,10 @@ export const Header = ({
                                 setUserMenuVisible(false);
                                 router.push('/settings/profile');
                             }}
-                            className="flex-row items-center p-3 rounded-2xl active:bg-background"
+                            className="flex-row items-center p-3.5 rounded-2xl active:bg-background"
                         >
                             <User size={16} color={themeColors.textGray} strokeWidth={2.2} />
-                            <Typography className="text-textGray text-xs font-medium ml-2">
+                            <Typography className="text-text text-xs font-semibold ml-2.5">
                                 Ubah Profile
                             </Typography>
                         </Pressable>
@@ -398,15 +400,15 @@ export const Header = ({
                         {/* Option: Logout */}
                         <Pressable
                             onPress={handleLogout}
-                            className="flex-row items-center p-3 rounded-2xl active:bg-red-50"
+                            className="flex-row items-center p-3.5 rounded-2xl active:bg-rose-500/10"
                         >
                             <LogOut size={16} color="#EF4444" strokeWidth={2.5} />
-                            <Typography className="text-red-500 text-xs font-bold ml-2">
+                            <Typography className="text-rose-500 text-xs font-bold ml-2.5">
                                 Keluar
                             </Typography>
                         </Pressable>
                     </View>
-                </View>
+                </ModalThemeView>
             </Modal>
 
         </View>

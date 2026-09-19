@@ -220,7 +220,7 @@ export default function LaporanKeuanganScreen() {
     const renderSetupContent = () => (
         <View className="p-0">
             <View className="bg-blue-50 p-4 rounded-3xl border border-blue-100 mb-6 flex-row items-start">
-                <ShieldCheck size={20} color="themeColors.primary" />
+                <ShieldCheck size={20} color={themeColors.primary} />
                 <Typography className="flex-1 ml-3 text-blue-800 text-xs leading-5">
                     Gunakan fitur ini untuk memasukkan saldo dari pembukuan manual Anda sebelumnya. Data ini akan menjadi <Typography weight="bold">titik awal</Typography> laporan keuangan di aplikasi ini.
                 </Typography>
@@ -461,7 +461,7 @@ export default function LaporanKeuanganScreen() {
                 {/* Section A & C Group */}
                 <View className="bg-surface rounded-[40px] p-6 shadow-sm border border-transparent">
                     <Typography weight="bold" className="text-text mb-6 flex-row items-center">
-                        <Briefcase size={16} color="themeColors.primary" />  Mutasi Ekuitas
+                        <Briefcase size={16} color={themeColors.primary} />  Mutasi Ekuitas
                     </Typography>
 
                     <View className="space-y-4">
@@ -628,7 +628,7 @@ export default function LaporanKeuanganScreen() {
     };
 
     return (
-        <View className="flex-1 bg-surface">
+        <View className="flex-1 bg-background">
             <Header
                 title="Laporan Keuangan"
                 subtitle="Analisis & Ringkasan Performa"
@@ -669,7 +669,7 @@ export default function LaporanKeuanganScreen() {
             <ScrollView
                 className="flex-1 px-6 pt-6"
                 refreshControl={
-                    <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />
+                    <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
                 }
             >
                 {/* Date Filter View */}
@@ -678,7 +678,7 @@ export default function LaporanKeuanganScreen() {
                     className="flex-row items-center justify-between mb-8 bg-surface p-4 rounded-[24px] shadow-sm border border-transparent"
                 >
                     <View className="flex-row items-center">
-                        <Calendar size={18} color="themeColors.primary" />
+                        <Calendar size={18} color={themeColors.primary} />
                         <Typography className="text-text text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
                     </View>
                     <View className="bg-primary/5 px-2 py-1 rounded-lg">
@@ -688,7 +688,7 @@ export default function LaporanKeuanganScreen() {
 
                 {isLoading && !isRefreshing ? (
                     <View className="flex-1 items-center justify-center py-20">
-                        <ActivityIndicator size="large" color="themeColors.primary" />
+                        <ActivityIndicator size="large" color={themeColors.primary} />
                         <Typography className="text-textGray text-xs mt-4">Menyiapkan laporan...</Typography>
                     </View>
                 ) : (

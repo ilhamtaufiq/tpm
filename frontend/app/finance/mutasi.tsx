@@ -495,7 +495,7 @@ export default function MutasiKasScreen() {
 
 
     return (
-        <View className="flex-1 bg-surface">
+        <View className="flex-1 bg-background">
             <Header
                 title="Mutasi Kas"
                 rightElement={
@@ -604,7 +604,7 @@ export default function MutasiKasScreen() {
                     );
                 }}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                 ListHeaderComponent={
                     <View className="mb-6">
                         {/* Balance Insight Card (White Bento Style) */}

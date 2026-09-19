@@ -80,10 +80,10 @@ export const colorPalettes: ColorPalette[] = [
         colors: { primary: '#334155', secondary: '#0EA5E9', background: '#F8FAFC', surface: '#FFFFFF', text: '#0F172A', textGray: '#64748B' }, border: '#E2E8F0' },
     {
         id: 'midnight', name: 'Midnight',
-        colors: { primary: '#1E1B4B', secondary: '#38BDF8', background: '#0F172A', surface: '#1E293B', text: '#F8FAFC', textGray: '#94A3B8' }, border: '#334155' },
+        colors: { primary: '#38BDF8', secondary: '#818CF8', background: '#0F172A', surface: '#1E293B', text: '#F8FAFC', textGray: '#94A3B8' }, border: '#334155' },
     {
         id: 'graphite', name: 'Graphite',
-        colors: { primary: '#18181B', secondary: '#F97316', background: '#121212', surface: '#262626', text: '#FAFAFA', textGray: '#A1A1AA' }, border: '#3F3F46' },
+        colors: { primary: '#F97316', secondary: '#38BDF8', background: '#121212', surface: '#262626', text: '#FAFAFA', textGray: '#A1A1AA' }, border: '#3F3F46' },
 ];
 
 /** Cocokkan warna tema saat ini ke sebuah palet (urutan-insensitif). */

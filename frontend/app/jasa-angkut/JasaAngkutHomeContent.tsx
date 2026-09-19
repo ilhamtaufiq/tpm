@@ -1481,7 +1481,7 @@ export default function JasaAngkutScreen() {
                             title="Edit Muatan"
                             onPress={() => handleEdit(trip)}
                             className="rounded-3xl h-14"
-                            icon={<Edit size={20} color="themeColors.primary" />}
+                            icon={<Edit size={20} color={themeColors.primary} />}
                         />
 
                         {trip.status !== 'BATAL' && (
@@ -1523,8 +1523,8 @@ export default function JasaAngkutScreen() {
 
 
     return (
-        <View className="flex-1 bg-surface">
-            <StatusBar barStyle="light-content" />
+        <View className="flex-1 bg-background">
+            <StatusBar barStyle="dark-content" />
 
             <Header
                 title="Jasa Angkut"
@@ -1610,7 +1610,7 @@ export default function JasaAngkutScreen() {
                 className="flex-1 pt-6"
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
                 }
             >
                 {/* Ritase Metrics (Metric Row) */}
@@ -1742,7 +1742,7 @@ export default function JasaAngkutScreen() {
                     className="flex-row items-center justify-between mb-8 bg-surface p-4 rounded-[24px] shadow-sm border border-transparent active:bg-background mx-6"
                 >
                     <View className="flex-row items-center">
-                        <Calendar size={18} color="themeColors.primary" />
+                        <Calendar size={18} color={themeColors.primary} />
                         <Typography className="text-text text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
                     </View>
                     <View className="bg-primary/5 px-2 py-1 rounded-lg">
@@ -1802,12 +1802,12 @@ export default function JasaAngkutScreen() {
                                                     onPress={() => handlePresentModal('armada_detail', { id: group.id })}
                                                     className="w-10 h-10 bg-background rounded-xl items-center justify-center mr-2 border border-transparent"
                                                 >
-                                                    <ArrowUpRight size={18} color="themeColors.primary" />
+                                                    <ArrowUpRight size={18} color={themeColors.primary} />
                                                 </Pressable>
                                             )}
                                             <ChevronLeft
                                                 size={20}
-                                                color={!isCollapsed ? "themeColors.primary" : "#9CA3AF"}
+                                                color={!isCollapsed ? themeColors.primary : "#9CA3AF"}
                                                 style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '90deg' }] }}
                                             />
                                         </View>

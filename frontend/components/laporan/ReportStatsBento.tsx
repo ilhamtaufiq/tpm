@@ -24,7 +24,7 @@ export function ReportStatsBento({ stats, className = 'mb-4' }: ReportStatsBento
                                 {stat.label}
                             </Typography>
                         </View>
-                        <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1}>
+                        <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
                             {stat.value}
                         </Typography>
                         {stat.sub ? (

@@ -741,7 +741,7 @@ export default function QueueScreen() {
     );
 
     return (
-        <View className="flex-1 bg-surface">
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="dark-content" />
 
             <Header

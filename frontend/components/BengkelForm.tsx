@@ -755,7 +755,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                             }}
                             className={`flex-1 p-3 rounded-2xl border items-center ${kategori === cat.key
                                 ? 'bg-primary/10 border-primary'
-                                : 'bg-surface border-gray-100'
+                                : 'bg-surface border-border'
                                 }`}
                         >
                             <cat.icon size={20} color={kategori === cat.key ? cat.color : '#9CA3AF'} />

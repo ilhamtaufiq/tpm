@@ -119,7 +119,7 @@ export function BoundedSheetScrollView({
     style,
     keyboardShouldPersistTaps = 'handled',
     nestedScrollEnabled = true,
-    showsVerticalScrollIndicator = true,
+    showsVerticalScrollIndicator = false,
     bounces = true,
     ...rest
 }: BoundedSheetScrollViewProps) {

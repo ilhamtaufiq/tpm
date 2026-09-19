@@ -714,7 +714,7 @@ export default function PiutangUsahaScreen() {
 
 
     return (
-        <View className="flex-1 bg-surface">
+        <View className="flex-1 bg-background">
             <Header
                 title={unitLabel ? `Piutang ${unitLabel}` : 'Piutang Usaha'}
                 subtitle={unitLabel ? `Daftar piutang unit ${unitLabel}` : 'Pantau Penagihan & Jatuh Tempo'}
@@ -846,7 +846,7 @@ export default function PiutangUsahaScreen() {
                     );
                 }}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                 ListHeaderComponent={
                     <View className="mb-6">
                         {/* Receivables Insight Card (White Bento Style) */}
@@ -860,13 +860,13 @@ export default function PiutangUsahaScreen() {
 
                             <View className="flex-row items-center justify-between">
                                 <View>
-                                    <Typography variant="h1" weight="bold" className="text-textMain text-3xl tracking-tighter">
+                                    <Typography variant="h1" weight="bold" className="text-textMain text-3xl tracking-tighter" numberOfLines={1} adjustsFontSizeToFit>
                                         {formatCurrency(localSummary?.total_sisa || 0)}
                                     </Typography>
                                     <Typography className="text-textGray text-xs mt-1">Total Dari {localSummary?.jumlah_belum_lunas || 0} Invoice</Typography>
                                 </View>
                                 <View className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
-                                    <CircleDollarSign size={24} color="themeColors.primary" />
+                                    <CircleDollarSign size={24} color={themeColors.primary} />
                                 </View>
                             </View>
 

@@ -522,7 +522,7 @@ export default function SparePartMasterScreen() {
                                 <Typography className="text-textGray text-xs">/ {item.satuan}</Typography>
                             </View>
 
-                            <View className="flex-row items-center pt-2 mt-2 border-t border-gray-100/50 border-dashed">
+                            <View className="flex-row items-center pt-2 mt-2 border-t border-border/50 border-dashed">
                                 {isAlwaysReady ? (
                                     <Badge
                                         label="Tanpa Stok"
@@ -552,7 +552,7 @@ export default function SparePartMasterScreen() {
                 <View className="flex-row space-x-3 mb-3">
                     <View className="flex-1 bg-surface p-4 rounded-3xl border border-transparent shadow-sm flex-row items-center">
                         <View className="bg-primary/10 p-2 rounded-xl mr-3">
-                            <Package size={14} color="themeColors.primary" />
+                            <Package size={14} color={themeColors.primary} />
                         </View>
                         <View>
                             <Typography className="text-textGray text-[10px] font-bold uppercase">Total</Typography>
@@ -598,7 +598,7 @@ export default function SparePartMasterScreen() {
                         }}
                         className="bg-primary/5 p-3 rounded-2xl border border-primary/20 flex-row items-center justify-center"
                     >
-                        <Sparkles size={16} color="themeColors.primary" className="mr-2" />
+                        <Sparkles size={16} color={themeColors.primary} className="mr-2" />
                         <Typography className="text-primary font-bold text-xs">Tampilkan Semua ({stats.total} item)</Typography>
                     </Pressable>
                 ) : isShowingAll ? (
@@ -711,13 +711,13 @@ export default function SparePartMasterScreen() {
                         disabled={isImportProgressVisible}
                         className={`w-10 h-10 rounded-2xl items-center justify-center border border-transparent mr-2 ${isImportProgressVisible ? 'bg-background opacity-50' : 'bg-background'}`}
                     >
-                        <FileUp size={16} color="themeColors.primary" />
+                        <FileUp size={16} color={themeColors.primary} />
                     </Pressable>
                     <Pressable
                         onPress={() => setIsPrintModalVisible(true)}
                         className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-transparent"
                     >
-                        <Printer size={16} color="themeColors.primary" />
+                        <Printer size={16} color={themeColors.primary} />
                     </Pressable>
                 </View>
             </Header>
@@ -784,7 +784,7 @@ export default function SparePartMasterScreen() {
                             className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex-row items-center"
                         >
                             <View className="bg-primary/10 p-3 rounded-xl mr-4">
-                                <QrCode size={24} color="themeColors.primary" />
+                                <QrCode size={24} color={themeColors.primary} />
                             </View>
                             <View>
                                 <Typography variant="body1" weight="bold" className="text-primary">QR Code</Typography>
@@ -915,7 +915,7 @@ export default function SparePartMasterScreen() {
                             className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex-row items-center"
                         >
                             <View className="bg-primary/10 p-3 rounded-xl mr-4">
-                                <Package size={24} color="themeColors.primary" />
+                                <Package size={24} color={themeColors.primary} />
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-primary">Download Seluruh Data</Typography>
@@ -1028,9 +1028,9 @@ export default function SparePartMasterScreen() {
                         <View className="items-center">
                             <View className="w-24 h-24 bg-primary/5 rounded-full items-center justify-center mb-6 border-2 border-primary/10">
                                 {importStep === 'uploading' ? (
-                                    <Upload size={36} color="themeColors.primary" />
+                                    <Upload size={36} color={themeColors.primary} />
                                 ) : (
-                                    <RefreshCw size={36} color="themeColors.primary" />
+                                    <RefreshCw size={36} color={themeColors.primary} />
                                 )}
                             </View>
                             <Typography variant="h3" weight="bold" className="text-textMain mb-2">

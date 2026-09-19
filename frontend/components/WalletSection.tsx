@@ -15,7 +15,8 @@ export const WalletSection = () => {
     return (
         <View className="px-4 sm:px-6 mt-4 w-full">
             <View
-                className="bg-[#6366f1] rounded-[24px] sm:rounded-[32px] p-4 sm:p-5 flex-row items-center justify-between shadow-lg shadow-indigo-500/30"
+                className="rounded-[24px] sm:rounded-[32px] p-4 sm:p-5 flex-row items-center justify-between shadow-lg shadow-primary/30"
+                style={{ backgroundColor: themeColors.primary }}
             >
                 {/* Left Side: Saldo */}
                 <View className="flex-row items-center flex-1 mr-2 sm:mr-4">

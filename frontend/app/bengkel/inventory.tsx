@@ -446,7 +446,7 @@ export default function InventoryScreen() {
     );
 
     return (
-        <View className="flex-1 bg-surface">
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="dark-content" />
 
             <Header
@@ -489,7 +489,7 @@ export default function InventoryScreen() {
                     ListFooterComponent={() => (
                         isFetchingNextPage ? (
                             <View className="py-4 items-center">
-                                <ActivityIndicator size="small" color="themeColors.primary" />
+                                <ActivityIndicator size="small" color={themeColors.primary} />
                             </View>
                         ) : hasNextPage ? null : filteredParts.length > 0 ? (
                             <View className="py-8 items-center border-t border-transparent border-dashed mt-4">
@@ -498,7 +498,7 @@ export default function InventoryScreen() {
                         ) : null
                     )}
                     refreshControl={
-                        <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />
+                        <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
                     }
                     renderItem={({ item: part }: { item: any }) => {
                         const imageUrl = part.gambar ? `${FILE_URL}/uploads/${part.gambar}` : null;
@@ -717,7 +717,7 @@ export default function InventoryScreen() {
                                             }}
                                             className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex-row items-center active:opacity-90"
                                         >
-                                            <BarcodeIcon size={20} color="themeColors.primary" />
+                                            <BarcodeIcon size={20} color={themeColors.primary} />
                                             <Typography weight="bold" className="text-primary text-sm ml-3">Update Stok Cepat</Typography>
                                         </Pressable>
                                     )}
@@ -840,7 +840,7 @@ export default function InventoryScreen() {
                             className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex-row items-center"
                         >
                             <View className="bg-primary/10 p-3 rounded-xl mr-4">
-                                <Package size={24} color="themeColors.primary" />
+                                <Package size={24} color={themeColors.primary} />
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-primary">Download Seluruh Data</Typography>

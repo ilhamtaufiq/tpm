@@ -157,7 +157,7 @@ export const MasterDataSelector = ({
                     {allowGuest && onGuestNameChange && searchQuery.length > 0 && (
                         <Pressable
                             onPress={handleGuestSelect}
-                            className={`mb-3 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-background border-transparent'}`}
+                            className={`mb-3 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-background border-transparent'}`}
                         >
                             <View className="flex-row items-center flex-1">
                                 <User size={18} color={selectedGuestName === searchQuery.trim() && !value ? '#10B981' : '#4B5563'} />
@@ -173,7 +173,7 @@ export const MasterDataSelector = ({
 
                     {type === 'customer' && onAddNew && (
                         <Pressable onPress={() => setIsAddModalOpen(true)} className="mb-3">
-                            <Card className="p-3 bg-blue-50 border border-dashed border-blue-300 flex-row items-center">
+                            <Card className="p-3 bg-blue-500/10 border border-dashed border-blue-500/40 flex-row items-center">
                                 <UserPlus size={18} color="#2563EB" />
                                 <View className="ml-2">
                                     <Typography weight="semibold" className="text-xs text-primary">Daftarkan Baru</Typography>
@@ -190,17 +190,17 @@ export const MasterDataSelector = ({
                                 <Pressable
                                     key={item.id}
                                     onPress={() => handleSelect(item)}
-                                    className={`mb-3 p-4 rounded-2xl border flex-row items-center justify-between shadow-sm ${value?.id === item.id ? 'bg-emerald-50 border-emerald-200' : 'bg-surface border-transparent'}`}
+                                    className={`mb-3 p-4 rounded-2xl border flex-row items-center justify-between shadow-sm ${value?.id === item.id ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-surface border-transparent'}`}
                                 >
                                         <View className="flex-1 mr-2">
                                             <Typography weight="semibold">{item.nama}</Typography>
                                             <Typography variant="caption" className="text-textGray">
-                                                {item.kota ? `${item.kota} â€¢ ` : ''}{item.telepon || '-'}
+                                                {item.kota ? `${item.kota} • ` : ''}{item.telepon || '-'}
                                             </Typography>
                                             {type === 'customer' && item.vehicles && item.vehicles.length > 0 && (
                                                 <View className="flex-row flex-wrap mt-1">
                                                     {item.vehicles.map((v: any, idx: number) => (
-                                                        <View key={v.id || idx} className="bg-blue-50 px-1.5 py-0.5 rounded mr-1 mb-1 border border-blue-100">
+                                                        <View key={v.id || idx} className="bg-blue-500/15 px-1.5 py-0.5 rounded mr-1 mb-1 border border-blue-500/30">
                                                             <Typography className="text-blue-700 text-[10px] font-bold">
                                                                 {v.plat_nomor}
                                                             </Typography>

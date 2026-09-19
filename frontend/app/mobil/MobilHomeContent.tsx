@@ -628,7 +628,7 @@ export default function MobilInventoryScreen() {
 
                         {isHistoryLoading ? (
                             <View className="bg-surface/50 p-8 rounded-[32px] border border-transparent items-center justify-center">
-                                <ActivityIndicator color="themeColors.primary" />
+                                <ActivityIndicator color={themeColors.primary} />
                                 <Typography className="text-textGray text-xs italic mt-3">Memuat aktivitas kas...</Typography>
                             </View>
                         ) : historyData?.data?.length === 0 ? (
@@ -1092,8 +1092,8 @@ export default function MobilInventoryScreen() {
 
     return (
         <BottomSheetModalProvider>
-            <View className="flex-1 bg-surface">
-                <StatusBar barStyle="light-content" />
+            <View className="flex-1 bg-background">
+                <StatusBar barStyle="dark-content" />
 
                 <Header
                     title="Jual Beli Mobil"
@@ -1139,7 +1139,7 @@ export default function MobilInventoryScreen() {
                             }}
                             className="w-11 h-11 bg-background items-center justify-center rounded-2xl border border-transparent active:scale-95"
                         >
-                            <Wallet size={18} color="themeColors.primary" />
+                            <Wallet size={18} color={themeColors.primary} />
                         </Pressable>
                     </View>
                     
@@ -1177,7 +1177,7 @@ export default function MobilInventoryScreen() {
                     className="flex-1 mt-4"
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="themeColors.primary" />
+                        <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={themeColors.primary} />
                     }
                 >
                     {/* Date Filter Selection */}
@@ -1193,7 +1193,7 @@ export default function MobilInventoryScreen() {
                             className="flex-row items-center justify-between mb-6 bg-surface p-4 rounded-[24px] shadow-sm border border-transparent active:bg-background mx-6"
                         >
                     <View className="flex-row items-center">
-                        <Calendar size={18} color="themeColors.primary" />
+                        <Calendar size={18} color={themeColors.primary} />
                         <Typography className="text-text text-xs font-bold ml-3">
                             {useAllTime ? 'Semua data' : `${dateRange.dari} s/d ${dateRange.sampai}`}
                         </Typography>
@@ -1397,7 +1397,7 @@ export default function MobilInventoryScreen() {
                                     <ScrollView style={{ flex: 1 }} className="p-6" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                         {isHistoryLoading && (
                                             <View className="py-20 items-center">
-                                                <ActivityIndicator color="themeColors.primary" />
+                                                <ActivityIndicator color={themeColors.primary} />
                                                 <Typography className="text-textGray mt-4 italic">Memuat riwayat aktivitas</Typography>
                                             </View>
                                         )}
@@ -1577,7 +1577,7 @@ export default function MobilInventoryScreen() {
                                     <ScrollView style={{ flex: 1 }} className="p-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                         {isHistoryLoading && (
                                             <View className="py-20 items-center">
-                                                <ActivityIndicator color="themeColors.primary" />
+                                                <ActivityIndicator color={themeColors.primary} />
                                                 <Typography className="text-textGray mt-4 italic">Memuat riwayat aktivitas</Typography>
                                             </View>
                                         )}

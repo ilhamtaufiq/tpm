@@ -443,7 +443,7 @@ export default function ExpensesScreen() {
                                                 onPress={() => setSplitPayments([...splitPayments, { metode: 'TUNAI', jumlah: '', kas_jenis: 'KAS_UTAMA' }])}
                                                 className="bg-surface border border-transparent p-2 rounded-xl"
                                             >
-                                                <Plus size={14} color="themeColors.primary" />
+                                                <Plus size={14} color={themeColors.primary} />
                                             </Pressable>
                                         </View>
 
@@ -568,7 +568,7 @@ export default function ExpensesScreen() {
                 className="flex-1 mt-4 z-20"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 100 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
             >
 
                 {/* Period Filter */}
@@ -604,7 +604,7 @@ export default function ExpensesScreen() {
                                 onPress={() => setRefDate(new Date())}
                                 className="items-center flex-1 mx-2 py-1 flex-row justify-center active:opacity-70"
                             >
-                                <Calendar size={15} color="themeColors.primary" />
+                                <Calendar size={15} color={themeColors.primary} />
                                 <Typography variant="body2" weight="bold" className="text-textMain ml-2 text-xs">
                                     {periodLabel}
                                 </Typography>
@@ -633,7 +633,7 @@ export default function ExpensesScreen() {
                 <View className="px-6">
                     {isLoading ? (
                         <View className="py-20 flex-row justify-center items-center">
-                            <ActivityIndicator size="large" color="themeColors.primary" />
+                            <ActivityIndicator size="large" color={themeColors.primary} />
                         </View>
                     ) : filteredExpenses.length === 0 ? (
                         <View className="py-20 items-center bg-surface rounded-[32px] border border-transparent shadow-sm p-6">

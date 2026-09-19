@@ -341,7 +341,7 @@ export default function JasaServisScreen() {
             {/* List */}
             {isLoading ? (
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="themeColors.primary" />
+                    <ActivityIndicator size="large" color={themeColors.primary} />
                 </View>
             ) : (
                 <View className="flex-1" style={{ position: 'relative' }}>
@@ -351,7 +351,7 @@ export default function JasaServisScreen() {
                         renderItem={renderItem}
                         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
                         refreshControl={
-                            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="themeColors.primary" />
+                            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={themeColors.primary} />
                         }
                         ListEmptyComponent={
                             <View className="items-center justify-center py-20 mt-10">
