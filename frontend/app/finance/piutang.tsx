@@ -325,10 +325,6 @@ export default function PiutangUsahaScreen() {
         }
     };
 
-    const handleSubmitPayment = async () => {
-        // Handled by PaymentModal
-    };
-
     const handleSubmitCreate = async () => {
         if (!createName || !createAmount) {
             showAlert('Error', 'Nama Debitur dan Nominal wajib diisi', 'error');
@@ -418,11 +414,11 @@ export default function PiutangUsahaScreen() {
 
             <View className="mb-6 bg-blue-50/60 border border-blue-100 rounded-2xl p-4">
                 <Typography variant="caption" weight="bold" className="text-blue-700 uppercase tracking-widest mb-1">
-                    {unitLabel ? `Pencairan dari Dompet ${unitLabel}` : 'Pencairan dari Bisnis Utama'}
+                    {unitLabel ? `Pencairan dari Keuangan ${unitLabel}` : 'Pencairan dari Bisnis Utama'}
                 </Typography>
                 <Typography variant="caption" className="text-blue-600">
                     {unitLabel
-                        ? `Piutang manual dicatat sebagai Piutang Lainnya unit ${unitLabel} dan dicairkan melalui dompet unit tersebut.`
+                        ? `Piutang manual dicatat sebagai Piutang Lainnya unit ${unitLabel} dan dicairkan melalui keuangan unit tersebut.`
                         : 'Piutang manual dari menu Finance dicatat sebagai Piutang Lainnya dan dicairkan melalui Kas Utama untuk tunai atau Bank Utama untuk transfer.'}
                 </Typography>
             </View>
@@ -1011,7 +1007,10 @@ export default function PiutangUsahaScreen() {
             {selectedPiutang && (
                 <PaymentModal
                     visible={paymentVisible}
-                    onClose={() => setPaymentVisible(false)}
+                    onClose={() => {
+                        setPaymentVisible(false);
+                        setIsSheetOpen(false);
+                    }}
                     onSuccess={onRefresh}
                     id={selectedPiutang.id}
                     initialAmount={selectedPiutang.sisa_piutang}

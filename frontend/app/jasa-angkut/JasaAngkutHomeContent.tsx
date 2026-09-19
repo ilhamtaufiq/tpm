@@ -636,7 +636,7 @@ export default function JasaAngkutScreen() {
         <>
             <View className="flex-row justify-between items-center mb-8">
                 <View>
-                    <Typography variant="h3" weight="bold" className="text-primary text-2xl tracking-tight">Dompet Jasa Angkut</Typography>
+                    <Typography variant="h3" weight="bold" className="text-primary text-2xl tracking-tight">Keuangan Jasa Angkut</Typography>
                     <Typography className="text-textGray text-[10px] uppercase font-black tracking-widest">Transport Cash Liquidity</Typography>
                 </View>
                 <Pressable
@@ -848,7 +848,7 @@ export default function JasaAngkutScreen() {
 
                         <View className="flex-row items-center bg-blue-50/50 p-4 rounded-3xl border-dashed border border-blue-100">
                             <View className="flex-1">
-                                <Typography className="text-blue-700 text-[9px] font-black uppercase tracking-wider mb-1">Akses cepat dompet jasa angkut:</Typography>
+                                <Typography className="text-blue-700 text-[9px] font-black uppercase tracking-wider mb-1">Akses cepat keuangan jasa angkut:</Typography>
                                 <Typography className="text-blue-600/60 text-[8px] font-bold leading-tight">
                                     Gunakan kartu Hutang dan Piutang untuk melihat transaksi unit jasa angkut tanpa membuka data unit lain.
                                 </Typography>
@@ -963,7 +963,7 @@ export default function JasaAngkutScreen() {
                                 <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Sumber Dana / Potong Dari</Typography>
                                 <View className="flex-row -m-1">
                                     {[
-                                        { id: 'KAS_UNIT_JASA_ANGKUT', label: 'Dompet', icon: Wallet, color: '#D97706' },
+                                        { id: 'KAS_UNIT_JASA_ANGKUT', label: 'Keuangan', icon: Wallet, color: '#D97706' },
                                         { id: 'KAS_UTAMA', label: 'Cash', icon: Banknote, color: '#059669' },
                                         { id: 'BANK_UTAMA', label: 'BCA', icon: CreditCard, color: '#2563EB' }
                                     ].map((opt) => {
@@ -1650,7 +1650,7 @@ export default function JasaAngkutScreen() {
                             <Wallet size={22} color="#10B981" strokeWidth={2.5} />
                         </View>
                         <View className="flex-1">
-                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Dompet</Typography>
+                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Keuangan</Typography>
                             <Typography className="text-textGray text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>KAS UNIT</Typography>
                         </View>
                     </Pressable>

@@ -203,7 +203,7 @@ export default function BengkelTransaksiScreen() {
     const selectedServiceList = useMemo(() => Object.values(selectedServices), [selectedServices]);
     const hasItems = selectedPartList.length > 0 || selectedServiceList.length > 0;
     const openBillPartList = useMemo(() => {
-        if (!selectedOpenTransactionDetail) return [];
+        if (editTransactionId || !selectedOpenTransactionDetail) return [];
         return (selectedOpenTransactionDetail.detail_parts || []).map((detail: any) => {
             const partId = detail.spare_part_id || detail.spare_part?.id;
             return {
@@ -1811,7 +1811,7 @@ export default function BengkelTransaksiScreen() {
                             ) : (
                                 <View className="bg-amber-50 border border-amber-100 p-4 rounded-2xl">
                                     <Typography weight="bold" className="text-amber-800">{kategori === 'jasa_angkut' ? 'Internal Jasa Angkut' : 'Internal Jual Beli Mobil'}</Typography>
-                                    <Typography className="text-amber-700 text-xs mt-1">{kategori === 'jasa_angkut' ? 'Dicatat sebagai hutang internal JA → Bengkel. Dompet unit tidak dipotong; biaya masuk laporan trip/armada.' : 'Dicatat sebagai hutang internal Mobil → Bengkel. Dompet tidak dipotong; biaya masuk HPP mobil. Pelunasan buku saat mobil terjual.'}</Typography>
+                                    <Typography className="text-amber-700 text-xs mt-1">{kategori === 'jasa_angkut' ? 'Dicatat sebagai hutang internal JA → Bengkel. Keuangan unit tidak dipotong; biaya masuk laporan trip/armada.' : 'Dicatat sebagai hutang internal Mobil → Bengkel. Keuangan tidak dipotong; biaya masuk HPP mobil. Pelunasan buku saat mobil terjual.'}</Typography>
                                 </View>
                             )}
                         </BoundedSheetScrollView>

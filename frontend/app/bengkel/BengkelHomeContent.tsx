@@ -144,7 +144,7 @@ export default function BengkelScreen() {
         },
         {
             id: 'wallet',
-            title: 'Dompet',
+            title: 'Keuangan',
             description: 'Kas dan saldo unit',
             icon: Wallet,
             color: '#2563EB',
@@ -1348,7 +1348,7 @@ export default function BengkelScreen() {
         <>
             <View className="flex-row justify-between items-center mb-8">
                 <View>
-                    <Typography variant="h3" weight="bold" className="text-primary text-2xl tracking-tight">Dompet Bengkel</Typography>
+                    <Typography variant="h3" weight="bold" className="text-primary text-2xl tracking-tight">Keuangan Bengkel</Typography>
                     <Typography className="text-textGray text-[10px] uppercase font-black tracking-widest">Workshop Cash Liquidity</Typography>
                 </View>
                 <Pressable
@@ -1515,7 +1515,7 @@ export default function BengkelScreen() {
 
                         <View className="flex-row items-center bg-blue-50/50 p-4 rounded-3xl border-dashed border border-blue-100">
                             <View className="flex-1">
-                                <Typography className="text-blue-700 text-[9px] font-black uppercase tracking-wider mb-1">Akses cepat dompet bengkel:</Typography>
+                                <Typography className="text-blue-700 text-[9px] font-black uppercase tracking-wider mb-1">Akses cepat keuangan bengkel:</Typography>
                                 <Typography className="text-blue-600/60 text-[8px] font-bold leading-tight">
                                     Gunakan kartu Hutang dan Piutang untuk melihat transaksi kategori bengkel, serta tombol penyesuaian untuk mutasi uang tunai unit.
                                 </Typography>
@@ -1675,7 +1675,7 @@ export default function BengkelScreen() {
                                 <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Sumber Dana / Potong Dari</Typography>
                                 <View className="flex-row -m-1">
                                     {[
-                                        { id: 'KAS_UNIT_BENGKEL', label: 'Dompet', icon: Wallet, color: '#D97706' },
+                                        { id: 'KAS_UNIT_BENGKEL', label: 'Keuangan', icon: Wallet, color: '#D97706' },
                                         { id: 'KAS_UTAMA', label: 'Cash', icon: Banknote, color: '#059669' },
                                         { id: 'BANK_UTAMA', label: 'BCA', icon: CreditCard, color: '#2563EB' }
                                     ].map((opt) => {

@@ -110,6 +110,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         return { cashPusat, cashUnit, bank: bankBalance };
     }, [allBalances, unit]);
 
+    const methodsToDisplay = useMemo(() => {
+        if (allowedMethods) return allowedMethods;
+        return (unit || kas_jenis) ? ['TUNAI_PUSAT', 'TUNAI_UNIT', 'TRANSFER'] : ['TUNAI_PUSAT', 'TRANSFER'];
+    }, [allowedMethods, unit, kas_jenis]);
+
     const sheetRef = useRef<BottomSheet>(null);
     const snapPoints = useMemo(() => ['75%', '90%'], []);
 
@@ -295,7 +300,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         </View>
 
                         <View className="space-y-2 mb-5">
-                            {(allowedMethods || ['TUNAI_PUSAT', 'TUNAI_UNIT', 'TRANSFER']).map((m) => {
+                            {methodsToDisplay.map((m) => {
                                 const methodConfig: Record<string, { label: string; sublabel: string; icon: React.ReactNode; activeBg: string; activeBorder: string }> = {
                                     'TUNAI_PUSAT': {
                                         label: 'Tunai ke Pusat',

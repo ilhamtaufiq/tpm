@@ -1183,7 +1183,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                 <View className="ml-3 flex-1">
                                     <Typography variant="body2" weight="bold" className="text-amber-800">Internal Jual Beli</Typography>
                                     <Typography variant="caption" className="text-amber-600 mt-1">
-                                        Dicatat sebagai hutang internal Mobil → Bengkel. Dompet unit tidak dipotong; biaya masuk HPP. Pelunasan buku saat mobil terjual.
+                                        Dicatat sebagai hutang internal Mobil → Bengkel. Keuangan unit tidak dipotong; biaya masuk HPP. Pelunasan buku saat mobil terjual.
                                     </Typography>
                                 </View>
                             </View>
@@ -1198,7 +1198,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                 <View className="ml-3 flex-1">
                                     <Typography variant="body2" weight="bold" className="text-emerald-800">Biaya Internal Jasa Angkut</Typography>
                                     <Typography variant="caption" className="text-emerald-600 mt-1">
-                                        Dicatat sebagai hutang internal JA → Bengkel. Dompet unit tidak dipotong; biaya masuk laporan trip/armada.
+                                        Dicatat sebagai hutang internal JA → Bengkel. Keuangan unit tidak dipotong; biaya masuk laporan trip/armada.
                                     </Typography>
                                 </View>
                             </View>
@@ -1314,7 +1314,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                     <Typography variant="caption" weight="semibold" className="text-textGray mb-2 ml-1">Sumber Pembayaran</Typography>
                                     <View className="flex-row space-x-2 mb-3">
                                         {[
-                                            { label: 'Dompet', value: 'Tunai', icon: <Wallet size={12} color={payments[0]?.metode === 'Tunai' ? 'white' : '#64748b'} /> },
+                                            { label: 'Keuangan', value: 'Tunai', icon: <Wallet size={12} color={payments[0]?.metode === 'Tunai' ? 'white' : '#64748b'} /> },
                                             { label: 'Bank', value: 'Transfer', icon: <Building2 size={12} color={payments[0]?.metode === 'Transfer' ? 'white' : '#64748b'} /> }
                                         ].map((m) => (
                                             <Pressable

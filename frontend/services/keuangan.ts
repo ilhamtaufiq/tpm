@@ -80,7 +80,7 @@ export interface InvestorWithdrawalRequest {
 
 // Sumber dana penarikan dana investor
 export const WITHDRAWAL_ACCOUNTS: { label: string; value: KasBankJenis }[] = [
-    { label: 'Dompet Mobil', value: 'KAS_UNIT_MOBIL' },
+    { label: 'Keuangan Mobil', value: 'KAS_UNIT_MOBIL' },
     { label: 'Kas Utama', value: 'KAS_UTAMA' },
     { label: 'Bank', value: 'BANK_UTAMA' },
 ];

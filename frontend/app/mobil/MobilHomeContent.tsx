@@ -550,7 +550,7 @@ export default function MobilInventoryScreen() {
         <>
             <View className="flex-row justify-between items-center mb-8">
                 <View>
-                    <Typography variant="h3" weight="bold" className="text-primary text-2xl tracking-tight">Dompet Unit Mobil</Typography>
+                    <Typography variant="h3" weight="bold" className="text-primary text-2xl tracking-tight">Keuangan Unit Mobil</Typography>
                     <Typography className="text-textGray text-[10px] uppercase font-black tracking-widest">Inventory Cash Liquidity</Typography>
                 </View>
                 <Pressable
@@ -791,7 +791,7 @@ export default function MobilInventoryScreen() {
 
                         <View className="flex-row items-center bg-blue-50/50 p-4 rounded-3xl border-dashed border border-blue-100">
                             <View className="flex-1">
-                                <Typography className="text-blue-700 text-[9px] font-black uppercase tracking-wider mb-1">Akses cepat dompet mobil:</Typography>
+                                <Typography className="text-blue-700 text-[9px] font-black uppercase tracking-wider mb-1">Akses cepat keuangan mobil:</Typography>
                                 <Typography className="text-blue-600/60 text-[8px] font-bold leading-tight">
                                     Gunakan kartu Hutang dan Piutang untuk melihat transaksi unit mobil tanpa membuka data unit lain.
                                 </Typography>
@@ -906,7 +906,7 @@ export default function MobilInventoryScreen() {
                                 <Typography variant="caption" weight="bold" className="text-textGray mb-3 px-1 uppercase tracking-widest">Sumber Dana / Potong Dari</Typography>
                                 <View className="flex-row -m-1">
                                     {[
-                                        { id: 'KAS_UNIT_MOBIL', label: 'Dompet', icon: Wallet, color: '#D97706' },
+                                        { id: 'KAS_UNIT_MOBIL', label: 'Keuangan', icon: Wallet, color: '#D97706' },
                                         { id: 'KAS_UTAMA', label: 'Cash', icon: Banknote, color: '#059669' },
                                         { id: 'BANK_UTAMA', label: 'BCA', icon: CreditCard, color: '#2563EB' }
                                     ].map((opt) => {
@@ -1568,7 +1568,7 @@ export default function MobilInventoryScreen() {
                                     <View className="p-8 border-b border-transparent flex-row justify-between items-center">
                                         <View>
                                             <Typography variant="h2" weight="bold">Riwayat Aktivitas Kas</Typography>
-                                            <Typography variant="caption" className="text-textGray">20 transaksi dompet terbaru</Typography>
+                                            <Typography variant="caption" className="text-textGray">20 transaksi keuangan terbaru</Typography>
                                         </View>
                                         <Pressable onPress={() => setShowHistoryModal(false)} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                                             <X size={20} color="#64748B" />
