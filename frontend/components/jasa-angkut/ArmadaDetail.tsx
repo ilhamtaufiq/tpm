@@ -7,6 +7,7 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { BoundedSheetPanel, BoundedSheetScrollView } from '../ui/BottomSheetContainer';
 import { useArmadaDetail } from '../../hooks/useJasaAngkut';
+import { useUIStore } from '../../store/useUIStore';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import {
     Truck,
@@ -39,6 +40,7 @@ interface ArmadaDetailProps {
 }
 
 export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const { data: detailData, isLoading, refetch } = useArmadaDetail(id);
     const [activeTab, setActiveTab] = useState<'trips' | 'repairs' | 'expenses'>('trips');
@@ -274,7 +276,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                         onPress={() => setActiveTab('trips')}
                         className={`flex-1 py-3 rounded-xl items-center flex-row justify-center space-x-2 ${activeTab === 'trips' ? 'bg-surface shadow-sm' : ''}`}
                     >
-                        <Clock size={16} color={activeTab === 'trips' ? '#023C69' : '#94A3B8'} />
+                        <Clock size={16} color={activeTab === 'trips' ? themeColors.primary : themeColors.textGray} />
                         <Typography weight={activeTab === 'trips' ? 'bold' : 'medium'} className={activeTab === 'trips' ? 'text-primary' : 'text-textGray'}>
                             Riwayat Trip
                         </Typography>
@@ -283,7 +285,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                         onPress={() => setActiveTab('repairs')}
                         className={`flex-1 py-3 rounded-xl items-center flex-row justify-center space-x-2 ${activeTab === 'repairs' ? 'bg-surface shadow-sm' : ''}`}
                     >
-                        <Wrench size={16} color={activeTab === 'repairs' ? '#023C69' : '#94A3B8'} />
+                        <Wrench size={16} color={activeTab === 'repairs' ? themeColors.primary : themeColors.textGray} />
                         <Typography weight={activeTab === 'repairs' ? 'bold' : 'medium'} className={activeTab === 'repairs' ? 'text-primary' : 'text-textGray'}>
                             Perbaikan
                         </Typography>
@@ -292,7 +294,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                         onPress={() => setActiveTab('expenses')}
                         className={`flex-1 py-3 rounded-xl items-center flex-row justify-center space-x-2 ${activeTab === 'expenses' ? 'bg-surface shadow-sm' : ''}`}
                     >
-                        <DollarSign size={16} color={activeTab === 'expenses' ? '#023C69' : '#94A3B8'} />
+                        <DollarSign size={16} color={activeTab === 'expenses' ? themeColors.primary : themeColors.textGray} />
                         <Typography weight={activeTab === 'expenses' ? 'bold' : 'medium'} className={activeTab === 'expenses' ? 'text-primary' : 'text-textGray'}>
                             Biaya Ops
                         </Typography>
@@ -966,7 +968,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                         <View className="flex-row justify-between items-center mb-3">
                                             <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Alokasi Pembayaran</Typography>
                                             <Pressable onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
-                                                <PlusCircle size={14} color="#023C69" />
+                                                <PlusCircle size={14} color={themeColors.primary} />
                                                 <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
                                             </Pressable>
                                         </View>

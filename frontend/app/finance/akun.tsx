@@ -2,6 +2,7 @@ import { appAlert } from '../../utils/appAlert';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, Platform, Modal, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useUIStore } from '../../store/useUIStore';
 import { Stack, useRouter } from 'expo-router';
 import {
     Wallet,
@@ -32,7 +33,6 @@ import { formatCurrency } from '../../utils/format';
 import { Header } from '../../components/ui/Header';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
-import { useUIStore } from '../../store/useUIStore';
 import { useSheetChrome } from '../../utils/themeStyles';
 
 const ACCOUNT_ICONS: Record<string, any> = {
@@ -80,9 +80,9 @@ const LEGACY_ACCOUNTS: KasBankJenis[] = [
 ];
 
 export default function AkunKeuanganScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { themeColors } = useUIStore();
     const chrome = useSheetChrome();
     const user = useAuthStore(state => state.user);
     const role = user?.role;
@@ -226,7 +226,7 @@ export default function AkunKeuanganScreen() {
             >
                 <View className="flex-row items-center mb-3">
                     <View className="w-11 h-11 bg-primary/5 rounded-2xl items-center justify-center mr-3">
-                        <Icon size={22} color="#023C69" />
+                        <Icon size={22} color="themeColors.primary" />
                     </View>
                     <Typography variant="body1" weight="bold" className="text-text flex-1">
                         {ACCOUNT_LABELS[jenis]}
@@ -273,7 +273,7 @@ export default function AkunKeuanganScreen() {
                 <Typography className="text-textGray text-[10px] uppercase font-bold mb-2 ml-1">Akun Terpilih</Typography>
                 <View className="bg-background p-4 rounded-2xl border border-transparent flex-row items-center">
                     <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center mr-3 shadow-sm">
-                        {selectedAccount && React.createElement(ACCOUNT_ICONS[selectedAccount] || Banknote, { size: 20, color: "#023C69" })}
+                        {selectedAccount && React.createElement(ACCOUNT_ICONS[selectedAccount] || Banknote, { size: 20, color: "themeColors.primary" })}
                     </View>
                     <Typography weight="bold" className="text-text">
                         {selectedAccount ? ACCOUNT_LABELS[selectedAccount] : ''}
@@ -429,7 +429,7 @@ export default function AkunKeuanganScreen() {
                         onPress={() => router.push('/finance/laporan')}
                         className="flex-row items-center bg-primary/5 px-3 py-1.5 rounded-full"
                     >
-                        <FileText size={12} color="#023C69" />
+                        <FileText size={12} color="themeColors.primary" />
                         <Typography className="text-primary text-[10px] font-bold ml-1.5 uppercase">Buka Laporan</Typography>
                     </Pressable>
                 </View>

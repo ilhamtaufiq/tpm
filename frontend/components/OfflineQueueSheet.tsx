@@ -17,6 +17,7 @@ import {
     retryOne,
 } from '../services/offlineQueue';
 import { onlineManager } from '@tanstack/react-query';
+import { useUIStore } from '../store/useUIStore';
 
 function statusLabel(status: string) {
     switch (status) {
@@ -47,6 +48,7 @@ function statusColor(status: string) {
 }
 
 function OfflineQueueSheetInner() {
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const sheetOpen = useOfflineQueueStore((s) => s.sheetOpen);
     const setSheetOpen = useOfflineQueueStore((s) => s.setSheetOpen);
     const items = useOfflineQueueStore((s) => s.items);
@@ -99,7 +101,7 @@ function OfflineQueueSheetInner() {
 
                     <View style={styles.actions}>
                         <Pressable
-                            style={[styles.btn, styles.btnPrimary, isFlushing && styles.btnDisabled]}
+                            style={[styles.btn, styles.btnPrimary, { backgroundColor: primaryColor }, isFlushing && styles.btnDisabled]}
                             onPress={handleSyncAll}
                             disabled={isFlushing || !onlineManager.isOnline()}
                         >

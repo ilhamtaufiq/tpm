@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useUIStore } from '../../store/useUIStore';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { appAlert } from '../../utils/appAlert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -99,6 +100,7 @@ const MobilCardMedia = React.memo(({ media }: { media?: any[] }) => {
 });
 
 export default function MobilInventoryScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -425,7 +427,7 @@ export default function MobilInventoryScreen() {
 
     const getStatusColor = (status: string) => {
         switch (status?.toLowerCase()) {
-            case 'tersedia': return '#023C69';
+            case 'tersedia': return 'themeColors.primary';
             case 'booking': return '#FF9500';
             case 'terjual': return '#8E8E93';
             default: return '#EE2737';
@@ -626,7 +628,7 @@ export default function MobilInventoryScreen() {
 
                         {isHistoryLoading ? (
                             <View className="bg-surface/50 p-8 rounded-[32px] border border-transparent items-center justify-center">
-                                <ActivityIndicator color="#023C69" />
+                                <ActivityIndicator color="themeColors.primary" />
                                 <Typography className="text-textGray text-xs italic mt-3">Memuat aktivitas kas...</Typography>
                             </View>
                         ) : historyData?.data?.length === 0 ? (
@@ -1137,7 +1139,7 @@ export default function MobilInventoryScreen() {
                             }}
                             className="w-11 h-11 bg-background items-center justify-center rounded-2xl border border-transparent active:scale-95"
                         >
-                            <Wallet size={18} color="#023C69" />
+                            <Wallet size={18} color="themeColors.primary" />
                         </Pressable>
                     </View>
                     
@@ -1175,7 +1177,7 @@ export default function MobilInventoryScreen() {
                     className="flex-1 mt-4"
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#023C69" />
+                        <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="themeColors.primary" />
                     }
                 >
                     {/* Date Filter Selection */}
@@ -1191,7 +1193,7 @@ export default function MobilInventoryScreen() {
                             className="flex-row items-center justify-between mb-6 bg-surface p-4 rounded-[24px] shadow-sm border border-transparent active:bg-background mx-6"
                         >
                     <View className="flex-row items-center">
-                        <Calendar size={18} color="#023C69" />
+                        <Calendar size={18} color="themeColors.primary" />
                         <Typography className="text-text text-xs font-bold ml-3">
                             {useAllTime ? 'Semua data' : `${dateRange.dari} s/d ${dateRange.sampai}`}
                         </Typography>
@@ -1395,7 +1397,7 @@ export default function MobilInventoryScreen() {
                                     <ScrollView style={{ flex: 1 }} className="p-6" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                         {isHistoryLoading && (
                                             <View className="py-20 items-center">
-                                                <ActivityIndicator color="#023C69" />
+                                                <ActivityIndicator color="themeColors.primary" />
                                                 <Typography className="text-textGray mt-4 italic">Memuat riwayat aktivitas</Typography>
                                             </View>
                                         )}
@@ -1575,7 +1577,7 @@ export default function MobilInventoryScreen() {
                                     <ScrollView style={{ flex: 1 }} className="p-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                         {isHistoryLoading && (
                                             <View className="py-20 items-center">
-                                                <ActivityIndicator color="#023C69" />
+                                                <ActivityIndicator color="themeColors.primary" />
                                                 <Typography className="text-textGray mt-4 italic">Memuat riwayat aktivitas</Typography>
                                             </View>
                                         )}

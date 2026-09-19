@@ -2,9 +2,11 @@ import React from 'react';
 import { View, ActivityIndicator, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from './Typography';
+import { useUIStore } from '../../store/useUIStore';
 
 /** Instant placeholder while lazy unit screens (bengkel/mobil/angkut) load. */
 export function UnitScreenSkeleton({ title = 'Memuat…' }: { title?: string }) {
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     return (
         <SafeAreaView className="flex-1 bg-surface" edges={['top']}>
             <StatusBar barStyle="dark-content" />
@@ -23,7 +25,7 @@ export function UnitScreenSkeleton({ title = 'Memuat…' }: { title?: string }) 
             <View className="mx-5 mt-4 h-16 rounded-2xl bg-background" />
             <View className="mx-5 mt-3 h-16 rounded-2xl bg-background" />
             <View className="flex-1 items-center justify-center pb-20">
-                <ActivityIndicator size="large" color="#023C69" />
+                <ActivityIndicator size="large" color={primaryColor} />
             </View>
         </SafeAreaView>
     );

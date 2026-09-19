@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { CustomerFormModal } from './CustomerFormModal';
+import { useUIStore } from '../../store/useUIStore';
 
 interface MasterDataSelectorProps {
     type: 'customer' | 'supplier';
@@ -40,6 +41,7 @@ export const MasterDataSelector = ({
     hideTrigger = false
 }: MasterDataSelectorProps) => {
     const insets = useSafeAreaInsets();
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGuestName, setSelectedGuestName] = useState('');
@@ -181,7 +183,7 @@ export const MasterDataSelector = ({
                     )}
 
                     {isLoading ? (
-                        <ActivityIndicator className="mt-4" color="#023C69" />
+                        <ActivityIndicator className="mt-4" color="primaryColor" />
                     ) : (
                         <View>
                             {(searchResults || []).map((item: any) => (
@@ -297,7 +299,7 @@ export const MasterDataSelector = ({
                         </View>
 
                         {isLoading ? (
-                            <ActivityIndicator className="mt-4" color="#023C69" />
+                            <ActivityIndicator className="mt-4" color="primaryColor" />
                         ) : (
                             <FlatList
                                 data={searchResults || []}

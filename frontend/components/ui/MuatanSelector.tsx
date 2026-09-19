@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { jasaAngkutService } from '../../services/jasaAngkut';
 import { formatDate } from '../../utils/format';
+import { useUIStore } from '../../store/useUIStore';
 
 interface MuatanSelectorProps {
     value?: any; // Selected object or null
@@ -23,6 +24,7 @@ export const MuatanSelector = ({
     placeholder
 }: MuatanSelectorProps) => {
     const insets = useSafeAreaInsets();
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const [searchQuery, setSearchQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
 
@@ -113,7 +115,7 @@ export const MuatanSelector = ({
                         </View>
 
                         {isLoading ? (
-                            <ActivityIndicator className="mt-4" color="#023C69" />
+                            <ActivityIndicator className="mt-4" color="primaryColor" />
                         ) : (
                             <FlatList
                                 data={searchResults || []}

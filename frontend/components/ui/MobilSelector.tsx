@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { mobilService } from '../../services/mobil';
 import { usePlaceholderColor } from '../../utils/themeStyles';
+import { useUIStore } from '../../store/useUIStore';
 
 interface MobilSelectorProps {
     value?: any; // Selected object or null
@@ -23,6 +24,7 @@ export const MobilSelector = ({
 }: MobilSelectorProps) => {
     const insets = useSafeAreaInsets();
     const placeholderColor = usePlaceholderColor();
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const [searchQuery, setSearchQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
 
@@ -112,7 +114,7 @@ export const MobilSelector = ({
                         </View>
 
                         {isLoading ? (
-                            <ActivityIndicator className="mt-4" color="#023C69" />
+                            <ActivityIndicator className="mt-4" color={primaryColor} />
                         ) : (
                             <FlatList
                                 data={searchResults || []}

@@ -5,6 +5,7 @@ import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Header } from '../../components/ui/Header';
+import { useUIStore } from '../../store/useUIStore';
 import {
     ChevronLeft,
     Search,
@@ -32,6 +33,7 @@ import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 export default function SupplierScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome({ borderRadius: 32 });
     const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
@@ -479,7 +481,7 @@ export default function SupplierScreen() {
                 renderItem={renderSupplierItem}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />}
                 ListHeaderComponent={
                     isLoading ? (
                         <View className="mt-4">

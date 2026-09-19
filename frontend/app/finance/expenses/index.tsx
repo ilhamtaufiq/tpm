@@ -3,6 +3,7 @@ import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicat
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { appAlert } from '../../../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useUIStore } from '../../../store/useUIStore';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
@@ -43,7 +44,7 @@ import { useSheetChrome } from '../../../utils/themeStyles';
 
 const CATEGORIES = [
     { label: 'Prive', value: 'PRIVE', icon: Wallet, color: '#F59E0B' },
-    { label: 'Biaya Operasional', value: 'BIAYA_OPERASIONAL', icon: Wrench, color: '#023C69' },
+    { label: 'Biaya Operasional', value: 'BIAYA_OPERASIONAL', icon: Wrench, color: 'themeColors.primary' },
     { label: 'Biaya Lainnya', value: 'BIAYA_LAINNYA', icon: Info, color: '#6B7280' },
 ];
 
@@ -63,6 +64,7 @@ const PERIODS = [
 ] as const;
 
 export default function ExpensesScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const chrome = useSheetChrome();
@@ -276,7 +278,7 @@ export default function ExpensesScreen() {
                                                     : 'bg-surface border-gray-100'
                                                     }`}
                                             >
-                                                <cat.icon size={18} color={kategori === cat.value ? '#023C69' : '#9CA3AF'} />
+                                                <cat.icon size={18} color={kategori === cat.value ? 'themeColors.primary' : '#9CA3AF'} />
                                                 <Typography
                                                     weight={kategori === cat.value ? 'bold' : 'medium'}
                                                     className={`text-[9px] mt-2 tracking-tighter ${kategori === cat.value ? 'text-primary' : 'text-textGray'}`}
@@ -441,7 +443,7 @@ export default function ExpensesScreen() {
                                                 onPress={() => setSplitPayments([...splitPayments, { metode: 'TUNAI', jumlah: '', kas_jenis: 'KAS_UTAMA' }])}
                                                 className="bg-surface border border-transparent p-2 rounded-xl"
                                             >
-                                                <Plus size={14} color="#023C69" />
+                                                <Plus size={14} color="themeColors.primary" />
                                             </Pressable>
                                         </View>
 
@@ -566,7 +568,7 @@ export default function ExpensesScreen() {
                 className="flex-1 mt-4 z-20"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 100 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />}
             >
 
                 {/* Period Filter */}
@@ -602,7 +604,7 @@ export default function ExpensesScreen() {
                                 onPress={() => setRefDate(new Date())}
                                 className="items-center flex-1 mx-2 py-1 flex-row justify-center active:opacity-70"
                             >
-                                <Calendar size={15} color="#023C69" />
+                                <Calendar size={15} color="themeColors.primary" />
                                 <Typography variant="body2" weight="bold" className="text-textMain ml-2 text-xs">
                                     {periodLabel}
                                 </Typography>
@@ -631,7 +633,7 @@ export default function ExpensesScreen() {
                 <View className="px-6">
                     {isLoading ? (
                         <View className="py-20 flex-row justify-center items-center">
-                            <ActivityIndicator size="large" color="#023C69" />
+                            <ActivityIndicator size="large" color="themeColors.primary" />
                         </View>
                     ) : filteredExpenses.length === 0 ? (
                         <View className="py-20 items-center bg-surface rounded-[32px] border border-transparent shadow-sm p-6">

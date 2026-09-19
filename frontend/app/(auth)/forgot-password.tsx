@@ -9,6 +9,8 @@ import api from '../../utils/api';
 import { Mail, ArrowLeft, Send } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
+import { useUIStore } from '../../store/useUIStore';
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const getSafeErrorMessage = (error: any, fallback: string): string => {
@@ -20,6 +22,7 @@ const getSafeErrorMessage = (error: any, fallback: string): string => {
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();
+    const { themeColors } = useUIStore();
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [sent, setSent] = useState(false);
@@ -53,7 +56,7 @@ export default function ForgotPasswordScreen() {
     };
 
     return (
-        <View className="flex-1 bg-[#F8F9FA]">
+        <View className="flex-1 bg-background">
             <StatusBar style="light" />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -114,7 +117,7 @@ export default function ForgotPasswordScreen() {
                                         autoCapitalize="none"
                                         value={email}
                                         onChangeText={setEmail}
-                                        startIcon={<Mail size={18} color="#023C69" opacity={0.6} />}
+                                        startIcon={<Mail size={18} color={themeColors.primary} opacity={0.6} />}
                                         containerClassName="mb-6"
                                     />
 

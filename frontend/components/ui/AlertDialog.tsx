@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react-native';
 import { CenterModalContainer } from './BottomSheetContainer';
 import { Button } from './Button';
+import { useUIStore } from '../../store/useUIStore';
 
 interface AlertDialogProps {
     visible: boolean;
@@ -38,6 +39,12 @@ export const AlertDialog = ({
     loading = false,
 }: AlertDialogProps) => {
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
+
+    const variantUi = {
+        ...VARIANT_UI,
+        info: { ...VARIANT_UI.info, color: primaryColor },
+    };
     const insets = useSafeAreaInsets();
 
     const isConfirm = type === 'confirm';
@@ -49,7 +56,7 @@ export const AlertDialog = ({
     const chromeHeight = insets.top + insets.bottom + 48 + footerBlockHeight;
     const maxBodyHeight = Math.max(100, screenHeight - chromeHeight);
 
-    const ui = VARIANT_UI[variant || 'info'];
+    const ui = variantUi[variant || 'info'];
     const Icon = ui.icon;
 
     const handleConfirm = () => {

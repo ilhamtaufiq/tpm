@@ -21,8 +21,10 @@ interface MobilFormProps {
 
 
 import { Badge } from './ui/Badge';
+import { useUIStore } from '../store/useUIStore';
 
 export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const isEdit = !!initialData;
     const queryClient = useQueryClient();
     const createMutation = useCreateMobil();
@@ -322,7 +324,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             {/* Section: Informasi Kendaraan */}
             <View className="mb-6">
                 <View className="flex-row items-center mb-4">
-                    <Car size={18} color="#023C69" />
+                    <Car size={18} color="primaryColor" />
                     <Typography weight="bold" className="ml-2 text-primary">DATA KENDARAAN</Typography>
                 </View>
 
@@ -342,7 +344,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             {/* Section: Detail Teknis */}
             <View className="mb-6">
                 <View className="flex-row items-center mb-4">
-                    <ShieldCheck size={18} color="#023C69" />
+                    <ShieldCheck size={18} color="primaryColor" />
                     <Typography weight="bold" className="ml-2 text-primary">DETAIL TEKNIS</Typography>
                 </View>
 
@@ -371,7 +373,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             {/* Section: Kepemilikan & Harga */}
             <View className="mb-8">
                 <View className="flex-row items-center mb-4">
-                    <DollarSign size={18} color="#023C69" />
+                    <DollarSign size={18} color="primaryColor" />
                     <Typography weight="bold" className="ml-2 text-primary">KEPEMILIKAN & HARGA</Typography>
                 </View>
 
@@ -573,7 +575,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                         onPress={() => setPayments([...payments, { id: Date.now() + Math.random(), metode: 'TUNAI', sumber: 'UNIT_TUNAI', jumlah: '' }])}
                                         className="flex-row items-center justify-center py-2 bg-surface border border-dashed border-primary/30 rounded-xl mt-1"
                                     >
-                                        <Plus size={14} color="#023C69" />
+                                        <Plus size={14} color="primaryColor" />
                                         <Typography weight="bold" className="text-primary text-[10px] ml-1 text-center">Tambah Sumber Dana</Typography>
                                     </Pressable>
 

@@ -5,6 +5,7 @@ import { ReceiptQRCode } from '../ui/ReceiptQRCode';
 import { formatCurrency } from '../../utils/format';
 import { FILE_URL } from '../../utils/api';
 import { Car, MapPin, User, Wrench, Package } from 'lucide-react-native';
+import { useUIStore } from '../../store/useUIStore';
 
 export interface PublicReceiptItem {
     description: string;
@@ -136,6 +137,7 @@ function resolveLogoSource(customLogo?: string) {
 }
 
 export function PublicReceiptCard({ receipt, receiptType, shareUrl, captureMode = false }: PublicReceiptCardProps) {
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const paid = Number(receipt.paid || 0);
     const total = Number(receipt.total || 0);
     const remaining = receipt.remaining ?? Math.max(total - paid, 0);
@@ -221,7 +223,7 @@ export function PublicReceiptCard({ receipt, receiptType, shareUrl, captureMode 
 
                 {receipt.vehiclePlate ? (
                     <View className="flex-row items-center mt-1 mb-1">
-                        <Car size={14} color="#023C69" />
+                        <Car size={14} color={primaryColor} />
                         <Typography className="text-primary text-xs font-bold ml-2" style={mono}>
                             {receipt.vehiclePlate}
                             {receipt.vehicleType ? ` · ${receipt.vehicleType}` : ''}

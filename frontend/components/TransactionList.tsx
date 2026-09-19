@@ -10,6 +10,7 @@ import { ActivityItem } from '../services/keuangan';
 import { router } from 'expo-router';
 import { formatCurrency } from '../utils/format';
 import { TransactionDetailModal } from './TransactionDetailModal';
+import { useUIStore } from '../store/useUIStore';
 
 /** True for empty / dash placeholders stored as plate/customer defaults. */
 const isPlaceholderText = (value?: string | null) => {
@@ -83,6 +84,7 @@ const getStatusBadge = (status: string): { variant: 'success' | 'warning' | 'inf
 };
 
 function TransactionListInner() {
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const { data: transactions, isLoading } = useRecentActivity(5);
     const [selectedItem, setSelectedItem] = useState<ActivityItem | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -95,7 +97,7 @@ function TransactionListInner() {
     if (isLoading) {
         return (
             <View className="px-6 mt-8 items-center justify-center py-10">
-                <ActivityIndicator color="#023C69" />
+                <ActivityIndicator color={primaryColor} />
             </View>
         );
     }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useUIStore } from '../../store/useUIStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -25,7 +26,6 @@ import {
 } from 'lucide-react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
-import { useUIStore } from '../../store/useUIStore';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
@@ -65,11 +65,11 @@ const JENIS_LABEL: Record<KasBankJenis, string> = {
 };
 
 export default function MutasiKasScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const chrome = useSheetChrome();
-    const { themeColors } = useUIStore();
-    const { action, jenis } = useLocalSearchParams<{ 
-        action?: string, 
+    const { action, jenis } = useLocalSearchParams<{
+        action?: string,
         jenis?: string,
     }>();
 
@@ -604,7 +604,7 @@ export default function MutasiKasScreen() {
                     );
                 }}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />}
                 ListHeaderComponent={
                     <View className="mb-6">
                         {/* Balance Insight Card (White Bento Style) */}
@@ -684,11 +684,11 @@ export default function MutasiKasScreen() {
                     right: 24,
                     width: 64,
                     height: 64,
-                    backgroundColor: '#023C69',
+                    backgroundColor: 'themeColors.primary',
                     borderRadius: 32,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    shadowColor: '#023C69',
+                    shadowColor: 'themeColors.primary',
                     shadowOffset: { width: 0, height: 10 },
                     shadowOpacity: 0.5,
                     shadowRadius: 20,

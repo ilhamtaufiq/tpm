@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, TextInput, Platform, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useUIStore } from '../../store/useUIStore';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -93,6 +94,7 @@ const getUnitKasJenis = (unit?: string) => {
 };
 
 export default function PiutangUsahaScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
@@ -848,7 +850,7 @@ export default function PiutangUsahaScreen() {
                     );
                 }}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />}
                 ListHeaderComponent={
                     <View className="mb-6">
                         {/* Receivables Insight Card (White Bento Style) */}
@@ -868,7 +870,7 @@ export default function PiutangUsahaScreen() {
                                     <Typography className="text-textGray text-xs mt-1">Total Dari {localSummary?.jumlah_belum_lunas || 0} Invoice</Typography>
                                 </View>
                                 <View className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
-                                    <CircleDollarSign size={24} color="#023C69" />
+                                    <CircleDollarSign size={24} color="themeColors.primary" />
                                 </View>
                             </View>
 

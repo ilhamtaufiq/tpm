@@ -8,6 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../utils/api';
 import { Lock, Eye, EyeOff, Save, CheckCircle } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useUIStore } from '../../store/useUIStore';
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
 
@@ -20,6 +21,7 @@ const getSafeErrorMessage = (error: any, fallback: string): string => {
 
 export default function ResetPasswordScreen() {
     const router = useRouter();
+    const { themeColors } = useUIStore();
     const { token } = useLocalSearchParams();
     
     const [password, setPassword] = useState('');
@@ -76,7 +78,7 @@ export default function ResetPasswordScreen() {
     };
 
     return (
-        <View className="flex-1 bg-[#F8F9FA]">
+        <View className="flex-1 bg-background">
             <StatusBar style="light" />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -128,13 +130,13 @@ export default function ResetPasswordScreen() {
                                         secureTextEntry={!showPassword}
                                         value={password}
                                         onChangeText={setPassword}
-                                        startIcon={<Lock size={18} color="#023C69" opacity={0.6} />}
+                                        startIcon={<Lock size={18} color={themeColors.primary} opacity={0.6} />}
                                         endIcon={
                                             <Pressable onPress={() => setShowPassword(!showPassword)}>
                                                 {showPassword ? (
-                                                    <EyeOff size={18} color="#023C69" opacity={0.6} />
+                                                    <EyeOff size={18} color={themeColors.primary} opacity={0.6} />
                                                 ) : (
-                                                    <Eye size={18} color="#023C69" opacity={0.6} />
+                                                    <Eye size={18} color={themeColors.primary} opacity={0.6} />
                                                 )}
                                             </Pressable>
                                         }
@@ -147,13 +149,13 @@ export default function ResetPasswordScreen() {
                                         secureTextEntry={!showConfirmPassword}
                                         value={confirmPassword}
                                         onChangeText={setConfirmPassword}
-                                        startIcon={<Lock size={18} color="#023C69" opacity={0.6} />}
+                                        startIcon={<Lock size={18} color={themeColors.primary} opacity={0.6} />}
                                         endIcon={
                                             <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                                                 {showConfirmPassword ? (
-                                                    <EyeOff size={18} color="#023C69" opacity={0.6} />
+                                                    <EyeOff size={18} color={themeColors.primary} opacity={0.6} />
                                                 ) : (
-                                                    <Eye size={18} color="#023C69" opacity={0.6} />
+                                                    <Eye size={18} color={themeColors.primary} opacity={0.6} />
                                                 )}
                                             </Pressable>
                                         }

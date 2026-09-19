@@ -7,6 +7,7 @@ import { PrintReceiptData } from '../../utils/printReceipt';
 import { PrintSettings } from '../../utils/printSettings';
 import { ReceiptHtmlPreview } from './ReceiptHtmlPreview';
 import { getPaperDimensions } from '../../utils/paperSize';
+import { useUIStore } from '../../store/useUIStore';
 
 interface ReceiptPreviewProps {
     visible: boolean;
@@ -27,6 +28,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
     settings,
     loading = false,
 }) => {
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const [zoom, setZoom] = useState(1);
     const paper = getPaperDimensions(settings.paperSize);
 
@@ -102,7 +104,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                         title="Simpan PDF"
                         onPress={onSavePDF}
                         loading={loading}
-                        icon={<Download size={20} color="#023C69" />}
+                        icon={<Download size={20} color={primaryColor} />}
                         className="h-14 rounded-2xl"
                     />
                 </View>

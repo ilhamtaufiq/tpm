@@ -16,6 +16,7 @@ import { keuanganService } from '../services/keuangan';
 import { ModalFlexBackdrop } from './ui/BottomSheetContainer';
 import { ModalThemeView } from './ui/ModalThemeView';
 import { useSheetChrome } from '../utils/themeStyles';
+import { useUIStore } from '../store/useUIStore';
 
 interface PaymentModalProps {
     visible: boolean;
@@ -51,6 +52,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [allBalances, setAllBalances] = useState<any>(null);
     const queryClient = useQueryClient();
     const chrome = useSheetChrome();
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
 
     React.useEffect(() => {
         if (visible) {
@@ -238,7 +240,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             <Card variant="outlined" className="p-6 mb-8 border-primary/20 bg-primary/5 rounded-[32px]">
                 <View className="flex-row items-center mb-4">
                     <View className="w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center mr-4">
-                        <Banknote size={24} color="#023C69" />
+                        <Banknote size={24} color="primaryColor" />
                     </View>
                     <View className="flex-1">
                         <Typography variant="caption" className="text-primary/60 font-bold uppercase tracking-[2px] text-[9px] mb-1">Tagihan Tersisa</Typography>
@@ -270,7 +272,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             onPress={addPayment} 
                             className="bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/10 flex-row items-center"
                         >
-                            <Plus size={14} color="#023C69" />
+                            <Plus size={14} color="primaryColor" />
                             <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
                         </Pressable>
                     )}
@@ -298,7 +300,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                     'TUNAI_PUSAT': {
                                         label: 'Tunai ke Pusat',
                                         sublabel: 'Cash masuk ke Kas Utama',
-                                        icon: <Building2 size={16} color={p.metode === m ? '#FFFFFF' : '#023C69'} />,
+                                        icon: <Building2 size={16} color={p.metode === m ? '#FFFFFF' : 'primaryColor'} />,
                                         activeBg: 'bg-primary',
                                         activeBorder: 'border-primary'
                                     },
@@ -376,7 +378,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
                         {p.metode === 'TUNAI_PUSAT' && (
                             <View className="flex-row items-center mb-5 bg-primary/5 p-3 rounded-xl border border-primary/10">
-                                <Wallet size={12} color="#023C69" />
+                                <Wallet size={12} color="primaryColor" />
                                 <Typography variant="caption" className="text-primary/70 ml-2 text-[10px] uppercase font-bold tracking-widest">
                                     Saldo Kas Pusat: <Typography variant="caption" weight="bold" className="text-primary">{formatCurrency(balancesInfo.cashPusat)}</Typography>
                                 </Typography>

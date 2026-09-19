@@ -23,6 +23,7 @@ import { ArmadaSelector } from './ui/ArmadaSelector';
 import { Customer, Vehicle } from '../services/masterData';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
+import { useUIStore } from '../store/useUIStore';
 import { findSparePartByBarcode, parseBarcodeScan } from '../utils/barcodeScan';
 import { printReceipt, PrintReceiptData } from '../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../utils/printSettings';
@@ -42,6 +43,7 @@ interface BengkelFormProps {
 }
 
 export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelFormProps) => {
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const insets = useSafeAreaInsets();
     const isLocked = isBengkelTransactionLocked(initialData);
     // Category selection
@@ -714,7 +716,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                 <Typography variant="body2" weight="semibold" className="mb-3 text-primary">Kategori Bengkel</Typography>
                 <View className="flex-row space-x-2">
                     {([
-                        { key: 'umum', label: 'Umum', icon: Wrench, color: '#023C69' },
+                        { key: 'umum', label: 'Umum', icon: Wrench, color: 'primaryColor' },
                         { key: 'jasa_angkut', label: 'Jasa Angkut', icon: Truck, color: '#10B981' },
                         { key: 'jual_beli_mobil', label: 'Jual Beli Mobil', icon: Car, color: '#3B82F6' },
                     ] as const).map((cat) => (
@@ -950,7 +952,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                         }}
                                         className={`px-4 py-3 rounded-xl border flex-row items-center ${selectedVehicle?.id === v.id ? 'bg-primary/10 border-primary' : 'bg-surface border-transparent'}`}
                                     >
-                                        <Truck size={14} color={selectedVehicle?.id === v.id ? '#023C69' : '#6B7280'} />
+                                        <Truck size={14} color={selectedVehicle?.id === v.id ? 'primaryColor' : '#6B7280'} />
                                         <View className="ml-2">
                                             <Typography weight="bold" className={selectedVehicle?.id === v.id ? 'text-primary' : 'text-textMain'}>
                                                 {v.plat_nomor}
@@ -985,7 +987,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                     className="absolute right-3 top-9"
                                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                                 >
-                                    <QrCode size={18} color="#023C69" />
+                                    <QrCode size={18} color="primaryColor" />
                                 </Pressable>
                             )}
                         </View>
@@ -1012,7 +1014,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                     </View>
                     <View className="flex-row items-center gap-2">
                         <Pressable onPress={openSelectionSheet} className="flex-row items-center bg-primary/10 px-3 py-2 rounded-xl border border-primary/10">
-                            <Plus size={14} color="#023C69" />
+                            <Plus size={14} color="primaryColor" />
                             <Typography className="text-primary text-[10px] ml-1 font-bold">Tambah Sparepart / Servis</Typography>
                         </Pressable>
                     </View>
@@ -1100,7 +1102,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                         {selectedServicesForDisplay.length > 0 && (
                             <View className="mb-2">
                                 <View className="flex-row items-center mb-3">
-                                    <Wrench size={16} color="#023C69" />
+                                    <Wrench size={16} color="primaryColor" />
                                     <Typography variant="body2" weight="semibold" className="ml-2">Daftar Servis</Typography>
                                 </View>
                                 {selectedServicesForDisplay.map((service) => (
@@ -1223,7 +1225,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                         className="ml-2 bg-primary/10 rounded-full p-1.5"
                                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                     >
-                                        <Printer size={12} color="#023C69" />
+                                        <Printer size={12} color="primaryColor" />
                                     </Pressable>
                                 )}
                             </View>
@@ -1436,7 +1438,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                         onPress={() => setPayments([...payments, { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }])}
                                         className="flex-row items-center justify-center py-2 bg-surface border border-dashed border-primary/30 rounded-xl mt-1"
                                     >
-                                        <Plus size={14} color="#023C69" />
+                                        <Plus size={14} color="primaryColor" />
                                         <Typography className="text-primary text-[10px] font-bold ml-1 text-center">Tambah Metode Pembayaran</Typography>
                                     </Pressable>
                                 </View>
@@ -1474,7 +1476,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                 <Button
                     title="Cetak Order Slip"
                     variant="outline"
-                    icon={<Printer size={16} color="#023C69" />}
+                    icon={<Printer size={16} color="primaryColor" />}
                     onPress={handlePrintOrderSlip}
                     className="rounded-2xl"
                     loading={isPrintingOrderSlip}

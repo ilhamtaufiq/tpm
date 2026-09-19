@@ -3,6 +3,7 @@ import { View, Pressable, RefreshControl, StatusBar, FlatList, ActivityIndicator
 
 const escapeHtml = (str: any) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
 import { Typography } from '../../components/ui/Typography';
+import { useUIStore } from '../../store/useUIStore';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Header } from '../../components/ui/Header';
@@ -58,6 +59,7 @@ import {
 import { isAlwaysReadyStock } from '../../utils/sparepartStock';
 
 export default function SparePartMasterScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
     const queryClient = useQueryClient();
     // Search & Filter
@@ -366,7 +368,7 @@ export default function SparePartMasterScreen() {
                                 background: white;
                             }
                             img { max-width: 100%; height: auto; }
-                            .code-text { font-size: 10px; font-weight: bold; margin-top: 10px; color: #023C69; text-transform: uppercase; letter-spacing: 0.5px; }
+                            .code-text { font-size: 10px; font-weight: bold; margin-top: 10px; color: themeColors.primary; text-transform: uppercase; letter-spacing: 0.5px; }
                             .name-text { font-size: 11px; margin-top: 4px; font-weight: 600; color: #1e293b; height: 32px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4; }
                             @media print {
                                 body { padding: 0; }
@@ -550,7 +552,7 @@ export default function SparePartMasterScreen() {
                 <View className="flex-row space-x-3 mb-3">
                     <View className="flex-1 bg-surface p-4 rounded-3xl border border-transparent shadow-sm flex-row items-center">
                         <View className="bg-primary/10 p-2 rounded-xl mr-3">
-                            <Package size={14} color="#023C69" />
+                            <Package size={14} color="themeColors.primary" />
                         </View>
                         <View>
                             <Typography className="text-textGray text-[10px] font-bold uppercase">Total</Typography>
@@ -596,7 +598,7 @@ export default function SparePartMasterScreen() {
                         }}
                         className="bg-primary/5 p-3 rounded-2xl border border-primary/20 flex-row items-center justify-center"
                     >
-                        <Sparkles size={16} color="#023C69" className="mr-2" />
+                        <Sparkles size={16} color="themeColors.primary" className="mr-2" />
                         <Typography className="text-primary font-bold text-xs">Tampilkan Semua ({stats.total} item)</Typography>
                     </Pressable>
                 ) : isShowingAll ? (
@@ -709,13 +711,13 @@ export default function SparePartMasterScreen() {
                         disabled={isImportProgressVisible}
                         className={`w-10 h-10 rounded-2xl items-center justify-center border border-transparent mr-2 ${isImportProgressVisible ? 'bg-background opacity-50' : 'bg-background'}`}
                     >
-                        <FileUp size={16} color="#023C69" />
+                        <FileUp size={16} color="themeColors.primary" />
                     </Pressable>
                     <Pressable
                         onPress={() => setIsPrintModalVisible(true)}
                         className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-transparent"
                     >
-                        <Printer size={16} color="#023C69" />
+                        <Printer size={16} color="themeColors.primary" />
                     </Pressable>
                 </View>
             </Header>
@@ -782,7 +784,7 @@ export default function SparePartMasterScreen() {
                             className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex-row items-center"
                         >
                             <View className="bg-primary/10 p-3 rounded-xl mr-4">
-                                <QrCode size={24} color="#023C69" />
+                                <QrCode size={24} color="themeColors.primary" />
                             </View>
                             <View>
                                 <Typography variant="body1" weight="bold" className="text-primary">QR Code</Typography>
@@ -913,7 +915,7 @@ export default function SparePartMasterScreen() {
                             className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex-row items-center"
                         >
                             <View className="bg-primary/10 p-3 rounded-xl mr-4">
-                                <Package size={24} color="#023C69" />
+                                <Package size={24} color="themeColors.primary" />
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-primary">Download Seluruh Data</Typography>
@@ -1026,9 +1028,9 @@ export default function SparePartMasterScreen() {
                         <View className="items-center">
                             <View className="w-24 h-24 bg-primary/5 rounded-full items-center justify-center mb-6 border-2 border-primary/10">
                                 {importStep === 'uploading' ? (
-                                    <Upload size={36} color="#023C69" />
+                                    <Upload size={36} color="themeColors.primary" />
                                 ) : (
-                                    <RefreshCw size={36} color="#023C69" />
+                                    <RefreshCw size={36} color="themeColors.primary" />
                                 )}
                             </View>
                             <Typography variant="h3" weight="bold" className="text-textMain mb-2">

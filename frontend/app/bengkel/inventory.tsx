@@ -1,6 +1,7 @@
 ﻿import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, FlatList, Image, Platform, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useUIStore } from '../../store/useUIStore';
 import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Typography } from '../../components/ui/Typography';
@@ -53,6 +54,7 @@ const getPartStockStatus = (part: any): 'always' | 'low' | 'empty' | 'ok' => {
 };
 
 export default function InventoryScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
     const [search, setSearch] = useState('');
@@ -299,7 +301,7 @@ export default function InventoryScreen() {
         <View>
             <View className="flex-row gap-3 mb-4">
                 {[
-                    { label: 'Total SKU', value: formatNumber(totalProducts), icon: Boxes, color: '#023C69', bg: 'bg-primary/5' },
+                    { label: 'Total SKU', value: formatNumber(totalProducts), icon: Boxes, color: 'themeColors.primary', bg: 'bg-primary/5' },
                     { label: 'Stok Menipis', value: formatNumber(lowStockCount), icon: AlertTriangle, color: '#D97706', bg: 'bg-amber-50' },
                     { label: 'Nilai Modal', value: isStockValueLoading ? '...' : formatCurrency(stockValueData?.total_value || 0), icon: TrendingUp, color: '#059669', bg: 'bg-emerald-50' },
                 ].map((stat) => {
@@ -336,7 +338,7 @@ export default function InventoryScreen() {
                     onPress={handlePresentSortSheet}
                     className={`w-9 h-9 rounded-xl items-center justify-center ${sortBy !== 'nama' || sortOrder !== 'asc' ? 'bg-primary/10' : 'bg-surface border border-transparent'}`}
                 >
-                    <ArrowUpDown size={16} color={sortBy !== 'nama' || sortOrder !== 'asc' ? '#023C69' : '#6B7280'} />
+                    <ArrowUpDown size={16} color={sortBy !== 'nama' || sortOrder !== 'asc' ? 'themeColors.primary' : '#6B7280'} />
                 </Pressable>
             </View>
 
@@ -368,7 +370,7 @@ export default function InventoryScreen() {
                     { label: 'Scan', icon: BarcodeIcon, color: '#2563EB', onPress: () => setIsScannerOpen(true) },
                     { label: 'Restock', icon: ShoppingCart, color: '#059669', onPress: () => router.push('/bengkel/purchase') },
                     { label: 'Export', icon: Download, color: '#D97706', onPress: () => setIsExportModalVisible(true) },
-                    { label: 'Transaksi', icon: Receipt, color: '#023C69', onPress: () => router.push({ pathname: '/bengkel/transaksi', params: { mode: 'all' } } as any) },
+                    { label: 'Transaksi', icon: Receipt, color: 'themeColors.primary', onPress: () => router.push({ pathname: '/bengkel/transaksi', params: { mode: 'all' } } as any) },
                 ].map((action) => {
                     const ActionIcon = action.icon;
                     return (
@@ -487,7 +489,7 @@ export default function InventoryScreen() {
                     ListFooterComponent={() => (
                         isFetchingNextPage ? (
                             <View className="py-4 items-center">
-                                <ActivityIndicator size="small" color="#023C69" />
+                                <ActivityIndicator size="small" color="themeColors.primary" />
                             </View>
                         ) : hasNextPage ? null : filteredParts.length > 0 ? (
                             <View className="py-8 items-center border-t border-transparent border-dashed mt-4">
@@ -496,7 +498,7 @@ export default function InventoryScreen() {
                         ) : null
                     )}
                     refreshControl={
-                        <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                        <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />
                     }
                     renderItem={({ item: part }: { item: any }) => {
                         const imageUrl = part.gambar ? `${FILE_URL}/uploads/${part.gambar}` : null;
@@ -536,7 +538,7 @@ export default function InventoryScreen() {
                                             <Package size={22} color={
                                                 status === 'low' ? '#D97706' :
                                                 status === 'empty' ? '#F43F5E' :
-                                                status === 'always' ? '#059669' : '#023C69'
+                                                status === 'always' ? '#059669' : 'themeColors.primary'
                                             } />
                                         )}
                                     </View>
@@ -715,7 +717,7 @@ export default function InventoryScreen() {
                                             }}
                                             className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex-row items-center active:opacity-90"
                                         >
-                                            <BarcodeIcon size={20} color="#023C69" />
+                                            <BarcodeIcon size={20} color="themeColors.primary" />
                                             <Typography weight="bold" className="text-primary text-sm ml-3">Update Stok Cepat</Typography>
                                         </Pressable>
                                     )}
@@ -838,7 +840,7 @@ export default function InventoryScreen() {
                             className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex-row items-center"
                         >
                             <View className="bg-primary/10 p-3 rounded-xl mr-4">
-                                <Package size={24} color="#023C69" />
+                                <Package size={24} color="themeColors.primary" />
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-primary">Download Seluruh Data</Typography>
@@ -986,7 +988,7 @@ export default function InventoryScreen() {
                                 >
                                     <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${sortBy === option.id ? 'bg-primary/10' : 'bg-background'}`}>
                                         <View>
-                                            {React.createElement(option.icon, { size: 22, color: sortBy === option.id ? '#023C69' : '#94A3B8' })}
+                                            {React.createElement(option.icon, { size: 22, color: sortBy === option.id ? 'themeColors.primary' : '#94A3B8' })}
                                         </View>
                                     </View>
                                     <View className="flex-1">

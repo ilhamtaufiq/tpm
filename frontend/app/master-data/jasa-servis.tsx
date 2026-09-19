@@ -22,6 +22,7 @@ import {
 } from '../../hooks';
 import { formatNumber, parseNumber } from '../../utils/format';
 import { useQueryClient } from '@tanstack/react-query';
+import { useUIStore } from '../../store/useUIStore';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { appAlert } from '../../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,6 +45,7 @@ const INITIAL_FORM: JasaServisForm = {
 };
 
 export default function JasaServisScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
@@ -339,7 +341,7 @@ export default function JasaServisScreen() {
             {/* List */}
             {isLoading ? (
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="#023C69" />
+                    <ActivityIndicator size="large" color="themeColors.primary" />
                 </View>
             ) : (
                 <View className="flex-1" style={{ position: 'relative' }}>
@@ -349,7 +351,7 @@ export default function JasaServisScreen() {
                         renderItem={renderItem}
                         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
                         refreshControl={
-                            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#023C69" />
+                            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="themeColors.primary" />
                         }
                         ListEmptyComponent={
                             <View className="items-center justify-center py-20 mt-10">

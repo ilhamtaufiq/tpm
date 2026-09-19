@@ -7,6 +7,7 @@ import { CenterModalContainer } from './BottomSheetContainer';
 import { Button } from './Button';
 import { usePrintReceipt } from '../../hooks/usePrintReceipt';
 import { PrintReceiptData } from '../../utils/printReceipt';
+import { useUIStore } from '../../store/useUIStore';
 
 interface ReceiptPrintModalProps {
     visible: boolean;
@@ -17,6 +18,7 @@ interface ReceiptPrintModalProps {
 
 export default function ReceiptPrintModal({ visible, onClose, data, onSuccess }: ReceiptPrintModalProps) {
     const insets = useSafeAreaInsets();
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const { loading, error, success, handlePrint, handleShare, clearMessages } = usePrintReceipt();
 
     useEffect(() => {
@@ -43,7 +45,7 @@ export default function ReceiptPrintModal({ visible, onClose, data, onSuccess }:
             <CenterModalContainer onClose={handleClose} insets={insets} backdropColor="rgba(15, 23, 42, 0.5)" maxWidth={360}>
                 <View className="p-6 items-center">
                     <View className="w-16 h-16 bg-primary/10 rounded-full items-center justify-center mb-4">
-                        <Printer size={28} color="#023C69" />
+                        <Printer size={28} color="primaryColor" />
                     </View>
 
                     <Typography variant="h3" weight="bold" className="text-textMain mb-1">Cetak Struk</Typography>
@@ -51,7 +53,7 @@ export default function ReceiptPrintModal({ visible, onClose, data, onSuccess }:
 
                     {loading && (
                         <View className="items-center mb-4">
-                            <ActivityIndicator size="large" color="#023C69" />
+                            <ActivityIndicator size="large" color="primaryColor" />
                             <Typography className="text-textGray text-xs mt-2">Memproses...</Typography>
                         </View>
                     )}
@@ -73,7 +75,7 @@ export default function ReceiptPrintModal({ visible, onClose, data, onSuccess }:
                     {!loading && !success && !error && (
                         <View className="w-full space-y-3">
                             <Button title="Cetak Struk" onPress={onPrint} className="w-full" icon={<Printer size={16} color="white" />} />
-                            <Button title="Bagikan Struk" variant="outline" onPress={onShare} className="w-full" icon={<Share2 size={16} color="#023C69" />} />
+                            <Button title="Bagikan Struk" variant="outline" onPress={onShare} className="w-full" icon={<Share2 size={16} color="primaryColor" />} />
                         </View>
                     )}
 

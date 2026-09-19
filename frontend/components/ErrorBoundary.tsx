@@ -51,6 +51,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
     render() {
         if (this.state.hasError) {
+            const primaryColor = useUIStore.getState().themeColors?.primary || '#023C69';
             return (
                 <View style={{
                     flex: 1,
@@ -102,14 +103,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                         <Pressable
                             onPress={this.handleReset}
                             style={({ pressed }) => ({
-                                backgroundColor: '#023C69', // primary color
+                                backgroundColor: primaryColor, // primary color
                                 paddingVertical: 18,
                                 paddingHorizontal: 32,
                                 borderRadius: 20,
                                 flexDirection: 'row',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                shadowColor: '#023C69',
+                                shadowColor: primaryColor,
                                 shadowOffset: { width: 0, height: 6 },
                                 shadowOpacity: 0.3,
                                 shadowRadius: 10,

@@ -33,10 +33,12 @@ import { Header } from '../../components/ui/Header';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSheetChrome } from '../../utils/themeStyles';
+import { useUIStore } from '../../store/useUIStore';
 
 type ReportType = 'LABA_RUGI' | 'MODAL' | 'NERACA';
 
 export default function LaporanKeuanganScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const chrome = useSheetChrome();
     const router = useRouter();
@@ -218,7 +220,7 @@ export default function LaporanKeuanganScreen() {
     const renderSetupContent = () => (
         <View className="p-0">
             <View className="bg-blue-50 p-4 rounded-3xl border border-blue-100 mb-6 flex-row items-start">
-                <ShieldCheck size={20} color="#023C69" />
+                <ShieldCheck size={20} color="themeColors.primary" />
                 <Typography className="flex-1 ml-3 text-blue-800 text-xs leading-5">
                     Gunakan fitur ini untuk memasukkan saldo dari pembukuan manual Anda sebelumnya. Data ini akan menjadi <Typography weight="bold">titik awal</Typography> laporan keuangan di aplikasi ini.
                 </Typography>
@@ -459,7 +461,7 @@ export default function LaporanKeuanganScreen() {
                 {/* Section A & C Group */}
                 <View className="bg-surface rounded-[40px] p-6 shadow-sm border border-transparent">
                     <Typography weight="bold" className="text-text mb-6 flex-row items-center">
-                        <Briefcase size={16} color="#023C69" />  Mutasi Ekuitas
+                        <Briefcase size={16} color="themeColors.primary" />  Mutasi Ekuitas
                     </Typography>
 
                     <View className="space-y-4">
@@ -667,7 +669,7 @@ export default function LaporanKeuanganScreen() {
             <ScrollView
                 className="flex-1 px-6 pt-6"
                 refreshControl={
-                    <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                    <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />
                 }
             >
                 {/* Date Filter View */}
@@ -676,7 +678,7 @@ export default function LaporanKeuanganScreen() {
                     className="flex-row items-center justify-between mb-8 bg-surface p-4 rounded-[24px] shadow-sm border border-transparent"
                 >
                     <View className="flex-row items-center">
-                        <Calendar size={18} color="#023C69" />
+                        <Calendar size={18} color="themeColors.primary" />
                         <Typography className="text-text text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
                     </View>
                     <View className="bg-primary/5 px-2 py-1 rounded-lg">
@@ -686,7 +688,7 @@ export default function LaporanKeuanganScreen() {
 
                 {isLoading && !isRefreshing ? (
                     <View className="flex-1 items-center justify-center py-20">
-                        <ActivityIndicator size="large" color="#023C69" />
+                        <ActivityIndicator size="large" color="themeColors.primary" />
                         <Typography className="text-textGray text-xs mt-4">Menyiapkan laporan...</Typography>
                     </View>
                 ) : (

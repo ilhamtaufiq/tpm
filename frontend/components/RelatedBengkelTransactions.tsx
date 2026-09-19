@@ -5,6 +5,7 @@ import { Card } from './ui/Card';
 import { Wrench, ChevronRight, Calendar, User } from 'lucide-react-native';
 import { useTransaksiBengkelList } from '../hooks/useBengkel';
 import { formatCurrency, formatDate } from '../utils/format';
+import { useUIStore } from '../store/useUIStore';
 
 interface RelatedBengkelTransactionsProps {
     muatan_id?: number;
@@ -12,6 +13,7 @@ interface RelatedBengkelTransactionsProps {
 }
 
 export const RelatedBengkelTransactions = ({ muatan_id, mobil_id }: RelatedBengkelTransactionsProps) => {
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const { data: bengkelTrx, isLoading } = useTransaksiBengkelList({
         muatan_id,
         mobil_id,
@@ -23,7 +25,7 @@ export const RelatedBengkelTransactions = ({ muatan_id, mobil_id }: RelatedBengk
     const transactions = bengkelTrx?.data || [];
 
     if (isLoading) {
-        return <ActivityIndicator className="my-4" color="#023C69" />;
+        return <ActivityIndicator className="my-4" color={primaryColor} />;
     }
 
     if (transactions.length === 0) {

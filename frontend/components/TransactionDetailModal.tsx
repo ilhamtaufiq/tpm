@@ -23,6 +23,7 @@ import { format } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { Typography } from './ui/Typography';
 import { Badge } from './ui/Badge';
+import { useUIStore } from '../store/useUIStore';
 import { formatCurrency } from '../utils/format';
 import { keuanganService, ActivityItem } from '../services/keuangan';
 import { bengkelService } from '../services/bengkel';
@@ -104,6 +105,7 @@ const BentoSection = ({ title, children }: { title: string, children: React.Reac
 );
 
 function TransactionDetailModalInner({ item, visible, onClose }: TransactionDetailModalProps) {
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const [loading, setLoading] = useState(false);
     const [details, setDetails] = useState<any>(null);
     const [subDetails, setSubDetails] = useState<any>(null);
@@ -527,7 +529,7 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                     </View>
                     <View className="px-4">
                         <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
-                            <ArrowRight size={14} color="#023C69" />
+                            <ArrowRight size={14} color="primaryColor" />
                         </View>
                     </View>
                     <View className="flex-1 items-end">
@@ -616,7 +618,7 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                     >
                         {loading ? (
                             <View className="py-20 items-center justify-center">
-                                <ActivityIndicator size="large" color="#023C69" />
+                                <ActivityIndicator size="large" color="primaryColor" />
                                 <Typography className="mt-4 text-textGray font-bold tracking-[4px] uppercase text-[10px]">Menarik Data...</Typography>
                             </View>
                         ) : (

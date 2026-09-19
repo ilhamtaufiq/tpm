@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useUIStore } from '../../store/useUIStore';
 import { View, ScrollView, Pressable, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl, Share } from 'react-native';
 import { appAlert } from '../../utils/appAlert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -119,6 +120,7 @@ const BengkelServiceCard = React.memo(function BengkelServiceCard({
 });
 
 export default function BengkelScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
     const { action } = useLocalSearchParams<{ action?: string }>();
@@ -835,7 +837,7 @@ export default function BengkelScreen() {
                             className="bg-primary/10 rounded-full p-2 mb-2 border border-primary/20"
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                            <Printer size={16} color="#023C69" />
+                            <Printer size={16} color="themeColors.primary" />
                         </Pressable>
                         <Badge
                             label={formatBengkelWorkStatusLabel(selectedItem.status_pengerjaan)}
@@ -882,7 +884,7 @@ export default function BengkelScreen() {
                 <Card variant="outlined" className="p-4 border-transparent mb-4 bg-surface/60 rounded-2xl">
                     <View className="flex-row items-center justify-between mb-3">
                         <View className="flex-row items-center">
-                            <Receipt size={15} color="#023C69" />
+                            <Receipt size={15} color="themeColors.primary" />
                             <Typography variant="caption" weight="bold" className="ml-2 text-primary uppercase tracking-widest">Item Order</Typography>
                         </View>
                         <Typography variant="caption" className="text-textGray">{detailServices.length + detailParts.length} baris</Typography>
@@ -980,7 +982,7 @@ export default function BengkelScreen() {
                             onPress={handleSettleSelectedOrder}
                             className="mt-3 bg-primary/10 py-3 rounded-xl flex-row items-center justify-center border border-primary/20"
                         >
-                            <Banknote size={17} color="#023C69" />
+                            <Banknote size={17} color="themeColors.primary" />
                             <Typography weight="bold" className="text-primary ml-2 uppercase tracking-widest text-xs">Pelunasan / Bayar Cicilan</Typography>
                         </Pressable>
                     )}
@@ -1895,7 +1897,7 @@ export default function BengkelScreen() {
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />
                 }
                 className="pt-4"
             >
@@ -1947,7 +1949,7 @@ export default function BengkelScreen() {
                             }}
                             className="ml-2 w-11 h-11 bg-background items-center justify-center rounded-2xl border border-transparent active:scale-95"
                         >
-                            <Wallet size={18} color="#023C69" />
+                            <Wallet size={18} color="themeColors.primary" />
                         </Pressable>
                     </View>
 

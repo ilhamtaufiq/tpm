@@ -3,6 +3,7 @@ import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Image, 
 import { useLocalSearchParams, useRouter, Redirect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useUIStore } from '../../store/useUIStore';
 import { getFileUrl } from '../../utils/image';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
@@ -20,6 +21,7 @@ import { id as localeID } from 'date-fns/locale';
 type FinanceFilterType = 'all' | 'daily' | 'monthly' | 'yearly';
 
 export default function FinanceTab() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const [refreshing, setRefreshing] = useState(false);
     const [filterType, setFilterType] = useState<FinanceFilterType>('monthly');
@@ -194,7 +196,7 @@ export default function FinanceTab() {
                 className="flex-1 px-6 pt-6"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 32) }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />}
             >
                 {/* Period Filter Bar */}
                 <View className="bg-surface border border-transparent rounded-3xl p-4 mb-6 shadow-sm">
@@ -234,7 +236,7 @@ export default function FinanceTab() {
                             </Pressable>
 
                             <View className="flex-row items-center">
-                                <Calendar size={15} color="#023C69" />
+                                <Calendar size={15} color="themeColors.primary" />
                                 <Typography variant="body2" weight="bold" className="text-textMain ml-2 capitalize">
                                     {formattedDate}
                                 </Typography>
@@ -419,7 +421,7 @@ export default function FinanceTab() {
                         <View className="flex-row items-center justify-between">
                             <View className="flex-row items-center">
                                 <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3">
-                                    <BarChart3 size={20} color="#023C69" />
+                                    <BarChart3 size={20} color="themeColors.primary" />
                                 </View>
                                 <View>
                                     <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Total Kas & Bank</Typography>

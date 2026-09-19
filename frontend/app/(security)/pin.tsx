@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions, Platform, Vibration, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSecurityStore } from '../../store/useSecurityStore';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 import { useSetupPin, useVerifyPin, useChangePin, useDisablePin } from '../../hooks/useSecurityAPI';
 import { LucideDelete, LucideFingerprint, LucideChevronLeft } from 'lucide-react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -47,6 +48,8 @@ export default function PinScreen() {
 
     // Zustand store for local session unlock state
     const { useBiometrics, unlock, resetSession, unlockFeature } = useSecurityStore();
+    const themeColors = useUIStore((s) => s.themeColors);
+    const borderColor = findPaletteBorder(themeColors);
 
     // API Hooks
     const setupPinMutation = useSetupPin();
@@ -226,7 +229,7 @@ export default function PinScreen() {
     const PinDot = ({ active }: { active: boolean }) => {
         const animatedStyle = useAnimatedStyle(() => ({
             transform: [{ scale: withSpring(active ? 1.2 : 1) }],
-            backgroundColor: withTiming(active ? '#3b82f6' : '#e2e8f0'),
+            backgroundColor: withTiming(active ? themeColors.primary : borderColor),
         }));
 
         return <Animated.View style={animatedStyle} className="w-4 h-4 rounded-full mx-4" />;
@@ -236,13 +239,13 @@ export default function PinScreen() {
         <View className="flex-1 bg-surface items-center justify-center px-6">
             {isLoading && (
                 <View className="absolute inset-0 z-50 bg-surface/50 items-center justify-center">
-                    <ActivityIndicator size="large" color="#3b82f6" />
+                    <ActivityIndicator size="large" color={themeColors.primary} />
                 </View>
             )}
             <View className="absolute top-12 left-6">
                 {(currentMode === 'setup' || currentMode === 'confirm' || action === 'change_pin' || action === 'disable_pin') && (
                     <Pressable onPress={() => router.back()} className="p-2 -ml-2" disabled={isLoading}>
-                        <LucideChevronLeft size={28} color="#1e293b" />
+                        <LucideChevronLeft size={28} color={themeColors.text} />
 
                     </Pressable>
                 )}

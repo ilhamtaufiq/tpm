@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, TextInput, Image, StatusBar, Modal } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useUIStore } from '../../store/useUIStore';
 import { getFileUrl } from '../../utils/image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
@@ -110,6 +111,7 @@ const FILTER_TYPES = [
 ] as const;
 
 export default function HistoryTab() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const [search, setSearch] = useState('');
     const [selectedSource, setSelectedSource] = useState<string>('all');
@@ -380,7 +382,7 @@ export default function HistoryTab() {
                                 onPress={() => setDatePickerModalOpen(true)}
                                 className="items-center flex-1 mx-2 py-1 flex-row justify-center active:opacity-70"
                             >
-                                <Calendar size={15} color="#023C69" />
+                                <Calendar size={15} color="themeColors.primary" />
                                 <Typography variant="body2" weight="bold" className="text-textMain ml-2 text-xs">
                                     {getFormattedDateText()}
                                 </Typography>
@@ -437,11 +439,11 @@ export default function HistoryTab() {
                 className="flex-1 mt-4"
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 40) }}
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="themeColors.primary" />}
             >
                 {isLoading ? (
                     <View className="py-20 items-center">
-                        <ActivityIndicator size="large" color="#023C69" />
+                        <ActivityIndicator size="large" color="themeColors.primary" />
                         <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MENYINGKRONKAN DATA...</Typography>
                     </View>
                 ) : filteredList.length === 0 ? (

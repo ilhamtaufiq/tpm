@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { View, ScrollView, Image, Pressable, ActivityIndicator, FlatList, Dimensions, StatusBar, Modal, TextInput, TouchableOpacity, Platform, Share, Linking } from 'react-native';
 import { appAlert } from '../utils/appAlert';
+import { useUIStore } from '../store/useUIStore';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -61,6 +62,7 @@ interface MobilDetailProps {
 }
 
 export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: MobilDetailProps) => {
+    const primaryColor = useUIStore((s) => s.themeColors.primary);
     const queryClient = useQueryClient();
     const { data: unit, isLoading: isRefetching } = useMobilDetail(initialUnit?.id);
     const activeUnit = unit || initialUnit;
@@ -143,7 +145,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
     const getStatusColor = (status: string) => {
         switch (status?.toLowerCase()) {
-            case 'tersedia': return '#023C69';
+            case 'tersedia': return primaryColor;
             case 'booking': return '#FF9500';
             case 'terjual': return '#8E8E93';
             default: return '#EE2737';

@@ -43,7 +43,7 @@ const getSafeErrorMessage = (error: any, fallback: string): string => {
 export default function LoginScreen() {
     const router = useRouter();
     const { isAuthenticated, setAuth } = useAuthStore();
-    const { appLogo, appName } = useUIStore();
+    const { appLogo, appName, themeColors } = useUIStore();
     // Commit dibaca app.config.js saat bundling — ikut ter-embed di tiap OTA update.
     const buildCommit = Constants.expoConfig?.extra?.commit || 'dev';
 
@@ -104,7 +104,7 @@ export default function LoginScreen() {
     };
 
     return (
-        <View className="flex-1 bg-[#F8F9FA]">
+        <View className="flex-1 bg-background">
             <StatusBar style="light" />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -153,7 +153,7 @@ export default function LoginScreen() {
                                 autoCapitalize="none"
                                 value={username}
                                 onChangeText={setUsername}
-                                startIcon={<User size={18} color="#023C69" opacity={0.6} />}
+                                startIcon={<User size={18} color={themeColors.primary} opacity={0.6} />}
                                 containerClassName="mb-1"
                             />
 
@@ -163,13 +163,13 @@ export default function LoginScreen() {
                                 secureTextEntry={!showPassword}
                                 value={password}
                                 onChangeText={setPassword}
-                                startIcon={<Lock size={18} color="#023C69" opacity={0.6} />}
+                                startIcon={<Lock size={18} color={themeColors.primary} opacity={0.6} />}
                                 endIcon={
                                     <Pressable onPress={() => setShowPassword(!showPassword)}>
                                         {showPassword ? (
-                                            <EyeOff size={18} color="#023C69" opacity={0.6} />
+                                            <EyeOff size={18} color={themeColors.primary} opacity={0.6} />
                                         ) : (
-                                            <Eye size={18} color="#023C69" opacity={0.6} />
+                                            <Eye size={18} color={themeColors.primary} opacity={0.6} />
                                         )}
                                     </Pressable>
                                 }
