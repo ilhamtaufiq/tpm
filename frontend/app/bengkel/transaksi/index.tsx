@@ -587,7 +587,7 @@ export default function BengkelTransaksiScreen() {
         setScanLog(prev => [{
             id: Math.random().toString(),
             title: part.nama,
-            subtitle: `Kode: ${formatSparePartCodes(part)} - ${isAlwaysReadyStock(part.stok) ? 'Always Ready' : `Stok: ${part.stok}`}`,
+            subtitle: `Kode: ${formatSparePartCodes(part)} - ${isAlwaysReadyStock(part.stok) ? 'Tanpa Stok' : `Stok: ${part.stok}`}`,
             timestamp: Date.now(),
         }, ...prev]);
         return true;
@@ -1230,7 +1230,7 @@ export default function BengkelTransaksiScreen() {
                                                     <Package size={18} color={selected ? '#2563EB' : outOfStock ? '#CBD5E1' : '#94A3B8'} />
                                                     <Typography weight="bold" className={`text-sm ml-2 flex-1 ${outOfStock ? 'text-textGray' : 'text-textMain'}`} numberOfLines={1}>{part.nama}</Typography>
                                                 </View>
-                                                <Typography className="text-textGray text-[11px] mt-1">{part.kode || '-'} - Stok {isAlwaysReadyStock(part.stok) ? 'Always Ready' : Number(part.stok || 0)}</Typography>
+                                                <Typography className="text-textGray text-[11px] mt-1">{part.kode || '-'} - Stok {isAlwaysReadyStock(part.stok) ? 'Tanpa Stok' : Number(part.stok || 0)}</Typography>
                                                 {outOfStock && <Typography className="text-rose-500 text-[10px] font-bold mt-1">STOK HABIS</Typography>}
                                                 <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(part.harga_jual || 0)}</Typography>
                                             </View>
@@ -2097,7 +2097,7 @@ export default function BengkelTransaksiScreen() {
                                                     <Package size={18} color={selected ? '#2563EB' : outOfStock ? '#CBD5E1' : '#94A3B8'} />
                                                     <Typography weight="bold" className={`text-sm ml-2 flex-1 ${outOfStock ? 'text-textGray' : 'text-textMain'}`} numberOfLines={1}>{part.nama}</Typography>
                                                 </View>
-                                                <Typography className="text-textGray text-[11px] mt-1">{part.kode || '-'} - Stok {isAlwaysReadyStock(part.stok) ? 'Always Ready' : Number(part.stok || 0)}</Typography>
+                                                <Typography className="text-textGray text-[11px] mt-1">{part.kode || '-'} - Stok {isAlwaysReadyStock(part.stok) ? 'Tanpa Stok' : Number(part.stok || 0)}</Typography>
                                                 {outOfStock && <Typography className="text-rose-500 text-[10px] font-bold mt-1">STOK HABIS</Typography>}
                                                 <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(part.harga_jual || 0)}</Typography>
                                             </View>

@@ -576,7 +576,7 @@ export default function PurchaseScreen() {
                                                         </Typography>
                                                     </View>
                                                     <Typography className="text-textGray text-[11px] mt-1">
-                                                        {part.kode || '-'} • Stok: {isAlwaysReadyStock(part.stok) ? 'Always Ready' : Number(part.stok || 0)}
+                                                        {part.kode || '-'} • Stok: {isAlwaysReadyStock(part.stok) ? 'Tanpa Stok' : Number(part.stok || 0)}
                                                     </Typography>
                                                     {!selected && (
                                                         <Typography className="text-primary text-xs font-bold mt-1">

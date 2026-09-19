@@ -525,7 +525,7 @@ export default function SparePartMasterScreen() {
                             <View className="flex-row items-center pt-2 mt-2 border-t border-gray-100/50 border-dashed">
                                 {isAlwaysReady ? (
                                     <Badge
-                                        label="Always Ready"
+                                        label="Tanpa Stok"
                                         variant="infinity"
                                         className="mr-2 px-3"
                                     />
@@ -846,7 +846,7 @@ export default function SparePartMasterScreen() {
                             </View>
                             <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-indigo-700">Download Format Import Stok</Typography>
-                                <Typography variant="caption" className="text-textGray">Sheet Import Stok + tab Instruksi. Isi &quot;Tanpa Stok&quot; di kolom Stok untuk Always Ready (otomatis stok 999999).</Typography>
+                                <Typography variant="caption" className="text-textGray">Sheet Import Stok + tab Instruksi. Isi &quot;Tanpa Stok&quot; di kolom Stok untuk Tanpa Stok (otomatis stok 999999).</Typography>
                             </View>
                         </Pressable>
 

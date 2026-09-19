@@ -75,7 +75,7 @@ export const SparePartSelector = ({
                             <>
                                 <Typography weight="semibold" className="text-text text-base">{value.nama || value.nama_sparepart}</Typography>
                                 <Typography variant="caption" className="text-textGray">
-                                    {[value.kode_part, value.kode_ean, value.kode].filter(Boolean).join(' • ')} • {isAlwaysReadyStock(value.stok) ? 'Always Ready' : `Stok: ${value.stok}`}
+                                    {[value.kode_part, value.kode_ean, value.kode].filter(Boolean).join(' • ')} • {isAlwaysReadyStock(value.stok) ? 'Tanpa Stok' : `Stok: ${value.stok}`}
                                 </Typography>
                             </>
                         ) : (
@@ -159,7 +159,7 @@ export const SparePartSelector = ({
                                                         {item.kode}
                                                     </Typography>
                                                     <Badge
-                                                        label={isAlwaysReadyStock(item.stok) ? "Always Ready" : `Stok: ${item.stok}`}
+                                                        label={isAlwaysReadyStock(item.stok) ? "Tanpa Stok" : `Stok: ${item.stok}`}
                                                         variant={isAlwaysReadyStock(item.stok) ? "infinity" : (item.stok > 0 ? "success" : "error")}
                                                     />
                                                 </View>

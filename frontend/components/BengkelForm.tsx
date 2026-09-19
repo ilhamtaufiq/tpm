@@ -508,7 +508,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
             setScanLog(prev => [{
                 id: Math.random().toString(),
                 title: part.nama,
-                subtitle: `Kode: ${part.kode} • ${isAlwaysReadyStock(part.stok) ? 'Always Ready' : `Stok: ${part.stok}`}`,
+                subtitle: `Kode: ${part.kode} • ${isAlwaysReadyStock(part.stok) ? 'Tanpa Stok' : `Stok: ${part.stok}`}`,
                 timestamp: Date.now()
             }, ...prev]);
 

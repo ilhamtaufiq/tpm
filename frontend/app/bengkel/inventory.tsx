@@ -286,7 +286,7 @@ export default function InventoryScreen() {
     const renderStockBadge = (part: any) => {
         const status = getPartStockStatus(part);
         if (status === 'always') {
-            return <Badge label="Always Ready" variant="success" />;
+            return <Badge label="Tanpa Stok" variant="success" />;
         }
         if (status === 'empty') {
             return <Badge label="Stok Habis" variant="error" />;
@@ -348,7 +348,7 @@ export default function InventoryScreen() {
                     { id: 'low' as StockFilter, label: 'Menipis', count: lowStockCount, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                     { id: 'available' as StockFilter, label: 'Tersedia', count: stockFilterStats.available, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
                     { id: 'empty' as StockFilter, label: 'Habis', count: stockFilterStats.empty, active: 'bg-rose-500 border-rose-500', inactive: 'bg-rose-50 border-rose-100', text: 'text-rose-700' },
-                    { id: 'always' as StockFilter, label: 'Always Ready', count: stockFilterStats.always, active: 'bg-blue-500 border-blue-500', inactive: 'bg-blue-50 border-blue-100', text: 'text-blue-700' },
+                    { id: 'always' as StockFilter, label: 'Tanpa Stok', count: stockFilterStats.always, active: 'bg-blue-500 border-blue-500', inactive: 'bg-blue-50 border-blue-100', text: 'text-blue-700' },
                 ]).map((filter) => {
                     const isActive = stockFilter === filter.id;
                     return (
@@ -762,7 +762,7 @@ export default function InventoryScreen() {
                     <Card className="bg-background border-transparent p-4 mb-6">
                         <Typography variant="body1" weight="bold">{scannedPart?.nama}</Typography>
                         <Typography variant="caption" className="text-textGray mt-1">
-                            Kode: {scannedPart?.kode} • Stok Saat Ini: {isAlwaysReadyStock(scannedPart?.stok) ? 'Always Ready' : `${scannedPart?.stok} ${scannedPart?.satuan || 'pcs'}`}
+                            Kode: {scannedPart?.kode} • Stok Saat Ini: {isAlwaysReadyStock(scannedPart?.stok) ? 'Tanpa Stok' : `${scannedPart?.stok} ${scannedPart?.satuan || 'pcs'}`}
                         </Typography>
                     </Card>
 

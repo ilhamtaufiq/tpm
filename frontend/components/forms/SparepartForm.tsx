@@ -95,8 +95,37 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
     };
 
     const handleSubmit = async () => {
+        const trimmedNama = form.nama.trim();
+        if (!trimmedNama || trimmedNama.length < 2) {
+            appAlert('Input Tidak Valid', 'Nama barang wajib diisi (minimal 2 karakter).');
+            return;
+        }
+
         try {
-            const payload = { ...form, harga_beli: parseNumber(form.harga_beli), harga_jual: parseNumber(form.harga_jual), stok: Number(form.stok), stok_minimum: Number(form.stok_minimum) };
+            const rawStokNum = Number(form.stok);
+            const rawStokMinNum = Number(form.stok_minimum);
+            const payload: Record<string, any> = {
+                ...form,
+                nama: trimmedNama,
+                kode_part: form.kode_part?.trim() || null,
+                kode_ean: form.kode_ean?.trim() || null,
+                kategori: form.kategori?.trim() || 'Umum',
+                merek: form.merek?.trim() || null,
+                satuan: form.satuan?.trim() || 'pcs',
+                harga_beli: parseNumber(form.harga_beli),
+                harga_jual: parseNumber(form.harga_jual),
+                stok: isAlwaysReady ? Number(ALWAYS_READY_STOCK) : (isNaN(rawStokNum) ? 0 : rawStokNum),
+                stok_minimum: isNaN(rawStokMinNum) ? 5 : rawStokMinNum,
+                lokasi_rak: form.lokasi_rak?.trim() || null,
+                catatan: form.catatan?.trim() || null,
+            };
+
+            if (form.kode?.trim()) {
+                payload.kode = form.kode.trim();
+            } else if (!isEditing) {
+                delete payload.kode;
+            }
+
             const result = await offlineAwareWrite(queryClient, {
                 type: isEditing && form.id ? 'bengkel.updateSparePart' : 'bengkel.createSparePart',
                 payload: isEditing && form.id ? { id: form.id, data: payload } : payload,
@@ -142,9 +171,11 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                 return;
             }
             onSuccess?.();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save sparepart:', error);
-            const msg = 'Gagal menyimpan data barang. Periksa kembali input Anda.';
+            const detail = error?.response?.data?.detail;
+            const detailMsg = typeof detail === 'string' ? detail : (Array.isArray(detail) ? detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ') : null);
+            const msg = detailMsg || 'Gagal menyimpan data barang. Periksa kembali input Anda.';
             appAlert('Error', msg);
         }
     };
@@ -285,11 +316,11 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                                 }
                             }} className="flex-row items-center">
                                 <View className={`w-4 h-4 rounded border items-center justify-center mr-1.5 ${isAlwaysReady ? 'bg-primary border-primary' : 'border-transparent'}`}>{isAlwaysReady && <Check size={10} color="white" />}</View>
-                                <Typography className={`text-[10px] font-bold ${isAlwaysReady ? 'text-primary' : 'text-textGray'}`}>Always Ready</Typography>
+                                <Typography className={`text-[10px] font-bold ${isAlwaysReady ? 'text-primary' : 'text-textGray'}`}>Tanpa Stok</Typography>
                             </Pressable>
                         </View>
                         <TextInput className={`bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 ${isAlwaysReady ? 'opacity-50' : ''}`} placeholder="0" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={form.stok} onChangeText={(t) => setForm({ ...form, stok: t })} editable={!isAlwaysReady} />
-                        {isAlwaysReady && <Typography className="text-[8px] text-indigo-500 mt-1 italic font-bold">* Mode Always Ready: Stok diset ke 999999 dan tidak akan berkurang.</Typography>}
+                        {isAlwaysReady && <Typography className="text-[8px] text-indigo-500 mt-1 italic font-bold">* Mode Tanpa Stok: Stok diset ke 999999 dan tidak akan berkurang.</Typography>}
                     </View>
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Min. Stok</Typography>
