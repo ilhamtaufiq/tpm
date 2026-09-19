@@ -153,6 +153,34 @@ def create_app() -> FastAPI:
         finally:
             db.close()
 
+    @app.get("/api/v1/monitor/active-devices", tags=["Monitoring"])
+    def get_active_devices():
+        """Return active users with device info (mobile vs web)."""
+        from app.models.user import User
+        from app.utils.constants import HIDDEN_USERNAMES
+        db = SessionLocal()
+        try:
+            users = (
+                db.query(User)
+                .filter(User.is_active == True, User.username.notin_(HIDDEN_USERNAMES))
+                .order_by(User.last_login.desc().nullslast())
+                .all()
+            )
+            return [
+                {
+                    "id": u.id,
+                    "username": u.username,
+                    "full_name": u.full_name,
+                    "role": u.role.value if hasattr(u.role, "value") else str(u.role),
+                    "last_login": u.last_login.isoformat() if u.last_login else None,
+                    "has_push_token": bool(u.expo_push_token),
+                    "platform": "mobile" if u.expo_push_token else "web",
+                }
+                for u in users
+            ]
+        finally:
+            db.close()
+
     @app.get("/api/v1/monitor/stats", tags=["Monitoring"])
     def get_monitor_stats():
         """Get real-time server metrics including DB stats."""

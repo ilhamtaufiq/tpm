@@ -62,6 +62,15 @@ export const monitorService = {
     };
     system?: Record<string, unknown>;
   }>('/monitor/stats'),
+  activeDevices: () => get<{
+    id: number;
+    username: string;
+    full_name: string;
+    role: string;
+    last_login: string | null;
+    has_push_token: boolean;
+    platform: 'mobile' | 'web';
+  }[]>('/monitor/active-devices'),
 };
 
 export interface LacakResult {
