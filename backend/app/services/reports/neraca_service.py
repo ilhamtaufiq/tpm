@@ -1086,11 +1086,26 @@ class NeracaService(BaseReportService):
                 )
                 if not is_kasbon:
                     continue
-                # Check if a KasBank KELUAR already exists for this piutang
+                # Check if a KasBank KELUAR already exists for this piutang.
+                # Two entry shapes exist:
+                # - legacy heal / piutang-flow: referensi_id = piutang.id, nomor PTG-*
+                # - KasbonService.create: referensi_id = kasbon.id, nomor KSB-*
+                # Matching only the first shape made the heal double-book the
+                # disbursement for every kasbon created via KasbonService.
+                #
+                # Guard the KSB shape on `p.referensi_id IS NOT NULL`: SQLAlchemy
+                # renders `col == None` as `col IS NULL`, so an unlinked piutang
+                # (referensi_id NULL) would match every wallet-transfer row
+                # (referensi_id NULL, nomor_referensi NULL) and skip the heal.
+                refs = [and_(KasBank.referensi_id == p.id, KasBank.nomor_referensi == p.nomor_piutang)]
+                if p.referensi_id is not None and p.nomor_referensi is not None:
+                    refs.append(and_(
+                        KasBank.referensi_id == p.referensi_id,
+                        KasBank.nomor_referensi == p.nomor_referensi,
+                    ))
                 kb = self.db.query(KasBank).filter(
                     KasBank.tipe == KasBankType.KELUAR,
-                    KasBank.referensi_id == p.id,
-                    KasBank.nomor_referensi == p.nomor_piutang,
+                    or_(*refs),
                 ).first()
                 if kb:
                     continue

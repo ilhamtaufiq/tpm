@@ -49,7 +49,11 @@ class ModalService(BaseReportService):
     # v3: fix filter `sumber` pada piutang booking (base.py) mengubah snapshot
     # neraca(anchor) — nilai beku v2 ter-capture saat kewajiban phantom
     # Rp700.000 masih ada, jadi harus dihitung ulang (2.245.258.724,51).
-    FROZEN_MODAL_AWAL_V = 3
+    # v4: nilai v3 (2.245.258.724,51) tak bisa direproduksi rumus mana pun —
+    # ter-capture dari state working-tree sesaat setelah 24a4df51, lalu baris
+    # backdate bertanggal anchor berubah (piutang 197, hutang 96/110), menyisakan
+    # selisih tetap Rp45.000 di semua periode. Hitung ulang dari snapshot kini.
+    FROZEN_MODAL_AWAL_V = 4
 
     def _equity_flow_on(self, d: date) -> float:
         """Pergerakan ekuitas pada SATU hari.
