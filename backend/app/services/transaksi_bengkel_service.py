@@ -361,6 +361,7 @@ class TransaksiBengkelService:
                 SparePart.id.in_(spare_part_ids),
                 SparePart.deleted_at.is_(None),
             )
+            .with_for_update()
             .all()
         )
 
@@ -863,9 +864,9 @@ class TransaksiBengkelService:
         effective_tanggal = data.tanggal or transaksi.tanggal
         original_jumlah_bayar = transaksi.jumlah_bayar
 
-        # 1. Restore stock
+        # 1. Restore stock (lock rows to prevent concurrent race on stok)
         for detail in transaksi.detail_parts:
-            sp = self.db.query(SparePart).filter(SparePart.id == detail.spare_part_id).first()
+            sp = self.db.query(SparePart).filter(SparePart.id == detail.spare_part_id).with_for_update().first()
             if sp and not is_always_ready_stock(sp.stok):
                 sp.stok += detail.qty
 
@@ -1789,11 +1790,12 @@ class TransaksiBengkelService:
             if transaksi.status_bayar == PaymentStatus.BATAL:
                 return True
 
-            # 1. Restore spare part stock
+            # 1. Restore spare part stock (lock rows to prevent concurrent race)
             for detail in transaksi.detail_parts:
                 spare_part = (
                     self.db.query(SparePart)
                     .filter(SparePart.id == detail.spare_part_id)
+                    .with_for_update()
                     .first()
                 )
                 if spare_part and not is_always_ready_stock(spare_part.stok):
