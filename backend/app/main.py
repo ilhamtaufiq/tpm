@@ -163,7 +163,7 @@ def create_app() -> FastAPI:
             users = (
                 db.query(User)
                 .filter(User.is_active == True, User.username.notin_(HIDDEN_USERNAMES))
-                .order_by(User.last_login.desc().nullslast())
+                .order_by(User.last_login.is_(None), User.last_login.desc())
                 .all()
             )
             return [
