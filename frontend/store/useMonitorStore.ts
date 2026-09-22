@@ -1,22 +1,19 @@
 import { create } from 'zustand';
 import { Platform } from 'react-native';
+import api from '../utils/api';
 
 const sendClientLogToBackend = (entry: Partial<AppLogEntry>) => {
     try {
         const platform = Platform.OS === 'android' ? 'android' : Platform.OS === 'ios' ? 'ios' : 'web';
-        fetch('/api/v1/monitor/client-logs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                type: entry.type || 'ERROR',
-                title: entry.title || 'Client Log',
-                message: entry.message || '',
-                platform,
-                duration: entry.duration || 0,
-                status: entry.status || 0,
-                stack: entry.stack,
-                url: entry.url
-            })
+        api.post('/monitor/client-logs', {
+            type: entry.type || 'ERROR',
+            title: entry.title || 'Client Log',
+            message: entry.message || '',
+            platform,
+            duration: entry.duration || 0,
+            status: entry.status || 0,
+            stack: entry.stack,
+            url: entry.url
         }).catch(() => {});
     } catch (e) {}
 };
@@ -103,7 +100,7 @@ export const useMonitorStore = create<MonitorState>((set) => ({
         const targetLog = state.logs.find(l => l.id === id);
         if (duration > 1000 && targetLog) {
             extraLagCount = 1;
-            newAppLogs.unshift({
+            const entry: AppLogEntry = {
                 id: Math.random().toString(36).substring(7),
                 type: 'LAG',
                 title: `API High Latency (${duration}ms)`,
@@ -112,12 +109,14 @@ export const useMonitorStore = create<MonitorState>((set) => ({
                 status,
                 url: targetLog.url,
                 timestamp: Date.now()
-            });
+            };
+            newAppLogs.unshift(entry);
+            sendClientLogToBackend(entry);
         }
 
         if (isError && targetLog) {
             extraBugCount = 1;
-            newAppLogs.unshift({
+            const entry: AppLogEntry = {
                 id: Math.random().toString(36).substring(7),
                 type: 'ERROR',
                 title: `HTTP ${status} Error`,
@@ -125,7 +124,9 @@ export const useMonitorStore = create<MonitorState>((set) => ({
                 status,
                 url: targetLog.url,
                 timestamp: Date.now()
-            });
+            };
+            newAppLogs.unshift(entry);
+            sendClientLogToBackend(entry);
         }
 
         return {
@@ -148,6 +149,7 @@ export const useMonitorStore = create<MonitorState>((set) => ({
             duration,
             timestamp: Date.now()
         };
+        sendClientLogToBackend(entry);
         return {
             lagCount: state.lagCount + 1,
             appLogs: [entry, ...state.appLogs].slice(0, 200)
@@ -163,6 +165,7 @@ export const useMonitorStore = create<MonitorState>((set) => ({
             stack,
             timestamp: Date.now()
         };
+        sendClientLogToBackend(entry);
         return {
             bugCount: state.bugCount + 1,
             appLogs: [entry, ...state.appLogs].slice(0, 200)
@@ -178,6 +181,7 @@ export const useMonitorStore = create<MonitorState>((set) => ({
             status,
             timestamp: Date.now()
         };
+        sendClientLogToBackend(entry);
         return {
             errorCount: state.errorCount + 1,
             appLogs: [entry, ...state.appLogs].slice(0, 200)
