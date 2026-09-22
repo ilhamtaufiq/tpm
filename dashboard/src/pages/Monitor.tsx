@@ -50,9 +50,9 @@ export default function Monitor() {
   const [platformFilter, setPlatformFilter] = useState<'ALL' | 'ANDROID' | 'WEB'>('ALL');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'LAG' | 'BUG' | 'ERROR'>('ALL');
 
-  const fetchStats = async () => {
+  const fetchStats = async (isManual = false) => {
     try {
-      setRefreshing(true);
+      if (isManual) setRefreshing(true);
       const [data, devs] = await Promise.all([
         monitorService.stats(),
         monitorService.activeDevices(),
@@ -63,13 +63,13 @@ export default function Monitor() {
       console.error('[Dashboard Monitor] Failed to fetch stats:', err);
     } finally {
       setLoading(false);
-      setRefreshing(false);
+      if (isManual) setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchStats();
-    const interval = setInterval(fetchStats, 5000);
+    fetchStats(false);
+    const interval = setInterval(() => fetchStats(false), 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -102,7 +102,7 @@ export default function Monitor() {
         sub="Monitoring real-time bug, error, lag dari build Android APK & Web Frontend."
         right={
           <button
-            onClick={fetchStats}
+            onClick={() => fetchStats(true)}
             disabled={refreshing}
             className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-slate-700 border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors"
           >
@@ -159,7 +159,7 @@ export default function Monitor() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-slate-200 pb-3">
+      <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('devices')}
           className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
