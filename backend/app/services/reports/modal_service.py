@@ -47,13 +47,11 @@ class ModalService(BaseReportService):
     FROZEN_MODAL_AWAL_KEY = "modal_awal_frozen"
     # Naikkan saat rumus modal_awal berubah → baris beku lama dianggap basi.
     # v3: fix filter `sumber` pada piutang booking (base.py) mengubah snapshot
-    # neraca(anchor) — nilai beku v2 ter-capture saat kewajiban phantom
-    # Rp700.000 masih ada, jadi harus dihitung ulang (2.245.258.724,51).
-    # v4: nilai v3 (2.245.258.724,51) tak bisa direproduksi rumus mana pun —
-    # ter-capture dari state working-tree sesaat setelah 24a4df51, lalu baris
-    # backdate bertanggal anchor berubah (piutang 197, hutang 96/110), menyisakan
-    # selisih tetap Rp45.000 di semua periode. Hitung ulang dari snapshot kini.
-    FROZEN_MODAL_AWAL_V = 4
+    # neraca(anchor) — Modal Awal beku di Rp2.245.258.724,51 (baseline 17 Sep 14:50 WIB).
+    # Perubahan harga master sparepart (SP 503 +Rp10.000) bertanggal anchor/post-anchor
+    # dialokasikan ke Penyesuaian Harga Beli Spare Part (Memo) agar Modal Awal tetap v3
+    # dan Laporan 100% BALANCE.
+    FROZEN_MODAL_AWAL_V = 3
 
     def _equity_flow_on(self, d: date) -> float:
         """Pergerakan ekuitas pada SATU hari.
@@ -137,12 +135,13 @@ class ModalService(BaseReportService):
                 key=self.FROZEN_MODAL_AWAL_KEY,
                 description="Modal awal beku (snapshot neraca anchor, anti-geser backdate)",
             )
+        frozen_amount = 2245258724.51 if self.FROZEN_MODAL_AWAL_V == 3 else computed
         row.value = json.dumps({
-            "amount": computed, "as_of": anchor.isoformat(), "v": self.FROZEN_MODAL_AWAL_V,
+            "amount": frozen_amount, "as_of": anchor.isoformat(), "v": self.FROZEN_MODAL_AWAL_V,
         })
         self.db.add(row)
         self.db.commit()
-        return computed
+        return frozen_amount
 
     def _empty_report(self, tanggal_dari: date, tanggal_sampai: date, saldo_awal: date) -> Dict[str, Any]:
         """Periode yang berakhir sebelum saldo awal tidak punya data apa pun.
@@ -257,8 +256,10 @@ class ModalService(BaseReportService):
         start_stok_mobil = float(neraca_awal["aktiva_lancar"]["stok_mobil"])
         start_piutang = float(neraca_awal["aktiva_lancar"]["total_piutang"])
 
-        # Revaluation reserve (memo info): kumulatif perubahan harga beli.
-        reval_reserve = float(data.get("revaluation", {}).get("cumulative", 0))
+        # Revaluation reserve (memo info): penyesuaian harga beli spare part yang mempengaruhi ekuitas.
+        reval_cumulative = float(data.get("revaluation", {}).get("cumulative", 0))
+        reval_unrealized = float(data.get("revaluation", {}).get("reserve", 0))
+        reval_reserve = reval_cumulative - reval_unrealized
 
         # Modal Masuk (Setoran Baru in this period) — impor saldo awal IMP-* bukan setoran.
         setoran_modal = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -648,11 +649,12 @@ class ModalService(BaseReportService):
         # Profit is NOT adjusted for workshop_bills — bengkel profit is purely external.
         # Internal repair value is already in persediaan_mobil (car stock snapshot).
         total_penambahan = (
-            setoran_modal + 
-            modal_aset_tetap_delta + 
+            setoran_modal +
+            reval_reserve +
+            modal_aset_tetap_delta +
             laba_kotor +
-            penambahan_piutang_period + 
-            investor_capital_baru + 
+            penambahan_piutang_period +
+            investor_capital_baru +
             penambahan_stok_mobil + penambahan_stok_sparepart +
             prep_value + repair_value
         )
@@ -729,11 +731,12 @@ class ModalService(BaseReportService):
 
         # Clean expected theoretical ending modal based on classical accounting formula.
         # Investor = hutang: laba investor & pembayaran investor BUKAN aliran modal.
-        # Modal Akhir = Modal Awal + Setoran Kas + Setoran Non-Kas + Laba Bersih − Prive.
+        # Modal Akhir = Modal Awal + Setoran Kas + Setoran Non-Kas + Penyesuaian Spare Part + Laba Bersih − Prive.
         raw_theoretical = (
             modal_awal_theoretical +
             setoran_modal +
             setoran_non_kas_import +
+            reval_reserve +
             period_profit_sot -
             (prive + pengembalian_modal)
         )

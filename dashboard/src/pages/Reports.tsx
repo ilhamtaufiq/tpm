@@ -583,7 +583,7 @@ export function Modal() {
   const labaOperasional = r.info?.laba_operasional ?? labaBersih + priveTotal;
   // Investor = hutang (bukan aliran modal) — selaras xlsx. Laba investor sudah
   // dipotong di dalam laba_operasional.
-  const perubahanBersih = setoranKas + modalNonKas + labaOperasional - priveTotal;
+  const perubahanBersih = setoranKas + penyesuaianHargaBeli + modalNonKas + labaOperasional - priveTotal;
   const expectedAliran = modalAwal + perubahanBersih;
   // Mutasi dihitung kumulatif sejak posisi pembuka (modal awal beku); bila
   // periode terpilih menjangkau sebelum itu, angkanya beda dengan Laba Rugi.
