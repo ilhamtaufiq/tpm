@@ -8,6 +8,7 @@ from app.schemas.keuangan import (
     PiutangCreate,
     PiutangUpdate,
     PiutangResponse,
+    PiutangList,
     PembayaranPiutangCreate,
     PembayaranPiutangSplit,
     PembayaranPiutangResponse,
@@ -34,7 +35,10 @@ def create_piutang(
     return service.create(data, current_user.id)
 
 
-@router.get("")
+# response_model wajib: tanpa ini FastAPI fallback ke jsonable_encoder yang
+# hanya serialize kolom mapper, sehingga @property persentase_terbayar &
+# is_overdue hilang → progress bar pelunasan di mobile selalu 0%.
+@router.get("", response_model=PiutangList)
 def list_piutang(
     db: DBSession,
     current_user: CurrentUser,

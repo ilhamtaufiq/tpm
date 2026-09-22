@@ -111,7 +111,10 @@ export default function PiutangUsahaScreen() {
     const unitFilter = roleUnitMap[user?.role || ''] || requestedUnit;
     const unitLabel = getUnitDisplayLabel(unitFilter);
     const canCreate = user?.role === 'ADMIN' || user?.role === 'MANAGER' || !!roleUnitMap[user?.role || ''];
-    const [selectedFilter, setSelectedFilter] = useState<PiutangFilter>('belum_bayar');
+    // Default 'sebagian' (Belum Lunas): piutang yang sudah ada pembayaran tapi
+    // belum lunas — kalau default-nya 'belum_bayar', pembayaran seperti DP
+    // langsung menghilang dari tab awal.
+    const [selectedFilter, setSelectedFilter] = useState<PiutangFilter>('sebagian');
     const [selectedPiutang, setSelectedPiutang] = useState<Piutang | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'payment'>('detail');
     const [refreshing, setRefreshing] = useState(false);
