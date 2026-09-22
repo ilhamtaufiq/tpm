@@ -222,14 +222,25 @@ export default function BackupScreen() {
             variant: 'warning',
             type: 'confirm',
             onConfirm: async () => {
+                setDialogConfig((prev) => ({ ...prev, visible: false }));
                 try {
                     await deleteMutation.mutateAsync(filename);
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Sukses',
+                        message: `File backup ${filename} berhasil dihapus.`,
+                        variant: 'success',
+                        type: 'alert',
+                        onConfirm: undefined,
+                    });
                 } catch (error) {
                     setDialogConfig({
                         visible: true,
                         title: 'Error',
                         message: getErrorMessage(error, 'Gagal menghapus backup'),
-                        variant: 'error'
+                        variant: 'error',
+                        type: 'alert',
+                        onConfirm: undefined,
                     });
                 }
             }
