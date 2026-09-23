@@ -27,7 +27,7 @@ def _has_column(table: str, column: str) -> bool:
 
 def upgrade() -> None:
     # pembelian_id harus nullable untuk qty correction (tidak ada pembelian terkait)
-    op.alter_column('spare_part_revaluation', 'pembelian_id', nullable=True)
+    op.alter_column('spare_part_revaluation', 'pembelian_id', sa.Integer(), nullable=True)
 
     if not _has_column('spare_part_revaluation', 'is_qty_correction'):
         op.add_column(
