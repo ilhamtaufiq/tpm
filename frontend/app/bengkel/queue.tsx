@@ -75,6 +75,11 @@ export default function QueueScreen() {
     const [dateMode, setDateMode] = useState<'all' | 'daily' | 'monthly' | 'yearly'>('daily');
     const [datePickerModalOpen, setDatePickerModalOpen] = useState(false);
     const [queueSearchQuery, setQueueSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(queueSearchQuery.trim()), 350);
+        return () => clearTimeout(t);
+    }, [queueSearchQuery]);
     const [queueWorkStatusFilter, setQueueWorkStatusFilter] = useState<'ALL' | 'antre' | 'proses' | 'selesai' | 'batal'>('ALL');
     const [queuePaymentFilter, setQueuePaymentFilter] = useState<'ALL' | 'LUNAS' | 'BELUM_LUNAS' | 'BELUM_BAYAR' | 'BATAL'>('ALL');
     const [refreshing, setRefreshing] = useState(false);
@@ -129,7 +134,9 @@ export default function QueueScreen() {
     // Data fetching
     const { data: queueData, isLoading, refetch } = useTransaksiBengkelList({
         tanggal_dari,
-        tanggal_sampai
+        tanggal_sampai,
+        search: debouncedSearch || undefined,
+        limit: 100,
     });
 
     const { data: summary, refetch: refetchSummary } = useTransaksiBengkelSummary({

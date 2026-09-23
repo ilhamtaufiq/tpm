@@ -1217,6 +1217,10 @@ class TransaksiBengkelService:
                     TransaksiPenjualanBengkel.nomor_transaksi.ilike(search_filter),
                     TransaksiPenjualanBengkel.nama_customer.ilike(search_filter),
                     TransaksiPenjualanBengkel.nomor_plat.ilike(search_filter),
+                    # Jangkau nama dari tabel customers (Customer.nama) juga
+                    TransaksiPenjualanBengkel.customer.has(
+                        Customer.nama.ilike(search_filter)
+                    ),
                 )
             )
 
@@ -1325,6 +1329,9 @@ class TransaksiBengkelService:
                     TransaksiPenjualanBengkel.nomor_transaksi.ilike(search_filter),
                     TransaksiPenjualanBengkel.nama_customer.ilike(search_filter),
                     TransaksiPenjualanBengkel.nomor_plat.ilike(search_filter),
+                    TransaksiPenjualanBengkel.customer.has(
+                        Customer.nama.ilike(search_filter)
+                    ),
                 )
             )
         if customer_id:
