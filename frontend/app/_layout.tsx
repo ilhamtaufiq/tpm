@@ -108,28 +108,43 @@ const BackgroundServices = memo(function BackgroundServices() {
     return null;
 });
 
-// Deteksi lag JS thread (event loop stall) via drift interval.
-// Kalau interval 1000ms telat >1000ms → event loop macet (render berat, GC, dsb).
-// Minimal interval antarlog 10s biar tidak spam saat app memang lagi berat terus.
+// Deteksi lag JS thread per tick, bukan drift kumulatif.
+// Drift kumulatif (elapsed - ticks*1000) tidak pernah reset: Android menahan
+// timer saat background, jadi satu jeda 2 detik terlapor berulang tiap 10 detik
+// selamanya meski thread sudah idle. Ukur jarak antar-fire; baseline 2x interval
+// biar tick pertama setelah resume tidak ikut terhitung stall.
+const LAG_INTERVAL_MS = 1000;
+const LAG_THRESHOLD_MS = 1000;
+const LAG_LOG_GAP_MS = 10000;
+
 function useJSLagMonitor() {
     useEffect(() => {
-        let ticks = 0;
+        let expectedAt = Date.now() + LAG_INTERVAL_MS;
         let lastFire = 0;
-        const startedAt = Date.now();
         const timer = setInterval(() => {
-            ticks += 1;
-            const elapsed = Date.now() - startedAt;
-            const lag = elapsed - ticks * 1000;
-            if (lag > 1000 && Date.now() - lastFire > 10000) {
-                lastFire = Date.now();
+            const now = Date.now();
+            const lag = now - expectedAt;
+            expectedAt = now + LAG_INTERVAL_MS;
+            if (lag > LAG_THRESHOLD_MS && now - lastFire > LAG_LOG_GAP_MS) {
+                lastFire = now;
                 useMonitorStore.getState().logLag(
                     'JS Thread Lag',
                     Math.round(lag),
                     `Event loop tertunda ${Math.round(lag)}ms`
                 );
             }
-        }, 1000);
-        return () => clearInterval(timer);
+        }, LAG_INTERVAL_MS);
+
+        // Resume dari background: timer sempat beku, tick pertama pasti telat.
+        // Itu bukan stall JS — geser baseline supaya tidak lapor palsu.
+        const appStateSub = AppState.addEventListener('change', (next: AppStateStatus) => {
+            if (next === 'active') expectedAt = Date.now() + LAG_INTERVAL_MS * 2;
+        });
+
+        return () => {
+            clearInterval(timer);
+            appStateSub.remove();
+        };
     }, []);
 }
 
