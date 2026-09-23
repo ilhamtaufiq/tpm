@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, AlertCircle, AlertTriangle, Bug, Database, RefreshCw, Server, Smartphone, Globe, Zap, Users } from 'lucide-react';
+import { Activity, AlertCircle, AlertTriangle, Bug, Database, Download, RefreshCw, Server, Smartphone, Globe, Zap, Users } from 'lucide-react';
 import { monitorService } from '../api/services';
 import { Badge, Card, Empty, Loading, PageHeader, ProgressBar, Stat } from '../components/ui';
 
@@ -94,6 +94,35 @@ export default function Monitor() {
   const errCount = clientLogs.filter((l) => l.type === 'ERROR').length;
   const mobileCount = devices.filter((d) => d.platform === 'mobile').length;
   const webCount = devices.filter((d) => d.platform === 'web').length;
+
+  const exportLogsCsv = () => {
+    if (filteredLogs.length === 0) return;
+    const esc = (v: unknown) => {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = ['type', 'platform', 'title', 'message', 'duration', 'status', 'url', 'timestamp'];
+    const rows = filteredLogs.map((l) =>
+      [
+        l.type,
+        l.platform,
+        l.title,
+        l.message,
+        l.duration ?? '',
+        l.status ?? '',
+        l.url ?? '',
+        new Date(l.timestamp * (l.timestamp < 10000000000 ? 1000 : 1)).toISOString(),
+      ].map(esc).join(',')
+    );
+    const csv = [header.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `monitor-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
@@ -268,6 +297,14 @@ export default function Monitor() {
           icon={Activity}
           right={
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={exportLogsCsv}
+                disabled={filteredLogs.length === 0}
+                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[10px] font-extrabold uppercase text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Download size={13} />
+                Export CSV
+              </button>
               {/* Platform Filters */}
               <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
                 {(['ALL', 'ANDROID', 'WEB'] as const).map((plat) => (
