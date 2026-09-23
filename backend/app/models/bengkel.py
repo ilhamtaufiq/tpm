@@ -302,14 +302,16 @@ class SparePartRevaluation(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     spare_part_id: Mapped[int] = mapped_column(ForeignKey("spare_parts.id"), index=True)
-    pembelian_id: Mapped[int] = mapped_column(
-        ForeignKey("pembelian_spare_parts.id"), index=True
+    pembelian_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("pembelian_spare_parts.id"), index=True, nullable=True
     )
     tanggal: Mapped[date] = mapped_column(Date, index=True)
     qty_at_reval: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     harga_lama: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     harga_baru: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    # ponytail: qty correction = stock count fix, excluded from neraca reval_reserve
+    is_qty_correction: Mapped[bool] = mapped_column(default=False, server_default="0")
 
     # Relationships
     spare_part: Mapped["SparePart"] = relationship(back_populates="revaluations")

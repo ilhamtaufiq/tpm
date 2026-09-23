@@ -430,7 +430,9 @@ class BaseReportService:
         # Revaluation reserve for spare part harga_beli changes (unrealized).
         # Stock is valued at historical cost, so subtract the unrealized reserve
         # from the latest-price stock value: historical = latest − unrealized.
-        total_reval = float(self.db.query(func.sum(SparePartRevaluation.amount)).scalar() or 0)
+        total_reval = float(self.db.query(func.sum(SparePartRevaluation.amount)).filter(
+            SparePartRevaluation.is_qty_correction == False  # noqa: E712 — qty corrections excluded from neraca
+        ).scalar() or 0)
         total_released = float(self.db.query(func.sum(SparePartRevaluationRelease.amount)).scalar() or 0)
         reval_reserve = total_reval - total_released
 
@@ -1062,6 +1064,7 @@ class BaseReportService:
         reval_periode = float(self.db.query(func.sum(SparePartRevaluation.amount)).filter(
             SparePartRevaluation.tanggal >= tanggal_dari,
             SparePartRevaluation.tanggal <= tanggal_sampai,
+            SparePartRevaluation.is_qty_correction == False,  # noqa: E712
         ).scalar() or 0) - reval_release_periode
 
         # Revaluation release is MEMO ONLY — it does NOT adjust profit.
@@ -1089,6 +1092,9 @@ class BaseReportService:
                 "periode": reval_periode,
                 "released_periode": reval_release_periode,
                 "cumulative": total_reval,
+                "qty_correction_total": float(self.db.query(func.sum(SparePartRevaluation.amount)).filter(
+                    SparePartRevaluation.is_qty_correction == True  # noqa: E712
+                ).scalar() or 0),
             },
             "revenue": {
                 "bengkel": float(bengkel_summary["total_penjualan"]),

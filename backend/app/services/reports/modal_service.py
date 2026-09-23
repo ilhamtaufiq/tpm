@@ -259,7 +259,8 @@ class ModalService(BaseReportService):
         # Revaluation reserve (memo info): penyesuaian harga beli spare part yang mempengaruhi ekuitas.
         reval_cumulative = float(data.get("revaluation", {}).get("cumulative", 0))
         reval_unrealized = float(data.get("revaluation", {}).get("reserve", 0))
-        reval_reserve = reval_cumulative - reval_unrealized
+        qty_correction = float(data.get("revaluation", {}).get("qty_correction_total", 0))
+        reval_reserve = (reval_cumulative + qty_correction) - reval_unrealized
 
         # Modal Masuk (Setoran Baru in this period) — impor saldo awal IMP-* bukan setoran.
         setoran_modal = float(self.db.query(func.sum(KasBank.nominal)).filter(
