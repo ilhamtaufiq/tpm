@@ -38,6 +38,7 @@ from app.models.keuangan import (
     KasBank,
 )
 from app.models.system_setting import SystemSetting
+from app.models.monitoring import ClientLog
 
 
 __all__ = [
@@ -72,5 +73,6 @@ __all__ = [
     "PembayaranHutang",
     "KasBank",
     "SystemSetting",
+    "ClientLog",
 ]
 

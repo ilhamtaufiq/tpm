@@ -5,6 +5,8 @@ from collections import deque
 from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.models.monitoring import ClientLog
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -67,15 +69,78 @@ class MetricsCollector:
             "url": url,
             "timestamp": timestamp
         })
+        self._persist_client_log(event_type, title, message, platform, duration, status, stack, url)
+
+    def _persist_client_log(self, event_type, title, message, platform, duration, status, stack, url):
+        """Persist client event to DB so it survives server restart. Best-effort, non-blocking."""
+        try:
+            from app.database.connection import SessionLocal
+            db = SessionLocal()
+            try:
+                db.add(ClientLog(
+                    type=event_type,
+                    title=title,
+                    message=message,
+                    platform=platform,
+                    duration=duration or None,
+                    status=status or None,
+                    stack=stack,
+                    url=url,
+                ))
+                db.commit()
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"[Monitor] Gagal persist client log: {e}")
 
     def get_stats(self):
+        # Merge in-memory (live) with DB-persisted (survives restart), newest first.
+        persisted = []
+        try:
+            from app.database.connection import SessionLocal
+            db = SessionLocal()
+            try:
+                rows = (
+                    db.query(ClientLog)
+                    .order_by(ClientLog.id.desc())
+                    .limit(500)
+                    .all()
+                )
+                persisted = [
+                    {
+                        "id": f"cli_{r.id}",
+                        "type": r.type,
+                        "title": r.title,
+                        "message": r.message,
+                        "platform": r.platform,
+                        "duration": r.duration,
+                        "status": r.status,
+                        "stack": r.stack,
+                        "url": r.url,
+                        "timestamp": r.created_at.timestamp() if r.created_at else 0,
+                    }
+                    for r in rows
+                ]
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"[Monitor] Gagal baca client log DB: {e}")
+
+        live = list(self.client_logs)
+        if persisted:
+            seen = {p["id"] for p in persisted}
+            # Prepend live entries not yet in DB (just arrived, not flushed)
+            merged = [l for l in live if l["id"] not in seen] + persisted
+        else:
+            merged = live
+
         return {
             "total_requests": self.request_count,
             "total_errors": self.error_count,
             "avg_latency": self.total_duration / max(1, self.request_count),
             "recent_history": list(self.history)[-50:], # Last 50 for graph
             "endpoint_breakdown": self.endpoint_stats,
-            "client_logs": list(self.client_logs)
+            "client_logs": merged
         }
 
 metrics = MetricsCollector()

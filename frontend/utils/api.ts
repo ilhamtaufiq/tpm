@@ -119,6 +119,20 @@ api.interceptors.response.use(
             );
         }
         
+        // Network-level failure (timeout, offline, connection refused) — no HTTP status.
+        // updateResponse only logs LAG/ERROR for HTTP responses, so log explicitly here.
+        if (status === 0 && config?._monitorId) {
+            const url = config?.url || '/';
+            const msg = error.code === 'ECONNABORTED'
+                ? `Timeout setelah ${duration}ms`
+                : (error.message || 'Network error');
+            useMonitorStore.getState().logCustomError(
+                `Network Error (${duration}ms)`,
+                `${config?.method?.toUpperCase() || 'GET'} ${url} — ${msg}`,
+                status
+            );
+        }
+
         if (status === 401) {
             const authState = useAuthStore.getState();
             if (authState.isImpersonating && authState.originalToken) {

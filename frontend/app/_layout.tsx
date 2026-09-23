@@ -32,6 +32,7 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { authService } from '../services/auth';
 import { useSecurityStore, SEGMENT_TO_FEATURE } from '../store/useSecurityStore';
+import { useMonitorStore } from '../store/useMonitorStore';
 import { useSecurityStatus } from '../hooks/useSecurityAPI';
 import { vars } from 'nativewind';
 import { useUIStore, findPaletteBorder } from '../store/useUIStore';
@@ -107,6 +108,31 @@ const BackgroundServices = memo(function BackgroundServices() {
     return null;
 });
 
+// Deteksi lag JS thread (event loop stall) via drift interval.
+// Kalau interval 1000ms telat >1000ms → event loop macet (render berat, GC, dsb).
+// Minimal interval antarlog 10s biar tidak spam saat app memang lagi berat terus.
+function useJSLagMonitor() {
+    useEffect(() => {
+        let ticks = 0;
+        let lastFire = 0;
+        const startedAt = Date.now();
+        const timer = setInterval(() => {
+            ticks += 1;
+            const elapsed = Date.now() - startedAt;
+            const lag = elapsed - ticks * 1000;
+            if (lag > 1000 && Date.now() - lastFire > 10000) {
+                lastFire = Date.now();
+                useMonitorStore.getState().logLag(
+                    'JS Thread Lag',
+                    Math.round(lag),
+                    `Event loop tertunda ${Math.round(lag)}ms`
+                );
+            }
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+}
+
 function RootLayoutContent() {
     const [loaded, error] = useFonts({
         Outfit_400Regular,
@@ -117,6 +143,9 @@ function RootLayoutContent() {
 
     const segments = useSegments();
     const [isReady, setIsReady] = useState(false);
+
+    // Monitor event loop lag global (log ke server monitoring).
+    useJSLagMonitor();
 
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
     const hasHydrated = useAuthStore(state => state.hasHydrated);

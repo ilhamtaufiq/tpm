@@ -1,9 +1,9 @@
 import { appAlert } from '../../utils/appAlert';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, ScrollView, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator } from 'react-native';
+import { View, ScrollView, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
-import { Package, AlertTriangle, Coins, BarChart3 } from 'lucide-react-native';
+import { Package, AlertTriangle, Coins, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
@@ -12,6 +12,7 @@ import { formatCurrency } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { isAlwaysReadyStock } from '../../utils/sparepartStock';
+import { useUIStore } from '../../store/useUIStore';
 import {
     ReportPageHeader,
     ReportStatsBento,
@@ -26,6 +27,7 @@ const escapeHtml = (str: any) => String(str ?? "").replace(/&/g,"&amp;").replace
 export default function StockSparepartReportScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const themeColors = useUIStore((s) => s.themeColors);
     const [filterType, setFilterType] = useState<ReportFilterType>('monthly');
     const [date, setDate] = useState(new Date());
     const [search, setSearch] = useState('');
@@ -36,16 +38,21 @@ export default function StockSparepartReportScreen() {
 
     const [stockStats, setStockStats] = useState<any>(null);
     const [parts, setParts] = useState<any[]>([]);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const PAGE_SIZE = 20;
 
     const fetchData = async () => {
         setIsLoading(true);
         try {
             const [stats, partsData] = await Promise.all([
                 bengkelService.getStockValue(),
-                bengkelService.getSpareParts({ search, limit: 100 })
+                bengkelService.getSpareParts({ search, limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE })
             ]);
             setStockStats(stats);
-            setParts(Array.isArray(partsData) ? partsData : partsData?.data || []);
+            const data = Array.isArray(partsData) ? partsData : partsData?.data || [];
+            setParts(data);
+            setTotalPages(partsData?.pages || 1);
         } catch (error) {
             console.error('Error fetching stock report:', error);
         } finally {
@@ -67,7 +74,7 @@ export default function StockSparepartReportScreen() {
 
     useEffect(() => {
         fetchData();
-    }, [search, date, filterType]);
+    }, [search, date, filterType, page]);
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -87,7 +94,7 @@ export default function StockSparepartReportScreen() {
             value: String(stockStats?.total_products || 0),
             icon: Package,
             color: '#3B82F6',
-            bg: 'bg-blue-50',
+            bg: 'bg-blue-500/10',
             sub: 'Item',
         },
         {
@@ -95,7 +102,7 @@ export default function StockSparepartReportScreen() {
             value: String(stockStats?.total_items || 0),
             icon: BarChart3,
             color: '#10B981',
-            bg: 'bg-emerald-50',
+            bg: 'bg-emerald-500/10',
             sub: 'Unit',
         },
         {
@@ -103,7 +110,7 @@ export default function StockSparepartReportScreen() {
             value: formatCurrency(stockStats?.total_value || 0),
             icon: Coins,
             color: '#F59E0B',
-            bg: 'bg-amber-50',
+            bg: 'bg-amber-500/10',
         },
     ], [stockStats]);
 
@@ -207,7 +214,7 @@ export default function StockSparepartReportScreen() {
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
                 }
             >
                 <View className="px-6 pt-4">
@@ -219,7 +226,7 @@ export default function StockSparepartReportScreen() {
                         onPrev={handlePrev}
                         onNext={handleNext}
                         search={search}
-                        onSearchChange={setSearch}
+                        onSearchChange={(v) => { setPage(1); setSearch(v); }}
                         searchPlaceholder="Cari sparepart..."
                         showFilterTabs
                     />
@@ -233,7 +240,7 @@ export default function StockSparepartReportScreen() {
                 <View className="px-6">
                     {isLoading ? (
                         <View className="py-20 items-center">
-                            <ActivityIndicator size="large" color="#023C69" />
+                            <ActivityIndicator size="large" color={themeColors.primary} />
                             <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                         </View>
                     ) : (
@@ -268,10 +275,34 @@ export default function StockSparepartReportScreen() {
                         </View>
                     )}
 
-                    <View className="mt-6 bg-blue-50 p-4 rounded-2xl flex-row border border-blue-100">
+                    {!isLoading && parts.length > 0 && (
+                        <View className="flex-row items-center justify-between mt-4 mb-2">
+                            <Pressable
+                                onPress={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page <= 1}
+                                className="w-10 h-10 bg-surface rounded-full items-center justify-center border border-transparent active:scale-95"
+                                style={{ opacity: page <= 1 ? 0.4 : 1 }}
+                            >
+                                <ChevronLeft size={20} color={themeColors.text} />
+                            </Pressable>
+                            <Typography className="text-textGray text-xs font-bold">
+                                Halaman {page} / {totalPages}
+                            </Typography>
+                            <Pressable
+                                onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page >= totalPages}
+                                className="w-10 h-10 bg-surface rounded-full items-center justify-center border border-transparent active:scale-95"
+                                style={{ opacity: page >= totalPages ? 0.4 : 1 }}
+                            >
+                                <ChevronRight size={20} color={themeColors.text} />
+                            </Pressable>
+                        </View>
+                    )}
+
+                    <View className="mt-6 bg-blue-500/10 p-4 rounded-2xl flex-row border border-blue-500/20">
                         <AlertTriangle size={20} color="#3B82F6" className="mr-3" />
                         <View className="flex-1">
-                            <Typography variant="caption" className="text-blue-800 leading-5">
+                            <Typography variant="caption" className="text-blue-700 leading-5">
                                 Data stok ini adalah posisi inventaris per hari ini. Nilai aset dihitung berdasarkan (Stok × Harga Beli Terakhir).
                             </Typography>
                         </View>

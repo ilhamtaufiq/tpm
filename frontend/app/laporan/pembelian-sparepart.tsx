@@ -1,6 +1,6 @@
 import { appAlert } from '../../utils/appAlert';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, Modal, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -17,6 +17,8 @@ import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useSheetChrome } from '../../utils/themeStyles';
+import { useUIStore } from '../../store/useUIStore';
+import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 import {
     ReportPageHeader,
     ReportStatsBento,
@@ -32,6 +34,7 @@ export default function PembelianSparepartReportScreen() {
     const chrome = useSheetChrome({ borderRadius: 32 });
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const themeColors = useUIStore((s) => s.themeColors);
     const [filterType, setFilterType] = useState<ReportFilterType>('monthly');
     const [date, setDate] = useState(new Date());
     const [search, setSearch] = useState('');
@@ -48,6 +51,7 @@ export default function PembelianSparepartReportScreen() {
     const snapPoints = useMemo(() => ['85%', '92%'], []);
     const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [detailModalOpen, setDetailModalOpen] = useState(false);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -124,7 +128,11 @@ export default function PembelianSparepartReportScreen() {
 
     const handlePressTransaction = async (item: any) => {
         setSelectedTransaction(item);
-        bottomSheetModalRef.current?.present();
+        if (Platform.OS === 'web') {
+            setDetailModalOpen(true);
+        } else {
+            bottomSheetModalRef.current?.present();
+        }
         setDetailLoading(true);
         try {
             const detail = await bengkelService.getDetailPembelianPart(item.id);
@@ -137,17 +145,21 @@ export default function PembelianSparepartReportScreen() {
     };
 
     const handleCloseModal = () => {
-        bottomSheetModalRef.current?.dismiss();
+        if (Platform.OS === 'web') {
+            setDetailModalOpen(false);
+        } else {
+            bottomSheetModalRef.current?.dismiss();
+        }
     };
 
     const stats = useMemo(() => [
-        { label: 'Total Nilai', value: formatCurrency(summary?.total_nilai || 0), icon: TrendingUp, color: '#10B981', bg: 'bg-emerald-50' },
-        { label: 'Nota', value: String(summary?.total_transaksi || 0), icon: ClipboardList, color: '#3B82F6', bg: 'bg-blue-50', sub: 'Transaksi' },
+        { label: 'Total Nilai', value: formatCurrency(summary?.total_nilai || 0), icon: TrendingUp, color: '#10B981', bg: 'bg-emerald-500/10' },
+        { label: 'Nota', value: String(summary?.total_transaksi || 0), icon: ClipboardList, color: '#3B82F6', bg: 'bg-blue-500/10', sub: 'Transaksi' },
     ], [summary]);
 
     const secondaryStats = useMemo(() => [
-        { label: 'Hutang', value: formatCurrency(summary?.belum_lunas_nilai || 0), icon: Clock, color: '#EF4444', bg: 'bg-red-50', sub: 'Unpaid' },
-        { label: 'Lunas', value: formatCurrency((summary?.total_nilai || 0) - (summary?.belum_lunas_nilai || 0)), icon: ShoppingCart, color: '#10B981', bg: 'bg-emerald-50', sub: 'Paid' },
+        { label: 'Hutang', value: formatCurrency(summary?.belum_lunas_nilai || 0), icon: Clock, color: '#EF4444', bg: 'bg-red-500/10', sub: 'Unpaid' },
+        { label: 'Lunas', value: formatCurrency((summary?.total_nilai || 0) - (summary?.belum_lunas_nilai || 0)), icon: ShoppingCart, color: '#10B981', bg: 'bg-emerald-500/10', sub: 'Paid' },
     ], [summary]);
 
     const buildExportHtml = useCallback(() => {
@@ -230,6 +242,133 @@ export default function PembelianSparepartReportScreen() {
         }
     }, [summary, buildExportHtml, getFormattedDate]);
 
+    const renderDetailBody = (scroll: 'sheet' | 'plain') => {
+        if (detailLoading) {
+            return (
+                <View className="flex-1 items-center justify-center py-20">
+                    <ActivityIndicator size="large" color={themeColors.primary} />
+                    <Typography className="mt-4 text-textGray">Memuat detail...</Typography>
+                </View>
+            );
+        }
+        if (!selectedTransaction) return null;
+
+        const content = (
+            <>
+                {/* Summary Card */}
+                <View className="bg-background p-5 rounded-2xl mb-6 border border-transparent">
+                    <View className="flex-row justify-between mb-4">
+                        <View>
+                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Supplier</Typography>
+                            <Typography weight="bold" className="text-lg">{selectedTransaction.supplier?.nama || selectedTransaction.supplier_nama || 'Supplier Umum'}</Typography>
+                            <Typography className="text-textGray text-xs font-semibold">INV: {selectedTransaction.nomor_faktur || '-'}</Typography>
+                        </View>
+                        <View className="items-end">
+                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Tanggal</Typography>
+                            <Typography weight="bold">{format(new Date(selectedTransaction.tanggal), 'dd MMM yyyy', { locale: localeID })}</Typography>
+                        </View>
+                    </View>
+
+                    <View className="flex-row justify-between mb-2">
+                        <View>
+                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Status Bayar</Typography>
+                            <Badge
+                                variant={selectedTransaction.status_bayar?.toUpperCase() === 'LUNAS' ? 'success' : 'error'}
+                                label={selectedTransaction.status_bayar}
+                            />
+                        </View>
+                        <View className="items-end">
+                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">No. Transaksi</Typography>
+                            <Typography weight="medium" className="text-text">{selectedTransaction.nomor_transaksi}</Typography>
+                        </View>
+                    </View>
+
+                    {selectedTransaction.catatan && (
+                        <View className="mt-4 pt-4 border-t border-border">
+                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Keterangan</Typography>
+                            <Typography className="text-textGray italic text-sm">"{selectedTransaction.catatan}"</Typography>
+                        </View>
+                    )}
+                </View>
+
+                {/* Items Section */}
+                <View className="mb-6">
+                    <View className="flex-row items-center mb-3">
+                        <View className="w-6 h-6 bg-blue-500/10 rounded-md items-center justify-center mr-2">
+                            <Package size={14} color="#3B82F6" />
+                        </View>
+                        <Typography variant="body1" weight="bold">Daftar Barang (Sparepart)</Typography>
+                    </View>
+                    {selectedTransaction.detail && selectedTransaction.detail.length > 0 ? (
+                        selectedTransaction.detail.map((item: any, index: number) => (
+                            <View key={`part-${index}`} className="flex-row justify-between items-start py-3 border-b border-transparent last:border-0">
+                                <View className="flex-1 pr-4">
+                                    <Typography weight="bold" className="text-text text-sm">
+                                        {item.spare_part?.nama || item.spare_part_nama || 'Item'}
+                                    </Typography>
+                                    <Typography variant="caption" className="text-textGray">
+                                        {item.qty} {item.spare_part?.satuan || 'pcs'} x {formatCurrency(item.harga_satuan)}
+                                    </Typography>
+                                </View>
+                                <Typography weight="bold" className="text-text text-sm">
+                                    {formatCurrency(item.subtotal || (item.qty * item.harga_satuan))}
+                                </Typography>
+                            </View>
+                        ))
+                    ) : (
+                        <Typography className="text-textGray italic text-sm ml-8">Tidak ada rincian barang</Typography>
+                    )}
+                </View>
+
+                {/* Financial Summary */}
+                <View className="bg-primary/5 p-5 rounded-2xl border border-primary/10 mb-6">
+                    <View className="space-y-2 mb-4">
+                        <View className="flex-row justify-between">
+                            <Typography className="text-textGray text-xs">Total Nilai</Typography>
+                            <Typography weight="bold" className="text-text text-sm">{formatCurrency(selectedTransaction.total || 0)}</Typography>
+                        </View>
+                        {Number(selectedTransaction.diskon) > 0 && (
+                            <View className="flex-row justify-between">
+                                <Typography className="text-red-500 text-xs">Potongan/Diskon</Typography>
+                                <Typography weight="bold" className="text-red-500 text-sm">-{formatCurrency(selectedTransaction.diskon)}</Typography>
+                            </View>
+                        )}
+                    </View>
+                    <View className="flex-row justify-between items-center pt-3 border-t border-primary/10">
+                        <Typography weight="bold" className="text-lg text-primary">Grand Total</Typography>
+                        <Typography variant="h2" weight="bold" className="text-primary text-2xl">
+                            {formatCurrency(selectedTransaction.grand_total || 0)}
+                        </Typography>
+                    </View>
+                    {selectedTransaction.status_bayar?.toUpperCase() !== 'LUNAS' && (
+                        <View className="mt-3 bg-red-500/10 p-2 rounded-lg items-center">
+                            <Typography className="text-red-600 text-[10px] font-bold uppercase tracking-widest">
+                                Menunggu Pelunasan (Hutang)
+                            </Typography>
+                        </View>
+                    )}
+                </View>
+                <Pressable
+                    onPress={() => {
+                        handleCloseModal();
+                        router.push({ pathname: '/bengkel/purchase', params: { id: String(selectedTransaction.id) } } as any);
+                    }}
+                    className="bg-amber-500 py-4 rounded-2xl items-center justify-center mb-6"
+                >
+                    <Typography weight="bold" className="text-white uppercase tracking-widest text-xs">
+                        Edit Pembelian
+                    </Typography>
+                </Pressable>
+                <View className="h-10" />
+            </>
+        );
+
+        if (scroll === 'sheet') {
+            return <BottomSheetScrollView showsVerticalScrollIndicator={false}>{content}</BottomSheetScrollView>;
+        }
+        return content;
+    };
+
     return (
         <SafeAreaView className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
@@ -247,7 +386,7 @@ export default function PembelianSparepartReportScreen() {
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
                 }
             >
                 <View className="px-6 pt-4">
@@ -273,7 +412,7 @@ export default function PembelianSparepartReportScreen() {
 
                 {isLoading ? (
                     <View className="py-20 items-center">
-                        <ActivityIndicator size="large" color="#023C69" />
+                        <ActivityIndicator size="large" color={themeColors.primary} />
                         <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                     </View>
                 ) : purchases.length === 0 ? (
@@ -292,7 +431,7 @@ export default function PembelianSparepartReportScreen() {
                             className="bg-surface p-5 rounded-[32px] mb-6 border border-transparent shadow-sm"
                         >
                             <View className="flex-row items-center mb-4">
-                                <View className="w-14 h-14 bg-blue-50 rounded-2xl items-center justify-center mr-4">
+                                <View className="w-14 h-14 bg-blue-500/10 rounded-2xl items-center justify-center mr-4">
                                     <Package size={24} color="#3B82F6" />
                                 </View>
                                 <View className="flex-1">
@@ -300,7 +439,7 @@ export default function PembelianSparepartReportScreen() {
                                         <Typography variant="body1" weight="bold" className="text-textMain">
                                             {item.supplier?.nama || item.supplier_nama || 'Supplier Umum'}
                                         </Typography>
-                                        <View className={`px-2.5 py-1 rounded-full ${item.status_bayar?.toUpperCase() === 'LUNAS' ? 'bg-emerald-50' : 'bg-red-50'}`}>
+                                        <View className={`px-2.5 py-1 rounded-full ${item.status_bayar?.toUpperCase() === 'LUNAS' ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
                                             <Typography className={`text-[8px] font-bold uppercase ${item.status_bayar?.toUpperCase() === 'LUNAS' ? 'text-emerald-600' : 'text-red-600'}`}>
                                                 {item.status_bayar}
                                             </Typography>
@@ -318,7 +457,7 @@ export default function PembelianSparepartReportScreen() {
                                         <ClipboardList size={12} color="#9CA3AF" className="mr-1.5" />
                                         <Typography variant="caption" className="text-textGray font-medium">Items: {item.detail?.length || 0} Barang</Typography>
                                     </View>
-                                    <Typography variant="caption" className="text-primary/60 font-bold uppercase text-[9px] tracking-widest">
+                                    <Typography variant="caption" className="text-primary font-bold uppercase text-[9px] tracking-widest">
                                         INV: {item.nomor_faktur || '-'}
                                     </Typography>
                                 </View>
@@ -337,145 +476,55 @@ export default function PembelianSparepartReportScreen() {
             </ScrollView>
 
             {/* Detail Modal */}
-            <BottomSheetModal
-                ref={bottomSheetModalRef}
-                index={0}
-                snapPoints={snapPoints}
-                enablePanDownToClose={true}
-                topInset={insets.top}
-                backdropComponent={({ style }) => (
-                    <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
-                )}
-                backgroundStyle={chrome.backgroundStyle}
-    handleIndicatorStyle={chrome.handleIndicatorStyle}
-            >
-                <BottomSheetView className="flex-1 px-6 pb-6">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <View>
-                            <Typography variant="h2" weight="bold">Detail Pembelian</Typography>
-                            <Typography className="text-textGray text-xs mt-1">Stok & Jasa Angkut Transaksi</Typography>
-                        </View>
-                        <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                            <X size={16} color="#4B5563" />
-                        </Pressable>
+            {Platform.OS === 'web' ? (
+                <Modal visible={detailModalOpen} transparent animationType="slide" onRequestClose={handleCloseModal}>
+                    <View className="flex-1 justify-end bg-black/50">
+                        <Pressable className="absolute inset-0" onPress={handleCloseModal} />
+                        <BoundedSheetPanel maxHeightRatio={0.88} bottomInset={insets.bottom} style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+                            <View className="flex-row justify-between items-center mb-6">
+                                <View>
+                                    <Typography variant="h2" weight="bold">Detail Pembelian</Typography>
+                                    <Typography className="text-textGray text-xs mt-1">Stok & Jasa Angkut Transaksi</Typography>
+                                </View>
+                                <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-background rounded-full items-center justify-center">
+                                    <X size={16} color={themeColors.textGray} />
+                                </Pressable>
+                            </View>
+
+                            <BoundedSheetScrollView maxHeightRatio={0.88} headerReserve={72} bottomInset={insets.bottom}>
+                                {renderDetailBody('plain')}
+                            </BoundedSheetScrollView>
+                        </BoundedSheetPanel>
                     </View>
-
-                    {detailLoading ? (
-                        <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="#023C69" />
-                            <Typography className="mt-4 text-textGray">Memuat detail...</Typography>
-                        </View>
-                    ) : selectedTransaction ? (
-                        <BottomSheetScrollView showsVerticalScrollIndicator={false}>
-                            {/* Summary Card */}
-                            <View className="bg-background p-5 rounded-2xl mb-6 border border-transparent">
-                                <View className="flex-row justify-between mb-4">
-                                    <View>
-                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Supplier</Typography>
-                                        <Typography weight="bold" className="text-lg">{selectedTransaction.supplier?.nama || selectedTransaction.supplier_nama || 'Supplier Umum'}</Typography>
-                                        <Typography className="text-textGray text-xs font-semibold">INV: {selectedTransaction.nomor_faktur || '-'}</Typography>
-                                    </View>
-                                    <View className="items-end">
-                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Tanggal</Typography>
-                                        <Typography weight="bold">{format(new Date(selectedTransaction.tanggal), 'dd MMM yyyy', { locale: localeID })}</Typography>
-                                    </View>
-                                </View>
-
-                                <View className="flex-row justify-between mb-2">
-                                    <View>
-                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Status Bayar</Typography>
-                                        <Badge
-                                            variant={selectedTransaction.status_bayar?.toUpperCase() === 'LUNAS' ? 'success' : 'error'}
-                                            label={selectedTransaction.status_bayar}
-                                        />
-                                    </View>
-                                    <View className="items-end">
-                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">No. Transaksi</Typography>
-                                        <Typography weight="medium" className="text-text">{selectedTransaction.nomor_transaksi}</Typography>
-                                    </View>
-                                </View>
-
-                                {selectedTransaction.catatan && (
-                                    <View className="mt-4 pt-4 border-t border-gray-200/50">
-                                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Keterangan</Typography>
-                                        <Typography className="text-textGray italic text-sm">"{selectedTransaction.catatan}"</Typography>
-                                    </View>
-                                )}
+                </Modal>
+            ) : (
+                <BottomSheetModal
+                    ref={bottomSheetModalRef}
+                    index={0}
+                    snapPoints={snapPoints}
+                    enablePanDownToClose={true}
+                    topInset={insets.top}
+                    backdropComponent={({ style }) => (
+                        <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
+                    )}
+                    backgroundStyle={chrome.backgroundStyle}
+                    handleIndicatorStyle={chrome.handleIndicatorStyle}
+                >
+                    <BottomSheetView className="flex-1 px-6 pb-6">
+                        <View className="flex-row justify-between items-center mb-6">
+                            <View>
+                                <Typography variant="h2" weight="bold">Detail Pembelian</Typography>
+                                <Typography className="text-textGray text-xs mt-1">Stok & Jasa Angkut Transaksi</Typography>
                             </View>
-
-                            {/* Items Section */}
-                            <View className="mb-6">
-                                <View className="flex-row items-center mb-3">
-                                    <View className="w-6 h-6 bg-blue-100 rounded-md items-center justify-center mr-2">
-                                        <Package size={14} color="#3B82F6" />
-                                    </View>
-                                    <Typography variant="body1" weight="bold">Daftar Barang (Sparepart)</Typography>
-                                </View>
-                                {selectedTransaction.detail && selectedTransaction.detail.length > 0 ? (
-                                    selectedTransaction.detail.map((item: any, index: number) => (
-                                        <View key={`part-${index}`} className="flex-row justify-between items-start py-3 border-b border-transparent last:border-0">
-                                            <View className="flex-1 pr-4">
-                                                <Typography weight="bold" className="text-text text-sm">
-                                                    {item.spare_part?.nama || item.spare_part_nama || 'Item'}
-                                                </Typography>
-                                                <Typography variant="caption" className="text-textGray">
-                                                    {item.qty} {item.spare_part?.satuan || 'pcs'} x {formatCurrency(item.harga_satuan)}
-                                                </Typography>
-                                            </View>
-                                            <Typography weight="bold" className="text-text text-sm">
-                                                {formatCurrency(item.subtotal || (item.qty * item.harga_satuan))}
-                                            </Typography>
-                                        </View>
-                                    ))
-                                ) : (
-                                    <Typography className="text-textGray italic text-sm ml-8">Tidak ada rincian barang</Typography>
-                                )}
-                            </View>
-
-                            {/* Financial Summary */}
-                            <View className="bg-primary/5 p-5 rounded-2xl border border-primary/10 mb-6">
-                                <View className="space-y-2 mb-4">
-                                    <View className="flex-row justify-between">
-                                        <Typography className="text-textGray text-xs">Total Nilai</Typography>
-                                        <Typography weight="bold" className="text-text text-sm">{formatCurrency(selectedTransaction.total || 0)}</Typography>
-                                    </View>
-                                    {Number(selectedTransaction.diskon) > 0 && (
-                                        <View className="flex-row justify-between">
-                                            <Typography className="text-red-500 text-xs">Potongan/Diskon</Typography>
-                                            <Typography weight="bold" className="text-red-500 text-sm">-{formatCurrency(selectedTransaction.diskon)}</Typography>
-                                        </View>
-                                    )}
-                                </View>
-                                <View className="flex-row justify-between items-center pt-3 border-t border-primary/10">
-                                    <Typography weight="bold" className="text-lg text-primary">Grand Total</Typography>
-                                    <Typography variant="h2" weight="bold" className="text-primary text-2xl">
-                                        {formatCurrency(selectedTransaction.grand_total || 0)}
-                                    </Typography>
-                                </View>
-                                {selectedTransaction.status_bayar?.toUpperCase() !== 'LUNAS' && (
-                                    <View className="mt-3 bg-red-500/10 p-2 rounded-lg items-center">
-                                        <Typography className="text-red-600 text-[10px] font-bold uppercase tracking-widest">
-                                            Menunggu Pelunasan (Hutang)
-                                        </Typography>
-                                    </View>
-                                )}
-                            </View>
-                            <Pressable
-                                onPress={() => {
-                                    handleCloseModal();
-                                    router.push({ pathname: '/bengkel/purchase', params: { id: String(selectedTransaction.id) } } as any);
-                                }}
-                                className="bg-amber-500 py-4 rounded-2xl items-center justify-center mb-6"
-                            >
-                                <Typography weight="bold" className="text-white uppercase tracking-widest text-xs">
-                                    Edit Pembelian
-                                </Typography>
+                            <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-background rounded-full items-center justify-center">
+                                <X size={16} color={themeColors.textGray} />
                             </Pressable>
-                            <View className="h-10" />
-                        </BottomSheetScrollView>
-                    ) : null}
-                </BottomSheetView>
-            </BottomSheetModal>
+                        </View>
+
+                        {renderDetailBody('sheet')}
+                    </BottomSheetView>
+                </BottomSheetModal>
+            )}
 
             <ReportExportSheet
                 visible={showExportMenu}

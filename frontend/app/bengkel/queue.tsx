@@ -57,6 +57,7 @@ import {
     isBengkelTransactionVoided,
 } from '../../utils/bengkelTransaction';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { useUIStore } from '../../store/useUIStore';
 import { printReceipt } from '../../utils/printReceipt';
 import { buildBengkelPrintData } from '../../utils/buildPrintReceiptData';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
@@ -69,6 +70,7 @@ import { getErrorMessage } from '../../utils/error';
 export default function QueueScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const themeColors = useUIStore((s) => s.themeColors);
 
     // Filters and search state
     const [date, setDate] = useState(new Date());
@@ -572,7 +574,7 @@ export default function QueueScreen() {
         <View>
             <View className="flex-row gap-3 mb-4">
                 {[
-                    { label: 'Total Antrian', value: formatNumber(dayStats.total), icon: ListOrdered, color: '#023C69', bg: 'bg-primary/5' },
+                    { label: 'Total Antrian', value: formatNumber(dayStats.total), icon: ListOrdered, color: themeColors.primary, bg: 'bg-primary/5' },
                     { label: 'Omzet', value: formatCurrency(dayStats.omzet), icon: TrendingUp, color: '#059669', bg: 'bg-emerald-50' },
                     { label: 'Piutang', value: formatCurrency(dayStats.piutang), icon: Banknote, color: '#D97706', bg: 'bg-amber-50', sub: `${dayStats.piutangCount} order` },
                 ].map((stat) => {
@@ -617,14 +619,14 @@ export default function QueueScreen() {
                         onPress={handlePrev}
                         className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent active:scale-95"
                     >
-                        <ChevronLeft size={20} color="#1C1C1C" />
+                        <ChevronLeft size={20} color={themeColors.text} />
                     </Pressable>
 
                     <Pressable
                         onPress={() => setDatePickerModalOpen(true)}
                         className="items-center flex-1 mx-2 py-1 rounded-xl active:bg-background flex-row justify-center"
                     >
-                        <Calendar size={16} color="#023C69" />
+                        <Calendar size={16} color={themeColors.primary} />
                         <Typography variant="body2" weight="bold" className="text-textMain ml-2">
                             {getFormattedDate()}
                         </Typography>
@@ -635,7 +637,7 @@ export default function QueueScreen() {
                         onPress={handleNext}
                         className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent active:scale-95"
                     >
-                        <ChevronRight size={20} color="#1C1C1C" />
+                        <ChevronRight size={20} color={themeColors.text} />
                     </Pressable>
                 </View>
             </View>
@@ -782,7 +784,7 @@ export default function QueueScreen() {
                     contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}
                     ListHeaderComponent={listHeader}
                     refreshControl={
-                        <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                        <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
                     }
                     renderItem={({ item }) => renderQueueCard(item)}
                     ListEmptyComponent={
@@ -822,7 +824,7 @@ export default function QueueScreen() {
                                     </Typography>
                                 </View>
                                 <Pressable onPress={() => setDetailModalOpen(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                                    <X size={18} color="#4B5563" />
+                                    <X size={18} color={themeColors.textGray} />
                                 </Pressable>
                             </View>
 
@@ -852,7 +854,7 @@ export default function QueueScreen() {
                                 <Card variant="outlined" className="p-4 border-transparent mb-4 bg-surface/60 rounded-2xl">
                                     <View className="flex-row items-center justify-between mb-3">
                                         <View className="flex-row items-center">
-                                            <Receipt size={15} color="#023C69" />
+                                            <Receipt size={15} color={themeColors.primary} />
                                             <Typography variant="caption" weight="bold" className="ml-2 text-primary uppercase tracking-widest">Rincian Item</Typography>
                                         </View>
                                         <Typography variant="caption" className="text-textGray">
@@ -984,7 +986,7 @@ export default function QueueScreen() {
                                     return (
                                         <Card variant="outlined" className="p-4 border-transparent mb-4 bg-surface rounded-2xl">
                                             <View className="flex-row items-center mb-3">
-                                                <Clock size={15} color="#023C69" />
+                                                <Clock size={15} color={themeColors.primary} />
                                                 <Typography variant="caption" weight="bold" className="ml-2 text-primary uppercase tracking-widest">Info Terakhir</Typography>
                                             </View>
                                             {rows.map((row, idx) => {
@@ -1210,7 +1212,7 @@ export default function QueueScreen() {
                         <View className="flex-row justify-between items-center mb-4">
                             <Typography variant="h3" weight="bold">Filter Tanggal & Periode</Typography>
                             <Pressable onPress={() => setDatePickerModalOpen(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                                <X size={18} color="#4B5563" />
+                                <X size={18} color={themeColors.textGray} />
                             </Pressable>
                         </View>
 

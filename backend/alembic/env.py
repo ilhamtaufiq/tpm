@@ -41,6 +41,7 @@ from app.models import (
     PiutangUsaha,
     PembayaranPiutang,
     KasBank,
+    ClientLog,
 )
 
 # this is the Alembic Config object, which provides
