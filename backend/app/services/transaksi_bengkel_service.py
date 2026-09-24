@@ -60,9 +60,16 @@ class TransaksiBengkelService:
         amount released = unreleased amount * qty / remaining qty, capped at qty.
         """
         remaining = qty
+        # Koreksi qty dikecualikan dari `reval_reserve` di neraca (lihat base.py), jadi
+        # tidak ada reserve yang perlu direalisasi. Kalau ikut dirilis di sini, amount-nya
+        # mengurangi `total_released`, reserve jadi over-subtracted, dan persediaan
+        # sparepart kurang sebesar porsi qty-correction dari transaksi ini.
         revaluations = (
             self.db.query(SparePartRevaluation)
-            .filter(SparePartRevaluation.spare_part_id == spare_part_id)
+            .filter(
+                SparePartRevaluation.spare_part_id == spare_part_id,
+                SparePartRevaluation.is_qty_correction == False,  # noqa: E712
+            )
             .order_by(SparePartRevaluation.tanggal.asc(), SparePartRevaluation.id.asc())
             .all()
         )
