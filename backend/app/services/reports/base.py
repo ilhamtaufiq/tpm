@@ -430,10 +430,20 @@ class BaseReportService:
         # Revaluation reserve for spare part harga_beli changes (unrealized).
         # Stock is valued at historical cost, so subtract the unrealized reserve
         # from the latest-price stock value: historical = latest − unrealized.
+        # Reserve bersifat as-of-date: reval & release difilter `<= tanggal_sampai`,
+        # sejalan dengan snapshot di bawah (`current_stock_val`, `purchases_after`,
+        # `usage_after`). Tanpa filter, reserve statis di semua tanggal — angka hari
+        # ini dipakai untuk laporan mundur. Terukur pada data 2026-09: reserve lama
+        # -625 di semua tanggal; sesudah filter 0 @14 Sep, -375 @16 Sep, 14.625
+        # @17 Sep, -625 @18 Sep dst. Selisih neraca tetap 0 di kedua versi —
+        # ini soal akurasi nilai persediaan historis, bukan penutup selisih.
         total_reval = float(self.db.query(func.sum(SparePartRevaluation.amount)).filter(
+            SparePartRevaluation.tanggal <= tanggal_sampai,
             SparePartRevaluation.is_qty_correction == False  # noqa: E712 — qty corrections excluded from neraca
         ).scalar() or 0)
-        total_released = float(self.db.query(func.sum(SparePartRevaluationRelease.amount)).scalar() or 0)
+        total_released = float(self.db.query(func.sum(SparePartRevaluationRelease.amount)).filter(
+            SparePartRevaluationRelease.tanggal <= tanggal_sampai,
+        ).scalar() or 0)
         reval_reserve = total_reval - total_released
 
         part_stock = max(0, current_stock_val - purchases_after + usage_after - reval_reserve)
