@@ -179,6 +179,39 @@ export default function BengkelTransaksiScreen() {
 
     const parts = useMemo(() => partsData?.pages.flatMap((page: any) => page.data || []) || [], [partsData]);
     const services = jasaData?.data || [];
+
+    // Indeks search: haystack/nama/kode lowercase dihitung SEKALI per perubahan
+    // data, bukan per keystroke/toggle. Sebelumnya tiap render membangun template
+    // string 8 field + split untuk semua rows di dalam filter/sort.
+    const partSearchIndex = useMemo(() => {
+        const map = new Map<number, { hay: string; name: string; code: string; words: string[] }>();
+        for (const p of parts) {
+            const id = Number(p?.id);
+            if (!id) continue;
+            const name = String(p.nama || '').toLowerCase();
+            map.set(id, {
+                hay: `${p.nama || ''} ${p.kode || ''} ${p.kode_part || ''} ${p.barcode || ''} ${p.kategori || ''} ${p.merek || ''} ${p.lokasi_rak || ''} ${p.catatan || ''}`.toLowerCase(),
+                name,
+                code: String(p.kode || '').toLowerCase(),
+                words: name.split(/\s+/),
+            });
+        }
+        return map;
+    }, [parts]);
+
+    // Servis: haystack + urutan alfabet dihitung sekali per perubahan data.
+    const serviceSearchIndex = useMemo(() => {
+        const map = new Map<string, string>();
+        for (const s of services) {
+            map.set(String(s?.id), `${s?.nama || ''} ${s?.kategori || ''} ${s?.deskripsi || ''}`.toLowerCase());
+        }
+        return map;
+    }, [services]);
+
+    const servicesAlpha = useMemo(
+        () => [...services].sort((a: any, b: any) => (a.nama || '').localeCompare(b.nama || '')),
+        [services],
+    );
     const armadaList = Array.isArray(armadaData)
         ? armadaData
         : Array.isArray(armadaData?.data)
@@ -423,19 +456,17 @@ export default function BengkelTransaksiScreen() {
     const visibleParts = useMemo(() => {
         const q = debouncedPartSearch.trim().toLowerCase();
         if (!q) {
-            return [...parts].sort((a, b) => {
-                const aSelected = Boolean(selectedParts[a.id]);
-                const bSelected = Boolean(selectedParts[b.id]);
-                if (aSelected && !bSelected) return -1;
-                if (!aSelected && bSelected) return 1;
-                return 0;
-            });
+            // Hasil identik dengan sort stabil lama (selected dulu, urutan server utuh):
+            // partisi stabil O(n) tanpa komparator.
+            const sel: any[] = [];
+            const rest: any[] = [];
+            for (const p of parts) (selectedParts[p.id] ? sel : rest).push(p);
+            return [...sel, ...rest];
         }
 
         const filtered = parts.filter((p: any) => {
             if (selectedParts[p.id]) return true;
-            const searchTarget = `${p.nama || ''} ${p.kode || ''} ${p.kode_part || ''} ${p.barcode || ''} ${p.kategori || ''} ${p.merek || ''} ${p.lokasi_rak || ''} ${p.catatan || ''}`.toLowerCase();
-            return searchTarget.includes(q);
+            return (partSearchIndex.get(Number(p.id))?.hay || '').includes(q);
         });
 
         return filtered.sort((a, b) => {
@@ -444,19 +475,21 @@ export default function BengkelTransaksiScreen() {
             if (aSelected && !bSelected) return -1;
             if (!aSelected && bSelected) return 1;
 
-            const nameA = (a.nama || '').toLowerCase();
-            const nameB = (b.nama || '').toLowerCase();
-            const codeA = (a.kode || '').toLowerCase();
-            const codeB = (b.kode || '').toLowerCase();
+            const ia = partSearchIndex.get(Number(a.id));
+            const ib = partSearchIndex.get(Number(b.id));
+            const nameA = ia?.name ?? String(a.nama || '').toLowerCase();
+            const nameB = ib?.name ?? String(b.nama || '').toLowerCase();
+            const codeA = ia?.code ?? String(a.kode || '').toLowerCase();
+            const codeB = ib?.code ?? String(b.kode || '').toLowerCase();
 
             // Prioritas awalan kata/kode (r -> ru -> dst)
-            const scoreA = nameA.startsWith(q) || codeA.startsWith(q) ? 3 : nameA.split(/\s+/).some((w: string) => w.startsWith(q)) ? 2 : nameA.includes(q) || codeA.includes(q) ? 1 : 0;
-            const scoreB = nameB.startsWith(q) || codeB.startsWith(q) ? 3 : nameB.split(/\s+/).some((w: string) => w.startsWith(q)) ? 2 : nameB.includes(q) || codeB.includes(q) ? 1 : 0;
+            const scoreA = nameA.startsWith(q) || codeA.startsWith(q) ? 3 : (ia?.words ?? nameA.split(/\s+/)).some((w: string) => w.startsWith(q)) ? 2 : nameA.includes(q) || codeA.includes(q) ? 1 : 0;
+            const scoreB = nameB.startsWith(q) || codeB.startsWith(q) ? 3 : (ib?.words ?? nameB.split(/\s+/)).some((w: string) => w.startsWith(q)) ? 2 : nameB.includes(q) || codeB.includes(q) ? 1 : 0;
 
             if (scoreA !== scoreB) return scoreB - scoreA;
             return nameA.localeCompare(nameB);
         });
-    }, [parts, debouncedPartSearch, selectedParts]);
+    }, [parts, partSearchIndex, debouncedPartSearch, selectedParts]);
     const visibleServices = serviceSearch.trim() || showServiceCatalog ? filteredServices : filteredServices.slice(0, 10);
     const getEditablePaymentStatus = (item: any) => {
         const itemKategori = String(item?.kategori || kategori || 'umum').toLowerCase();
