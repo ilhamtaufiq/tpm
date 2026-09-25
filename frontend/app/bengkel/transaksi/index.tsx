@@ -516,6 +516,21 @@ export default function BengkelTransaksiScreen() {
             return !isBengkelTransactionLocked(item) && !isBengkelTransactionVoided(item);
         });
     }, [editTransactionId, existingTransactionsData]);
+    // Label tanggal per row dihitung sekali per perubahan list — toLocaleDateString
+    // di Hermes mahal jika dipanggil per row per render.
+    const existingDateLabelById = useMemo(() => {
+        const map = new Map<number, string>();
+        for (const item of existingTransactions) {
+            try {
+                map.set(Number(item.id), item.tanggal
+                    ? new Date(item.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+                    : '-');
+            } catch {
+                map.set(Number(item.id), '-');
+            }
+        }
+        return map;
+    }, [existingTransactions]);
     const openCustomerTransactions = useMemo(() => {
         const rows = openCustomerTransactionsData?.data || [];
         const query = debouncedCustomerTransactionSearch.trim().toLowerCase();
@@ -2020,7 +2035,7 @@ export default function BengkelTransaksiScreen() {
                                         : 'text-amber-700';
                                 const customer = item.customer_nama || item.nama_customer || 'Guest';
                                 const plate = item.nomor_plat || item.plat_nomor || '-';
-                                const dateLabel = item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+                                const dateLabel = existingDateLabelById.get(Number(item.id)) ?? '-';
 
                                 return (
                                     <Pressable key={`existing-${item.id}`} onPress={() => handleSelectExistingTransaction(item)} className="mb-3 p-3 rounded-2xl border bg-surface border-transparent">

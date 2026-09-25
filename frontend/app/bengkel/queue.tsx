@@ -259,7 +259,7 @@ export default function QueueScreen() {
             const matchesWorkStatus = queueWorkStatusFilter === 'ALL'
                 ? workStatus !== 'batal'
                 : workStatus === queueWorkStatusFilter;
-            const q = queueSearchQuery.trim().toLowerCase();
+            const q = debouncedSearch.toLowerCase();
             const matchesSearch = !q || [
                 item.nomor_transaksi,
                 item.nomor_plat,
@@ -269,7 +269,24 @@ export default function QueueScreen() {
             ].some((value) => String(value || '').toLowerCase().includes(q));
             return matchesPayment && matchesWorkStatus && matchesSearch;
         });
-    }, [getQueuePaymentStatus, queuePaymentFilter, queueSearchQuery, queueWorkStatusFilter, todayQueue]);
+    }, [getQueuePaymentStatus, queuePaymentFilter, debouncedSearch, queueWorkStatusFilter, todayQueue]);
+
+    // Waktu relatif per row dihitung sekali per perubahan list — bukan per render.
+    // formatDistanceToNow + locale di Hermes mahal; dipanggil per row per render
+    // sebelumnya (tiap ketik search / buka-tutup modal = 100x hitung ulang).
+    const timeAgoMap = useMemo(() => {
+        const map = new Map<number, string>();
+        for (const item of queueSheetItems) {
+            try {
+                map.set(Number(item.id), item.created_at
+                    ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID })
+                    : '-');
+            } catch {
+                map.set(Number(item.id), '-');
+            }
+        }
+        return map;
+    }, [queueSheetItems]);
 
     const handlePrev = () => {
         if (dateMode === 'all') return;
@@ -509,7 +526,7 @@ export default function QueueScreen() {
                             <View className="flex-row items-center flex-1 mr-2">
                                 <Clock size={12} color="#9CA3AF" />
                                 <Typography className="text-textGray text-[10px] font-semibold ml-1">
-                                    {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID }) : '-'}
+                                    {timeAgoMap.get(Number(item.id)) ?? '-'}
                                 </Typography>
                                 {itemCount > 0 && (
                                     <Typography className="text-textGray text-[10px] ml-2">
@@ -781,6 +798,11 @@ export default function QueueScreen() {
                 <FlatList
                     data={queueSheetItems}
                     keyExtractor={(item: any) => String(item.id)}
+                    initialNumToRender={12}
+                    maxToRenderPerBatch={12}
+                    windowSize={7}
+                    updateCellsBatchingPeriod={50}
+                    removeClippedSubviews={true}
                     contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}
                     ListHeaderComponent={listHeader}
                     refreshControl={

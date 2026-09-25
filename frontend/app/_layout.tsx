@@ -116,15 +116,29 @@ const BackgroundServices = memo(function BackgroundServices() {
 const LAG_INTERVAL_MS = 1000;
 const LAG_THRESHOLD_MS = 1000;
 const LAG_LOG_GAP_MS = 10000;
+// Android menahan timer saat background; Web men-throttle tab hidden puluhan
+// detik. Gap sebesar itu bukan stall JS — abaikan, reset baseline saja.
+const LAG_BACKGROUND_GAP_MS = 10000;
 
 function useJSLagMonitor() {
     useEffect(() => {
         let expectedAt = Date.now() + LAG_INTERVAL_MS;
         let lastFire = 0;
+        let suppressNext = false;
+        const resetBaseline = () => {
+            expectedAt = Date.now() + LAG_INTERVAL_MS * 2;
+            suppressNext = true;
+        };
         const timer = setInterval(() => {
             const now = Date.now();
             const lag = now - expectedAt;
             expectedAt = now + LAG_INTERVAL_MS;
+            if (suppressNext) {
+                suppressNext = false;
+                return;
+            }
+            // Gap raksasa = background / sleep / throttle. Bukan stall.
+            if (lag > LAG_BACKGROUND_GAP_MS) return;
             if (lag > LAG_THRESHOLD_MS && now - lastFire > LAG_LOG_GAP_MS) {
                 lastFire = now;
                 useMonitorStore.getState().logLag(
@@ -138,12 +152,27 @@ function useJSLagMonitor() {
         // Resume dari background: timer sempat beku, tick pertama pasti telat.
         // Itu bukan stall JS — geser baseline supaya tidak lapor palsu.
         const appStateSub = AppState.addEventListener('change', (next: AppStateStatus) => {
-            if (next === 'active') expectedAt = Date.now() + LAG_INTERVAL_MS * 2;
+            if (next === 'active') resetBaseline();
         });
+
+        // Web: AppState tidak andal untuk tab hidden/visible. Pakai visibility API.
+        let removeVisibility: (() => void) | undefined;
+        if (
+            Platform.OS === 'web' &&
+            typeof document !== 'undefined' &&
+            typeof document.addEventListener === 'function'
+        ) {
+            const onVisibility = () => {
+                if (!document.hidden) resetBaseline();
+            };
+            document.addEventListener('visibilitychange', onVisibility);
+            removeVisibility = () => document.removeEventListener('visibilitychange', onVisibility);
+        }
 
         return () => {
             clearInterval(timer);
             appStateSub.remove();
+            removeVisibility?.();
         };
     }, []);
 }
