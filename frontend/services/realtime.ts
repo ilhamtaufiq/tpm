@@ -123,6 +123,13 @@ const SCOPE_QUERY_KEYS: Record<string, string[][]> = {
     ],
 };
 
+// WS event bisa datang beruntun (bulk op / replay reconnect) — invalidate 17 query
+// serentak = badai refetch + render + persist. Coalesce per scope: kumpulkan key,
+// flush sekali 800ms setelah event terakhir.
+const pendingScopeKeys = new Map<string, Set<string>>();
+const scopeFlushTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const SCOPE_INVALIDATE_DEBOUNCE_MS = 800;
+
 const invalidateScope = (queryClient: ReturnType<typeof useQueryClient>, scope?: string) => {
     const keys = scope ? SCOPE_QUERY_KEYS[scope] : undefined;
 
@@ -131,9 +138,28 @@ const invalidateScope = (queryClient: ReturnType<typeof useQueryClient>, scope?:
         return;
     }
 
-    for (const key of keys) {
-        queryClient.invalidateQueries({ queryKey: key as any });
+    let pending = pendingScopeKeys.get(scope as string);
+    if (!pending) {
+        pending = new Set();
+        pendingScopeKeys.set(scope as string, pending);
     }
+    for (const key of keys) {
+        pending.add(JSON.stringify(key));
+    }
+
+    if (scopeFlushTimers.has(scope as string)) return;
+    scopeFlushTimers.set(
+        scope as string,
+        setTimeout(() => {
+            scopeFlushTimers.delete(scope as string);
+            const batched = pendingScopeKeys.get(scope as string);
+            pendingScopeKeys.delete(scope as string);
+            if (!batched) return;
+            for (const serialized of batched) {
+                queryClient.invalidateQueries({ queryKey: JSON.parse(serialized) as any });
+            }
+        }, SCOPE_INVALIDATE_DEBOUNCE_MS),
+    );
 };
 
 const buildNotification = (payload: RealtimePayload) => {

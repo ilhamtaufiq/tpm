@@ -78,13 +78,13 @@ if (
 const asyncStoragePersister = createAsyncStoragePersister({
     storage: AsyncStorage,
     key: 'TPM_OFFLINE_CACHE',
-    throttleTime: 1000,
+    throttleTime: 5000,
 });
 
 persistQueryClient({
     queryClient,
     persister: asyncStoragePersister,
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days for master/operational data
+    maxAge: 1000 * 60 * 60 * 24, // 24 jam, selaras gcTime — cache 7 hari bikin stringify AsyncStorage MB-an tiap persist
     dehydrateOptions: {
         shouldDehydrateQuery: (query) => {
             const root = query.queryKey?.[0];
