@@ -2,10 +2,19 @@ import { create } from 'zustand';
 import { Platform } from 'react-native';
 import api from '../utils/api';
 
+// Throttle POST log monitoring: badai event serentak bikin endpoint lambat
+// (tercatat 1383-4828ms + 520) dan menahan JS thread di Hermes Android.
+const LOG_POST_GAP_MS = 3000;
+const LOG_DEDUPE_WINDOW_MS = 30000;
+let lastLogSentAt = 0;
+let logFlushTimer: ReturnType<typeof setTimeout> | null = null;
+const pendingClientLogs: Record<string, any>[] = [];
+const recentLogKeys = new Map<string, number>();
+
 const sendClientLogToBackend = (entry: Partial<AppLogEntry>) => {
     try {
         const platform = Platform.OS === 'android' ? 'android' : Platform.OS === 'ios' ? 'ios' : 'web';
-        api.post('/monitor/client-logs', {
+        const payload = {
             type: entry.type || 'ERROR',
             title: entry.title || 'Client Log',
             message: entry.message || '',
@@ -14,9 +23,41 @@ const sendClientLogToBackend = (entry: Partial<AppLogEntry>) => {
             status: entry.status || 0,
             stack: entry.stack,
             url: entry.url
-        }).catch(() => {});
+        };
+        // Badai log (mis. 6 API lambat serentak post-login) bikin POST /monitor/client-logs
+        // sendiri jadi lambat (tercatat 1383-4828ms + 520) dan menahan JS thread.
+        // Dedupe 30s per event + jeda antar POST 3s, buffer maks 30.
+        const now = Date.now();
+        const key = `${payload.type}|${payload.title}|${payload.url || ''}`;
+        const lastSame = recentLogKeys.get(key) || 0;
+        if (now - lastSame < LOG_DEDUPE_WINDOW_MS) return;
+        recentLogKeys.set(key, now);
+        if (recentLogKeys.size > 200) {
+            const oldest = [...recentLogKeys.entries()].sort((a, b) => a[1] - b[1])[0];
+            if (oldest) recentLogKeys.delete(oldest[0]);
+        }
+        if (now - lastLogSentAt >= LOG_POST_GAP_MS && !logFlushTimer) {
+            lastLogSentAt = now;
+            api.post('/monitor/client-logs', payload).catch(() => {});
+        } else {
+            if (pendingClientLogs.length >= 30) pendingClientLogs.shift();
+            pendingClientLogs.push(payload);
+            scheduleLogFlush();
+        }
     } catch (e) {}
 };
+
+function scheduleLogFlush() {
+    if (logFlushTimer) return;
+    logFlushTimer = setTimeout(() => {
+        logFlushTimer = null;
+        const next = pendingClientLogs.shift();
+        if (!next) return;
+        lastLogSentAt = Date.now();
+        api.post('/monitor/client-logs', next).catch(() => {});
+        if (pendingClientLogs.length > 0) scheduleLogFlush();
+    }, LOG_POST_GAP_MS);
+}
 
 export interface RequestLog {
     id: string;

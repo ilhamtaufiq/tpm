@@ -92,7 +92,11 @@ api.interceptors.response.use(
     (response: AxiosResponse) => {
         const config = response.config as MonitoringConfig;
         const duration = Date.now() - (config._startTime || Date.now());
-        const delta = response.data ? JSON.stringify(response.data).length : 0;
+        // Jangan JSON.stringify di sini — payload besar (laporan/list MB-an)
+        // blokir JS thread 1s+ di Hermes Android dan memicu "Event loop tertunda".
+        // Pakai content-length header; fallback 0.
+        const rawLen = (response.headers as any)?.['content-length'];
+        const delta = rawLen ? parseInt(String(rawLen), 10) || 0 : 0;
         
         if (config._monitorId) {
             useMonitorStore.getState().updateResponse(
@@ -109,7 +113,13 @@ api.interceptors.response.use(
         const config = error.config as MonitoringConfig | undefined;
         const duration = Date.now() - (config?._startTime || Date.now());
         const status = error.response?.status || 0;
-        
+
+        // Tanpa token = pra-login / sudah logout (mis. badai 401 startup).
+        // Diam total: jangan update monitor, jangan logout ulang.
+        if (status === 401 && !useAuthStore.getState().token) {
+            return Promise.reject(error);
+        }
+
         if (config?._monitorId) {
             useMonitorStore.getState().updateResponse(
                 config._monitorId, 
@@ -135,6 +145,11 @@ api.interceptors.response.use(
 
         if (status === 401) {
             const authState = useAuthStore.getState();
+            // Tanpa token = pra-login / sudah logout (mis. badai 401 startup).
+            // Diam: jangan logout ulang, jangan spam log monitor.
+            if (!authState.token) {
+                return Promise.reject(error);
+            }
             if (authState.isImpersonating && authState.originalToken) {
                 authState.stopImpersonation();
             } else {

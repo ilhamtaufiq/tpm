@@ -299,6 +299,8 @@ function RootLayoutContent() {
     // Sync profile on startup
     useEffect(() => {
         if (isAuthenticated && isReady && hasHydrated) {
+            // Tanpa token jangan tembak /auth/me — pasti 401 dan memicu badai logout.
+            if (!useAuthStore.getState().token) return;
             const syncProfile = async () => {
                 try {
                     const freshUser = await authService.getMe();
