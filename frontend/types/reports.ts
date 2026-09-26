@@ -182,6 +182,7 @@ export interface CapitalReport {
     modal_awal: number;
     penambahan?: {
         setoran_modal: number;
+        penyesuaian_backdate_non_impor?: number;
         penyesuaian_harga_beli_sparepart?: number;
         investor_funding?: number;
         modal_non_kas?: {
@@ -253,6 +254,8 @@ export interface CapitalReport {
         laba_bersih: number;
         /** Laba operasional (sebelum prive) — komponen aliran ekuitas. */
         laba_operasional?: number;
+        /** Laba kumulatif sejak posisi pembuka s/d sehari sebelum tanggal_dari. */
+        laba_ditahan_sebelumnya?: number;
         units: {
             bengkel: UnitBreakdown;
             jasa_angkut: UnitBreakdown;
@@ -285,6 +288,12 @@ export interface CapitalReport {
     selisih?: number;
     is_balanced?: boolean;
     laba_ditahan_periode?: number;
+    /**
+     * Laba kumulatif sejak posisi pembuka s/d sehari sebelum tanggal_dari.
+     * Penyeimbang: laba periode (laba_ditahan_periode) kini hanya periode
+     * filter agar sama dengan Laba Rugi; sisanya masuk baris ini.
+     */
+    laba_ditahan_sebelumnya?: number;
     /** Terisi bila periode berakhir sebelum saldo awal — angka semuanya nol. */
     catatan?: string;
     saldo_awal_date?: string;

@@ -271,14 +271,18 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
 
     const modalAwal = data.modal_awal || 0;
     const setoranKas = data.penambahan?.setoran_modal || 0;
+    const penyesuaianBackdateNonImpor = data.penambahan?.penyesuaian_backdate_non_impor || 0;
     const penyesuaianHargaBeli = data.penambahan?.penyesuaian_harga_beli_sparepart || 0;
     const modalNonKas = data.penambahan?.modal_non_kas?.total || 0;
     const labaBersih = data.info?.laba_bersih ?? data.laba_ditahan_periode ?? 0;
     const diskonPenjualanBengkel = data.info?.diskon_penjualan_bengkel || 0;
     const prive = (data.pengurangan?.prive || 0) + (data.pengurangan?.pengembalian_modal || 0);
     const labaOperasional = data.info?.laba_operasional ?? (labaBersih + prive);
+    // Laba kumulatif sejak posisi pembuka s/d sehari sebelum tanggal_dari —
+    // penyeimbang karena labaOperasional kini hanya periode filter (= Laba Rugi).
+    const labaDitahanSebelumnya = data.info?.laba_ditahan_sebelumnya ?? data.laba_ditahan_sebelumnya ?? 0;
     const modalAkhir = data.modal_akhir || 0;
-    const perubahanBersih = setoranKas + modalNonKas + labaOperasional - prive;
+    const perubahanBersih = setoranKas + penyesuaianBackdateNonImpor + modalNonKas + labaDitahanSebelumnya + labaOperasional - prive;
     const expectedModalAkhirAliran = modalAwal + perubahanBersih;
     const validasi = data.info?.validasi;
     const expectedModalAkhir = validasi?.modal_teoritis ?? expectedModalAkhirAliran;
@@ -313,6 +317,11 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                 </tr>
 
                 <tr class="section-title"><td colspan="2">B. PENAMBAHAN EKUITAS</td></tr>
+                ${penyesuaianBackdateNonImpor !== 0 ? `
+                <tr>
+                    <td>Penyesuaian Mutasi Pra-Saldo Awal (Backdate Non-Impor)</td>
+                    <td class="amount positive">${formatCurrency(penyesuaianBackdateNonImpor)}</td>
+                </tr>` : ''}
                 ${setoranKas > 0 ? `
                 <tr>
                     <td>Setoran Modal Kas</td>
@@ -322,6 +331,11 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                 <tr>
                     <td>Setoran Modal Non-Kas</td>
                     <td class="amount">${formatCurrency(modalNonKas)}</td>
+                </tr>` : ''}
+                ${labaDitahanSebelumnya > 0 ? `
+                <tr>
+                    <td>Laba Ditahan Sebelumnya</td>
+                    <td class="amount positive">${formatCurrency(labaDitahanSebelumnya)}</td>
                 </tr>` : ''}
                 ${labaOperasional >= 0 ? `
                 <tr>
@@ -349,6 +363,11 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Rugi Operasional Periode</td>
                     <td class="amount negative">(${formatCurrency(Math.abs(labaOperasional))})</td>
                 </tr>` : ''}
+                ${labaDitahanSebelumnya < 0 ? `
+                <tr>
+                    <td>Rugi Ditahan Sebelumnya</td>
+                    <td class="amount negative">(${formatCurrency(Math.abs(labaDitahanSebelumnya))})</td>
+                </tr>` : ''}
 
                 <tr class="total-row">
                     <td>PERUBAHAN BERSIH MODAL</td>
@@ -360,7 +379,7 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                 </tr>
                 ${coversBeforeOpening ? `
                 <tr>
-                    <td style="padding-left: 18px; color: #b45309; font-size: 11px;">* mutasi kumulatif sejak ${data.modal_awal_flow_dari} (posisi pembuka), bukan sejak ${periodeDari} — laba di sini berbeda dengan Laporan Laba Rugi periode terpilih.</td>
+                    <td style="padding-left: 18px; color: #b45309; font-size: 11px;">* Laba sebelum ${data.modal_awal_flow_dari} (posisi pembuka) ditampilkan terpisah sebagai "Laba Ditahan Sebelumnya". "Laba Operasional Periode" = Laporan Laba Rugi periode terpilih.</td>
                     <td class="amount" style="font-size: 11px; color: #b45309;"></td>
                 </tr>` : ''}
                 ${(((data as any).info?.aset?.kas_jenis_details) || []).filter((d: any) => Number(d.saldo || 0) !== 0).length > 0 ? `

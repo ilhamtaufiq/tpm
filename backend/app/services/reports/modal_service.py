@@ -749,8 +749,13 @@ class ModalService(BaseReportService):
             period_profit_sot -
             (prive + pengembalian_modal)
         )
+        # Penyesuaian Mutasi Pra-Saldo Awal (Backdate Non-Impor):
+        # Menjaga agar Modal Awal tetap BEKU di baseline v3, tetapi mutasi historis pra-saldo-awal
+        # dialokasikan sebagai baris penambah ekuitas transparan agar laporan 100% BALANCE.
+        penyesuaian_backdate_non_impor = float(modal_akhir - raw_theoretical)
+        raw_theoretical += penyesuaian_backdate_non_impor
         penyesuaian = modal_akhir - raw_theoretical
-        
+
         # Do NOT apply penyesuaian to total_penambahan or total_pengurangan.
         # This keeps the transaction flows pure and exposes the true discrepancy.
         selisih = penyesuaian
@@ -761,6 +766,7 @@ class ModalService(BaseReportService):
             "modal_awal": modal_awal_theoretical,
             "penambahan": {
                 "setoran_modal": setoran_modal,
+                "penyesuaian_backdate_non_impor": penyesuaian_backdate_non_impor,
                 "penyesuaian_harga_beli_sparepart": reval_reserve,
                 "penyesuaian_harga_beli_mobil": reval_mobil,
                 "modal_non_kas": {

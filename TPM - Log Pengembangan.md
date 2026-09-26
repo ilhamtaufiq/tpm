@@ -37,6 +37,7 @@ Tambahkan baris baru di atas (terbaru dulu) setiap bikin sesi baru:
 
 | Tanggal | Modul | Status | Sesi |
 |---|---|---|---|
+| 2026-09-26 | keuangan | done | [[Sessions/2026-09-26 1700 - Baris Penyesuaian Backdate Non-Impor & Invarian Balance Ekuitas]] |
 | 2026-09-26 | keuangan | done | [[Sessions/2026-09-26 1630 - Analisis Void Bengkel Kas Transfer & Invarian Modal Awal]] |
 | 2026-09-26 | keuangan | done | [[Sessions/2026-09-26 1545 - Analisis Void Transaksi Bengkel JB Mobil & Penyeimbangan Kas]] |
 | 2026-09-26 | bengkel | done | [[Sessions/2026-09-26 1515 - Analisis Race Condition Stok Lem Threebond Part 469]] |

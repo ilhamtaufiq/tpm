@@ -100,6 +100,7 @@ export default function LaporanPerubahanModalScreen() {
                 modalNonKas: 0,
                 labaOperasional: 0,
                 labaBersih: 0,
+                labaDitahanSebelumnya: 0,
                 labaInvestor: 0,
                 diskonPenjualanBengkel: 0,
                 flowDari: undefined,
@@ -117,13 +118,19 @@ export default function LaporanPerubahanModalScreen() {
         const r = report;
         const modalAwal = r.modal_awal || 0;
         const setoranKas = r.penambahan?.setoran_modal || 0;
+        const penyesuaianBackdateNonImpor = r.penambahan?.penyesuaian_backdate_non_impor || 0;
         const penyesuaianHargaBeli = r.penambahan?.penyesuaian_harga_beli_sparepart || 0;
         const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
         // info.laba_operasional = laba SEBELUM prive (period_profit_sot). Inilah
         // komponen aliran ekuitas — bukan laba_bersih yang sudah dipotong prive.
+        // Kini = persis laba_operasional Laporan Laba Rugi untuk periode filter
+        // yang sama (backend membagi kumulatifnya ke labaDitahanSebelumnya).
         const labaOperasional = r.info?.laba_operasional ?? r.info?.laba_bersih ?? 0;
         const labaBersih = r.info?.laba_bersih ?? (labaOperasional - prive);
+        // Laba kumulatif sejak posisi pembuka s/d sehari sebelum tanggal_dari.
+        // Penyeimbang agar Modal Awal + mutasi = Modal Akhir tetap sah.
+        const labaDitahanSebelumnya = r.info?.laba_ditahan_sebelumnya ?? r.laba_ditahan_sebelumnya ?? 0;
         // Laba investor hanya diakui setelah penjualan mobil LUNAS/TERJUAL (bukan saat DP/booking).
         // Sudah dipotong di dalam labaOperasional — di sini hanya info rekonsiliasi.
         const labaInvestor = r.info?.laba_investor || 0;
@@ -134,7 +141,7 @@ export default function LaporanPerubahanModalScreen() {
         // Investor = hutang, BUKAN aliran modal — dana & pembayaran investor tidak
         // masuk rumus ini (selaras modal_service.raw_theoretical). labaInvestor
         // sudah dikurangkan di dalam laba_operasional (base.py: laba_mobil_tpm).
-        const perubahanBersihAliran = setoranKas + modalNonKas + labaOperasional - prive;
+        const perubahanBersihAliran = setoranKas + penyesuaianBackdateNonImpor + modalNonKas + labaDitahanSebelumnya + labaOperasional - prive;
         const expectedModalAkhirAliran = modalAwal + perubahanBersihAliran;
 
         const validasi = r.info?.validasi;
@@ -145,15 +152,18 @@ export default function LaporanPerubahanModalScreen() {
         return {
             modalAwal,
             setoranKas,
+            penyesuaianBackdateNonImpor,
             penyesuaianHargaBeli,
             modalNonKas,
             labaOperasional,
             labaBersih,
+            labaDitahanSebelumnya,
             labaInvestor,
             diskonPenjualanBengkel,
             flowDari: r.modal_awal_flow_dari,
-            // Periode terpilih menjangkau sebelum posisi pembuka → mutasi bersifat
-            // kumulatif, jadi laba di sini ≠ Laba Rugi periode yang sama.
+            // Periode terpilih menjangkau sebelum posisi pembuka → ada laba pra-pembuka
+            // yang kini dipisah ke baris "Laba Ditahan Sebelumnya" (bukan lagi digabung
+            // ke laba periode), agar baris laba = Laba Rugi periode yang sama.
             coversBeforeOpening: !!r.modal_awal_flow_dari && r.modal_awal_flow_dari > reportParams.tanggal_dari,
             prive,
             modalAkhir,
@@ -324,6 +334,18 @@ export default function LaporanPerubahanModalScreen() {
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest">Penambahan</Typography>
                                 <FinancialRow label="Penambahan Modal" value={equity.setoranKas + equity.modalNonKas} color="text-emerald-700" />
                                 <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</Typography>
+                                {equity.penyesuaianBackdateNonImpor !== 0 && (
+                                    <>
+                                        <FinancialRow label="Penyesuaian Mutasi Pra-Saldo Awal" value={equity.penyesuaianBackdateNonImpor || 0} color="text-emerald-700" />
+                                        <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* mutasi transaksi historis pra-saldo-awal (penyeimbang modal awal beku)</Typography>
+                                    </>
+                                )}
+                                {equity.labaDitahanSebelumnya >= 0 && equity.labaDitahanSebelumnya !== 0 && (
+                                    <>
+                                        <FinancialRow label="Laba Ditahan Sebelumnya" value={equity.labaDitahanSebelumnya} color="text-emerald-700" />
+                                        <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* laba periode sebelum {equity.flowDari} (posisi pembuka) — di luar laba periode yang dipilih</Typography>
+                                    </>
+                                )}
                                 {equity.labaOperasional >= 0 && (
                                     <>
                                         <FinancialRow label="Laba Operasional Periode" value={equity.labaOperasional} color="text-emerald-700" />
@@ -345,6 +367,9 @@ export default function LaporanPerubahanModalScreen() {
                                 <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* pengambilan pemilik dan akun ini hanya muncul di laporan perubahan modal saja, karena sifat nya mengurangi kumulatif antar modal dan laba/rugi</Typography>
                                 {equity.labaOperasional < 0 && (
                                     <FinancialRow label="Rugi Operasional Periode" value={Math.abs(equity.labaOperasional)} isNegative />
+                                )}
+                                {equity.labaDitahanSebelumnya < 0 && (
+                                    <FinancialRow label="Rugi Ditahan Sebelumnya" value={Math.abs(equity.labaDitahanSebelumnya)} isNegative />
                                 )}
                                 {equity.labaInvestor !== 0 && (
                                     <FinancialRow label="Info: Laba Investor Jual Beli Mobil" value={equity.labaInvestor} isNegative={equity.labaInvestor > 0} color="text-slate-400" />
