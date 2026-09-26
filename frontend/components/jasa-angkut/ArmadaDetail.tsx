@@ -1,14 +1,20 @@
 import { appAlert } from '../../utils/appAlert';
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable, ActivityIndicator, RefreshControl, Modal } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../ui/Typography';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { BoundedSheetPanel, BoundedSheetScrollView } from '../ui/BottomSheetContainer';
 import { useArmadaDetail } from '../../hooks/useJasaAngkut';
+import { useVoidTransaksiBengkel } from '../../hooks/useBengkel';
 import { useUIStore } from '../../store/useUIStore';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
+import { getErrorMessage } from '../../utils/error';
+import { isBengkelTransactionLocked, isBengkelTransactionVoided } from '../../utils/bengkelTransaction';
+import { AlertDialog } from '../ui/AlertDialog';
 import {
     Truck,
     Calendar,
@@ -27,7 +33,9 @@ import {
     X as CloseIcon,
     Trash2,
     PlusCircle,
-    GaugeCircle
+    GaugeCircle,
+    Ban,
+    Edit3
 } from 'lucide-react-native';
 import { SkeletonCard } from '../ui/Skeleton';
 import { Input } from '../ui/Input';
@@ -40,9 +48,13 @@ interface ArmadaDetailProps {
 }
 
 export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
+    const router = useRouter();
+    const queryClient = useQueryClient();
     const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const { data: detailData, isLoading, refetch } = useArmadaDetail(id);
+    const voidMutation = useVoidTransaksiBengkel();
+
     const [activeTab, setActiveTab] = useState<'trips' | 'repairs' | 'expenses'>('trips');
     const [refreshing, setRefreshing] = useState(false);
     const [showExpenseModal, setShowExpenseModal] = useState(false);
@@ -50,6 +62,14 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
     const [selectedExpense, setSelectedExpense] = useState<any | null>(null);
     const [selectedRepair, setSelectedRepair] = useState<any | null>(null);
     const [submittingExpense, setSubmittingExpense] = useState(false);
+    const [voidDialog, setVoidDialog] = useState<{
+        visible: boolean;
+        item: any | null;
+    }>({
+        visible: false,
+        item: null,
+    });
+
     const [expenseForm, setExpenseForm] = useState({
         tanggal: new Date().toISOString().split('T')[0],
         deskripsi: '',
@@ -61,6 +81,30 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
     const [payments, setPayments] = useState<{ id: number; sumber: string; nominal: string }[]>([]);
 
     const totalSplitAmount = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
+
+    const handleConfirmVoid = async () => {
+        if (!voidDialog.item) return;
+        try {
+            await voidMutation.mutateAsync(voidDialog.item.id);
+            queryClient.invalidateQueries({ queryKey: ['jasa_angkut'] });
+            queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
+            appAlert('Berhasil', 'Transaksi perbaikan bengkel berhasil dibatalkan');
+            setVoidDialog({ visible: false, item: null });
+            setSelectedRepair(null);
+            refetch();
+        } catch (error: any) {
+            appAlert('Gagal', getErrorMessage(error, 'Gagal membatalkan transaksi perbaikan'));
+        }
+    };
+
+    const handleEditOrder = (item: any) => {
+        setSelectedRepair(null);
+        onClose?.();
+        router.push({
+            pathname: '/bengkel/order',
+            params: { id: item.id }
+        });
+    };
 
     const addPaymentRow = () => {
         setPayments([...payments, { id: Date.now() + Math.random(), sumber: 'UNIT_TUNAI', nominal: '' }]);
@@ -356,53 +400,97 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                             <Typography className="text-textGray italic">Belum ada riwayat perbaikan</Typography>
                                         </View>
                                     ) : (
-                                        perbaikan_history.map((item: any) => (
-                                            <Pressable
-                                                key={item.id}
-                                                onPress={() => setSelectedRepair(item)}
-                                                className="bg-surface p-5 rounded-[24px] border border-transparent shadow-sm"
-                                                style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
-                                            >
-                                                <View className="flex-row justify-between mb-3">
-                                                    <View className="flex-row items-center">
-                                                        <View className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center mr-2">
-                                                            <Wrench size={16} color="#EF4444" />
+                                        perbaikan_history.map((item: any) => {
+                                            const isVoided = isBengkelTransactionVoided(item);
+                                            const isLocked = isBengkelTransactionLocked(item);
+
+                                            return (
+                                                <Pressable
+                                                    key={item.id}
+                                                    onPress={() => setSelectedRepair(item)}
+                                                    className="bg-surface p-5 rounded-[24px] border border-transparent shadow-sm"
+                                                    style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+                                                >
+                                                    <View className="flex-row justify-between mb-3">
+                                                        <View className="flex-row items-center">
+                                                            <View className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center mr-2">
+                                                                <Wrench size={16} color="#EF4444" />
+                                                            </View>
+                                                            <Typography weight="bold" className="text-textMain">{item.nomor_transaksi}</Typography>
                                                         </View>
-                                                        <Typography weight="bold" className="text-textMain">{item.nomor_transaksi}</Typography>
+                                                        <Typography variant="caption" className="text-textGray">{formatDate(item.tanggal)}</Typography>
                                                     </View>
-                                                    <Typography variant="caption" className="text-textGray">{formatDate(item.tanggal)}</Typography>
-                                                </View>
 
-                                                <View className="space-y-2 mb-3">
-                                                    {item.detail_services?.map((s: any, idx: number) => (
-                                                        <View key={idx} className="flex-row justify-between">
-                                                            <Typography variant="caption" className="text-textGray flex-1 mr-2">• {s.nama_jasa}</Typography>
-                                                            <Typography variant="caption" weight="medium">{formatCurrency(s.subtotal)}</Typography>
-                                                        </View>
-                                                    ))}
-                                                    {item.detail_parts?.map((p: any, idx: number) => (
-                                                        <View key={idx} className="flex-row justify-between">
-                                                            <Typography variant="caption" className="text-textGray flex-1 mr-2">• {p.spare_part_nama} (x{p.qty})</Typography>
-                                                            <Typography variant="caption" weight="medium">{formatCurrency(p.subtotal)}</Typography>
-                                                        </View>
-                                                    ))}
-                                                </View>
-
-                                                <View className="flex-row justify-between items-center pt-3 border-t border-transparent">
-                                                    <Typography variant="caption" weight="bold" className="text-textGray">Total Biaya Perbaikan</Typography>
-                                                    <Typography weight="bold" className="text-red-600">
-                                                        {formatCurrency(item.grand_total)}
-                                                    </Typography>
-                                                </View>
-
-                                                {item.muatan_nomor && (
-                                                    <View className="mt-2 bg-blue-50 px-3 py-1.5 rounded-lg flex-row items-center self-start">
-                                                        <TrendingDown size={12} color="#3B82F6" />
-                                                        <Typography className="text-blue-600 text-[10px] ml-1 font-bold">Dibebankan ke: {item.muatan_nomor}</Typography>
+                                                    <View className="space-y-2 mb-3">
+                                                        {item.detail_services?.map((s: any, idx: number) => (
+                                                            <View key={idx} className="flex-row justify-between">
+                                                                <Typography variant="caption" className="text-textGray flex-1 mr-2">• {s.nama_jasa}</Typography>
+                                                                <Typography variant="caption" weight="medium">{formatCurrency(s.subtotal)}</Typography>
+                                                            </View>
+                                                        ))}
+                                                        {item.detail_parts?.map((p: any, idx: number) => (
+                                                            <View key={idx} className="flex-row justify-between">
+                                                                <Typography variant="caption" className="text-textGray flex-1 mr-2">• {p.spare_part_nama} (x{p.qty})</Typography>
+                                                                <Typography variant="caption" weight="medium">{formatCurrency(p.subtotal)}</Typography>
+                                                            </View>
+                                                        ))}
                                                     </View>
-                                                )}
-                                            </Pressable>
-                                        ))
+
+                                                    <View className="flex-row justify-between items-center pt-3 border-t border-transparent">
+                                                        <Typography variant="caption" weight="bold" className="text-textGray">Total Biaya Perbaikan</Typography>
+                                                        <Typography weight="bold" className={isVoided ? "text-textGray line-through" : "text-red-600"}>
+                                                            {formatCurrency(item.grand_total)}
+                                                        </Typography>
+                                                    </View>
+
+                                                    <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-100/50">
+                                                        <View className="flex-row items-center">
+                                                            <View className={`w-2 h-2 rounded-full mr-1.5 ${
+                                                                isVoided ? 'bg-red-500' : item.status_bayar === 'LUNAS' ? 'bg-emerald-500' : 'bg-amber-500'
+                                                            }`} />
+                                                            <Typography variant="caption" weight="bold" className={
+                                                                isVoided ? 'text-red-600' : item.status_bayar === 'LUNAS' ? 'text-emerald-600' : 'text-amber-600'
+                                                            }>
+                                                                {isVoided ? 'BATAL' : item.status_bayar || 'SELESAI'}
+                                                            </Typography>
+                                                        </View>
+                                                        <View className="flex-row items-center">
+                                                            {!isVoided && !isLocked && (
+                                                                <Pressable
+                                                                    onPress={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleEditOrder(item);
+                                                                    }}
+                                                                    className="flex-row items-center bg-blue-50 px-2.5 py-1 rounded-xl border border-blue-200/80 active:scale-95 ml-2"
+                                                                >
+                                                                    <Edit3 size={12} color="#2563EB" />
+                                                                    <Typography weight="bold" className="text-blue-600 text-[10px] ml-1">Edit Item</Typography>
+                                                                </Pressable>
+                                                            )}
+                                                            {!isVoided && (
+                                                                <Pressable
+                                                                    onPress={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setVoidDialog({ visible: true, item });
+                                                                    }}
+                                                                    className="flex-row items-center bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-200/80 active:scale-95 ml-2"
+                                                                >
+                                                                    <Ban size={12} color="#EF4444" />
+                                                                    <Typography weight="bold" className="text-rose-600 text-[10px] ml-1">Batalkan</Typography>
+                                                                </Pressable>
+                                                            )}
+                                                        </View>
+                                                    </View>
+
+                                                    {item.muatan_nomor && (
+                                                        <View className="mt-2 bg-blue-50 px-3 py-1.5 rounded-lg flex-row items-center self-start">
+                                                            <TrendingDown size={12} color="#3B82F6" />
+                                                            <Typography className="text-blue-600 text-[10px] ml-1 font-bold">Dibebankan ke: {item.muatan_nomor}</Typography>
+                                                        </View>
+                                                    )}
+                                                </Pressable>
+                                            );
+                                        })
                                     )}
                                 </View>
                             );
@@ -772,13 +860,34 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                 )}
 
                                 {selectedRepair.catatan ? (
-                                    <Card variant="outlined" className="p-5 border-transparent rounded-[24px]">
+                                    <Card variant="outlined" className="p-5 mb-4 border-transparent rounded-[24px]">
                                         <Typography variant="caption" weight="bold" className="text-textGray mb-3 uppercase tracking-widest">
                                             Catatan
                                         </Typography>
                                         <Typography variant="body2">{selectedRepair.catatan}</Typography>
                                     </Card>
                                 ) : null}
+
+                                {!isBengkelTransactionVoided(selectedRepair) && (
+                                    <View className="flex-row space-x-3 mb-6">
+                                        {!isBengkelTransactionLocked(selectedRepair) && (
+                                            <Pressable
+                                                onPress={() => handleEditOrder(selectedRepair)}
+                                                className="flex-1 bg-blue-600 flex-row items-center justify-center py-4 rounded-2xl"
+                                            >
+                                                <Edit3 size={16} color="white" />
+                                                <Typography weight="bold" className="text-white text-sm ml-2">Edit Item</Typography>
+                                            </Pressable>
+                                        )}
+                                        <Pressable
+                                            onPress={() => setVoidDialog({ visible: true, item: selectedRepair })}
+                                            className="flex-1 bg-red-600 flex-row items-center justify-center py-4 rounded-2xl"
+                                        >
+                                            <Ban size={16} color="white" />
+                                            <Typography weight="bold" className="text-white text-sm ml-2">Batalkan Perbaikan</Typography>
+                                        </Pressable>
+                                    </View>
+                                )}
                             </BoundedSheetScrollView>
                         )}
                     </BoundedSheetPanel>
@@ -1066,6 +1175,19 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                     </BoundedSheetPanel>
                 </View>
             </Modal>
+
+            <AlertDialog
+                visible={voidDialog.visible}
+                type="confirm"
+                variant="error"
+                title="Batalkan Perbaikan Bengkel"
+                message={`Apakah Anda yakin ingin membatalkan transaksi perbaikan ${voidDialog.item?.nomor_transaksi || ''}? Stok sparepart dan jurnal transaksi akan dikembalikan.`}
+                confirmText="Batalkan Transaksi"
+                cancelText="Kembali"
+                loading={voidMutation.isPending}
+                onClose={() => setVoidDialog({ visible: false, item: null })}
+                onConfirm={handleConfirmVoid}
+            />
         </ScrollView>
     );
 };
