@@ -280,10 +280,17 @@ class ModalService(BaseReportService):
         m = data["units"].get("mobil", {})
         ja = data["units"].get("jasa_angkut", {})
 
-        # Calculate period profit using retained_earnings from BaseReportService (Source of Truth)
-        # This correctly accounts for: internal elimination, trip costs, all overhead deductions
-        period_profit_sot = float(data.get("retained_earnings", 0))
-        
+        # ── LABA: PISAH PERIODE FILTER vs KUMULATIF SEBELUMNYA ──────────────
+        # `data` dihitung dari flow_dari (anchor) karena mutasi non-laba (setoran,
+        # prive, stok) harus kumulatif agar Modal Awal beku + mutasi = Modal Akhir.
+        # Tapi laba TIDAK boleh kumulatif: user membandingkannya dengan Laporan
+        # Laba Rugi pada periode filter yang sama. Maka laba di-QUERY ULANG dari
+        # tanggal_dari, dan sisa kumulatifnya jadi baris "Laba Ditahan Sebelumnya".
+        # Jumlah keduanya == retained_earnings kumulatif → raw_theoretical tak berubah.
+        data_period = self.get_unit_financial_breakdown(tanggal_dari, tanggal_sampai)
+        period_profit_sot = float(data_period.get("retained_earnings", 0))
+        laba_ditahan_sebelumnya = float(data.get("retained_earnings", 0)) - period_profit_sot
+
         # Unit-level breakdown for display only (Info section)
         laba_bengkel = float(b.get("laba_kotor", 0)) - float(b.get("total_expenses", 0)) - float(b.get("common_expenses", 0))
         laba_mobil_net = float(m.get("total_laba_kotor", 0)) - float(m.get("overhead", 0))
@@ -738,6 +745,7 @@ class ModalService(BaseReportService):
             setoran_modal +
             setoran_non_kas_import +
             reval_reserve +
+            laba_ditahan_sebelumnya +
             period_profit_sot -
             (prive + pengembalian_modal)
         )
@@ -877,6 +885,10 @@ class ModalService(BaseReportService):
                 "lembur": lembur,
                 "laba_operasional": period_profit_sot,
                 "laba_bersih": period_profit_sot - prive,
+                # Laba kumulatif sejak posisi pembuka s/d sehari sebelum tanggal_dari.
+                # Penyeimbang agar Modal Awal + mutasi = Modal Akhir tetap sah saat
+                # laba periode filter tak lagi kumulatif.
+                "laba_ditahan_sebelumnya": laba_ditahan_sebelumnya,
                 "units": data.get("units"),
                 "eliminasi_internal": internal_elimination,
                 "eliminasi_profit_internal": internal_profit_elimination,
@@ -920,6 +932,7 @@ class ModalService(BaseReportService):
             "selisih": selisih,
             "is_balanced": abs(selisih) < 100,
             "laba_ditahan_periode": period_profit_sot,
+            "laba_ditahan_sebelumnya": laba_ditahan_sebelumnya,
             # Mutasi (termasuk laba) dihitung KUMULATIF sejak anchor karena modal
             # awal beku — bukan sejak tanggal_dari. UI memakai ini untuk memberi
             # tahu pengguna saat periode terpilih menjangkau sebelum posisi
