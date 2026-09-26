@@ -15,7 +15,7 @@ Tempel query ini (hapus fence terluar) supaya daftar di bawah otomatis ter-updat
 ````
 ```dataview
 TABLE date, module, status, agent
-FROM "Projects/TPM/Sessions"
+FROM "Sessions"
 SORT date DESC, time DESC
 ```
 ````
@@ -25,7 +25,7 @@ Bisa juga difilter, misal khusus modul keuangan yang masih `blocked`:
 ````
 ```dataview
 TABLE date, status
-FROM "Projects/TPM/Sessions"
+FROM "Sessions"
 WHERE module = "keuangan" AND status = "blocked"
 SORT date DESC
 ```
@@ -37,6 +37,7 @@ Tambahkan baris baru di atas (terbaru dulu) setiap bikin sesi baru:
 
 | Tanggal | Modul | Status | Sesi |
 |---|---|---|---|
+| 2026-09-26 | ui | done | [[Sessions/2026-09-26 1800 - Penanganan Intersepsi Back Button Bottom Sheet Mobile Web]] |
 | 2026-09-26 | bengkel | done | [[Sessions/2026-09-26 1730 - Refactor Kartu Antrian Bengkel Urutan Customer Plat Kategori]] |
 | 2026-09-26 | keuangan | done | [[Sessions/2026-09-26 1700 - Baris Penyesuaian Backdate Non-Impor & Invarian Balance Ekuitas]] |
 | 2026-09-26 | keuangan | done | [[Sessions/2026-09-26 1630 - Analisis Void Bengkel Kas Transfer & Invarian Modal Awal]] |

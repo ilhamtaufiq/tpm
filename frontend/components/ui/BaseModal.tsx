@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Modal, Pressable, Animated, ScrollView, Platform, DimensionValue } from 'react-native';
+import { View, Modal, Pressable, Animated, ScrollView, Platform, DimensionValue, BackHandler } from 'react-native';
+import { useNavigation } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Typography } from './Typography';
 import { X } from 'lucide-react-native';
@@ -35,7 +36,27 @@ export const BaseModal = ({
     const themeColors = useUIStore((s) => s.themeColors);
     const borderColor = findPaletteBorder(themeColors);
 
+    const navigation = useNavigation();
     const [shouldRender, setShouldRender] = React.useState(visible);
+
+    useEffect(() => {
+        if (!visible) return;
+
+        const backSub = BackHandler.addEventListener('hardwareBackPress', () => {
+            onClose();
+            return true;
+        });
+
+        const unsubscribe = navigation?.addListener?.('beforeRemove', (e) => {
+            e.preventDefault();
+            onClose();
+        });
+
+        return () => {
+            backSub.remove();
+            unsubscribe?.();
+        };
+    }, [visible, onClose, navigation]);
 
     useEffect(() => {
         if (visible) {

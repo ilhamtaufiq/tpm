@@ -71,13 +71,13 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
     }));
 
     // === Back Button Handler (Android hardware back + Web browser back/swipe) ===
-    // React Navigation's beforeRemove intercepts ALL back navigation:
-    // - Android hardware back button
-    // - Web browser back button
-    // - Web trackpad swipe-back gesture
-    // - Expo Router programmatic router.back()
     useEffect(() => {
         if (!isOpen) return;
+
+        const backSubscription = BackHandler.addEventListener('hardwareBackPress', () => {
+            onClose();
+            return true;
+        });
 
         const unsubscribe = navigation.addListener('beforeRemove', (e) => {
             // Prevent navigation — close sheet instead
@@ -85,7 +85,10 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
             onClose();
         });
 
-        return unsubscribe;
+        return () => {
+            backSubscription.remove();
+            unsubscribe();
+        };
     }, [isOpen, onClose, navigation]);
 
     const renderBackdrop = useCallback(
