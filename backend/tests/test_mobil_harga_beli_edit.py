@@ -86,7 +86,8 @@ def test_edit_harga_beli_tidak_mengubah_selisih():
         assert laporan["is_balanced"] is True
         # Stok naik sebesar koreksi, dan revaluasinya tampil sebagai jejak audit.
         assert laporan["info"]["aset"]["stok_mobil"]["total"] == stok_awal + float(TAMBAHAN)
-        assert laporan["penambahan"]["penyesuaian_harga_beli_mobil"] == float(TAMBAHAN)
+        reval_awal = sebelum["penambahan"].get("penyesuaian_harga_beli_mobil") or 0.0
+        assert laporan["penambahan"]["penyesuaian_harga_beli_mobil"] == reval_awal + float(TAMBAHAN)
     finally:
         _bersihkan(db, mobil_id, harga_awal)
         _assert_balance(db)

@@ -1,0 +1,12 @@
+{
+  "showUnsupportedFiles": true,
+  "userIgnoreFilters": [
+    "_attachments/",
+    ".claude/",
+    "node_modules/",
+    "frontend/node_modules/",
+    "dashboard/node_modules/",
+    "backend/venv/",
+    ".git/"
+  ]
+}

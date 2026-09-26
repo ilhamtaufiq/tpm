@@ -1102,8 +1102,13 @@ class BaseReportService:
                 "periode": reval_periode,
                 "released_periode": reval_release_periode,
                 "cumulative": total_reval,
+                # WAJIB as-of-date: tanpa filter, koreksi qty bertanggal setelah
+                # tanggal_sampai ikut terbaca di periode lampau dan menggeser
+                # reval_reserve (modal_service) → selisih modal_teoritis vs
+                # modal_aktual palsu.
                 "qty_correction_total": float(self.db.query(func.sum(SparePartRevaluation.amount)).filter(
-                    SparePartRevaluation.is_qty_correction == True  # noqa: E712
+                    SparePartRevaluation.is_qty_correction == True,  # noqa: E712
+                    SparePartRevaluation.tanggal <= tanggal_sampai,
                 ).scalar() or 0),
             },
             "revenue": {

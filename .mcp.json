@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "obsidian": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "obsidian-mcp-server",
+        "--vault",
+        "C:/laragon/www/tpm"
+      ]
+    }
+  }
+}

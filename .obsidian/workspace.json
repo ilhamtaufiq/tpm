@@ -1,0 +1,242 @@
+{
+  "main": {
+    "id": "4d33731d5e2c331b",
+    "type": "split",
+    "children": [
+      {
+        "id": "8816459c4ac4a805",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c92cb9e3918cea5f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "TPM - Konvensi Sesi & Pencarian.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "TPM - Konvensi Sesi & Pencarian"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "a38788f806d44851",
+    "type": "split",
+    "children": [
+      {
+        "id": "8126cfa5ce74f8f9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f17feb9198a09813",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "977eb241969dab58",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "8bd25018285a368a",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "f6c71d6ba34ea40b",
+    "type": "split",
+    "children": [
+      {
+        "id": "2d0c129dfd552c33",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "b59721a3a7622593",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "TPM - Konvensi Sesi & Pencarian.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "93ac7167caab4e5b",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "TPM - Konvensi Sesi & Pencarian.md",
+                "linksCollapsed": true,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "c702b96c839561d1",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "cfc1f80b57d61d9a",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "eccd0a57cce3aa3c",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "TPM - Konvensi Sesi & Pencarian.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false,
+      "terminal:Open terminal": false,
+      "templater-obsidian:Templater": false
+    }
+  },
+  "active": "c92cb9e3918cea5f",
+  "lastOpenFiles": [
+    "TPM - Modul Angkut.md",
+    "AGENTS.md",
+    "Sessions/2026-09-26 1900 - Pengujian Regresi Keseimbangan Neraca dan Ekuitas serta Pemulihan Stok Sparepart.md",
+    "RTK.md.tmp.25644.0279e877d26f",
+    "backend/tests/test_bengkel_void_and_edit_balance.py.tmp.20412.dd8958e9ffe8",
+    "backend/tests/__pycache__/test_bengkel_void_and_edit_balance.cpython-310-pytest-7.4.3.pyc",
+    "backend/tests/test_bengkel_void_and_edit_balance.py",
+    "backend/tests/test_bengkel_void_and_edit_balance.py.tmp.20412.12c9cecab841",
+    "backend/__pycache__/test_car_debt_fix.cpython-310-pytest-7.4.3.pyc",
+    "Sessions/2026-09-26 1845 - Fitur Pembatalan dan Edit Item Perbaikan Bengkel Armada Jasa Angkut.md",
+    "TPM - Konvensi Sesi & Pencarian.md",
+    "CLAUDE.md",
+    "TPM - Log Pengembangan.md.tmp.20412.35ba59697ac8",
+    "Sessions/2026-09-26 1830 - Fitur Pembatalan dan Edit Item Transaksi Bengkel pada Mobil Detail.md",
+    "frontend/components/MobilDetail.tsx.tmp.20412.6e87ebc9ceb4",
+    "frontend/components/RelatedBengkelTransactions.tsx.tmp.20412.4f1b67e74722",
+    "backend/uploads_pre_restore_20260926_150425/mobil/8/d536f6ca-3b42-4675-959a-e6c856ce8367.jpg",
+    "backend/uploads_pre_restore_20260926_150425/mobil/8/3723d802-a64d-4a2c-823b-26d634465767.jpg",
+    "backend/uploads_pre_restore_20260926_150425/mobil/79/6a553e31-a70c-4144-b16c-508e92443391.mp4",
+    "backend/uploads_pre_restore_20260926_150425/mobil/8/0ec513b9-1c3f-47ac-9e17-1f395def063b.jpg",
+    "backend/uploads_pre_restore_20260926_150425/mobil/75/79028369-8694-4734-a2ce-ebf67012275f.jpg",
+    "backend/uploads_pre_restore_20260926_150425/mobil/71/f64c2abb-4082-4c24-b877-670058a4aae8.jpeg",
+    "backend/uploads_pre_restore_20260926_150425/mobil/73/f93feebb-5d15-4e16-9d43-790e90da3391.png",
+    "backend/uploads_pre_restore_20260926_150425/mobil/6/e44f5f55-cd24-4d13-ab28-8c67a55bfab9.jpg",
+    "backend/uploads_pre_restore_20260926_150425/mobil/6/91486727-210e-40da-ac5d-24b1951b65f2.jpg",
+    "backend/uploads_pre_restore_20260926_150425/mobil/54/0fc9db5f-7712-47ca-b2f7-68390b60e2f8.jpg",
+    "backend/uploads_pre_restore_20260926_150425/mobil/54/6aa6530e-3eb7-44b8-83a2-9f591e4fd70d.jpg",
+    "TPM - Log Pengembangan.md",
+    "Sessions/2026-09-26 1500 - Init CLAUDE.md & Sinkronisasi Obsidian.md",
+    "Sessions/2026-09-26 0000 - Refactor Header Master Data & Standalone Bengkel Pages.md",
+    "Sessions/2026-09-26 1800 - Penanganan Intersepsi Back Button Bottom Sheet Mobile Web.md",
+    "Templates/TPM Session Template.md",
+    "Sessions/2026-09-26 1730 - Refactor Kartu Antrian Bengkel Urutan Customer Plat Kategori.md",
+    "frontend/node_modules/isexe/README.md",
+    "frontend/app/bengkel/CLAUDE.md",
+    "Sessions/2026-09-26 1700 - Baris Penyesuaian Backdate Non-Impor & Invarian Balance Ekuitas.md",
+    "Sessions/2026-09-26 1630 - Analisis Void Bengkel Kas Transfer & Invarian Modal Awal.md",
+    "CONTINUITY.md",
+    "Sessions/2026-09-26 1545 - Analisis Void Transaksi Bengkel JB Mobil & Penyeimbangan Kas.md",
+    "TPM Session Template.md",
+    "2026-09-26 0000 - Refactor Header Master Data & Standalone Bengkel Pages.md",
+    "Sessions/2026-09-26 1515 - Analisis Race Condition Stok Lem Threebond Part 469.md",
+    "dashboard/node_modules/react-router-dom/README.md",
+    "README.md",
+    "TPM - Modul SDM.md",
+    "TPM - Modul Keuangan.md"
+  ]
+}

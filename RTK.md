@@ -39,7 +39,7 @@ rtk gain
   - jalankan typecheck atau test yang relevan.
 - Setiap perubahan finance/laporan wajib dicatat di dokumentasi alur keuangan/laporan keuangan sebelum dianggap selesai.
 - Jika ada perubahan perilaku, update dokumen alur keuangan/laporan agar tetap jadi single source of truth.
-- Dokumen acuan ada di `.agent/FINANCE_REPORTING_GUARDRAIL.md`.
+- Dokumen acuan ada di [[TPM - Aturan Bisnis & Invariant]].
 
 ## Windows Notes
 

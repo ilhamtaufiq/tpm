@@ -528,6 +528,11 @@ class MobilService:
 
     def _apply_harga_beli_change(self, mobil: Mobil, harga_baru: Decimal) -> None:
         """Geser hutang beli terbuka + basis revaluasi saat harga beli dikoreksi."""
+        if mobil.status == CarStatus.TERJUAL:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Harga beli mobil yang sudah TERJUAL tidak dapat diubah",
+            )
         hutang = (
             self.db.query(HutangUsaha)
             .filter(
