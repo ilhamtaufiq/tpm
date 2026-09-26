@@ -61,9 +61,11 @@ Rincian itemized transaksi & mutasi pembentuk total **Rp41.984.500,00**:
 | --- | --- | --- | --- |
 | `JAS2609140001` (ID 201) | 12-09-2026 | Mang Usa | Rp 700.000,00 |
 | `JAS2609150008` (ID 220) | 12-09-2026 | Mang Dendi | Rp 92.500,00 |
-| Rekonsiliasi Stok & Kas | Multi-tgl | Penyesuaian Persediaan Sparepart & Kas/Piutang Pra-12 Sep | Rp 25.044.500,00 |
+| Saldo Kas/Bank Non-IMP | 12-09-2026 | Net Kas Masuk (`BGL2609120001` Rp80k − `PGL2609120001` Rp24k) | Rp 56.000,00 |
+| Persediaan Sparepart & Stok | 12-09-2026 | Total fisik persediaan sparepart gudang saat pembukaan buku | Rp 129.430.406,50 |
+| Formulasi Modal Pembuka | 12-09-2026 | Penyesuaian bersih modal pembuka persediaan fisik vs kas historis | (Rp 105.234.406,50) |
 
-*Subtotal Mutasi Aset & Piutang:* **Rp 25.837.000,00**
+*Subtotal Mutasi Aset & Piutang:* **Rp 25.837.000,00** (termasuk Rp 25.044.500,00 rekonsiliasi persediaan & kas pra-12 Sep)
 
 ---
 
