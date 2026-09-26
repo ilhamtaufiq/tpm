@@ -371,9 +371,11 @@ export default function NeracaScreen() {
 
     const renderBalanceCheck = () => {
         if (!report) return null;
-        // Gunakan data dari backend sebagai sumber kebenaran utama
+        // Rekonsiliasi riil: cek selisih identitas neraca + selisih ekuitas bottom-up
         const selisih = report.selisih || 0;
-        const isBalanced = report.is_balanced ?? (Math.abs(selisih) < 100);
+        const selisihEquity = report.cross_validation?.selisih_equity || 0;
+        const isBalanced = (report.is_balanced ?? (Math.abs(selisih) < 100)) && Math.abs(selisihEquity) < 100;
+        const displaySelisih = Math.abs(selisih) >= 100 ? selisih : selisihEquity;
 
         return (
             <View className={`mb-24 rounded-[32px] overflow-hidden p-6 ${isBalanced ? 'bg-primary' : 'bg-amber-600'} shadow-2xl relative w-full`}>
@@ -395,11 +397,11 @@ export default function NeracaScreen() {
                     <FinancialRow label="Total Pasiva (Hutang + Modal)" value={report.total_pasiva || 0} isDark small />
                     <View className="h-[1px] bg-surface/20 w-full my-3" />
                     <View className="flex-row justify-between items-center w-full">
-                        <Typography className="text-white/60 text-xs flex-1">Selisih Neraca</Typography>
+                        <Typography className="text-white/60 text-xs flex-1">Selisih Rekonsiliasi</Typography>
                         {(() => {
-                            const isNegSelisih = selisih < 0;
-                            const selisihDisplay = formatCurrencyDisplay(selisih);
-                            const selisihColor = Math.abs(selisih) < 100
+                            const isNegSelisih = displaySelisih < 0;
+                            const selisihDisplay = formatCurrencyDisplay(displaySelisih);
+                            const selisihColor = Math.abs(displaySelisih) < 100
                                 ? 'text-emerald-300'
                                 : (isNegSelisih ? 'text-red-400' : 'text-amber-300');
                             return (
