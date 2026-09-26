@@ -80,10 +80,13 @@ export function LabaRugi() {
   const ja = r.units.jasa_angkut;
   const m = r.units.mobil;
   const md = r.mobil_details ?? {};
-  const prepSold = m.beban_operasional || 0;
-  const prepAll = md.total_biaya_persiapan ?? prepSold;
+  const soldPrep = m.beban_operasional || 0;
+  const allPrep = md.total_biaya_persiapan ?? soldPrep;
+  const unsoldPrep = Math.max(0, allPrep - soldPrep);
   // Signed: koreksi/retur repair negatif harus tampil, bukan di-nol-kan.
-  const repairSold = m.maintenance ?? md.total_biaya_bengkel ?? md.biaya_bengkel ?? 0;
+  const soldRepair = m.maintenance ?? md.total_biaya_bengkel ?? md.biaya_bengkel ?? 0;
+  const allRepair = md.total_biaya_bengkel_all ?? soldRepair;
+  const unsoldRepair = md.total_biaya_bengkel_unsold ?? Math.max(0, allRepair - soldRepair);
   const penalti = m.dana_penalti ?? m.pendapatan_lainnya ?? 0;
 
   const unitCard = (
@@ -219,13 +222,16 @@ export function LabaRugi() {
           {groupLabel('II. Beban Pokok Penjualan (HPP)', 'text-slate-500')}
           <FinancialRow label="Harga Beli Unit" value={m.hpp} isNegative small color="text-rose-600" />
           <Drill spec={drillPenjualanMobil()} period={period} amountKey="harga_beli" total={m.hpp} />
-          <FinancialRow label="Biaya Persiapan - Mobil Terjual" value={prepSold} isNegative small color="text-rose-600" />
-          <Drill spec={drillPengeluaranUnit('jual_beli_mobil', 'persiapan mobil')} period={period} amountKey="jumlah" total={prepSold} />
-          <FinancialRow label="Biaya Perbaikan Bengkel - Mobil Terjual" value={repairSold} isNegative small color="text-rose-600" />
-          <Drill spec={drillRepairMobil()} period={period} amountKey="grand_total" total={repairSold} />
+          <FinancialRow label="Biaya Persiapan - Mobil Terjual" value={soldPrep} isNegative small color="text-rose-600" />
+          <Drill spec={drillPengeluaranUnit('jual_beli_mobil', 'persiapan mobil')} period={period} amountKey="jumlah" total={soldPrep} />
+          <FinancialRow label="Biaya Perbaikan Bengkel - Mobil Terjual" value={soldRepair} isNegative small color="text-rose-600" />
+          <Drill spec={drillRepairMobil()} period={period} amountKey="grand_total" total={soldRepair} />
           <p className="mt-1 text-[11px] text-slate-400">Σ drill = tagihan bengkel internal; selisih vs laporan = biaya ledger “Perawatan Bengkel”.</p>
-          {prepAll > prepSold && (
-            <p className="mt-1 text-[11px] text-slate-400">Info: persiapan semua stok {formatCurrencyDisplay(prepAll)} (belum terjual {formatCurrencyDisplay(prepAll - prepSold)}).</p>
+          {allRepair > soldRepair && (
+            <p className="mt-1 text-[11px] text-slate-400">Info: perbaikan bengkel semua stok {formatCurrencyDisplay(allRepair)} (belum terjual {formatCurrencyDisplay(unsoldRepair)}).</p>
+          )}
+          {allPrep > soldPrep && (
+            <p className="mt-1 text-[11px] text-slate-400">Info: persiapan semua stok {formatCurrencyDisplay(allPrep)} (belum terjual {formatCurrencyDisplay(unsoldPrep)}).</p>
           )}
           {groupLabel('III. Beban Umum Unit', 'text-slate-500')}
           {(m.sharing_investor || 0) > 0 && (
@@ -344,6 +350,10 @@ export function Neraca() {
     ? al.unit_cash_details
     : Object.entries(al.unit_details || {}).map(([unit, total_cash]) => ({ unit, total_cash: Number(total_cash || 0) }));
 
+  const selisihEquity = r.cross_validation?.selisih_equity || 0;
+  const isBalanced = (r.is_balanced ?? (Math.abs(r.selisih) < 100)) && Math.abs(selisihEquity) < 100;
+  const displaySelisih = Math.abs(r.selisih) >= 100 ? r.selisih : selisihEquity;
+
   const sectionHead = (title: string, sub: string, total: number, tone: string, icon: ReactNode) => (
     <div className="flex items-center justify-between gap-3 border-b border-slate-50 px-5 py-4">
       <div className="flex items-center gap-3">
@@ -359,7 +369,7 @@ export function Neraca() {
 
   return (
     <div className="animate-fade-up space-y-5">
-      <PageHeader title="Neraca" sub={`Posisi keuangan per ${formatDate(asOf)}`} right={<Badge tone={r.is_balanced ? 'ok' : 'bad'}>{r.is_balanced ? 'BALANCED' : `SELISIH ${formatCurrencyDisplay(r.selisih)}`}</Badge>} />
+      <PageHeader title="Neraca" sub={`Posisi keuangan per ${formatDate(asOf)}`} right={<Badge tone={isBalanced ? 'ok' : 'bad'}>{isBalanced ? 'BALANCED' : `SELISIH ${formatCurrencyDisplay(displaySelisih)}`}</Badge>} />
       <PeriodControls filterType={filterType} onType={setFilterType} label={period.label} onPrev={() => shift(-1)} onNext={() => shift(1)} />
 
       <div className="relative overflow-hidden rounded-3xl bg-[#0B1F3A] p-6 text-white shadow-xl sm:p-7">
@@ -372,7 +382,7 @@ export function Neraca() {
           {[
             ['Aktiva', r.total_aktiva],
             ['Pasiva', r.total_pasiva],
-            ['Selisih', r.selisih],
+            ['Selisih', displaySelisih],
           ].map(([label, value]) => (
             <div key={label as string} className="rounded-2xl border border-white/10 bg-white/5 p-3.5 sm:p-4">
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
@@ -436,6 +446,9 @@ export function Neraca() {
             <div className="pl-3">
               <FinancialRow label="Piutang Lainnya / Manual Unit" value={al.piutang_lainnya} small />
               <Drill spec={drillPiutang('LAINNYA', 'Rincian piutang lainnya')} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="sisa_piutang" total={al.piutang_lainnya} />
+              {(al.piutang_karyawan || 0) > 0 && (
+                <FinancialRow label="Piutang Karyawan (Kasbon)" value={al.piutang_karyawan || 0} small />
+              )}
               <FinancialRow label="Piutang Unit Bengkel" value={al.piutang_usaha || 0} small />
               {(al.piutang_usaha || 0) > 0 && (
                 <Drill spec={drillPiutang('BENGKEL', 'Rincian piutang bengkel')} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="sisa_piutang" total={al.piutang_usaha} />
@@ -488,7 +501,16 @@ export function Neraca() {
       <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
         {sectionHead('Modal', 'Equity', m.total_modal, 'bg-indigo-50 text-indigo-700', <Wallet size={17} />)}
         <div className="p-5">
-          <FinancialRow label="Modal" value={m.total_modal} bold large />
+          <FinancialRow label="Setoran Modal" value={m.setoran_modal} small />
+          <FinancialRow label="Laba Ditahan" value={labaAdj} bold color="text-indigo-700" />
+          {m.penyesuaian_harga_beli_sparepart !== undefined && m.penyesuaian_harga_beli_sparepart !== 0 && (
+            <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={m.penyesuaian_harga_beli_sparepart} small color="text-slate-500" />
+          )}
+          {m.prive !== 0 && (
+            <FinancialRow label="Prive (Pengambilan Pemilik)" value={m.prive} isNegative small />
+          )}
+          <div className="my-2 h-px w-full bg-slate-100" />
+          <FinancialRow label="Total Modal" value={m.total_modal} bold large />
           <Drill
             spec={drillModalKomposisi({
               setoran: m.setoran_modal,
@@ -520,6 +542,15 @@ export function Neraca() {
           <p className="mt-1 text-[11px] text-slate-400">Cerminan Dana Investor di Perubahan Modal — berkurang saat unit terjual & dana cair ke investor.</p>
           <FinancialRow label="4. Hutang Lainnya / Manual Unit" value={h.hutang_lainnya} small large />
           <Drill spec={drillHutangLainnya('Rincian hutang lainnya')} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="sisa_hutang" total={h.hutang_lainnya} />
+          {(h.hutang_jasa_angkut || 0) > 0 && (
+            <FinancialRow label="5. Hutang Jasa Angkut" value={h.hutang_jasa_angkut || 0} small large />
+          )}
+          {(h.uang_muka_penjualan || 0) > 0 && (
+            <FinancialRow label="Uang Muka Penjualan" value={h.uang_muka_penjualan || 0} small large />
+          )}
+          {(h.piutang_booking || 0) > 0 && (
+            <FinancialRow label="Sisa Kewajiban Booking Mobil" value={h.piutang_booking || 0} small large />
+          )}
           <div className="my-3 h-px w-full bg-slate-100" />
           <div className="rounded-xl border border-rose-100/50 bg-rose-50 p-4">
             <FinancialRow label="Total Hutang" value={h.total_hutang} bold large color="text-rose-800" />
@@ -527,7 +558,7 @@ export function Neraca() {
         </div>
       </section>
 
-      <section className={`relative overflow-hidden rounded-3xl p-6 text-white shadow-xl sm:p-7 ${r.is_balanced ? 'bg-[#0B1F3A]' : 'bg-amber-700'}`}>
+      <section className={`relative overflow-hidden rounded-3xl p-6 text-white shadow-xl sm:p-7 ${isBalanced ? 'bg-[#0B1F3A]' : 'bg-amber-700'}`}>
         <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-emerald-500/20 blur-3xl" />
         <div className="relative flex items-center gap-3">
           <Scale size={18} className="text-emerald-300" />
@@ -541,15 +572,15 @@ export function Neraca() {
           <div className="flex justify-between"><span className="text-slate-300">Total Pasiva</span><b className="tabular-nums">{formatCurrencyDisplay(r.total_pasiva)}</b></div>
           <div className="my-2 h-px bg-white/10" />
           <div className="flex items-center justify-between">
-            <span className="text-slate-300">Selisih</span>
-            <span className={`text-xl font-extrabold tabular-nums ${Math.abs(r.selisih) < 100 ? 'text-emerald-300' : 'text-amber-300'}`}>
-              {formatCurrencyDisplay(r.selisih)}
+            <span className="text-slate-300">Selisih Rekonsiliasi</span>
+            <span className={`text-xl font-extrabold tabular-nums ${Math.abs(displaySelisih) < 100 ? 'text-emerald-300' : 'text-amber-300'}`}>
+              {formatCurrencyDisplay(displaySelisih)}
             </span>
           </div>
         </div>
         <p className="relative mt-3 text-xs leading-relaxed text-slate-400">Aktiva = Kas & Bank + Piutang + Persediaan + Stok Mobil + Aset Tetap. Pasiva = Hutang + Modal (Setoran Kas + Setoran Non-Kas + Laba Ditahan − Prive). Selisih ≠ 0 berarti ada transaksi belum tercatat / salah pos — bukan angka yg dipaksa pas.</p>
         <div className="relative mt-3 text-center">
-          <Badge tone={r.is_balanced ? 'ok' : 'warn'}>{r.is_balanced ? 'NERACA SEIMBANG' : 'TERDAPAT SELISIH'}</Badge>
+          <Badge tone={isBalanced ? 'ok' : 'warn'}>{isBalanced ? 'NERACA SEIMBANG' : 'TERDAPAT SELISIH'}</Badge>
         </div>
       </section>
     </div>
@@ -570,26 +601,28 @@ export function Modal() {
 
   const modalAwal = r.modal_awal || 0;
   const setoranKas = r.penambahan?.setoran_modal || 0;
+  const penyesuaianBackdateNonImpor = r.penambahan?.laba_ditahan_pra_saldo_awal ?? r.penambahan?.penyesuaian_backdate_non_impor ?? 0;
   const penyesuaianHargaBeli = r.penambahan?.penyesuaian_harga_beli_sparepart || 0;
   const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
-  const labaBersih = r.info?.laba_bersih || 0;
   const prive = r.pengurangan?.prive || 0;
-  const labaInvestor = r.info?.laba_investor || 0;
   const pengembalianModal = r.pengurangan?.pengembalian_modal || 0;
   const priveTotal = prive + pengembalianModal;
+  const labaBersih = r.info?.laba_bersih || 0;
+  const labaOperasional = r.info?.laba_operasional ?? r.info?.laba_bersih ?? (labaBersih + priveTotal);
+  const labaDitahanSebelumnya = r.info?.laba_ditahan_sebelumnya ?? r.laba_ditahan_sebelumnya ?? 0;
+  const labaInvestor = r.info?.laba_investor || 0;
+  const diskonPenjualanBengkel = r.info?.diskon_penjualan_bengkel || 0;
   const modalAkhir = r.modal_akhir || 0;
-  // info.laba_operasional = laba SEBELUM prive. `laba_bersih` sudah net prive —
-  // memakainya di sini lalu mengurangkan prive lagi menghitung prive dua kali.
-  const labaOperasional = r.info?.laba_operasional ?? labaBersih + priveTotal;
+
   // Investor = hutang (bukan aliran modal) — selaras xlsx. Laba investor sudah
   // dipotong di dalam laba_operasional.
-  const perubahanBersih = setoranKas + penyesuaianHargaBeli + modalNonKas + labaOperasional - priveTotal;
+  const perubahanBersih = setoranKas + penyesuaianBackdateNonImpor + penyesuaianHargaBeli + modalNonKas + labaDitahanSebelumnya + labaOperasional - priveTotal;
   const expectedAliran = modalAwal + perubahanBersih;
   // Mutasi dihitung kumulatif sejak posisi pembuka (modal awal beku); bila
   // periode terpilih menjangkau sebelum itu, angkanya beda dengan Laba Rugi.
   const coversBeforeOpening = !!r.modal_awal_flow_dari && r.modal_awal_flow_dari > period.tanggal_dari;
   const expected = r.info?.validasi?.modal_teoritis ?? expectedAliran;
-  const selisih = r.info?.validasi?.selisih ?? r.selisih ?? modalAkhir - expected;
+  const selisih = r.info?.validasi?.selisih ?? r.selisih ?? (modalAkhir - expected);
   const isBalanced = r.is_balanced ?? Math.abs(selisih) < 100;
 
   return (
@@ -655,11 +688,10 @@ export function Modal() {
         <p className="mt-1 text-[11px] text-slate-400">
           * akun beku: modal awal = (total aktiva − total hutang) pada posisi pembuka{r.modal_awal_as_of ? ` (${r.modal_awal_as_of})` : ''}, tidak berubah oleh transaksi setelahnya — perubahan aset/hutang masuk ke Modal Akhir.
         </p>
-        <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={penyesuaianHargaBeli} />
-        {penyesuaianHargaBeli !== 0 && <Drill spec={drillRevaluasi()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: period.tanggal_sampai }} amountKey="amount" total={penyesuaianHargaBeli} />}
 
         <div className="my-2 h-px w-full bg-slate-100" />
-        <FinancialRow label="Penambahan Modal" value={setoranKas + modalNonKas} small indent />
+        <p className="mb-1 text-[10px] font-extrabold uppercase tracking-widest text-emerald-600">Penambahan</p>
+        <FinancialRow label="Penambahan Modal" value={setoranKas + modalNonKas} small indent color="text-emerald-700" />
         <Drill
           spec={drillPenambahanModal({ kas: setoranKas, non_kas: modalNonKas })}
           period={period}
@@ -667,21 +699,54 @@ export function Modal() {
           total={setoranKas + modalNonKas}
         />
         <p className="mt-1 pl-6 text-[11px] text-slate-400">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</p>
-        <FinancialRow label="Laba/Rugi Periode" value={labaOperasional} small indent isNegative={labaOperasional < 0} />
-        <p className="mt-1 pl-6 text-[11px] text-slate-400">* sebelum prive — prive dikurangkan di baris berikutnya</p>
-        <Drill
-          spec={drillLabaPeriode(r.info?.units as Record<string, Record<string, number>> | undefined)}
-          period={period}
-          amountKey="amount"
-          total={labaOperasional}
-        />
+        {penyesuaianBackdateNonImpor !== 0 && (
+          <>
+            <FinancialRow label="Laba Ditahan Pra-Saldo-Awal" value={penyesuaianBackdateNonImpor} small indent color="text-emerald-700" />
+            <p className="mt-1 pl-6 text-[11px] text-slate-400">* laba operasional pra-saldo-awal (penyeimbang modal awal beku)</p>
+          </>
+        )}
+        {labaDitahanSebelumnya >= 0 && labaDitahanSebelumnya !== 0 && (
+          <>
+            <FinancialRow label="Laba Ditahan Sebelumnya" value={labaDitahanSebelumnya} small indent color="text-emerald-700" />
+            <p className="mt-1 pl-6 text-[11px] text-slate-400">* laba periode sebelum {r.modal_awal_flow_dari ?? period.tanggal_dari} (posisi pembuka)</p>
+          </>
+        )}
+        {labaOperasional >= 0 && (
+          <>
+            <FinancialRow label="Laba Operasional Periode" value={labaOperasional} small indent color="text-emerald-700" />
+            <p className="mt-1 pl-6 text-[11px] text-slate-400">* sebelum prive — prive dikurangkan di baris berikutnya</p>
+            <Drill
+              spec={drillLabaPeriode(r.info?.units as Record<string, Record<string, number>> | undefined)}
+              period={period}
+              amountKey="amount"
+              total={labaOperasional}
+            />
+          </>
+        )}
+        {penyesuaianHargaBeli !== 0 && (
+          <>
+            <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={penyesuaianHargaBeli} small indent color="text-slate-700" />
+            <Drill spec={drillRevaluasi()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: period.tanggal_sampai }} amountKey="amount" total={penyesuaianHargaBeli} />
+          </>
+        )}
+        {diskonPenjualanBengkel > 0 && (
+          <p className="mt-1 pl-6 text-[11px] text-slate-400">· info: diskon bengkel {formatCurrencyDisplay(diskonPenjualanBengkel)} sudah di laba (bukan baris modal terpisah)</p>
+        )}
+
+        <div className="my-2 h-px w-full bg-slate-100" />
+        <p className="mb-1 text-[10px] font-extrabold uppercase tracking-widest text-rose-600">Pengurangan</p>
         <FinancialRow label="Prive/ Pengambilan Pemilik" value={-priveTotal} small indent isNegative={priveTotal > 0} />
-        {/* total = prive + pengembalian_modal (nilai baris), bukan `prive` saja. */}
         {priveTotal > 0 && <Drill spec={drillPrive()} period={period} amountKey="nominal" total={priveTotal} />}
         <p className="mt-1 pl-6 text-[11px] text-slate-400">* pengambilan pemilik dan akun ini hanya muncul di laporan perubahan modal saja, karena sifat nya mengurangi kumulatif antar modal dan laba/rugi</p>
+        {labaOperasional < 0 && (
+          <FinancialRow label="Rugi Operasional Periode" value={labaOperasional} small indent isNegative />
+        )}
+        {labaDitahanSebelumnya < 0 && (
+          <FinancialRow label="Rugi Ditahan Sebelumnya" value={labaDitahanSebelumnya} small indent isNegative />
+        )}
         {labaInvestor !== 0 && (
           <>
-            <FinancialRow label="Info: Laba Investor Jual Beli Mobil" value={labaInvestor} small indent />
+            <FinancialRow label="Info: Laba Investor Jual Beli Mobil" value={labaInvestor} small indent color="text-slate-400" />
             <Drill spec={drillInvestor()} period={period} amountKey="nominal" total={labaInvestor} />
             <p className="mt-1 pl-6 text-[11px] text-slate-400">* sudah dipotong di laba operasional (investor = hutang, bukan baris ekuitas)</p>
           </>
