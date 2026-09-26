@@ -37,6 +37,7 @@ Tambahkan baris baru di atas (terbaru dulu) setiap bikin sesi baru:
 
 | Tanggal | Modul | Status | Sesi |
 |---|---|---|---|
+| 2026-09-26 | mobil | done | [[Sessions/2026-09-26 1830 - Fitur Pembatalan dan Edit Item Transaksi Bengkel pada Mobil Detail]] |
 | 2026-09-26 | ui | done | [[Sessions/2026-09-26 1800 - Penanganan Intersepsi Back Button Bottom Sheet Mobile Web]] |
 | 2026-09-26 | bengkel | done | [[Sessions/2026-09-26 1730 - Refactor Kartu Antrian Bengkel Urutan Customer Plat Kategori]] |
 | 2026-09-26 | keuangan | done | [[Sessions/2026-09-26 1700 - Baris Penyesuaian Backdate Non-Impor & Invarian Balance Ekuitas]] |

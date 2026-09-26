@@ -782,7 +782,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     )}
 
                     {/* Related Workshop Transactions */}
-                    {activeUnit && <RelatedBengkelTransactions mobil_id={activeUnit.id} />}
+                    {activeUnit && <RelatedBengkelTransactions mobil_id={activeUnit.id} onClose={onClose} />}
 
                     {/* Notes Section with Style */}
                     {activeUnit.catatan && (
