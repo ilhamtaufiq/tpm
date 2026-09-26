@@ -37,6 +37,7 @@ Tambahkan baris baru di atas (terbaru dulu) setiap bikin sesi baru:
 
 | Tanggal | Modul | Status | Sesi |
 |---|---|---|---|
+| 2026-09-26 | testing | done | [[Sessions/2026-09-26 1900 - Pengujian Regresi Keseimbangan Neraca dan Ekuitas serta Pemulihan Stok Sparepart]] |
 | 2026-09-26 | jasa-angkut | done | [[Sessions/2026-09-26 1845 - Fitur Pembatalan dan Edit Item Perbaikan Bengkel Armada Jasa Angkut]] |
 | 2026-09-26 | mobil | done | [[Sessions/2026-09-26 1830 - Fitur Pembatalan dan Edit Item Transaksi Bengkel pada Mobil Detail]] |
 | 2026-09-26 | ui | done | [[Sessions/2026-09-26 1800 - Penanganan Intersepsi Back Button Bottom Sheet Mobile Web]] |
