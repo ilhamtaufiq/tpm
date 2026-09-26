@@ -1,39 +1,23 @@
 # Continuity Ledger
 
-- Goal: Verify if the header in `frontend/app/master-data/index.tsx` uses the global header component `Header.tsx` similar to `frontend/app/bengkel/index.tsx`, adjust scroll content bottom padding for CustomTabBar compatibility, and transition BengkelForm into a standalone page at `/bengkel/order`.
+- Goal: Refactor `frontend/app/bengkel/queue.tsx` card and modal header layout to display Customer Name at the top, followed by License Plate and Category.
 - Constraints/Assumptions:
   - React Native / Expo Router frontend structure.
   - Global rules require starting replies with a Ledger Snapshot.
 - Key decisions:
-  - Replaced the custom inline header and deleted the "Database Summary" container inside `frontend/app/master-data/index.tsx`.
-  - Imported and used the global `<Header />` component from `../../components/ui/Header`.
-  - Added bottom padding view to master-data index for `CustomTabBar` spacing.
-  - Added `isPage?: boolean` prop to `BengkelForm.tsx` to conditionally render standard ScrollView instead of BottomSheetScrollView.
-  - Created standalone page `frontend/app/bengkel/order.tsx` mapping to route `/bengkel/order`.
-  - Added Stack.Screen configuration in `frontend/app/bengkel/_layout.tsx` for `order`.
-  - Updated `frontend/app/bengkel/index.tsx` to navigate to `/bengkel/order` (and `/bengkel/order?id=...` for edit mode) instead of using the bottom sheet view.
-  - Added dynamic bottom padding using `getCustomTabBarBottomPadding` to `BengkelForm.tsx`, `bengkel/inventory.tsx`, and `bengkel/purchase/index.tsx` scroll views, ensuring they are not obscured by the tab bar.
-  - Retained `CustomTabBar` visibility on all screens as requested ("jangan dihide").
+  - Updated `renderQueueCard` in `frontend/app/bengkel/queue.tsx` to show Customer Name on top, with License Plate and Vehicle Category below it.
+  - Updated detail modal header in `frontend/app/bengkel/queue.tsx` for visual consistency.
 - State:
   - Done:
-    - Reverted CustomTabBar visibility so it remains visible.
-    - Updated `BengkelForm.tsx`, `inventory.tsx`, and `purchase/index.tsx` to use dynamic bottom padding from `getCustomTabBarBottomPadding`.
-    - Created standalone Today's Queue screen at `frontend/app/bengkel/queue.tsx` and registered it in layout.
-    - Replaced the bottom sheet for queue inside `frontend/app/bengkel/index.tsx` with direct navigation to `/bengkel/queue`.
-    - Moved the purchase form to `frontend/app/bengkel/purchase/create.tsx` and created a standalone purchase history/index screen at `frontend/app/bengkel/purchase/index.tsx`, complete with dynamic bottom tab bar padding.
-    - Verified all files compile with zero errors.
-  - Now: Ready for user verification.
-  - Next: Await feedback from the user.
+    - Refactored queue card and detail modal layout in `frontend/app/bengkel/queue.tsx`.
+    - Created session note `Sessions/2026-09-26 1730 - Refactor Kartu Antrian Bengkel Urutan Customer Plat Kategori.md` and updated `TPM - Log Pengembangan.md`.
+    - Verified TypeScript compilation with zero errors.
+  - Now: Ready to commit and push.
+  - Next: Await user feedback.
 - Open questions (UNCONFIRMED):
   - None.
 - Working set:
-  - `frontend/app/bengkel/index.tsx`
-  - `frontend/app/bengkel/order.tsx`
-  - `frontend/app/bengkel/_layout.tsx`
-  - `frontend/components/BengkelForm.tsx`
-  - `frontend/app/bengkel/inventory.tsx`
-  - `frontend/app/bengkel/purchase/index.tsx`
-  - `frontend/app/bengkel/purchase/create.tsx`
-  - `frontend/app/bengkel/purchase/_layout.tsx`
   - `frontend/app/bengkel/queue.tsx`
-  - `frontend/components/ui/CustomTabBar.tsx`
+  - `Sessions/2026-09-26 1730 - Refactor Kartu Antrian Bengkel Urutan Customer Plat Kategori.md`
+  - `TPM - Log Pengembangan.md`
+  - `CONTINUITY.md`

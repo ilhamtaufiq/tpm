@@ -497,10 +497,10 @@ export default function QueueScreen() {
                         <View className="flex-row items-start justify-between gap-2">
                             <View className="flex-1 mr-2">
                                 <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1}>
-                                    {item.nomor_plat || '-'}
+                                    {item.nama_customer || item.customer_nama || 'Umum'}
                                 </Typography>
                                 <Typography className="text-textGray text-[11px] mt-0.5" numberOfLines={1}>
-                                    {item.nama_customer || 'Umum'} • {item.jenis_kendaraan || '-'}
+                                    {item.nomor_plat || '-'} • {item.jenis_kendaraan || '-'}
                                 </Typography>
                                 <Typography className="text-textGray text-[10px] mt-1" numberOfLines={1}>
                                     {item.nomor_transaksi || '-'}
@@ -857,9 +857,11 @@ export default function QueueScreen() {
                             >
                                 <View className="flex-row justify-between items-start mb-4">
                                     <View className="flex-1 mr-3">
-                                        <Typography variant="h2" weight="bold" className="text-xl tracking-tight">{selectedItem.nomor_plat}</Typography>
+                                        <Typography variant="h2" weight="bold" className="text-xl tracking-tight">
+                                            {selectedItem.nama_customer || selectedItem.customer_nama || 'Umum'}
+                                        </Typography>
                                         <Typography variant="caption" className="text-textGray mt-0.5">
-                                            {selectedItem.jenis_kendaraan} - {selectedItem.nama_customer || 'Umum'}
+                                            {selectedItem.nomor_plat || '-'} • {selectedItem.jenis_kendaraan || '-'}
                                         </Typography>
                                     </View>
                                     <Badge
