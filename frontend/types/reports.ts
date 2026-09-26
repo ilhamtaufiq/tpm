@@ -182,6 +182,7 @@ export interface CapitalReport {
     modal_awal: number;
     penambahan?: {
         setoran_modal: number;
+        laba_ditahan_pra_saldo_awal?: number;
         penyesuaian_backdate_non_impor?: number;
         penyesuaian_harga_beli_sparepart?: number;
         investor_funding?: number;

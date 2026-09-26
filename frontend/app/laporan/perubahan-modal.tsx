@@ -118,7 +118,7 @@ export default function LaporanPerubahanModalScreen() {
         const r = report;
         const modalAwal = r.modal_awal || 0;
         const setoranKas = r.penambahan?.setoran_modal || 0;
-        const penyesuaianBackdateNonImpor = r.penambahan?.penyesuaian_backdate_non_impor || 0;
+        const penyesuaianBackdateNonImpor = r.penambahan?.laba_ditahan_pra_saldo_awal ?? r.penambahan?.penyesuaian_backdate_non_impor ?? 0;
         const penyesuaianHargaBeli = r.penambahan?.penyesuaian_harga_beli_sparepart || 0;
         const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
@@ -336,8 +336,8 @@ export default function LaporanPerubahanModalScreen() {
                                 <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</Typography>
                                 {equity.penyesuaianBackdateNonImpor !== 0 && (
                                     <>
-                                        <FinancialRow label="Penyesuaian Mutasi Pra-Saldo Awal" value={equity.penyesuaianBackdateNonImpor || 0} color="text-emerald-700" />
-                                        <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* mutasi transaksi historis pra-saldo-awal (penyeimbang modal awal beku)</Typography>
+                                        <FinancialRow label="Laba Ditahan Pra-Saldo-Awal" value={equity.penyesuaianBackdateNonImpor || 0} color="text-emerald-700" />
+                                        <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* laba operasional pra-saldo-awal (penyeimbang modal awal beku)</Typography>
                                     </>
                                 )}
                                 {equity.labaDitahanSebelumnya >= 0 && equity.labaDitahanSebelumnya !== 0 && (

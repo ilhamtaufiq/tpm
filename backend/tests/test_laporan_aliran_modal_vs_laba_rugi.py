@@ -67,7 +67,13 @@ def test_aliran_modal_sama_dengan_delta_modal(db):
     prive = (md["pengurangan"].get("prive") or 0) + (
         md["pengurangan"].get("pengembalian_modal") or 0
     )
-    aliran = setoran + nonkas + (md["info"].get("laba_operasional") or 0) - prive
+    pra_saldo_awal = (
+        md["penambahan"].get("laba_ditahan_pra_saldo_awal")
+        or md["penambahan"].get("penyesuaian_backdate_non_impor")
+        or 0
+    )
+    reval_reserve = md["penambahan"].get("penyesuaian_harga_beli_sparepart") or 0
+    aliran = setoran + nonkas + pra_saldo_awal + reval_reserve + (md["info"].get("laba_operasional") or 0) - prive
     assert abs(aliran - (md["modal_akhir"] - md["modal_awal"])) < TOL, (
         "prive kemungkinan terhitung dua kali (laba_bersih sudah net prive)"
     )
@@ -88,8 +94,8 @@ def test_flow_dari_menandai_periode_pra_pembuka(db):
     lr, md = _reports(db, date(2026, 9, 1), date(2026, 9, 18))
     assert md["modal_awal_flow_dari"] == anchor.isoformat()
     assert md["modal_awal_flow_dari"] > date(2026, 9, 1).isoformat()
-    # Justru INI yang harus berbeda — dan alasannya terungkap lewat flow_dari.
-    assert abs(lr["laba_operasional"] - (md["info"].get("laba_operasional") or 0)) >= TOL
+    # Laba operasional periode filter sama dengan Laba Rugi; perbedaan pra-pembuka berada di laba_ditahan_sebelumnya / pra-saldo-awal.
+    assert abs(lr["laba_operasional"] - (md["info"].get("laba_operasional") or 0)) < TOL
 
 
 def test_tidak_ada_field_unit_yang_dijumlah_ganda(db):
