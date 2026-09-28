@@ -13,6 +13,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from sqlalchemy import or_, and_
 from app.database import SessionLocal
 from app.models.keuangan import KasBank, PembayaranPiutang, PiutangUsaha
 from app.utils.constants import KasBankType, KasBankSource, KasBankJenis, PiutangSource
