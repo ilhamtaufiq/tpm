@@ -38,7 +38,12 @@ def heal_missing_kasbank():
                 KasBank.tipe == KasBankType.MASUK,
                 KasBank.nominal == pb.nominal,
                 KasBank.tanggal == pb.tanggal,
-                KasBank.nomor_referensi == ptg.nomor_piutang,
+                or_(
+                    KasBank.nomor_referensi == ptg.nomor_piutang,
+                    KasBank.nomor_referensi == ptg.nomor_referensi,
+                    and_(KasBank.referensi_id == pb.id, KasBank.referensi_id.isnot(None)),
+                    and_(KasBank.referensi_id == ptg.referensi_id, KasBank.referensi_id.isnot(None)),
+                )
             ).first()
 
             if not kb_exist:

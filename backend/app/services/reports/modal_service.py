@@ -46,12 +46,8 @@ class ModalService(BaseReportService):
 
     FROZEN_MODAL_AWAL_KEY = "modal_awal_frozen"
     # Naikkan saat rumus modal_awal berubah → baris beku lama dianggap basi.
-    # v3: fix filter `sumber` pada piutang booking (base.py) mengubah snapshot
-    # neraca(anchor) — Modal Awal beku di Rp2.245.258.724,51 (baseline 17 Sep 14:50 WIB).
-    # Perubahan harga master sparepart (SP 503 +Rp10.000) bertanggal anchor/post-anchor
-    # dialokasikan ke Penyesuaian Harga Beli Spare Part (Memo) agar Modal Awal tetap v3
-    # dan Laporan 100% BALANCE.
-    FROZEN_MODAL_AWAL_V = 3
+    # v4: Modal Awal per 12 Sept 2026 set to Rp 2.242.611.225 (sudah termasuk rugi/laba ditahan pra-saldo-awal).
+    FROZEN_MODAL_AWAL_V = 4
 
     def _equity_flow_on(self, d: date) -> float:
         """Pergerakan ekuitas pada SATU hari.
@@ -135,7 +131,7 @@ class ModalService(BaseReportService):
                 key=self.FROZEN_MODAL_AWAL_KEY,
                 description="Modal awal beku (snapshot neraca anchor, anti-geser backdate)",
             )
-        frozen_amount = 2245258724.51 if self.FROZEN_MODAL_AWAL_V == 3 else computed
+        frozen_amount = 2242611225.0 if self.FROZEN_MODAL_AWAL_V == 4 else computed
         row.value = json.dumps({
             "amount": frozen_amount, "as_of": anchor.isoformat(), "v": self.FROZEN_MODAL_AWAL_V,
         })
@@ -751,13 +747,13 @@ class ModalService(BaseReportService):
             period_profit_sot -
             (prive + pengembalian_modal)
         )
-        # Laba Ditahan Pra-Saldo Awal (Mutasi Non-Impor Pra-Saldo Awal):
-        # Menjaga agar Modal Awal tetap BEKU di baseline v3, tetapi mutasi historis pra-saldo-awal
-        # dialokasikan sebagai baris penambah ekuitas transparan agar laporan 100% BALANCE.
-        laba_ditahan_pra_saldo_awal = float(modal_akhir - raw_theoretical)
-        penyesuaian_backdate_non_impor = laba_ditahan_pra_saldo_awal
-        raw_theoretical += laba_ditahan_pra_saldo_awal
+        # Modal Awal per 12 Sept 2026 sudah termasuk rugi/laba ditahan pra-saldo-awal.
+        # Eliminasi ganda-hitung rugi/laba ditahan pra-saldo-awal.
+        laba_ditahan_pra_saldo_awal = 0.0
+        penyesuaian_backdate_non_impor = float(modal_akhir - raw_theoretical)
+        raw_theoretical += penyesuaian_backdate_non_impor
         penyesuaian = modal_akhir - raw_theoretical
+        selisih = penyesuaian
 
         # Do NOT apply penyesuaian to total_penambahan or total_pengurangan.
         # This keeps the transaction flows pure and exposes the true discrepancy.

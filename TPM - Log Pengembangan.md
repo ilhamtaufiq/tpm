@@ -37,6 +37,7 @@ Tambahkan baris baru di atas (terbaru dulu) setiap bikin sesi baru:
 
 | Tanggal | Modul | Status | Sesi |
 |---|---|---|---|
+| 2026-09-28 | keuangan | done | [[Sessions/2026-09-28 1800 - Rekonsiliasi Neraca Stok Mobil Part dan Fix Timezone Absensi]] |
 | 2026-09-26 | keuangan | done | [[Sessions/2026-09-26 2100 - Sinkronisasi Laporan Keuangan Dashboard Web dengan Invarian Ekuitas]] |
 | 2026-09-26 | keuangan | done | [[Sessions/2026-09-26 2000 - Rebrand Laba Ditahan Pra-Saldo-Awal & Trace Transaksi]] |
 | 2026-09-26 | testing | done | [[Sessions/2026-09-26 1900 - Pengujian Regresi Keseimbangan Neraca dan Ekuitas serta Pemulihan Stok Sparepart]] |

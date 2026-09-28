@@ -287,22 +287,31 @@ export const sdmService = {
             return [];
         }
 
-        const refDate = new Date(attendanceRecords[0].date);
-        const year = refDate.getFullYear();
-        const month = refDate.getMonth() + 1;
-        const lastDay = new Date(year, month, 0).getDate();
+        const dateList = attendanceRecords.map(r => r.date).sort();
+        const minDateStr = dateList[0];
+        const maxDateStr = dateList[dateList.length - 1];
+
+        const [startYearStr, startMonthStr] = minDateStr.split('-');
+        const [endYearStr, endMonthStr] = maxDateStr.split('-');
+        const endYear = parseInt(endYearStr, 10);
+        const endMonth = parseInt(endMonthStr, 10);
+        const lastDay = new Date(endYear, endMonth, 0).getDate();
+
+        const startDate = `${startYearStr}-${startMonthStr}-01`;
+        const endDate = `${endYearStr}-${endMonthStr}-${String(lastDay).padStart(2, '0')}`;
 
         const existing = await sdmService.getAbsensiList({
             karyawan_id: karyawanId,
-            tanggal_dari: `${year}-${String(month).padStart(2, '0')}-01`,
-            tanggal_sampai: `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
-            limit: 100
+            tanggal_dari: startDate,
+            tanggal_sampai: endDate,
+            limit: 200
         });
 
         const existingMap = new Map<string, any>();
         if (existing && Array.isArray(existing.data)) {
             existing.data.forEach((abs: any) => {
-                existingMap.set(abs.tanggal.split('T')[0], abs);
+                const dateKey = typeof abs.tanggal === 'string' ? abs.tanggal.split('T')[0] : abs.tanggal;
+                existingMap.set(dateKey, abs);
             });
         }
 

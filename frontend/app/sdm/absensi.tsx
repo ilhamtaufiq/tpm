@@ -32,6 +32,13 @@ const STATUS_META: Record<AttendanceStatus, { label: string; color: string; bg: 
     LIBUR: { label: 'Libur', color: '#6B7280', bg: 'bg-surface', text: 'text-text' },
 };
 
+const getLocalDateString = (d = new Date()) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 export default function AbsensiScreen() {
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -276,7 +283,7 @@ export default function AbsensiScreen() {
         setRefreshing(false);
     }, [refetchKaryawan]);
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const markedDates = useMemo(() => {
         const merged = { ...selectedDates };
         const todayEntry = merged[today];

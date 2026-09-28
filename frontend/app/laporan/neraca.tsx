@@ -373,9 +373,8 @@ export default function NeracaScreen() {
         if (!report) return null;
         // Rekonsiliasi riil: cek selisih identitas neraca + selisih ekuitas bottom-up
         const selisih = report.selisih || 0;
-        const selisihEquity = report.cross_validation?.selisih_equity || 0;
-        const isBalanced = (report.is_balanced ?? (Math.abs(selisih) < 100)) && Math.abs(selisihEquity) < 100;
-        const displaySelisih = Math.abs(selisih) >= 100 ? selisih : selisihEquity;
+        const isBalanced = report.is_balanced ?? (Math.abs(selisih) < 100);
+        const displaySelisih = selisih;
 
         return (
             <View className={`mb-24 rounded-[32px] overflow-hidden p-6 ${isBalanced ? 'bg-primary' : 'bg-amber-600'} shadow-2xl relative w-full`}>

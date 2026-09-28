@@ -30,7 +30,10 @@ class NeracaService(BaseReportService):
         from app.models.bengkel import SparePart
         from app.utils.constants import InvestorDisbursementStatus, OwnershipType
         
-        # Auto-sync: fix orphaned internal piutang/hutang + JA muatan kas before computing
+        from app.services.spare_part_service import SparePartService
+
+        # Auto-sync: fix orphaned internal piutang/hutang + JA muatan kas + sparepart stock before computing
+        SparePartService(self.db).heal_sparepart_stock_discrepancies()
         self.sync_internal_transactions()
         self.sync_ja_muatan_finance()
         self.sync_ja_internal_bengkel_finance()

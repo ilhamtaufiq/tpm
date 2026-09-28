@@ -871,11 +871,60 @@ class MobilService:
             ownership_counts[row.tipe_kepemilikan.value] = row.count
 
         # Total capital (only available cars)
-        available_query = query.filter(Mobil.status == CarStatus.TERSEDIA)
-        total_modal_tersedia = (
-            available_query.with_entities(func.sum(Mobil.harga_beli)).scalar()
-            or Decimal("0")
-        )
+        # Total Capitalized Stock Value = Harga Beli + Biaya Persiapan + Perbaikan External + Perbaikan Internal
+        from app.utils.workshop_finance import internal_mobil_workshop_filters
+
+        available_cars = query.filter(Mobil.status == CarStatus.TERSEDIA).all()
+        available_ids = [m.id for m in available_cars]
+
+        if available_ids:
+            prep_filters = [
+                PengeluaranBengkel.mobil_id.in_(available_ids),
+                PengeluaranBengkel.kategori == ExpenseCategory.BIAYA_LAINNYA,
+                PengeluaranBengkel.metode_bayar != PaymentMethod.INTERNAL,
+            ]
+            rep_ext_filters = [
+                PengeluaranBengkel.mobil_id.in_(available_ids),
+                PengeluaranBengkel.kategori == ExpenseCategory.BIAYA_OPERASIONAL,
+                PengeluaranBengkel.metode_bayar != PaymentMethod.INTERNAL,
+            ]
+            rep_int_filters = [
+                TransaksiPenjualanBengkel.mobil_id.in_(available_ids),
+                *internal_mobil_workshop_filters(),
+            ]
+
+            if tanggal_sampai:
+                prep_filters.append(PengeluaranBengkel.tanggal <= tanggal_sampai)
+                rep_ext_filters.append(PengeluaranBengkel.tanggal <= tanggal_sampai)
+                rep_int_filters.append(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
+
+            prep_per_car = dict(
+                self.db.query(PengeluaranBengkel.mobil_id, func.sum(PengeluaranBengkel.jumlah))
+                .filter(*prep_filters)
+                .group_by(PengeluaranBengkel.mobil_id)
+                .all()
+            )
+            rep_ext_per_car = dict(
+                self.db.query(PengeluaranBengkel.mobil_id, func.sum(PengeluaranBengkel.jumlah))
+                .filter(*rep_ext_filters)
+                .group_by(PengeluaranBengkel.mobil_id)
+                .all()
+            )
+            rep_int_per_car = dict(
+                self.db.query(TransaksiPenjualanBengkel.mobil_id, func.sum(TransaksiPenjualanBengkel.grand_total))
+                .filter(*rep_int_filters)
+                .group_by(TransaksiPenjualanBengkel.mobil_id)
+                .all()
+            )
+
+            total_modal_tersedia = Decimal("0")
+            for m in available_cars:
+                m_prep = prep_per_car.get(m.id, Decimal("0"))
+                m_rep_ext = rep_ext_per_car.get(m.id, Decimal("0"))
+                m_rep_int = rep_int_per_car.get(m.id, Decimal("0"))
+                total_modal_tersedia += (m.harga_beli + m_prep + m_rep_ext + m_rep_int)
+        else:
+            total_modal_tersedia = Decimal("0")
 
         # Total purchase value (all cars in current filtered set)
         total_modal_pembelian = (

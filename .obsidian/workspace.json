@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "TPM - Konvensi Sesi & Pencarian.md",
-                "mode": "source",
+                "file": "Templates/TPM Session Template.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "TPM - Konvensi Sesi & Pencarian"
+              "title": "TPM Session Template"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "TPM - Konvensi Sesi & Pencarian.md",
+                "file": "Sessions/2026-09-26 1830 - Fitur Pembatalan dan Edit Item Transaksi Bengkel pada Mobil Detail.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "TPM - Konvensi Sesi & Pencarian.md",
+                "file": "Templates/TPM Session Template.md",
                 "linksCollapsed": true,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "TPM - Konvensi Sesi & Pencarian.md",
+                "file": "Sessions/2026-09-26 1830 - Fitur Pembatalan dan Edit Item Transaksi Bengkel pada Mobil Detail.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -192,36 +192,39 @@
   },
   "active": "c92cb9e3918cea5f",
   "lastOpenFiles": [
+    "Sessions/2026-09-26 1830 - Fitur Pembatalan dan Edit Item Transaksi Bengkel pada Mobil Detail.md",
+    "Sessions/2026-09-26 2000 - Rebrand Laba Ditahan Pra-Saldo-Awal & Trace Transaksi.md",
+    "dashboard/dist/assets/index-jv0UjC99.js",
+    "Sessions/2026-09-26 2100 - Sinkronisasi Laporan Keuangan Dashboard Web dengan Invarian Ekuitas.md",
+    "TPM - Log Pengembangan.md.tmp.25644.70414303e530",
+    "Sessions/2026-09-26 1930 - Analisis Transaksi KasBank Hilang dan Rekonsiliasi Neraca.md",
+    "Sessions/2026-09-26 2000 - Rebrand Laba Ditahan Pra-Saldo-Awal & Trace Transaksi.md.tmp.25644.f62b85d0b2df",
+    "dashboard/dist/index.html",
+    "dashboard/dist/assets/index-E9B6_wxT.css",
+    "dashboard/dist/assets/index-Cbm2YrKt.js",
+    "dashboard/dist/assets",
+    "Sessions/2026-09-26 1845 - Fitur Pembatalan dan Edit Item Perbaikan Bengkel Armada Jasa Angkut.md",
+    "Sessions/2026-09-26 0000 - Refactor Header Master Data & Standalone Bengkel Pages.md",
+    "dashboard/dist/assets/index-DWFk7EsZ.js",
+    "backend/tests/test_laporan_aliran_modal_vs_laba_rugi.py.tmp.25644.5d7d515c48aa",
+    "backend/app/services/reports/modal_service.py.tmp.25644.35e2f908c4bd",
+    "backend/backups/restore_temp_20260926_192147/uploads/mobil/75/79028369-8694-4734-a2ce-ebf67012275f.jpg",
+    "backend/backups/restore_temp_20260926_192147/uploads/mobil/55/fc09c890-6272-496a-9648-16aae92a76ad.jpg",
+    "backend/backups/restore_temp_20260926_192147/uploads/mobil/55/8bbc4234-4def-423d-bc0c-d2bb1e83fc16.jpg",
+    "backend/backups/restore_temp_20260926_192147/uploads/mobil/55/29af906c-9a7d-4383-af69-adf734528127.jpg",
+    "backend/backups/restore_temp_20260926_192147/uploads/mobil/5/d029ca10-b5f7-4809-b899-6824e82c0adb.jpg",
+    "backend/backups/restore_temp_20260926_192147/uploads/mobil/5/cf6cadf8-9088-4c9f-9487-e3c0d9890285.jpg",
+    "backend/backups/restore_temp_20260926_192147/uploads/mobil/5/44fdb2c7-b1ba-4f95-aa87-713539da7d35.jpg",
+    "backend/uploads_pre_restore_20260926_192147/mobil/49/e9a4373f-1577-4800-b650-1d0112f9aa6d.jpg",
+    "backend/uploads_pre_restore_20260926_192147/mobil/8/d536f6ca-3b42-4675-959a-e6c856ce8367.jpg",
+    "backend/uploads_pre_restore_20260926_192147/mobil/8/3723d802-a64d-4a2c-823b-26d634465767.jpg",
+    "TPM - Log Pengembangan.md",
+    "TPM - Konvensi Sesi & Pencarian.md",
     "TPM - Modul Angkut.md",
     "AGENTS.md",
     "Sessions/2026-09-26 1900 - Pengujian Regresi Keseimbangan Neraca dan Ekuitas serta Pemulihan Stok Sparepart.md",
-    "RTK.md.tmp.25644.0279e877d26f",
-    "backend/tests/test_bengkel_void_and_edit_balance.py.tmp.20412.dd8958e9ffe8",
-    "backend/tests/__pycache__/test_bengkel_void_and_edit_balance.cpython-310-pytest-7.4.3.pyc",
-    "backend/tests/test_bengkel_void_and_edit_balance.py",
-    "backend/tests/test_bengkel_void_and_edit_balance.py.tmp.20412.12c9cecab841",
-    "backend/__pycache__/test_car_debt_fix.cpython-310-pytest-7.4.3.pyc",
-    "Sessions/2026-09-26 1845 - Fitur Pembatalan dan Edit Item Perbaikan Bengkel Armada Jasa Angkut.md",
-    "TPM - Konvensi Sesi & Pencarian.md",
     "CLAUDE.md",
-    "TPM - Log Pengembangan.md.tmp.20412.35ba59697ac8",
-    "Sessions/2026-09-26 1830 - Fitur Pembatalan dan Edit Item Transaksi Bengkel pada Mobil Detail.md",
-    "frontend/components/MobilDetail.tsx.tmp.20412.6e87ebc9ceb4",
-    "frontend/components/RelatedBengkelTransactions.tsx.tmp.20412.4f1b67e74722",
-    "backend/uploads_pre_restore_20260926_150425/mobil/8/d536f6ca-3b42-4675-959a-e6c856ce8367.jpg",
-    "backend/uploads_pre_restore_20260926_150425/mobil/8/3723d802-a64d-4a2c-823b-26d634465767.jpg",
-    "backend/uploads_pre_restore_20260926_150425/mobil/79/6a553e31-a70c-4144-b16c-508e92443391.mp4",
-    "backend/uploads_pre_restore_20260926_150425/mobil/8/0ec513b9-1c3f-47ac-9e17-1f395def063b.jpg",
-    "backend/uploads_pre_restore_20260926_150425/mobil/75/79028369-8694-4734-a2ce-ebf67012275f.jpg",
-    "backend/uploads_pre_restore_20260926_150425/mobil/71/f64c2abb-4082-4c24-b877-670058a4aae8.jpeg",
-    "backend/uploads_pre_restore_20260926_150425/mobil/73/f93feebb-5d15-4e16-9d43-790e90da3391.png",
-    "backend/uploads_pre_restore_20260926_150425/mobil/6/e44f5f55-cd24-4d13-ab28-8c67a55bfab9.jpg",
-    "backend/uploads_pre_restore_20260926_150425/mobil/6/91486727-210e-40da-ac5d-24b1951b65f2.jpg",
-    "backend/uploads_pre_restore_20260926_150425/mobil/54/0fc9db5f-7712-47ca-b2f7-68390b60e2f8.jpg",
-    "backend/uploads_pre_restore_20260926_150425/mobil/54/6aa6530e-3eb7-44b8-83a2-9f591e4fd70d.jpg",
-    "TPM - Log Pengembangan.md",
     "Sessions/2026-09-26 1500 - Init CLAUDE.md & Sinkronisasi Obsidian.md",
-    "Sessions/2026-09-26 0000 - Refactor Header Master Data & Standalone Bengkel Pages.md",
     "Sessions/2026-09-26 1800 - Penanganan Intersepsi Back Button Bottom Sheet Mobile Web.md",
     "Templates/TPM Session Template.md",
     "Sessions/2026-09-26 1730 - Refactor Kartu Antrian Bengkel Urutan Customer Plat Kategori.md",
@@ -233,10 +236,6 @@
     "Sessions/2026-09-26 1545 - Analisis Void Transaksi Bengkel JB Mobil & Penyeimbangan Kas.md",
     "TPM Session Template.md",
     "2026-09-26 0000 - Refactor Header Master Data & Standalone Bengkel Pages.md",
-    "Sessions/2026-09-26 1515 - Analisis Race Condition Stok Lem Threebond Part 469.md",
-    "dashboard/node_modules/react-router-dom/README.md",
-    "README.md",
-    "TPM - Modul SDM.md",
-    "TPM - Modul Keuangan.md"
+    "Sessions/2026-09-26 1515 - Analisis Race Condition Stok Lem Threebond Part 469.md"
   ]
 }

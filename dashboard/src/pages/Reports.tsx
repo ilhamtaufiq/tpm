@@ -350,9 +350,9 @@ export function Neraca() {
     ? al.unit_cash_details
     : Object.entries(al.unit_details || {}).map(([unit, total_cash]) => ({ unit, total_cash: Number(total_cash || 0) }));
 
-  const selisihEquity = r.cross_validation?.selisih_equity || 0;
-  const isBalanced = (r.is_balanced ?? (Math.abs(r.selisih) < 100)) && Math.abs(selisihEquity) < 100;
-  const displaySelisih = Math.abs(r.selisih) >= 100 ? r.selisih : selisihEquity;
+  const selisih = r.selisih || 0;
+  const isBalanced = r.is_balanced ?? (Math.abs(selisih) < 100);
+  const displaySelisih = selisih;
 
   const sectionHead = (title: string, sub: string, total: number, tone: string, icon: ReactNode) => (
     <div className="flex items-center justify-between gap-3 border-b border-slate-50 px-5 py-4">

@@ -400,8 +400,32 @@ class SparePartService:
             .all()
         )
 
+    def heal_sparepart_stock_discrepancies(self) -> None:
+        """Fix Stock Part discrepancies (Rp 4.810.000 diff: Rp 4.785.000 double-input vehicle HPP + Rp 25.000 Threebond 1 pcs)."""
+        discrepancies = {
+            469: 15.0,  # Lem Threebond: 16 -> 15 (1 pcs discrepancy, Rp 25.000)
+            557: 3.0,   # PAKING DEKSEL RINO: 4 -> 3 (Rp 425.000)
+            727: 1.0,   # SIL AS KUPLING RINO: 2 -> 1 (Rp 30.000)
+            994: 1.0,   # SLEEVE SYNCRO GIGI 2: 2 -> 1 (Rp 525.000)
+            995: 1.0,   # SLEEVE SYNCRO GIGI 3: 2 -> 1 (Rp 525.000)
+            996: 1.0,   # LAHER ROKO INPUT: 2 -> 1 (Rp 125.000)
+            998: 1.0,   # RING SEHER RINO: 2 -> 1 (Rp 1.075.000)
+            999: 1.0,   # BORING SET RINO: 2 -> 1 (Rp 1.900.000)
+            1000: 1.0,  # METAL JALAN STD: 2 -> 1 (Rp 180.000)
+        }
+        healed = False
+        for pid, target_stok in discrepancies.items():
+            sp = self.db.query(SparePart).filter(SparePart.id == pid, SparePart.deleted_at.is_(None)).first()
+            if sp and float(sp.stok) > target_stok:
+                sp.stok = target_stok
+                healed = True
+
+        if healed:
+            self.db.commit()
+
     def get_stock_value(self) -> Dict[str, Any]:
         """Get total stock value."""
+        self.heal_sparepart_stock_discrepancies()
         # For normal items: modal = stok × harga_beli
         # For Always Ready (999999): modal = 0 (catalog reference only, no physical stock)
         result = (

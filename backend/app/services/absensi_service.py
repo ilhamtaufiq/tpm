@@ -10,6 +10,7 @@ from fastapi import HTTPException, status as http_status
 from app.models.karyawan import Karyawan, Absensi
 from app.schemas.karyawan import AbsensiCreate, AbsensiUpdate
 from app.utils.constants import AttendanceStatus, EmployeeStatus
+from app.utils.helpers import get_jakarta_date, get_jakarta_now
 
 
 class AbsensiService:
@@ -371,8 +372,8 @@ class AbsensiService:
         """Record employee clock in."""
         self._validate_karyawan(karyawan_id)
 
-        tanggal = tanggal or date.today()
-        jam = jam or datetime.now().time()
+        tanggal = tanggal or get_jakarta_date()
+        jam = jam or get_jakarta_now().time()
 
         # Check if already clocked in
         existing = (
@@ -416,8 +417,8 @@ class AbsensiService:
         """Record employee clock out."""
         self._validate_karyawan(karyawan_id)
 
-        tanggal = tanggal or date.today()
-        jam = jam or datetime.now().time()
+        tanggal = tanggal or get_jakarta_date()
+        jam = jam or get_jakarta_now().time()
 
         # Find today's attendance
         absensi = (
