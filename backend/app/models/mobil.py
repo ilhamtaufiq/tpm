@@ -191,8 +191,8 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
         # 3. Manual entries in MobilPartService (Old system)
         # Only include if not already mirrored from other sources
         manual_total = sum(
-            p.total for p in self.part_services 
-            if not p.catatan or ("Trans Bengkel:" not in p.catatan and "Pengeluaran Bengkel:" not in p.catatan)
+            p.total for p in self.part_services
+            if not p.catatan or ("Trans Bengkel" not in p.catatan and "Pengeluaran Bengkel:" not in p.catatan)
         ) if self.part_services else Decimal(0)
         
         return bengkel_total + biaya_ops_total + manual_total
