@@ -91,6 +91,7 @@ export default function ExpensesScreen() {
         { metode: 'TRANSFER', jumlah: '', kas_jenis: 'BANK_UTAMA' },
     ]);
     const [allowNegative, setAllowNegative] = useState(false);
+    const isSubmittingRef = useRef(false);
 
     // API Hooks
     const { data: expensesData, isLoading, refetch } = usePengeluaranList();
@@ -159,10 +160,13 @@ export default function ExpensesScreen() {
     }, [refetch]);
 
     const handleSave = async () => {
+        if (isSubmittingRef.current) return;
         if (!jumlah || !deskripsi) {
             appAlert('Validasi', 'Mohon isi jumlah dan keterangan');
             return;
         }
+
+        isSubmittingRef.current = true;
 
         const totalAmount = parseNumber(jumlah);
         const isSplit = payMetode === 'SPLIT';
@@ -258,6 +262,8 @@ export default function ExpensesScreen() {
                 'Gagal',
                 error?.response?.data?.detail || 'Terjadi kesalahan saat menyimpan data'
             );
+        } finally {
+            isSubmittingRef.current = false;
         }
     };
 
@@ -532,6 +538,7 @@ export default function ExpensesScreen() {
                                     title="Catat Pengeluaran"
                                     onPress={handleSave}
                                     loading={createExpenseMutation.isPending}
+                                    disabled={isSubmittingRef.current}
                                     className="h-16 rounded-[28px] shadow-2xl shadow-primary/40"
                                 />
                             </View>
