@@ -429,21 +429,20 @@ export default function BengkelTransaksiScreen() {
 
     const filteredServices = useMemo(() => {
         const q = debouncedServiceSearch.trim().toLowerCase();
+        const isSelected = (s: any) => Boolean(selectedServices[String(s?.service?.id || s?.id)]);
         if (!q) {
-            return [...services].sort((a, b) => {
-                const aSelected = Boolean(selectedServices[String(a.id)]);
-                const bSelected = Boolean(selectedServices[String(b.id)]);
-                if (aSelected && !bSelected) return -1;
-                if (!aSelected && bSelected) return 1;
-                return (a.nama || '').localeCompare(b.nama || '');
-            });
+            // Hasil identik dengan sort stabil lama (selected dulu, sisanya alfabet):
+            // partisi stabil dari servicesAlpha yang sudah alfabet.
+            const sel: any[] = [];
+            const rest: any[] = [];
+            for (const s of servicesAlpha) (isSelected(s) ? sel : rest).push(s);
+            return [...sel, ...rest];
         }
         const tokens = q.split(/\s+/).filter(Boolean);
         return services
-            .filter((service: any) => {
-                const searchTarget = `${service.nama || ''} ${service.kategori || ''} ${service.deskripsi || ''}`.toLowerCase();
-                return tokens.every(token => searchTarget.includes(token));
-            })
+            .filter((service: any) =>
+                tokens.every(token => (serviceSearchIndex.get(String(service?.id)) || '').includes(token)),
+            )
             .sort((a: any, b: any) => {
                 const aSelected = Boolean(selectedServices[String(a.service?.id || a.id)]);
                 const bSelected = Boolean(selectedServices[String(b.service?.id || b.id)]);
@@ -451,7 +450,7 @@ export default function BengkelTransaksiScreen() {
                 if (!aSelected && bSelected) return 1;
                 return (a.nama || '').localeCompare(b.nama || '');
             });
-    }, [services, debouncedServiceSearch, selectedServices]);
+    }, [services, servicesAlpha, serviceSearchIndex, debouncedServiceSearch, selectedServices]);
 
     const visibleParts = useMemo(() => {
         const q = debouncedPartSearch.trim().toLowerCase();

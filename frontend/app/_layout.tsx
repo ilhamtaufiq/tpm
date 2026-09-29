@@ -16,7 +16,6 @@ import {
     startOfflineSyncWorker,
 } from '../services/offlineQueue';
 import { OfflineQueueSheet } from '../components/OfflineQueueSheet';
-
 // Hermes has no Node Buffer — thermal print (EPToolkit) and some utils need it.
 const __g = globalThis as typeof globalThis & { Buffer?: typeof Buffer };
 if (!__g.Buffer) {
@@ -49,8 +48,6 @@ import { useRealtimeSync } from '../services/realtime';
 import { usePushNotifications } from '../services/pushNotifications';
 import { ReceiptHtmlCaptureHost } from '../components/print/ReceiptHtmlCaptureHost';
 import { preloadHtml2CanvasScript } from '../utils/html2canvasBundle';
-
-
 // Online manager — use isConnected only for gate (isInternetReachable is slow/null on boot
 // and was marking the app offline at startup on some devices).
 onlineManager.setEventListener((setOnline) => {
@@ -58,7 +55,6 @@ onlineManager.setEventListener((setOnline) => {
         setOnline(!!state.isConnected);
     });
 });
-
 // Suppress harmless AbortError from media play() — triggered when
 // html5-qrcode or scanner components unmount before audio/video starts.
 // RN/Hermes may define `window` without DOM APIs; guard addEventListener explicitly.
@@ -73,14 +69,12 @@ if (
         }
     });
 }
-
 // Configure offline persistence (read cache only — writes use durable offlineQueue store)
 const asyncStoragePersister = createAsyncStoragePersister({
     storage: AsyncStorage,
     key: 'TPM_OFFLINE_CACHE',
     throttleTime: 5000,
 });
-
 persistQueryClient({
     queryClient,
     persister: asyncStoragePersister,
@@ -95,19 +89,15 @@ persistQueryClient({
         },
     },
 });
-
 // Enable native screen freezing for background navigation stacks
 enableFreeze(true);
-
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
-
 const BackgroundServices = memo(function BackgroundServices() {
     useRealtimeSync();
     usePushNotifications();
     return null;
 });
-
 // Deteksi lag JS thread per tick, bukan drift kumulatif.
 // Drift kumulatif (elapsed - ticks*1000) tidak pernah reset: Android menahan
 // timer saat background, jadi satu jeda 2 detik terlapor berulang tiap 10 detik
@@ -116,10 +106,7 @@ const BackgroundServices = memo(function BackgroundServices() {
 const LAG_INTERVAL_MS = 1000;
 const LAG_THRESHOLD_MS = 1000;
 const LAG_LOG_GAP_MS = 10000;
-// Android menahan timer saat background; Web men-throttle tab hidden puluhan
-// detik. Gap sebesar itu bukan stall JS — abaikan, reset baseline saja.
 const LAG_BACKGROUND_GAP_MS = 10000;
-
 function useJSLagMonitor() {
     useEffect(() => {
         let expectedAt = Date.now() + LAG_INTERVAL_MS;
@@ -137,7 +124,6 @@ function useJSLagMonitor() {
                 suppressNext = false;
                 return;
             }
-            // Gap raksasa = background / sleep / throttle. Bukan stall.
             if (lag > LAG_BACKGROUND_GAP_MS) return;
             if (lag > LAG_THRESHOLD_MS && now - lastFire > LAG_LOG_GAP_MS) {
                 lastFire = now;
@@ -148,13 +134,11 @@ function useJSLagMonitor() {
                 );
             }
         }, LAG_INTERVAL_MS);
-
         // Resume dari background: timer sempat beku, tick pertama pasti telat.
         // Itu bukan stall JS — geser baseline supaya tidak lapor palsu.
         const appStateSub = AppState.addEventListener('change', (next: AppStateStatus) => {
             if (next === 'active') resetBaseline();
         });
-
         // Web: AppState tidak andal untuk tab hidden/visible. Pakai visibility API.
         let removeVisibility: (() => void) | undefined;
         if (
@@ -168,7 +152,6 @@ function useJSLagMonitor() {
             document.addEventListener('visibilitychange', onVisibility);
             removeVisibility = () => document.removeEventListener('visibilitychange', onVisibility);
         }
-
         return () => {
             clearInterval(timer);
             appStateSub.remove();
@@ -176,7 +159,6 @@ function useJSLagMonitor() {
         };
     }, []);
 }
-
 function RootLayoutContent() {
     const [loaded, error] = useFonts({
         Outfit_400Regular,
@@ -184,16 +166,12 @@ function RootLayoutContent() {
         Outfit_600SemiBold,
         Outfit_700Bold,
     });
-
     const segments = useSegments();
     const [isReady, setIsReady] = useState(false);
-
     // Monitor event loop lag global (log ke server monitoring).
     useJSLagMonitor();
-
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
     const hasHydrated = useAuthStore(state => state.hasHydrated);
-
     const {
         webMobilePreview,
         setWebMobilePreview,
@@ -203,10 +181,8 @@ function RootLayoutContent() {
     const dimensions = useDimensionsListener();
     const windowWidth = Platform.OS === 'web' ? dimensions.width : dimensions.width;
     useOrientationLock();
-
     // API state fetching
     const { data: securityStatus, isLoading: isLoadingSecurity } = useSecurityStatus();
-
     const {
         isLocked, isPinEnabled, lock, syncWithBackend,
         protectedFeatures, unlockedFeatures
@@ -215,10 +191,8 @@ function RootLayoutContent() {
     const { updateUser } = useAuthStore();
     const user = useAuthStore(state => state.user);
     const isImpersonating = useAuthStore(state => state.isImpersonating);
-
     // Garis tepi ikut palet aktif, tapi tidak disimpan di themeColors (lihat useUIStore).
     const borderColor = useMemo(() => findPaletteBorder(themeColors), [themeColors]);
-
     const theme = useMemo(() => vars({
         '--color-primary': themeColors.primary,
         '--color-secondary': themeColors.secondary,
@@ -228,22 +202,18 @@ function RootLayoutContent() {
         '--color-text-gray': themeColors.textGray,
         '--color-border': borderColor,
     }), [themeColors.primary, themeColors.secondary, themeColors.background, themeColors.surface, themeColors.text, themeColors.textGray, borderColor]);
-
     // OTA: cek setelah app siap — jangan block splash / auto-reload terlalu awal
     useEffect(() => {
         if (__DEV__ || !Updates.isEnabled || !loaded || !hasHydrated || !isReady) {
             return;
         }
-
         let cancelled = false;
-
         async function onFetchUpdateAsync() {
             try {
                 const update = await Updates.checkForUpdateAsync();
                 if (!update.isAvailable || cancelled) {
                     return;
                 }
-
                 await Updates.fetchUpdateAsync();
                 if (!cancelled) {
                     await Updates.reloadAsync();
@@ -252,27 +222,22 @@ function RootLayoutContent() {
                 console.log('Update check failed:', error);
             }
         }
-
         const timer = setTimeout(() => {
             void onFetchUpdateAsync();
         }, 1500);
-
         return () => {
             cancelled = true;
             clearTimeout(timer);
         };
     }, [loaded, hasHydrated, isReady]);
-
     // Sync remote API settings to local store
     useEffect(() => {
         if (securityStatus) {
             syncWithBackend(securityStatus.is_pin_enabled, securityStatus.protected_features);
         }
     }, [securityStatus]);
-
     useEffect(() => {
         console.log('LAYOUT: Initializing app fonts');
-
         if (loaded || error) {
             console.log('LAYOUT: Hiding splash screen');
             SplashScreen.hideAsync().catch(() => {});
@@ -280,32 +245,26 @@ function RootLayoutContent() {
             const t = setTimeout(() => setIsReady(true), 150);
             return () => clearTimeout(t);
         }
-
         // Fonts must not block forever (OTA / font download edge cases)
         const fontFailsafe = setTimeout(() => {
             console.warn('[LAYOUT] Font load timeout — continuing without waiting');
             SplashScreen.hideAsync().catch(() => {});
             setIsReady(true);
         }, 4000);
-
         return () => clearTimeout(fontFailsafe);
     }, [loaded, error]);
-
     useEffect(() => {
         if (hasHydrated) {
             return;
         }
-
         const timeout = setTimeout(() => {
             if (!useAuthStore.getState().hasHydrated) {
                 console.warn('[LAYOUT] Auth hydration timeout — continuing startup');
                 useAuthStore.getState().setHasHydrated(true);
             }
         }, 2500);
-
         return () => clearTimeout(timeout);
     }, [hasHydrated]);
-
     useEffect(() => {
         const handleAppStateChange = (nextAppState: AppStateStatus) => {
             // Only lock if PIN is enabled AND we are NOT in development mode
@@ -317,14 +276,11 @@ function RootLayoutContent() {
                 console.log('LAYOUT: App backgrounded (Locking skipped in DEV mode)');
             }
         };
-
         const subscription = AppState.addEventListener('change', handleAppStateChange);
-
         return () => {
             subscription.remove();
         };
     }, [isPinEnabled]);
-
     // Sync profile on startup
     useEffect(() => {
         if (isAuthenticated && isReady && hasHydrated) {
@@ -344,19 +300,15 @@ function RootLayoutContent() {
             syncProfile();
         }
     }, [isAuthenticated, isReady, hasHydrated]);
-
     useEffect(() => {
         if (!isReady || !loaded) return;
-
         const isWeb = Platform.OS === 'web';
         const isEnvDisabled = process.env.EXPO_PUBLIC_DISABLE_WEB_ACCESS === 'true';
-
         const inAuthGroup = segments[0] === '(auth)';
         const inSecurityGroup = segments[0] === '(security)';
         // Public share/QR receipt pages must work without login (customer-facing)
         const inPublicReceipt = segments[0] === 'receipt';
         const inLanding = segments[0] === 'landing';
-
         // Web lock: allow landing + public receipt so shared struk still opens in browser
         if (
             isWeb &&
@@ -368,7 +320,6 @@ function RootLayoutContent() {
             router.replace('/landing?reason=mobile_only');
             return;
         }
-
         // 1. Auth guard — skip for public receipt & landing
         if (!isAuthenticated && !inAuthGroup && !inPublicReceipt && !inLanding) {
             router.replace('/(auth)/login');
@@ -378,10 +329,8 @@ function RootLayoutContent() {
             router.replace('/(tabs)/home');
             return;
         }
-
         // 2. PIN guard — only applies when PIN is enabled
         if (!isPinEnabled || !isAuthenticated || inSecurityGroup || inAuthGroup || inPublicReceipt) return;
-
         // 2a. Global app lock (after background / restart)
         if (isLocked && protectedFeatures.app_lock) {
             // Get current path to redirect back after unlock — add leading / for whitelist in pin.tsx
@@ -392,7 +341,6 @@ function RootLayoutContent() {
             } as any);
             return;
         }
-
         // 2b. Per-feature protection — check on EVERY navigation
         // Find which protected feature the current route maps to
         let currentFeature: string | null = null;
@@ -403,7 +351,6 @@ function RootLayoutContent() {
                 break;
             }
         }
-
         if (currentFeature && !unlockedFeatures.includes(currentFeature)) {
             // This feature is protected and NOT yet unlocked — redirect to PIN
             // Join segments to create the full path (e.g., "(tabs)/finance")
@@ -418,7 +365,6 @@ function RootLayoutContent() {
             } as any);
         }
     }, [isAuthenticated, isLocked, segments, loaded, isReady, isPinEnabled, unlockedFeatures]);
-
     // Show error message if fonts failed to load
     if (error) {
         return (
@@ -435,22 +381,18 @@ function RootLayoutContent() {
             </View>
         );
     }
-
     // Show loading indicator while fonts are loading or update is downloading
     if (!loaded || !isReady || !hasHydrated) {
         const loadingMessage = "Memuat TPM Super App...";
-
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: themeColors.background }}>
                 <ActivityIndicator size="large" color="#3b82f6" />
                 <Text style={{ marginTop: 16, fontSize: 14, color: '#666', fontWeight: '600' }}>
                     {loadingMessage}
                 </Text>
-
             </View>
         );
     }
-
     const appContent = (
         <>
             <BackgroundServices />
@@ -485,7 +427,6 @@ function RootLayoutContent() {
                         <Stack.Screen name="monitor" options={{ headerShown: false }} />
                         <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
                     </Stack>
-
                                     {/* Global Custom Bottom Navigation */}
                     {isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'BENGKEL') && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && segments[0] !== 'receipt' && (
                         <CustomTabBar />
@@ -494,12 +435,10 @@ function RootLayoutContent() {
             </ErrorBoundary>
         </>
     );
-
     const showMobilePreview = Platform.OS === 'web' && webMobilePreview && windowWidth > 640;
     const previewIsLandscape = webPreviewOrientation === 'landscape';
     const previewWidth = previewIsLandscape ? 844 : 430;
     const previewHeight = previewIsLandscape ? 390 : 844;
-
     const webControlButtonStyle = {
         width: 44,
         height: 44,
@@ -513,7 +452,6 @@ function RootLayoutContent() {
         shadowRadius: 8,
         elevation: 4,
     };
-
     return (
         <SafeAreaProvider>
             <GestureHandlerRootView style={[{ flex: 1 }, theme]}>
@@ -538,7 +476,6 @@ function RootLayoutContent() {
                         >
                             {appContent}
                         </View>
-
                         <View
                             style={{
                                 position: 'absolute',
@@ -566,7 +503,6 @@ function RootLayoutContent() {
                 ) : (
                     <>
                         {appContent}
-
                         {Platform.OS === 'web' && windowWidth > 640 && (
                             <View
                                 style={{
@@ -598,7 +534,6 @@ function RootLayoutContent() {
         </SafeAreaProvider>
     );
 }
-
 export default function RootLayout() {
     return (
         <QueryClientProvider client={queryClient}>

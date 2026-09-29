@@ -131,6 +131,30 @@ class KasBankService:
         commit: bool = True,
     ) -> KasBank:
         """Create a new cash/bank transaction."""
+        # Guard anti double-input: identitas (jenis, tipe, sumber, nominal,
+        # tanggal) yang sama persis sudah ada -> tolak. Bug nyata: sync
+        # BENGKEL 2026-09-26 19:46 meng-insert ulang 37 baris riwayat yang
+        # sudah tercatat, menggeser saldo Kas/Bank dari target.
+        # Baris reversal ([VOID]) sengaja identik -> dikecualikan.
+        is_reversal = (data.keterangan or "").startswith("[VOID]")
+        if not is_reversal:
+            dup = self.db.query(KasBank).filter(
+                KasBank.jenis == data.jenis,
+                KasBank.tipe == data.tipe,
+                KasBank.sumber == data.sumber,
+                KasBank.nominal == data.nominal,
+                KasBank.tanggal == data.tanggal,
+            ).first()
+            if dup:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        f"Duplikat: transaksi {data.jenis.value} {data.tipe.value} "
+                        f"{data.sumber.value} Rp{data.nominal} tanggal {data.tanggal} "
+                        f"sudah ada (id={dup.id}, nomor {dup.nomor_transaksi})."
+                    ),
+                )
+
         # Get current balance
         saldo_sebelum = self._get_current_balance(data.jenis)
 

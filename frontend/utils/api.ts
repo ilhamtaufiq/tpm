@@ -94,6 +94,7 @@ api.interceptors.response.use(
         const duration = Date.now() - (config._startTime || Date.now());
         // Jangan JSON.stringify di sini — payload besar (laporan/list MB-an)
         // blokir JS thread 1s+ di Hermes Android dan memicu "Event loop tertunda".
+        // blokir JS thread 1s+ dan memicu "Event loop tertunda".
         // Pakai content-length header; fallback 0.
         const rawLen = (response.headers as any)?.['content-length'];
         const delta = rawLen ? parseInt(String(rawLen), 10) || 0 : 0;
