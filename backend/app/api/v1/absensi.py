@@ -43,8 +43,8 @@ def create_bulk_absensi(
 def list_absensi(
     db: DBSession,
     current_user: CurrentUser,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    skip: int = Query(0, ge=0, le=10000),
+    limit: int = Query(100, ge=1, le=1000),
     karyawan_id: Optional[int] = None,
     status: Optional[AttendanceStatus] = None,
     tanggal_dari: Optional[date] = None,
