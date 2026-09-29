@@ -571,7 +571,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             </View>
                         )}
 
-                        <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-transparent">
+                        <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-transparent">
                             <View>
                                 <Typography variant="caption" className="text-textGray mb-1">Total Biaya & Sparepart</Typography>
                                 <Typography variant="h3" weight="bold" className="text-orange-500">{formatCurrency(Number(activeUnit.total_biaya || 0) + Number(activeUnit.total_part_service || 0))}</Typography>
@@ -580,6 +580,38 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 <Settings size={20} color="#F97316" />
                             </View>
                         </View>
+
+                        {/* Breakdown Biaya Lainnya */}
+                        {activeUnit.biaya_lainnya?.length > 0 && (
+                            <View className="mb-4 pb-4 border-b border-transparent">
+                                <Typography className="text-textGray text-[10px] font-bold uppercase tracking-wider mb-2">Biaya Lainnya</Typography>
+                                {activeUnit.biaya_lainnya.map((item: any, idx: number) => (
+                                    <View key={idx} className="flex-row justify-between items-center py-1.5">
+                                        <View className="flex-1 mr-3">
+                                            <Typography className="text-textMain text-xs" numberOfLines={1}>{item.deskripsi}</Typography>
+                                            <Typography className="text-textGray text-[9px]">{item.kategori}</Typography>
+                                        </View>
+                                        <Typography className="text-textMain text-xs font-bold">{formatCurrency(Number(item.jumlah || 0))}</Typography>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Breakdown Part & Service */}
+                        {activeUnit.part_services?.length > 0 && (
+                            <View>
+                                <Typography className="text-textGray text-[10px] font-bold uppercase tracking-wider mb-2">Sparepart / Service</Typography>
+                                {activeUnit.part_services.map((item: any, idx: number) => (
+                                    <View key={idx} className="flex-row justify-between items-center py-1.5">
+                                        <View className="flex-1 mr-3">
+                                            <Typography className="text-textMain text-xs" numberOfLines={1}>{item.deskripsi}</Typography>
+                                            <Typography className="text-textGray text-[9px]">{item.tipe === 'part' ? 'Sparepart' : 'Service'} × {item.qty}</Typography>
+                                        </View>
+                                        <Typography className="text-textMain text-xs font-bold">{formatCurrency(Number(item.total || 0))}</Typography>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
 
                         {activeUnit.status?.toUpperCase() !== 'TERJUAL' && (
                             <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-transparent">

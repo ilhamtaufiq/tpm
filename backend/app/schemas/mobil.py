@@ -206,12 +206,34 @@ class MobilSummary(BaseModel):
     total_potensi_penjualan: Decimal
     total_laba_kotor: Decimal
 
+class MobilBiayaResponse(BaseModel):
+    id: int
+    kategori: str
+    deskripsi: str
+    jumlah: Decimal
+    tanggal: date
+
+    model_config = {"from_attributes": True}
+
+class MobilPartServiceResponse(BaseModel):
+    id: int
+    tipe: str
+    deskripsi: str
+    qty: int
+    harga_satuan: Decimal
+    total: Decimal
+    tanggal: date
+
+    model_config = {"from_attributes": True}
+
 class MobilDetailResponse(MobilResponse):
     total_biaya_part: Decimal = Decimal("0")
     hpp: Decimal = Decimal("0")
     is_sold: bool = False
     penjualan: Optional[TransaksiMobilResponse] = None
     pengeluaran_bengkel: List[PengeluaranBengkelResponse] = []
+    biaya_lainnya: List[MobilBiayaResponse] = []
+    part_services: List[MobilPartServiceResponse] = []
 
 class MobilList(BaseModel):
     data: List[MobilResponse]

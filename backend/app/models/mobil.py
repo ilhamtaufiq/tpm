@@ -177,8 +177,9 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
         """
         # 1. Workshop bills (Internal/External reported via workshop module)
         bengkel_total = sum(
-            t.grand_total for t in self.bengkel_perbaikan 
+            t.grand_total for t in self.bengkel_perbaikan
             if t.kategori in ['jual_beli_mobil', 'mobil', 'penjualan_mobil']
+            and t.status_bayar != PaymentStatus.BATAL
         ) if self.bengkel_perbaikan else Decimal(0)
 
         # 2. Repair/Ops costs recorded via Mobil Unit expenses
