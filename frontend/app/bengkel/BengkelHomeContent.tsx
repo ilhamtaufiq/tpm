@@ -1855,6 +1855,7 @@ export default function BengkelScreen() {
                                 } finally {
                                     expenseSubmittingRef.current = false;
                                 }
+                            }}
                             disabled={expenseSubmittingRef.current}
                             className={`h-16 rounded-[28px] mt-2 ${expenseMode === 'KELUAR' ? 'bg-rose-600 shadow-rose-600/30' : expenseMode === 'MASUK' ? 'bg-emerald-600 shadow-emerald-600/30' : expenseMode === 'PIUTANG' ? 'bg-amber-600 shadow-amber-600/30' : 'bg-blue-600 shadow-blue-600/30'} shadow-xl`}
                         />
