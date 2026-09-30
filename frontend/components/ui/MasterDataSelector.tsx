@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { CustomerFormModal } from './CustomerFormModal';
 import { useUIStore } from '../../store/useUIStore';
+import { useDebounce } from '../../hooks/useDebounce';
 
 interface MasterDataSelectorProps {
     type: 'customer' | 'supplier';
@@ -44,6 +45,8 @@ export const MasterDataSelector = ({
     const primaryColor = useUIStore((s) => s.themeColors.primary);
 
     const [searchQuery, setSearchQuery] = useState('');
+    // Debounce query ke server; teks input & label guest tetap pakai searchQuery langsung.
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [selectedGuestName, setSelectedGuestName] = useState('');
     const [isOpen, setIsOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -51,16 +54,16 @@ export const MasterDataSelector = ({
 
     useEffect(() => {
         setVisibleLimit(inlineLimit);
-    }, [inlineLimit, searchQuery]);
+    }, [inlineLimit, debouncedSearch]);
 
     // Dynamic Query based on type
     const { data: searchResults, isLoading } = useQuery({
-        queryKey: ['search', type, searchQuery, inlineMode, inlineLimit, visibleLimit],
+        queryKey: ['search', type, debouncedSearch, inlineMode, inlineLimit, visibleLimit],
         queryFn: async () => {
             if (type === 'customer') {
-                return masterDataService.searchCustomers(searchQuery, inlineMode ? visibleLimit : 10);
+                return masterDataService.searchCustomers(debouncedSearch, inlineMode ? visibleLimit : 10);
             } else {
-                return masterDataService.searchSuppliers(searchQuery);
+                return masterDataService.searchSuppliers(debouncedSearch);
             }
         },
         enabled: inlineMode ? true : isOpen, // Always load inline preview when requested

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Modal } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -47,11 +48,13 @@ export default function CustomerScreen() {
     const router = useRouter();
     const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState('');
+    // Debounce: tanpa ini tiap ketikan = query baru + render ulang layar penuh (lag di Android).
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [selectedFilter, setSelectedFilter] = useState<string>('all');
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'form'>('detail');
     const [refreshing, setRefreshing] = useState(false);
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome({ borderRadius: 32 });
     const placeholder = usePlaceholderColor();
 
@@ -59,7 +62,7 @@ export default function CustomerScreen() {
     const { data: listData, isLoading, refetch } = useCustomerList({
         limit: 100,
         tipe: selectedFilter === 'all' ? undefined : selectedFilter,
-        search: searchQuery,
+        search: debouncedSearch,
     });
     const createMutation = useCreateCustomer();
     const updateMutation = useUpdateCustomer();

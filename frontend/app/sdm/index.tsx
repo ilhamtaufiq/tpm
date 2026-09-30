@@ -21,7 +21,7 @@ const QUICK_ACTIONS = [
 
 export default function SDMScreen() {
     const router = useRouter();
-    const { user } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
     const [refreshing, setRefreshing] = useState(false);
 
     const handleGoBack = () => {

@@ -98,7 +98,7 @@ export default function PiutangUsahaScreen() {
     const insets = useSafeAreaInsets();
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
-    const { user } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
     const params = useLocalSearchParams<{ unit?: string }>();
     const roleUnitMap: Record<string, typeof FINANCE_UNITS[number]> = {
         BENGKEL: 'BENGKEL',

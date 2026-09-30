@@ -21,7 +21,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 export default function MasterDataScreen() {
     const router = useRouter();
-    const { user } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
     const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);

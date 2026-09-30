@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Modal } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -40,6 +41,8 @@ export default function SupplierScreen() {
     const router = useRouter();
     const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState('');
+    // Debounce: tanpa ini tiap ketikan = query baru + render ulang layar penuh (lag di Android).
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'form'>('detail');
     const [refreshing, setRefreshing] = useState(false);
@@ -47,7 +50,7 @@ export default function SupplierScreen() {
     // API Hooks
     const { data: listData, isLoading, refetch } = useSupplierList({
         limit: 100,
-        search: searchQuery,
+        search: debouncedSearch,
     });
     const createMutation = useCreateSupplier();
     const updateMutation = useUpdateSupplier();

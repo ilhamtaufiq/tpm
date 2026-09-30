@@ -42,8 +42,11 @@ const getSafeErrorMessage = (error: any, fallback: string): string => {
 
 export default function LoginScreen() {
     const router = useRouter();
-    const { isAuthenticated, setAuth } = useAuthStore();
-    const { appLogo, appName, themeColors } = useUIStore();
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const setAuth = useAuthStore((s) => s.setAuth);
+    const appLogo = useUIStore((s) => s.appLogo);
+    const appName = useUIStore((s) => s.appName);
+    const themeColors = useUIStore((s) => s.themeColors);
     // Commit dibaca app.config.js saat bundling — ikut ter-embed di tiap OTA update.
     const buildCommit = Constants.expoConfig?.extra?.commit || 'dev';
 

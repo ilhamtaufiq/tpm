@@ -14,7 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 export default function OTPScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const { setAuth } = useAuthStore();
+    const setAuth = useAuthStore((s) => s.setAuth);
 
     const { user_id, email } = params;
 

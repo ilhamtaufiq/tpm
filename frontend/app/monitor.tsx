@@ -28,21 +28,19 @@ const StatusBadge = ({ status }: { status?: number }) => {
 };
 
 export default function MonitorScreen() {
-    const {
-        requestCount,
-        errorCount,
-        lagCount,
-        bugCount,
-        avgLatency,
-        totalPayloadSize,
-        logs,
-        appLogs,
-        clearLogs,
-        serverStats,
-        setServerStats
-    } = useMonitorStore();
+    const requestCount = useMonitorStore((s) => s.requestCount);
+    const errorCount = useMonitorStore((s) => s.errorCount);
+    const lagCount = useMonitorStore((s) => s.lagCount);
+    const bugCount = useMonitorStore((s) => s.bugCount);
+    const avgLatency = useMonitorStore((s) => s.avgLatency);
+    const totalPayloadSize = useMonitorStore((s) => s.totalPayloadSize);
+    const logs = useMonitorStore((s) => s.logs);
+    const appLogs = useMonitorStore((s) => s.appLogs);
+    const clearLogs = useMonitorStore((s) => s.clearLogs);
+    const serverStats = useMonitorStore((s) => s.serverStats);
+    const setServerStats = useMonitorStore((s) => s.setServerStats);
 
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
     const [renderLogs, setRenderLogs] = useState(true);
     const [activeSection, setActiveSection] = useState<'network' | 'logs' | 'database'>('logs');
     const [logFilter, setLogFilter] = useState<'ALL' | 'LAG' | 'BUG' | 'ERROR'>('ALL');

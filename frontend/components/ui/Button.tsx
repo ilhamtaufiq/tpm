@@ -97,7 +97,7 @@ export const Button = ({
 }: ButtonProps) => {
     const [isPressed, setIsPressed] = React.useState(false);
     const isDisabled = disabled || loading;
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
 
     const variantStyles = useMemo(() => getVariantStyles(variant, themeColors), [variant, themeColors]);
     const sizeStyles = SIZE_STYLES[size];

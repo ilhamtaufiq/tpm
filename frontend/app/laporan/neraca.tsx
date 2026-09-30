@@ -38,7 +38,7 @@ export default function NeracaScreen() {
     const [showPdfPreview, setShowPdfPreview] = useState(false);
     const [previewHtml, setPreviewHtml] = useState('');
 
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
 
     // Label kas unit sesuai laporan Excel (bukan kode backend mentah).
     const kasUnitLabel = (unit: unknown) => {

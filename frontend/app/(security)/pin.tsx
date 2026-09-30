@@ -47,7 +47,10 @@ export default function PinScreen() {
     const [currentMode, setCurrentMode] = useState(mode || 'verify');
 
     // Zustand store for local session unlock state
-    const { useBiometrics, unlock, resetSession, unlockFeature } = useSecurityStore();
+    const useBiometrics = useSecurityStore((s) => s.useBiometrics);
+    const unlock = useSecurityStore((s) => s.unlock);
+    const resetSession = useSecurityStore((s) => s.resetSession);
+    const unlockFeature = useSecurityStore((s) => s.unlockFeature);
     const themeColors = useUIStore((s) => s.themeColors);
     const borderColor = findPaletteBorder(themeColors);
 

@@ -18,7 +18,7 @@ export const StatsSlider = () => {
     const { data: carInventory } = useInventorySummary();
     const { data: carSales } = usePenjualanSummary();
     const { data: dashboard } = useDashboardSummary();
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
 
     const lowStockCount = lowStock?.length || 0;
 

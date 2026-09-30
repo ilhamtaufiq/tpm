@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 const { width } = Dimensions.get('window');
 
 export default function LandingPage() {
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
     const params = useLocalSearchParams();
     const isMobileOnly = params.reason === 'mobile_only';
 

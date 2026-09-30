@@ -26,7 +26,7 @@ export default function FinanceTab() {
     const [refreshing, setRefreshing] = useState(false);
     const [filterType, setFilterType] = useState<FinanceFilterType>('monthly');
     const [date, setDate] = useState(new Date());
-    const { user } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
     const router = useRouter();
     const { quickAction } = useLocalSearchParams<{ quickAction?: string }>();
     const quickActionLockRef = React.useRef<string | null>(null);

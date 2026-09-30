@@ -106,7 +106,7 @@ const isReportVisibleForRole = (report: ReportItem, role?: string | null) => {
 export default function ReportsScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { user } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
     const role = user?.role;
 
     const [search, setSearch] = useState('');

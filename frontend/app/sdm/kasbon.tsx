@@ -41,7 +41,7 @@ export default function KasbonScreen() {
     const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { user } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [kasbonList, setKasbonList] = useState<Kasbon[]>([]);

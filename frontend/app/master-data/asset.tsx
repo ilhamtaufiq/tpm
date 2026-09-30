@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Modal } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -49,6 +50,8 @@ export default function AssetScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
+    // Debounce: tanpa ini tiap ketikan = query baru + render ulang layar penuh (lag di Android).
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [selectedFilter, setSelectedFilter] = useState<string>('all');
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'form'>('detail');
@@ -59,8 +62,8 @@ export default function AssetScreen() {
         page: 1,
         size: 500, // Large enough to show all assets for now
         kategori: selectedFilter === 'all' ? undefined : selectedFilter,
-        search: searchQuery.trim() || undefined,
-    }), [selectedFilter, searchQuery]);
+        search: debouncedSearch.trim() || undefined,
+    }), [selectedFilter, debouncedSearch]);
 
     const { data: listData, isLoading, refetch } = useAssetList(params);
 

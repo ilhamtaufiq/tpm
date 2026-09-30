@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { View, Pressable, TextInput, FlatList, ActivityIndicator, StyleSheet, Modal } from 'react-native';
 import { Typography } from './Typography';
 import { Card } from './Card';
@@ -26,13 +27,15 @@ export const MobilSelector = ({
     const placeholderColor = usePlaceholderColor();
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const [searchQuery, setSearchQuery] = useState('');
+    // Debounce: tanpa ini tiap ketikan = query baru + render ulang layar penuh (lag di Android).
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [isOpen, setIsOpen] = useState(false);
 
     // Mobil Search Query
     const { data: searchResults, isLoading } = useQuery({
-        queryKey: ['search_mobil_selector', searchQuery],
+        queryKey: ['search_mobil_selector', debouncedSearch],
         queryFn: async () => {
-            const res = await mobilService.getMobils({ search: searchQuery, limit: 20 });
+            const res = await mobilService.getMobils({ search: debouncedSearch, limit: 20 });
             return res.data;
         },
         enabled: isOpen,

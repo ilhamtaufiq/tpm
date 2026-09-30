@@ -25,7 +25,9 @@ export const getCustomTabBarBottomPadding = (bottomInset: number, extraSpacing =
 
 function CustomTabBarInner() {
     const insets = useSafeAreaInsets();
-    const { activeSlots: storeActiveSlots, fabSlots, pageFabSlots } = useNavigationStore();
+    const storeActiveSlots = useNavigationStore((s) => s.activeSlots);
+    const fabSlots = useNavigationStore((s) => s.fabSlots);
+    const pageFabSlots = useNavigationStore((s) => s.pageFabSlots);
     const themeColors = useUIStore(state => state.themeColors);
     const pathname = usePathname();
     const [quickActionsVisible, setQuickActionsVisible] = useState(false);

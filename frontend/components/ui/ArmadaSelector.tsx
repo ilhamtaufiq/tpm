@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { View, Pressable, TextInput, FlatList, ActivityIndicator, StyleSheet, Modal } from 'react-native';
 import { Typography } from './Typography';
 import { Card } from './Card';
@@ -25,13 +26,15 @@ export const ArmadaSelector = ({
     const insets = useSafeAreaInsets();
     const placeholderColor = usePlaceholderColor();
     const [searchQuery, setSearchQuery] = useState('');
+    // Debounce: tanpa ini tiap ketikan = query baru + render ulang layar penuh (lag di Android).
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [isOpen, setIsOpen] = useState(false);
 
     // Armada Search Query
     const { data: searchResults, isLoading } = useQuery({
-        queryKey: ['search_armada', searchQuery],
+        queryKey: ['search_armada', debouncedSearch],
         queryFn: async () => {
-            const res = await jasaAngkutService.getArmadaList({ search: searchQuery, limit: 20, is_active: true });
+            const res = await jasaAngkutService.getArmadaList({ search: debouncedSearch, limit: 20, is_active: true });
             return res.data;
         },
         enabled: isOpen,

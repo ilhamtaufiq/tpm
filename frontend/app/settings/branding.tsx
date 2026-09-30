@@ -10,7 +10,9 @@ import { useUIStore } from '../../store/useUIStore';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function BrandingSettingsScreen() {
-    const { appLogo, appName, setBranding } = useUIStore();
+    const appLogo = useUIStore((s) => s.appLogo);
+    const appName = useUIStore((s) => s.appName);
+    const setBranding = useUIStore((s) => s.setBranding);
     const [name, setName] = useState(appName);
     const [logo, setLogo] = useState(appLogo);
     const [saving, setSaving] = useState(false);

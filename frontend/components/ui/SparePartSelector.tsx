@@ -12,6 +12,7 @@ import { formatCurrency } from '../../utils/format';
 import { getBarcodeSearchQuery } from '../../utils/barcodeScan';
 import { isAlwaysReadyStock } from '../../utils/sparepartStock';
 import { usePlaceholderColor } from '../../utils/themeStyles';
+import { useDebounce } from '../../hooks/useDebounce';
 
 interface SparePartSelectorProps {
     value?: any; // Selected object or null
@@ -29,17 +30,18 @@ export const SparePartSelector = ({
     const insets = useSafeAreaInsets();
     const placeholderColor = usePlaceholderColor();
     const [searchQuery, setSearchQuery] = useState('');
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [isOpen, setIsOpen] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
 
     // Spare Part Search Query
     const { data: searchResults, isLoading } = useQuery({
-        queryKey: ['search_parts', searchQuery],
+        queryKey: ['search_parts', debouncedSearch],
         queryFn: async () => {
-            const res = await bengkelService.searchSpareParts(searchQuery);
+            const res = await bengkelService.searchSpareParts(debouncedSearch);
             return Array.isArray(res) ? res : (res.data || []);
         },
-        enabled: isOpen && searchQuery.length > 0,
+        enabled: isOpen && debouncedSearch.length > 0,
     });
 
     const handleOpen = () => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { useUIStore } from '../../store/useUIStore';
-import { View, ScrollView, Pressable, TextInput, StatusBar, Image, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, ScrollView, FlatList, Pressable, TextInput, StatusBar, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { appAlert } from '../../utils/appAlert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
@@ -60,16 +61,8 @@ import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useDeferredReady } from '../../hooks/useDeferredReady';
 
 const MobilCardMedia = React.memo(({ media }: { media?: any[] }) => {
-    const [index, setIndex] = useState(0);
-
-    useEffect(() => {
-        if (!media || media.length <= 1) return;
-        const interval = setInterval(() => {
-            setIndex((prev) => (prev + 1) % media.length);
-        }, 3000);
-        return () => clearInterval(interval);
-    }, [media]);
-
+    // Tanpa auto-slide: interval 3 detik per kartu = N timer + setState + decode
+    // gambar terus-menerus di list (lag di Android). Foto lain tetap ada di detail.
     if (!media || media.length === 0) {
         return (
             <View className="absolute w-full h-full items-center justify-center bg-emerald-50">
@@ -78,7 +71,7 @@ const MobilCardMedia = React.memo(({ media }: { media?: any[] }) => {
         );
     }
 
-    const currentItem = media[index] || media[0];
+    const currentItem = media[0];
     const imageUri = `${(FILE_URL || '').replace(/\/$/, '')}/uploads/${currentItem.file_path.replace(/^\//, '')}`;
 
     return (
@@ -91,11 +84,137 @@ const MobilCardMedia = React.memo(({ media }: { media?: any[] }) => {
             {media.length > 1 && (
                 <View className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md z-10">
                     <Typography variant="caption" weight="bold" className="text-white text-[8px]">
-                        {index + 1}/{media.length}
+                        1/{media.length}
                     </Typography>
                 </View>
             )}
         </>
+    );
+});
+
+const mobilKeyExtractor = (item: any) => String(item.id);
+
+type MobilCardHandlers = {
+    onDetail: (unit: any) => void;
+    onShare: (unit: any) => void;
+    onSales: (unit: any) => void;
+    onCost: (unit: any) => void;
+    onDelete: (unit: any) => void;
+};
+
+// Kartu di-memo + dirender via FlatList (virtualized): sebelumnya ScrollView + map
+// me-mount semua kartu sekaligus dan render ulang semuanya tiap state layar berubah.
+const MobilListCard = React.memo(function MobilListCard({ item, handlers }: { item: any; handlers: MobilCardHandlers }) {
+    const status = String(item.status || '').toLowerCase();
+    return (
+        <Pressable
+            onPress={() => handlers.onDetail(item)}
+            className="border-b border-transparent bg-surface"
+        >
+            <View className="overflow-hidden p-4 flex-row gap-3 items-stretch">
+                {/* Image Section (40%) */}
+                <View style={{ flex: 0.4 }} className="rounded-2xl overflow-hidden relative bg-background min-h-[140px]">
+                    <MobilCardMedia media={item.media} />
+                    
+                    {/* Status Badge Top Left */}
+    <View className="absolute top-2 left-2 right-2 flex-row flex-wrap gap-1">
+                        {String(item.status_bayar_beli || '').toUpperCase() !== 'LUNAS' && (
+                            <View className="bg-rose-600/80 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20 self-start">
+                                <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[8px]">
+                                    HUTANG
+                                </Typography>
+                            </View>
+                        )}
+                        {status === 'booking' && (
+                            <View className="bg-amber-500/80 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20 self-start">
+                                <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[8px]">
+                                    PIUTANG
+                                </Typography>
+                            </View>
+                        )}
+                    </View>
+
+                    <View className="absolute bottom-2 left-2 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20">
+                        <Typography variant="caption" weight="bold" className="text-white text-[9px]">
+                            {item.nomor_plat}
+                        </Typography>
+                    </View>
+                    <View className="absolute bottom-2 right-2 bg-surface/90 backdrop-blur-md px-2 py-1 rounded-lg">
+                        <Typography variant="caption" weight="bold" className="text-primary text-[9px]">
+                            {item.tahun}
+                        </Typography>
+                    </View>
+                </View>
+
+                {/* Detail Section (60%) */}
+                <View style={{ flex: 0.6 }} className="flex-col justify-between py-1 pr-1">
+                    <View>
+                        <View className="flex-row justify-between items-start mb-1 gap-2">
+                            <Typography variant="h3" weight="bold" className="text-sm text-textMain leading-tight flex-shrink" numberOfLines={2}>
+                                {item.merek} {item.model}
+                            </Typography>
+                            <View className={`px-2 py-1 rounded-md self-start ${
+                                status === 'tersedia' ? 'bg-emerald-50' : 
+                                status === 'booking' ? 'bg-amber-50' : 
+                                'bg-blue-50'
+                            }`}>
+                                <Typography weight="bold" className={`text-[8px] uppercase ${
+                                    status === 'tersedia' ? 'text-emerald-700' : 
+                                    status === 'booking' ? 'text-amber-700' : 
+                                    'text-blue-700'
+                                }`}>
+                                    {String(item.status || '').toUpperCase()}
+                                </Typography>
+                            </View>
+                        </View>
+                        
+                        <Typography variant="h2" weight="bold" className="text-primary text-base mb-2">
+                            {formatCurrency(Number(item.harga_jual || 0))}
+                        </Typography>
+
+                        <View className="flex-row flex-wrap gap-2 mb-2">
+                            <View className="flex-row items-center bg-background px-2 py-1 rounded-md border border-transparent">
+                                <GaugeCircle size={10} color="#6B7280" />
+                                <Typography className="text-textGray text-[9px] font-medium ml-1.5">{(item.kilometer || 0).toLocaleString()} km</Typography>
+                            </View>
+                            <View className="flex-row items-center bg-background px-2 py-1 rounded-md border border-transparent">
+                                <Settings size={10} color="#6B7280" />
+                                <Typography className="text-textGray text-[9px] font-medium ml-1.5">{item.transmisi || 'AT'}</Typography>
+                            </View>
+                        </View>
+                    </View>
+
+                    <View className="flex-row justify-end space-x-2 border-t border-transparent pt-3 mt-1">
+                        <Pressable
+                            className="w-8 h-8 bg-emerald-50 rounded-lg items-center justify-center border border-emerald-100 active:bg-emerald-100"
+                            onPress={() => handlers.onShare(item)}
+                        >
+                            <Share2 size={14} color="#10B981" />
+                        </Pressable>
+                        {(status === 'tersedia' || status === 'booking') && (
+                            <Pressable
+                                className="w-8 h-8 bg-emerald-50 rounded-lg items-center justify-center border border-emerald-100 active:bg-emerald-100"
+                                onPress={() => handlers.onSales(item)}
+                            >
+                                <CircleDollarSign size={14} color="#10B981" />
+                            </Pressable>
+                        )}
+                        <Pressable
+                            className="w-8 h-8 bg-blue-50 rounded-lg items-center justify-center border border-blue-100 active:bg-blue-100"
+                            onPress={() => handlers.onCost(item)}
+                        >
+                            <TrendingUp size={14} color="#3B82F6" />
+                        </Pressable>
+                        <Pressable
+                            className="w-8 h-8 bg-background rounded-lg items-center justify-center border border-transparent active:bg-gray-200"
+                            onPress={() => handlers.onDelete(item)}
+                        >
+                            <Trash2 size={14} color="#EF4444" />
+                        </Pressable>
+                    </View>
+                </View>
+            </View>
+        </Pressable>
     );
 });
 
@@ -119,6 +238,8 @@ export default function MobilInventoryScreen() {
 
     const [activeTab, setActiveTab] = useState<'semua' | 'tersedia' | 'booking' | 'terjual'>('semua');
     const [searchQuery, setSearchQuery] = useState('');
+    // Debounce: tanpa ini tiap ketikan = query baru + render ulang layar penuh (lag di Android).
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'PARTIAL' | 'UNPAID' | 'BATAL'>('ALL');
     const [selectedUnit, setSelectedUnit] = useState<any>(null);
     const [selectedDetailUnit, setSelectedDetailUnit] = useState<any>(null);
@@ -182,7 +303,7 @@ export default function MobilInventoryScreen() {
     const { data, isLoading, refetch } = useMobilList({
         status: activeTab === 'semua' ? undefined : activeTab.toUpperCase(),
         status_bayar: paymentFilter,
-        search: searchQuery,
+        search: debouncedSearch,
         // Only apply date range for Sold/Booking, show all available inventory
         tanggal_dari: (activeTab === 'tersedia' || activeTab === 'semua' || useAllTime) ? undefined : dateRange.dari,
         tanggal_sampai: (activeTab === 'tersedia' || activeTab === 'semua' || useAllTime) ? undefined : dateRange.sampai
@@ -193,7 +314,7 @@ export default function MobilInventoryScreen() {
     });
 
     const { data: summaryData, refetch: refetchSummary } = usePenjualanSummary({
-        search: searchQuery,
+        search: debouncedSearch,
         tanggal_dari: useAllTime ? undefined : dateRange.dari,
         tanggal_sampai: useAllTime ? undefined : dateRange.sampai
     }, { // Polling every 15 seconds
@@ -471,6 +592,28 @@ export default function MobilInventoryScreen() {
     };
 
     const getNormalizedStatus = (status: any) => String(status || '').toLowerCase();
+
+    // Handler stabil untuk MobilListCard supaya React.memo efektif; ref selalu
+    // menunjuk handler terbaru (beberapa bukan useCallback).
+    const cardHandlersRef = useRef<MobilCardHandlers | null>(null);
+    cardHandlersRef.current = {
+        onDetail: handlePresentDetailModal,
+        onShare: handleShareGallery,
+        onSales: handlePresentSalesModal,
+        onCost: handlePresentCostModal,
+        onDelete: handleDeleteMobil,
+    };
+    const cardHandlers = useMemo<MobilCardHandlers>(() => ({
+        onDetail: (unit) => cardHandlersRef.current?.onDetail(unit),
+        onShare: (unit) => cardHandlersRef.current?.onShare(unit),
+        onSales: (unit) => cardHandlersRef.current?.onSales(unit),
+        onCost: (unit) => cardHandlersRef.current?.onCost(unit),
+        onDelete: (unit) => cardHandlersRef.current?.onDelete(unit),
+    }), []);
+    const renderMobilItem = useCallback(
+        ({ item }: { item: any }) => <MobilListCard item={item} handlers={cardHandlers} />,
+        [cardHandlers],
+    );
 
     const renderDateContent = () => (
         <View className="p-0">
@@ -1173,13 +1316,21 @@ export default function MobilInventoryScreen() {
                     </ScrollView>
                 </View>
 
-                <ScrollView
-                    className="flex-1 mt-4"
+                <FlatList
+                    style={{ flex: 1, marginTop: 16 }}
+                    data={mobils}
+                    keyExtractor={mobilKeyExtractor}
+                    renderItem={renderMobilItem}
                     showsVerticalScrollIndicator={false}
+                    initialNumToRender={6}
+                    maxToRenderPerBatch={6}
+                    windowSize={7}
+                    removeClippedSubviews={Platform.OS === 'android'}
                     refreshControl={
                         <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={themeColors.primary} />
                     }
-                >
+                    ListHeaderComponent={
+                        <>
                     {/* Date Filter Selection */}
                     {(activeTab !== 'tersedia' && activeTab !== 'semua') && (
                         <Pressable
@@ -1210,18 +1361,16 @@ export default function MobilInventoryScreen() {
                         </View>
                     </Pressable>
                 )}
-
-
-
-                    {/* Car List */}
-                    <View className="pb-20">
-                        {isLoading && mobils.length === 0 ? (
+                        </>
+                    }
+                    ListEmptyComponent={
+                        isLoading ? (
                             <View className="space-y-4 px-6">
                                 <SkeletonCard />
                                 <SkeletonCard />
                                 <SkeletonCard />
                             </View>
-                        ) : mobils.length === 0 ? (
+                        ) : (
                             <View className="mx-6">
                                 <EmptyState
                                     title="Mobil tidak ditemukan"
@@ -1229,122 +1378,12 @@ export default function MobilInventoryScreen() {
                                     icon={Car}
                                 />
                             </View>
-                        ) : (
-                            mobils.map((item: any) => (
-                                <Pressable
-                                    key={item.id}
-                                    onPress={() => handlePresentDetailModal(item)}
-                                    className="border-b border-transparent bg-surface"
-                                >
-                                    <View className="overflow-hidden p-4 flex-row gap-3 items-stretch">
-                                        {/* Image Section (40%) */}
-                                        <View style={{ flex: 0.4 }} className="rounded-2xl overflow-hidden relative bg-background min-h-[140px]">
-                                            <MobilCardMedia media={item.media} />
-                                            
-                                            {/* Status Badge Top Left */}
-                            <View className="absolute top-2 left-2 right-2 flex-row flex-wrap gap-1">
-                                                {String(item.status_bayar_beli || '').toUpperCase() !== 'LUNAS' && (
-                                                    <View className="bg-rose-600/80 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20 self-start">
-                                                        <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[8px]">
-                                                            HUTANG
-                                                        </Typography>
-                                                    </View>
-                                                )}
-                                                {getNormalizedStatus(item.status) === 'booking' && (
-                                                    <View className="bg-amber-500/80 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20 self-start">
-                                                        <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[8px]">
-                                                            PIUTANG
-                                                        </Typography>
-                                                    </View>
-                                                )}
-                                            </View>
-
-                                            <View className="absolute bottom-2 left-2 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20">
-                                                <Typography variant="caption" weight="bold" className="text-white text-[9px]">
-                                                    {item.nomor_plat}
-                                                </Typography>
-                                            </View>
-                                            <View className="absolute bottom-2 right-2 bg-surface/90 backdrop-blur-md px-2 py-1 rounded-lg">
-                                                <Typography variant="caption" weight="bold" className="text-primary text-[9px]">
-                                                    {item.tahun}
-                                                </Typography>
-                                            </View>
-                                        </View>
-
-                                        {/* Detail Section (60%) */}
-                                        <View style={{ flex: 0.6 }} className="flex-col justify-between py-1 pr-1">
-                                            <View>
-                                                <View className="flex-row justify-between items-start mb-1 gap-2">
-                                                    <Typography variant="h3" weight="bold" className="text-sm text-textMain leading-tight flex-shrink" numberOfLines={2}>
-                                                        {item.merek} {item.model}
-                                                    </Typography>
-                                                    <View className={`px-2 py-1 rounded-md self-start ${
-                                                        getNormalizedStatus(item.status) === 'tersedia' ? 'bg-emerald-50' : 
-                                                        getNormalizedStatus(item.status) === 'booking' ? 'bg-amber-50' : 
-                                                        'bg-blue-50'
-                                                    }`}>
-                                                        <Typography weight="bold" className={`text-[8px] uppercase ${
-                                                            getNormalizedStatus(item.status) === 'tersedia' ? 'text-emerald-700' : 
-                                                            getNormalizedStatus(item.status) === 'booking' ? 'text-amber-700' : 
-                                                            'text-blue-700'
-                                                        }`}>
-                                                            {String(item.status || '').toUpperCase()}
-                                                        </Typography>
-                                                    </View>
-                                                </View>
-                                                
-                                                <Typography variant="h2" weight="bold" className="text-primary text-base mb-2">
-                                                    {formatCurrency(Number(item.harga_jual || 0))}
-                                                </Typography>
-
-                                                <View className="flex-row flex-wrap gap-2 mb-2">
-                                                    <View className="flex-row items-center bg-background px-2 py-1 rounded-md border border-transparent">
-                                                        <GaugeCircle size={10} color="#6B7280" />
-                                                        <Typography className="text-textGray text-[9px] font-medium ml-1.5">{(item.kilometer || 0).toLocaleString()} km</Typography>
-                                                    </View>
-                                                    <View className="flex-row items-center bg-background px-2 py-1 rounded-md border border-transparent">
-                                                        <Settings size={10} color="#6B7280" />
-                                                        <Typography className="text-textGray text-[9px] font-medium ml-1.5">{item.transmisi || 'AT'}</Typography>
-                                                    </View>
-                                                </View>
-                                            </View>
-
-                                            <View className="flex-row justify-end space-x-2 border-t border-transparent pt-3 mt-1">
-                                                <Pressable
-                                                    className="w-8 h-8 bg-emerald-50 rounded-lg items-center justify-center border border-emerald-100 active:bg-emerald-100"
-                                                    onPress={() => handleShareGallery(item)}
-                                                >
-                                                    <Share2 size={14} color="#10B981" />
-                                                </Pressable>
-                                                {(getNormalizedStatus(item.status) === 'tersedia' || getNormalizedStatus(item.status) === 'booking') && (
-                                                    <Pressable
-                                                        className="w-8 h-8 bg-emerald-50 rounded-lg items-center justify-center border border-emerald-100 active:bg-emerald-100"
-                                                        onPress={() => handlePresentSalesModal(item)}
-                                                    >
-                                                        <CircleDollarSign size={14} color="#10B981" />
-                                                    </Pressable>
-                                                )}
-                                                <Pressable
-                                                    className="w-8 h-8 bg-blue-50 rounded-lg items-center justify-center border border-blue-100 active:bg-blue-100"
-                                                    onPress={() => handlePresentCostModal(item)}
-                                                >
-                                                    <TrendingUp size={14} color="#3B82F6" />
-                                                </Pressable>
-                                                <Pressable
-                                                    className="w-8 h-8 bg-background rounded-lg items-center justify-center border border-transparent active:bg-gray-200"
-                                                    onPress={() => handleDeleteMobil(item)}
-                                                >
-                                                    <Trash2 size={14} color="#EF4444" />
-                                                </Pressable>
-                                            </View>
-                                        </View>
-                                    </View>
-                                </Pressable>
-                            ))
-                        )}
-                    </View>
-                    <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
-                </ScrollView>
+                        )
+                    }
+                    ListFooterComponent={
+                        <View style={{ height: 80 + getCustomTabBarBottomPadding(insets.bottom, 16) }} />
+                    }
+                />
 
                 {/* FAB matching Home */}
                 <Pressable

@@ -37,6 +37,7 @@ Tambahkan baris baru di atas (terbaru dulu) setiap bikin sesi baru:
 
 | Tanggal | Modul | Status | Sesi |
 |---|---|---|---|
+| 2026-09-30 | lainnya | done | [[Sessions/2026-09-30 1200 - Perf Android Debounce Search FlatList Selector Zustand]] |
 | 2026-09-28 | keuangan | done | [[Sessions/2026-09-28 1800 - Rekonsiliasi Neraca Stok Mobil Part dan Fix Timezone Absensi]] |
 | 2026-09-26 | keuangan | done | [[Sessions/2026-09-26 2100 - Sinkronisasi Laporan Keuangan Dashboard Web dengan Invarian Ekuitas]] |
 | 2026-09-26 | keuangan | done | [[Sessions/2026-09-26 2000 - Rebrand Laba Ditahan Pra-Saldo-Awal & Trace Transaksi]] |

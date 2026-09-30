@@ -29,8 +29,13 @@ const PRESET_SWATCHES = [
 ];
 
 export default function ThemeSettingsScreen() {
-    const { themeColors, setPalette, setThemeColor, resetTheme } = useUIStore();
-    const { user, setAuth, token } = useAuthStore();
+    const themeColors = useUIStore((s) => s.themeColors);
+    const setPalette = useUIStore((s) => s.setPalette);
+    const setThemeColor = useUIStore((s) => s.setThemeColor);
+    const resetTheme = useUIStore((s) => s.resetTheme);
+    const user = useAuthStore((s) => s.user);
+    const setAuth = useAuthStore((s) => s.setAuth);
+    const token = useAuthStore((s) => s.token);
     const insets = useSafeAreaInsets();
     const [isUploading, setIsUploading] = useState(false);
 

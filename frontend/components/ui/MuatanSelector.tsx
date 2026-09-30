@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { View, Pressable, TextInput, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
 import { Typography } from './Typography';
 import { Card } from './Card';
@@ -26,13 +27,15 @@ export const MuatanSelector = ({
     const insets = useSafeAreaInsets();
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const [searchQuery, setSearchQuery] = useState('');
+    // Debounce: tanpa ini tiap ketikan = query baru + render ulang layar penuh (lag di Android).
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [isOpen, setIsOpen] = useState(false);
 
     // Muatan Search Query
     const { data: searchResults, isLoading } = useQuery({
-        queryKey: ['search_muatan_selector', searchQuery],
+        queryKey: ['search_muatan_selector', debouncedSearch],
         queryFn: async () => {
-            const res = await jasaAngkutService.getMuatanList({ search: searchQuery, limit: 15 });
+            const res = await jasaAngkutService.getMuatanList({ search: debouncedSearch, limit: 15 });
             return res.data;
         },
         enabled: isOpen,

@@ -21,7 +21,7 @@ const getSafeErrorMessage = (error: any, fallback: string): string => {
 
 export default function ResetPasswordScreen() {
     const router = useRouter();
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
     const { token } = useLocalSearchParams();
     
     const [password, setPassword] = useState('');
