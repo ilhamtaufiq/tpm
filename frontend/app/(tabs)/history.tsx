@@ -22,7 +22,8 @@ import {
     User,
     ChevronLeft,
     ChevronRight,
-    X
+    X,
+    RefreshCw,
 } from 'lucide-react-native';
 import { router, Redirect, useLocalSearchParams } from 'expo-router';
 import { useUnitWalletHistory, useRecentActivity } from '../../hooks/useKeuangan';
@@ -411,6 +412,14 @@ export default function HistoryTab() {
                 subtitle={walletFilter ? 'Kas & Setoran' : 'Log Transaksi'}
                 showBackButton
                 onBackButtonPress={handleBack}
+                rightElement={
+                    <Pressable
+                        onPress={() => refetch()}
+                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent shadow-sm active:opacity-75"
+                    >
+                        <RefreshCw size={18} color={themeColors.text} strokeWidth={2.2} />
+                    </Pressable>
+                }
             />
 
             {/* Search */}
