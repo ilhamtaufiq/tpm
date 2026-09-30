@@ -141,11 +141,17 @@ class KasBankService:
             # Guard anti-duplikat: nominal + tanggal bisa sama untuk transaksi berbeda
             # (mis. "Ojeg Juri ke-2" Rp40.000 nominal & tanggal sama dengan ke-1).
             # Gunakan nomor_referensi sebagai unique key jika tersedia.
+            # CATATAN: nomor_referensi sering dipakai bersama oleh beberapa baris
+            # (mis. semua cicilan pembayaran hutang memakai nomor_hutang yang sama),
+            # jadi referensi_id + tanggal harus ikut jadi kunci — kalau tidak, cicilan
+            # kedua ke atas selalu ditolak "duplikat".
             if data.nomor_referensi:
                 dup = self.db.query(KasBank).filter(
                     KasBank.jenis == data.jenis,
                     KasBank.tipe == data.tipe,
                     KasBank.nomor_referensi == data.nomor_referensi,
+                    KasBank.referensi_id == data.referensi_id,
+                    KasBank.tanggal == data.tanggal,
                 ).first()
             else:
                 dup = self.db.query(KasBank).filter(
