@@ -273,7 +273,7 @@ export default function BengkelScreen() {
     // Intentionally no force-refetch on focus: RQ cache + mutations/WS keep data
     // fresh. Pull-to-refresh still calls refetch.
 
-    const { data: historyData, isLoading: isHistoryLoading } = useUnitWalletHistory('KAS_UNIT_BENGKEL', 'BENGKEL', {
+    const { data: historyData, isLoading: isHistoryLoading, refetch: historyRefetch } = useUnitWalletHistory('KAS_UNIT_BENGKEL', 'BENGKEL', {
         limit: 20,
         sort_by: 'tanggal',
         sort_order: 'desc',
@@ -1842,6 +1842,7 @@ export default function BengkelScreen() {
 
                                     refetch();
                                     refetchSummary();
+                                    historyRefetch();
                                 } catch (e: any) {
                                     const msg = e?.response?.data?.detail || 'Gagal mencatat transaksi';
                                     handleCloseWallet();
