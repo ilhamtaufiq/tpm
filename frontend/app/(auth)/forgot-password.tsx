@@ -22,7 +22,7 @@ const getSafeErrorMessage = (error: any, fallback: string): string => {
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [sent, setSent] = useState(false);

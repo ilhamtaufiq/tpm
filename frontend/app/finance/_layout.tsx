@@ -2,7 +2,7 @@ import { Stack, Redirect, useSegments } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export default function FinanceLayout() {
-    const { user } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
     const segments = useSegments();
 
     const role = user?.role;

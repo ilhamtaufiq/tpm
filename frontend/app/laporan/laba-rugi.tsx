@@ -39,7 +39,7 @@ export default function LabaRugiScreen() {
     const [showPdfPreview, setShowPdfPreview] = useState(false);
     const [previewHtml, setPreviewHtml] = useState('');
     
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
 
     const handlePrev = useCallback(() => {
         setDate(prev => {

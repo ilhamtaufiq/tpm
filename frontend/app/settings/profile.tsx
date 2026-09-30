@@ -18,8 +18,10 @@ import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 export default function ProfileSettingsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { user, setAuth, token } = useAuthStore();
-    const { themeColors } = useUIStore();
+    const user = useAuthStore((s) => s.user);
+    const setAuth = useAuthStore((s) => s.setAuth);
+    const token = useAuthStore((s) => s.token);
+    const themeColors = useUIStore((s) => s.themeColors);
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER';
 
     // Form States

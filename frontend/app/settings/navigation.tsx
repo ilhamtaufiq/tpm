@@ -43,9 +43,15 @@ const NAV_OPTIONS = [
 
 export default function NavigationSettingsScreen() {
     const insets = useSafeAreaInsets();
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
     const user = useAuthStore(state => state.user);
-    const { activeSlots, fabSlots, pageFabSlots, updateSlot, updateFabSlot, updatePageFabSlot, resetSlots } = useNavigationStore();
+    const activeSlots = useNavigationStore((s) => s.activeSlots);
+    const fabSlots = useNavigationStore((s) => s.fabSlots);
+    const pageFabSlots = useNavigationStore((s) => s.pageFabSlots);
+    const updateSlot = useNavigationStore((s) => s.updateSlot);
+    const updateFabSlot = useNavigationStore((s) => s.updateFabSlot);
+    const updatePageFabSlot = useNavigationStore((s) => s.updatePageFabSlot);
+    const resetSlots = useNavigationStore((s) => s.resetSlots);
     const [pickerVisible, setPickerVisible] = useState(false);
     const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
     const [pickerMode, setPickerMode] = useState<'bar' | 'fab' | 'pageAction'>('bar');

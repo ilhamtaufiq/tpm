@@ -59,12 +59,13 @@ const UsersIcon = ({ size, color }: { size: number, color: string }) => <UserPlu
 export default function UserManagementScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { user: currentUser, startImpersonation } = useAuthStore();
+    const currentUser = useAuthStore((s) => s.user);
+    const startImpersonation = useAuthStore((s) => s.startImpersonation);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'form'>('detail');
     const [refreshing, setRefreshing] = useState(false);
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
 

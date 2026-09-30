@@ -93,7 +93,7 @@ function ProgressBar({ progress, color }: { progress: number | null; color: stri
 }
 
 export default function BackupScreen() {
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
     const [refreshing, setRefreshing] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);

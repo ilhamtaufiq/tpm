@@ -2,7 +2,7 @@ import { Stack, Redirect } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export default function BengkelLayout() {
-    const { user } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
     
     // Role-based access control (RBAC) at layout level
     const role = user?.role;

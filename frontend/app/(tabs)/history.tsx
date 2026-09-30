@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, TextInput, Image, StatusBar, Modal } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, ScrollView, FlatList, Platform, Pressable, RefreshControl, ActivityIndicator, TextInput, Image, StatusBar, Modal } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useUIStore } from '../../store/useUIStore';
 import { getFileUrl } from '../../utils/image';
@@ -110,6 +110,82 @@ const FILTER_TYPES = [
     { label: 'Uang Keluar', value: 'out' },
 ] as const;
 
+// Baris di-memo + FlatList (virtualized): sebelumnya ScrollView + map me-mount
+// sampai 100 baris sekaligus dan render ulang semua tiap state layar berubah.
+const HistoryRow = React.memo(function HistoryRow({ item, onSelect }: { item: ActivityItem; onSelect: (item: ActivityItem) => void }) {
+        const config = getSourceConfig(item.source, item.title);
+        const Icon = config.icon;
+        const badge = getStatusBadge(item.status);
+
+        return (
+            <Pressable
+                className="bg-surface px-6 py-5 border-b border-transparent flex-row items-center active:bg-background"
+                onPress={() => onSelect(item)}
+            >
+                {/* Left: Source Icon */}
+                <View
+                    style={{ backgroundColor: `${config.color}10` }}
+                    className="w-12 h-12 rounded-2xl items-center justify-center mr-3 border border-transparent flex-shrink-0"
+                >
+                    <Icon size={20} color={config.color} strokeWidth={2.5} />
+                </View>
+
+                {/* Middle: Main Details */}
+                <View className="flex-1 min-w-0">
+                    <View className="flex-row items-center mb-0.5">
+                        <Typography variant="body2" weight="bold" className="text-textMain tracking-tight flex-1" numberOfLines={1}>
+                            {(!item.title || item.title.trim() === '-' || item.title.trim() === '—')
+                                ? (item.ref_number || item.subtitle || 'Transaksi')
+                                : item.title}
+                        </Typography>
+                    </View>
+
+                    <Typography variant="caption" className="text-textGray italic leading-4 mb-1" numberOfLines={1}>
+                        {item.subtitle && item.subtitle.trim() !== '-' ? item.subtitle : (item.ref_number || '')}
+                    </Typography>
+
+                    <View className="flex-row items-center">
+                        <Badge
+                            label={badge.label}
+                            variant={badge.variant as any}
+                            className="px-1.5 py-0.5 h-auto"
+                            textClassName="text-[8px]"
+                        />
+                        <View className="w-1 h-1 rounded-full bg-gray-200 mx-1.5" />
+                        <Typography className="text-[10px] text-textGray font-medium">
+                            {format(new Date(item.timestamp), 'dd MMM, HH:mm', { locale: localeID })}
+                        </Typography>
+                    </View>
+                </View>
+
+                {/* Right: Amount & Status */}
+                <View className="items-end ml-2 pl-3 border-l border-transparent flex-shrink-0 min-w-[100px]">
+                    <Typography
+                        weight="bold"
+                        className={`text-[13px] mb-1 ${item.type === 'financial' ? (item.is_incoming ? "text-emerald-600" : "text-rose-500") : "text-textMain"}`}
+                        numberOfLines={1}
+                    >
+                        {item.type === 'financial' ? (item.is_incoming ? '+' : '-') : ''} {formatCurrency(item.amount)}
+                    </Typography>
+
+                    <View className="flex-row items-center">
+                        <View className={`px-1.5 py-0.5 rounded-md mr-1.5 ${item.type === 'financial' ? (item.is_incoming ? "bg-emerald-50" : "bg-rose-50") : "bg-blue-50"}`}>
+                            <Typography weight="bold" className={item.type === 'financial' ? (item.is_incoming ? "text-emerald-600 text-[8px]" : "text-rose-600 text-[8px]") : "text-blue-600 text-[8px]"}>
+                                {item.type === 'financial' ? (item.is_incoming ? 'IN' : 'OUT') : 'TRX'}
+                            </Typography>
+                        </View>
+                        <Typography className="text-[8px] text-textGray uppercase font-black tracking-tighter">
+                            {config.label}
+                        </Typography>
+
+                    </View>
+                </View>
+            </Pressable>
+        );
+});
+
+const historyKeyExtractor = (item: ActivityItem) => String(item.id);
+
 export default function HistoryTab() {
     const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
@@ -137,7 +213,7 @@ export default function HistoryTab() {
         if (dateMode === 'yearly') return `Tahun ${format(date, 'yyyy')}`;
         return format(date, 'dd MMMM yyyy', { locale: localeID });
     };
-    const { user } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
     const { unit, focus_id, focus_entity } = useLocalSearchParams<{ unit?: string; focus_id?: string; focus_entity?: string }>();
     const unitKey = Array.isArray(unit) ? unit[0] : unit;
     const focusId = Array.isArray(focus_id) ? focus_id[0] : focus_id;
@@ -230,6 +306,15 @@ export default function HistoryTab() {
         if (router.canGoBack()) router.back();
         else router.replace('/(tabs)/home');
     };
+
+    const handleSelectItem = useCallback((item: ActivityItem) => {
+        setSelectedItem(item);
+        setModalVisible(true);
+    }, []);
+    const renderHistoryRow = useCallback(
+        ({ item }: { item: ActivityItem }) => <HistoryRow item={item} onSelect={handleSelectItem} />,
+        [handleSelectItem],
+    );
 
     const filteredList = transactions?.filter((item: ActivityItem) => {
         // Generic history still respects role isolation. Wallet mode is already scoped
@@ -435,18 +520,25 @@ export default function HistoryTab() {
                 </View>
             )}
 
-            <ScrollView
-                className="flex-1 mt-4"
+            <FlatList
+                style={{ flex: 1, marginTop: 16 }}
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 40) }}
+                data={isLoading ? [] : (filteredList ?? [])}
+                keyExtractor={historyKeyExtractor}
+                renderItem={renderHistoryRow}
                 showsVerticalScrollIndicator={false}
+                initialNumToRender={10}
+                maxToRenderPerBatch={10}
+                windowSize={7}
+                removeClippedSubviews={Platform.OS === 'android'}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
-            >
-                {isLoading ? (
+                ListEmptyComponent={
+                    isLoading ? (
                     <View className="py-20 items-center">
                         <ActivityIndicator size="large" color={themeColors.primary} />
                         <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MENYINGKRONKAN DATA...</Typography>
                     </View>
-                ) : filteredList.length === 0 ? (
+                ) : (
                     <View className="items-center justify-center py-20 bg-surface rounded-[24px] border border-dashed border-transparent mx-6">
                         <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
                             <Calendar size={40} color="#9CA3AF" />
@@ -454,85 +546,10 @@ export default function HistoryTab() {
                         <Typography className="text-textGray font-bold uppercase tracking-[6px]">Spiii...</Typography>
                         <Typography variant="caption" className="text-textGray mt-2 text-center px-10">Tidak ditemukan aktivitas yang sesuai dengan kriteria pencarian Anda.</Typography>
                     </View>
-                ) : (
-                    filteredList.map((item: ActivityItem) => {
-                        const config = getSourceConfig(item.source, item.title);
-                        const Icon = config.icon;
-                        const badge = getStatusBadge(item.status);
-
-                        return (
-                            <Pressable
-                                key={item.id}
-                                className="bg-surface px-6 py-5 border-b border-transparent flex-row items-center active:bg-background"
-                                onPress={() => {
-                                    setSelectedItem(item);
-                                    setModalVisible(true);
-                                }}
-                            >
-                                {/* Left: Source Icon */}
-                                <View
-                                    style={{ backgroundColor: `${config.color}10` }}
-                                    className="w-12 h-12 rounded-2xl items-center justify-center mr-3 border border-transparent flex-shrink-0"
-                                >
-                                    <Icon size={20} color={config.color} strokeWidth={2.5} />
-                                </View>
-
-                                {/* Middle: Main Details */}
-                                <View className="flex-1 min-w-0">
-                                    <View className="flex-row items-center mb-0.5">
-                                        <Typography variant="body2" weight="bold" className="text-textMain tracking-tight flex-1" numberOfLines={1}>
-                                            {(!item.title || item.title.trim() === '-' || item.title.trim() === '—')
-                                                ? (item.ref_number || item.subtitle || 'Transaksi')
-                                                : item.title}
-                                        </Typography>
-                                    </View>
-
-                                    <Typography variant="caption" className="text-textGray italic leading-4 mb-1" numberOfLines={1}>
-                                        {item.subtitle && item.subtitle.trim() !== '-' ? item.subtitle : (item.ref_number || '')}
-                                    </Typography>
-
-                                    <View className="flex-row items-center">
-                                        <Badge
-                                            label={badge.label}
-                                            variant={badge.variant as any}
-                                            className="px-1.5 py-0.5 h-auto"
-                                            textClassName="text-[8px]"
-                                        />
-                                        <View className="w-1 h-1 rounded-full bg-gray-200 mx-1.5" />
-                                        <Typography className="text-[10px] text-textGray font-medium">
-                                            {format(new Date(item.timestamp), 'dd MMM, HH:mm', { locale: localeID })}
-                                        </Typography>
-                                    </View>
-                                </View>
-
-                                {/* Right: Amount & Status */}
-                                <View className="items-end ml-2 pl-3 border-l border-transparent flex-shrink-0 min-w-[100px]">
-                                    <Typography
-                                        weight="bold"
-                                        className={`text-[13px] mb-1 ${item.type === 'financial' ? (item.is_incoming ? "text-emerald-600" : "text-rose-500") : "text-textMain"}`}
-                                        numberOfLines={1}
-                                    >
-                                        {item.type === 'financial' ? (item.is_incoming ? '+' : '-') : ''} {formatCurrency(item.amount)}
-                                    </Typography>
-
-                                    <View className="flex-row items-center">
-                                        <View className={`px-1.5 py-0.5 rounded-md mr-1.5 ${item.type === 'financial' ? (item.is_incoming ? "bg-emerald-50" : "bg-rose-50") : "bg-blue-50"}`}>
-                                            <Typography weight="bold" className={item.type === 'financial' ? (item.is_incoming ? "text-emerald-600 text-[8px]" : "text-rose-600 text-[8px]") : "text-blue-600 text-[8px]"}>
-                                                {item.type === 'financial' ? (item.is_incoming ? 'IN' : 'OUT') : 'TRX'}
-                                            </Typography>
-                                        </View>
-                                        <Typography className="text-[8px] text-textGray uppercase font-black tracking-tighter">
-                                            {config.label}
-                                        </Typography>
-
-                                    </View>
-                                </View>
-                            </Pressable>
-                        );
-                    })
-                )}
-                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
-            </ScrollView>
+                    )
+                }
+                ListFooterComponent={<View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />}
+            />
 
             <TransactionDetailModal
                 item={selectedItem}

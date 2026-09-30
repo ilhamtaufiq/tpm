@@ -30,7 +30,7 @@ export function ReportDateControls({
     showFilterTabs = true,
     className = 'mb-4',
 }: ReportDateControlsProps) {
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
     return (
         <View className={`bg-surface border border-transparent rounded-2xl p-4 ${className}`}>
             {showFilterTabs && (

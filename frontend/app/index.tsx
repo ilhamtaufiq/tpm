@@ -11,7 +11,7 @@ export default function Index() {
     // Prefer store flag (layout also force-sets this after 5s if SecureStore hangs)
     const hasHydrated = useAuthStore((state) => state.hasHydrated);
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
 
     // Local gate + race-safe hydration listen + hard timeout (was the splash stuck bug)
     const [localHydrated, setLocalHydrated] = useState(() => {

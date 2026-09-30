@@ -48,6 +48,14 @@ import { useRealtimeSync } from '../services/realtime';
 import { usePushNotifications } from '../services/pushNotifications';
 import { ReceiptHtmlCaptureHost } from '../components/print/ReceiptHtmlCaptureHost';
 import { preloadHtml2CanvasScript } from '../utils/html2canvasBundle';
+// Build produksi: console.log/info/debug tetap diserialisasi & dikirim lewat bridge
+// di Hermes Android (119+ panggilan, sebagian di jalur render/request). warn/error dipertahankan.
+if (!__DEV__) {
+    const noop = () => {};
+    console.log = noop;
+    console.info = noop;
+    console.debug = noop;
+}
 // Online manager — use isConnected only for gate (isInternetReachable is slow/null on boot
 // and was marking the app offline at startup on some devices).
 onlineManager.setEventListener((setOnline) => {
@@ -93,6 +101,17 @@ persistQueryClient({
 enableFreeze(true);
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
+// Konstanta modul: objek options inline dibuat ulang tiap render root (tiap navigasi,
+// karena useSegments) dan memicu update options di semua screen Stack.
+const STACK_SCREEN_OPTIONS = {
+    headerShown: false,
+    // Keep previously visited menu screens mounted but frozen —
+    // critical for CustomTabBar stack routes (bengkel/mobil/angkut).
+    // Avoid exotic animation options — some OTA/native stacks hang on them.
+    freezeOnBlur: true,
+} as const;
+const NO_HEADER = { headerShown: false } as const;
+const NOT_FOUND_OPTIONS = { title: 'Oops!' } as const;
 const BackgroundServices = memo(function BackgroundServices() {
     useRealtimeSync();
     usePushNotifications();
@@ -172,23 +191,25 @@ function RootLayoutContent() {
     useJSLagMonitor();
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
     const hasHydrated = useAuthStore(state => state.hasHydrated);
-    const {
-        webMobilePreview,
-        setWebMobilePreview,
-        webPreviewOrientation,
-        setWebPreviewOrientation,
-    } = useUIStore();
+    // Selector per field: destructure store utuh = root (seluruh Stack) render ulang
+    // tiap ada perubahan apa pun di store.
+    const webMobilePreview = useUIStore(s => s.webMobilePreview);
+    const setWebMobilePreview = useUIStore(s => s.setWebMobilePreview);
+    const webPreviewOrientation = useUIStore(s => s.webPreviewOrientation);
+    const setWebPreviewOrientation = useUIStore(s => s.setWebPreviewOrientation);
     const dimensions = useDimensionsListener();
     const windowWidth = Platform.OS === 'web' ? dimensions.width : dimensions.width;
     useOrientationLock();
     // API state fetching
     const { data: securityStatus, isLoading: isLoadingSecurity } = useSecurityStatus();
-    const {
-        isLocked, isPinEnabled, lock, syncWithBackend,
-        protectedFeatures, unlockedFeatures
-    } = useSecurityStore();
-    const { themeColors } = useUIStore();
-    const { updateUser } = useAuthStore();
+    const isLocked = useSecurityStore(s => s.isLocked);
+    const isPinEnabled = useSecurityStore(s => s.isPinEnabled);
+    const lock = useSecurityStore(s => s.lock);
+    const syncWithBackend = useSecurityStore(s => s.syncWithBackend);
+    const protectedFeatures = useSecurityStore(s => s.protectedFeatures);
+    const unlockedFeatures = useSecurityStore(s => s.unlockedFeatures);
+    const themeColors = useUIStore(s => s.themeColors);
+    const updateUser = useAuthStore(s => s.updateUser);
     const user = useAuthStore(state => state.user);
     const isImpersonating = useAuthStore(state => state.isImpersonating);
     // Garis tepi ikut palet aktif, tapi tidak disimpan di themeColors (lihat useUIStore).
@@ -401,31 +422,23 @@ function RootLayoutContent() {
             <OfflineQueueSheet />
             <ErrorBoundary>
                 <BottomSheetModalProvider>
-                    <Stack
-                        screenOptions={{
-                            headerShown: false,
-                            // Keep previously visited menu screens mounted but frozen —
-                            // critical for CustomTabBar stack routes (bengkel/mobil/angkut).
-                            // Avoid exotic animation options — some OTA/native stacks hang on them.
-                            freezeOnBlur: true,
-                        }}
-                    >
-                        <Stack.Screen name="index" options={{ headerShown: false }} />
-                        <Stack.Screen name="landing" options={{ headerShown: false }} />
-                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                        <Stack.Screen name="(security)" options={{ headerShown: false }} />
-                        <Stack.Screen name="bengkel" options={{ headerShown: false }} />
-                        <Stack.Screen name="finance" options={{ headerShown: false }} />
-                        <Stack.Screen name="jasa-angkut" options={{ headerShown: false }} />
-                        <Stack.Screen name="laporan" options={{ headerShown: false }} />
-                        <Stack.Screen name="master-data" options={{ headerShown: false }} />
-                        <Stack.Screen name="mobil" options={{ headerShown: false }} />
-                        <Stack.Screen name="receipt" options={{ headerShown: false }} />
-                        <Stack.Screen name="sdm" options={{ headerShown: false }} />
-                        <Stack.Screen name="settings" options={{ headerShown: false }} />
-                        <Stack.Screen name="monitor" options={{ headerShown: false }} />
-                        <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+                    <Stack screenOptions={STACK_SCREEN_OPTIONS}>
+                        <Stack.Screen name="index" options={NO_HEADER} />
+                        <Stack.Screen name="landing" options={NO_HEADER} />
+                        <Stack.Screen name="(auth)" options={NO_HEADER} />
+                        <Stack.Screen name="(tabs)" options={NO_HEADER} />
+                        <Stack.Screen name="(security)" options={NO_HEADER} />
+                        <Stack.Screen name="bengkel" options={NO_HEADER} />
+                        <Stack.Screen name="finance" options={NO_HEADER} />
+                        <Stack.Screen name="jasa-angkut" options={NO_HEADER} />
+                        <Stack.Screen name="laporan" options={NO_HEADER} />
+                        <Stack.Screen name="master-data" options={NO_HEADER} />
+                        <Stack.Screen name="mobil" options={NO_HEADER} />
+                        <Stack.Screen name="receipt" options={NO_HEADER} />
+                        <Stack.Screen name="sdm" options={NO_HEADER} />
+                        <Stack.Screen name="settings" options={NO_HEADER} />
+                        <Stack.Screen name="monitor" options={NO_HEADER} />
+                        <Stack.Screen name="+not-found" options={NOT_FOUND_OPTIONS} />
                     </Stack>
                                     {/* Global Custom Bottom Navigation */}
                     {isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'BENGKEL') && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && segments[0] !== 'receipt' && (

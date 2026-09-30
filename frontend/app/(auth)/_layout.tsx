@@ -2,7 +2,8 @@ import { Stack, Redirect } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export default function AuthLayout() {
-    const { isAuthenticated, hasHydrated } = useAuthStore();
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const hasHydrated = useAuthStore((s) => s.hasHydrated);
 
     if (hasHydrated && isAuthenticated) {
         // `/` saja — app/index.tsx sudah merutekan per-role.

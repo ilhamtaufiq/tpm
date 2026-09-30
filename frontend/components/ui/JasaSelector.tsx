@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { View, Pressable, TextInput, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Typography } from './Typography';
 import { Card } from './Card';
@@ -24,13 +25,15 @@ export const JasaSelector = ({
 }: JasaSelectorProps) => {
     const insets = useSafeAreaInsets();
     const [searchQuery, setSearchQuery] = useState('');
+    // Debounce: tanpa ini tiap ketikan = query baru + render ulang layar penuh (lag di Android).
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [isOpen, setIsOpen] = useState(false);
 
     // Jasa Search Query
     const { data: searchResults, isLoading } = useQuery({
-        queryKey: ['search_jasa', searchQuery],
+        queryKey: ['search_jasa', debouncedSearch],
         queryFn: async () => {
-            const res = await jasaServisService.getJasaList({ search: searchQuery, limit: 20 });
+            const res = await jasaServisService.getJasaList({ search: debouncedSearch, limit: 20 });
             return res.data;
         },
         enabled: isOpen,

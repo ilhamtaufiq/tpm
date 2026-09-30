@@ -13,7 +13,7 @@ export const ModalThemeView = ({
     className,
     ...props
 }: ViewProps & { className?: string }) => {
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
 
     const theme = vars({
         '--color-primary': themeColors.primary,

@@ -39,7 +39,7 @@ export default function DataImportScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const user = useAuthStore((s) => s.user);
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
     const isAdmin = user?.role === 'ADMIN';
 
     const [busy, setBusy] = useState<'template' | 'preview' | 'commit' | null>(null);

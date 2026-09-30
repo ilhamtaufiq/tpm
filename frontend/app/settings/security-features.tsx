@@ -23,8 +23,10 @@ import { useUpdateSecuritySettings } from '../../hooks/useSecurityAPI';
 
 export default function SecurityFeaturesScreen() {
     const router = useRouter();
-    const { themeColors } = useUIStore();
-    const { isPinEnabled, protectedFeatures, syncWithBackend } = useSecurityStore();
+    const themeColors = useUIStore((s) => s.themeColors);
+    const isPinEnabled = useSecurityStore((s) => s.isPinEnabled);
+    const protectedFeatures = useSecurityStore((s) => s.protectedFeatures);
+    const syncWithBackend = useSecurityStore((s) => s.syncWithBackend);
     const updateSettingsMutation = useUpdateSecuritySettings();
 
     const handleToggle = async (id: keyof ProtectedFeatures) => {

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useDebounce } from '../../../hooks/useDebounce';
 import { View, FlatList, RefreshControl, Pressable, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -15,12 +16,14 @@ export default function ArmadaScreen() {
     const router = useRouter();
     const [filterActive, setFilterActive] = useState<boolean | undefined>(true);
     const [searchQuery, setSearchQuery] = useState('');
+    // Debounce: tanpa ini tiap ketikan = query baru + render ulang layar penuh (lag di Android).
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [refreshing, setRefreshing] = useState(false);
 
     // API Hook
     const { data: armadaData, isLoading, refetch } = useArmadaList({
         is_active: filterActive,
-        search: searchQuery
+        search: debouncedSearch
     });
 
     const fleet = armadaData?.data || [];

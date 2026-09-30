@@ -10,7 +10,7 @@ import { settingsService } from '../../services/settings';
 import { getErrorMessage } from '../../utils/error';
 
 export default function SMTPSettingsScreen() {
-    const { themeColors } = useUIStore();
+    const themeColors = useUIStore((s) => s.themeColors);
 
     // Form States
     const [server, setServer] = useState('smtp.gmail.com');

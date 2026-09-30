@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { useUIStore } from '../../store/useUIStore';
 import { View, ScrollView, Pressable, StatusBar, RefreshControl, Platform, Modal, TextInput, Share, TouchableOpacity } from 'react-native';
 import { appAlert } from '../../utils/appAlert';
@@ -122,6 +123,8 @@ export default function JasaAngkutScreen() {
     const placeholder = usePlaceholderColor();
     // UI States (Moved up to prevent use-before-declaration)
     const [searchQuery, setSearchQuery] = useState('');
+    // Debounce: tanpa ini tiap ketikan = query baru + render ulang layar penuh (lag di Android).
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const [groupBy, setGroupBy] = useState<'armada' | 'supir'>('armada');
     const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'PARTIAL' | 'UNPAID' | 'BATAL'>('ALL');
     const [refreshing, setRefreshing] = useState(false);
@@ -173,7 +176,7 @@ export default function JasaAngkutScreen() {
         enabled: dataReady,
     });
     const { data: summaryData, refetch: refetchSummary } = useMuatanSummary({
-        search: searchQuery,
+        search: debouncedSearch,
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
     }, {
@@ -258,8 +261,8 @@ export default function JasaAngkutScreen() {
             trips = trips.filter((t: any) => t.status_bayar === 'batal' || t.status_bayar === 'BATAL');
         }
 
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
+        if (debouncedSearch) {
+            const query = debouncedSearch.toLowerCase();
             trips = trips.filter((t: any) =>
                 t.asal?.toLowerCase().includes(query) ||
                 t.tujuan?.toLowerCase().includes(query) ||
@@ -270,7 +273,7 @@ export default function JasaAngkutScreen() {
             );
         }
         return trips;
-    }, [muatanData, searchQuery, paymentFilter]);
+    }, [muatanData, debouncedSearch, paymentFilter]);
 
 
     // Group trips by armada type OR driver
@@ -351,8 +354,8 @@ export default function JasaAngkutScreen() {
         const result = Array.from(map.values());
 
         // If searching, only return groups with trips (unless group title matches search)
-        if (searchQuery) {
-            return result.filter(g => g.trips.length > 0 || g.title.toLowerCase().includes(searchQuery.toLowerCase()));
+        if (debouncedSearch) {
+            return result.filter(g => g.trips.length > 0 || g.title.toLowerCase().includes(debouncedSearch.toLowerCase()));
         }
 
         return result.sort((a, b) => {
@@ -360,7 +363,7 @@ export default function JasaAngkutScreen() {
             if (a.trips.length !== b.trips.length) return b.trips.length - a.trips.length;
             return a.title.localeCompare(b.title);
         });
-    }, [recentTrips, groupBy, armadaData, searchQuery]);
+    }, [recentTrips, groupBy, armadaData, debouncedSearch]);
 
     const toggleGroupCollapse = useCallback((key: string) => {
         setCollapsedGroups(prev => {

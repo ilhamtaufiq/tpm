@@ -30,10 +30,14 @@ import { OrientationControl } from '../../components/ui/OrientationControl';
 export default function ProfileScreen() {
     const { resetConfirm } = useLocalSearchParams<{ resetConfirm?: string }>();
     const insets = useSafeAreaInsets();
-    const { user, logout } = useAuthStore();
+    const user = useAuthStore((s) => s.user);
+    const logout = useAuthStore((s) => s.logout);
     const unreadCount = useNotificationStore(state => state.unreadCount);
-    const { themeColors } = useUIStore();
-    const { isPinEnabled, useBiometrics, protectedFeatures, syncWithBackend } = useSecurityStore();
+    const themeColors = useUIStore((s) => s.themeColors);
+    const isPinEnabled = useSecurityStore((s) => s.isPinEnabled);
+    const useBiometrics = useSecurityStore((s) => s.useBiometrics);
+    const protectedFeatures = useSecurityStore((s) => s.protectedFeatures);
+    const syncWithBackend = useSecurityStore((s) => s.syncWithBackend);
     const updateSettingsMutation = useUpdateSecuritySettings();
     const { mutate: resetTransactions, isPending: isResetting } = useResetTransactions();
     const [dialogConfig, setDialogConfig] = React.useState<{
