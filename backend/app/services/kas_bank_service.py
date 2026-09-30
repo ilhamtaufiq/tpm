@@ -138,13 +138,23 @@ class KasBankService:
         # Baris reversal ([VOID]) sengaja identik -> dikecualikan.
         is_reversal = (data.keterangan or "").startswith("[VOID]")
         if not is_reversal:
-            dup = self.db.query(KasBank).filter(
-                KasBank.jenis == data.jenis,
-                KasBank.tipe == data.tipe,
-                KasBank.sumber == data.sumber,
-                KasBank.nominal == data.nominal,
-                KasBank.tanggal == data.tanggal,
-            ).first()
+            # Guard anti-duplikat: nominal + tanggal bisa sama untuk transaksi berbeda
+            # (mis. "Ojeg Juri ke-2" Rp40.000 nominal & tanggal sama dengan ke-1).
+            # Gunakan nomor_referensi sebagai unique key jika tersedia.
+            if data.nomor_referensi:
+                dup = self.db.query(KasBank).filter(
+                    KasBank.jenis == data.jenis,
+                    KasBank.tipe == data.tipe,
+                    KasBank.nomor_referensi == data.nomor_referensi,
+                ).first()
+            else:
+                dup = self.db.query(KasBank).filter(
+                    KasBank.jenis == data.jenis,
+                    KasBank.tipe == data.tipe,
+                    KasBank.sumber == data.sumber,
+                    KasBank.nominal == data.nominal,
+                    KasBank.tanggal == data.tanggal,
+                ).first()
             if dup:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
