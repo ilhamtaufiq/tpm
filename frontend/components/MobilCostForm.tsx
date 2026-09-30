@@ -233,10 +233,11 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
 
 
     const calculateTotal = () => {
+        // biaya_lainnya dan pengeluaran_bengkel adalah baris yang SAMA (add_biaya
+        // menulis keduanya) — hanya hitung satu agar tidak double count.
         const totalLainnya = (activeUnit?.biaya_lainnya || []).reduce((acc: number, curr: any) => acc + (Number(curr.jumlah) || 0), 0);
-        const totalWorkshop = (activeUnit?.pengeluaran_bengkel || []).reduce((acc: number, curr: any) => acc + (Number(curr.jumlah) || 0), 0);
         const totalPerbaikan = (activeUnit?.part_services || []).reduce((acc: number, curr: any) => acc + (Number(curr.total) || 0), 0);
-        return totalLainnya + totalWorkshop + totalPerbaikan;
+        return totalLainnya + totalPerbaikan;
     };
 
     const renderTabs = () => (
@@ -419,28 +420,6 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                     </Card>
                 ))}
             </View>
-
-            {/* Workshop Operational Expenses (e.g. Pajak, Biaya Ops from Migrasi) */}
-            {(activeUnit?.pengeluaran_bengkel || []).length > 0 && (
-                <View className="mb-6">
-                    <Typography variant="caption" weight="bold" className="text-blue-500 uppercase tracking-widest pl-2 mb-4">BIAYA OPERASIONAL BENGKEL (MIGRASI/PUSAT)</Typography>
-                    {(activeUnit?.pengeluaran_bengkel || []).map((item: any) => (
-                        <Card key={item.id} className="mb-4 p-4 flex-row items-center bg-blue-50/30 border border-blue-100 rounded-[24px]">
-                            <View className="w-12 h-12 bg-blue-100/50 rounded-2xl items-center justify-center mr-4">
-                                <TrendingDown size={20} color="#3B82F6" />
-                            </View>
-                            <View className="flex-1">
-                                <Typography weight="bold" className="text-textMain">{item.bisnis_kategori || 'Bengkel'}</Typography>
-                                <Typography variant="caption" className="text-textGray mt-0.5">{item.deskripsi || item.nomor_transaksi}</Typography>
-                            </View>
-                            <View className="items-end mr-2">
-                                <Typography weight="bold" className="text-blue-600">{formatCurrency(Number(item.jumlah))}</Typography>
-                                <Typography variant="caption" className="text-textGray mt-1">{item.tanggal}</Typography>
-                            </View>
-                        </Card>
-                    ))}
-                </View>
-            )}
 
             {/* Show readonly repairs from workshop if any */}
             {(activeUnit?.part_services || []).length > 0 && (

@@ -1,4 +1,5 @@
 import os
+import re
 import secrets
 import shutil
 import uuid
@@ -16,7 +17,7 @@ from app.models.bengkel import SparePart, PengeluaranBengkel
 from app.models.bengkel import TransaksiPenjualanBengkel
 from app.schemas.mobil import MobilCreate, MobilUpdate
 from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource, KasBankJenis, HutangSource, HutangStatus, ExpenseCategory, PiutangSource
-from app.models.keuangan import HutangUsaha, HutangStatus, PiutangUsaha
+from app.models.keuangan import HutangUsaha, HutangStatus, PiutangUsaha, KasBank
 from app.services.kas_bank_integration import create_kas_entry
 from app.realtime import publish_realtime_event
 
@@ -750,7 +751,13 @@ class MobilService:
         return biaya
 
     def delete_biaya(self, biaya_id: int) -> bool:
-        """Delete additional cost."""
+        """Delete additional cost.
+
+        add_biaya() writes the expense twice: a MobilBiayaLainnya row (HPP) and a
+        PengeluaranBengkel ledger row (+ its KasBank entries). Deleting only the
+        former left the ledger row orphaned, so the cost reappeared in reports.
+        Link is the nomor_transaksi stored in catatan ("ID Pengeluaran: <id>|<nomor>").
+        """
         biaya = (
             self.db.query(MobilBiayaLainnya)
             .filter(MobilBiayaLainnya.id == biaya_id)
@@ -761,6 +768,16 @@ class MobilService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Biaya tidak ditemukan",
             )
+
+        match = re.search(r"\|([A-Za-z0-9-]+)\s*$", biaya.catatan or "")
+        if match:
+            nomor_transaksi = match.group(1)
+            self.db.query(KasBank).filter(
+                KasBank.nomor_referensi == nomor_transaksi,
+            ).delete(synchronize_session=False)
+            self.db.query(PengeluaranBengkel).filter(
+                PengeluaranBengkel.nomor_transaksi == nomor_transaksi,
+            ).delete(synchronize_session=False)
 
         self.db.delete(biaya)
         self.db.commit()
