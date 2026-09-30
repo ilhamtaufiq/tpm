@@ -248,6 +248,7 @@ export default function BengkelScreen() {
     const createTransactionMutation = useCreateTransaction();
     const transferMutation = useTransfer();
 
+    const expenseSubmittingRef = React.useRef(false);
     const [expenseMode, setExpenseMode] = React.useState<'KELUAR' | 'MASUK' | 'SETORAN' | 'PIUTANG'>('KELUAR');
     const [expensePiutangType, setExpensePiutangType] = React.useState<'UMUM' | 'KASBON'>('UMUM');
     const [debiturName, setDebiturName] = React.useState('');
@@ -1751,6 +1752,8 @@ export default function BengkelScreen() {
                             }
                             loading={createExpenseMutation.isPending || createTransactionMutation.isPending || transferMutation.isPending || createPiutangMutation.isPending}
                             onPress={async () => {
+                                if (expenseSubmittingRef.current) return;
+                                expenseSubmittingRef.current = true;
                                 if (!expenseAmount || !expenseNote) {
                                     setDialogConfig({
                                         visible: true,
@@ -1849,8 +1852,10 @@ export default function BengkelScreen() {
                                         variant: 'error',
                                         type: 'alert'
                                     }), 300);
+                                } finally {
+                                    expenseSubmittingRef.current = false;
                                 }
-                            }}
+                            disabled={expenseSubmittingRef.current}
                             className={`h-16 rounded-[28px] mt-2 ${expenseMode === 'KELUAR' ? 'bg-rose-600 shadow-rose-600/30' : expenseMode === 'MASUK' ? 'bg-emerald-600 shadow-emerald-600/30' : expenseMode === 'PIUTANG' ? 'bg-amber-600 shadow-amber-600/30' : 'bg-blue-600 shadow-blue-600/30'} shadow-xl`}
                         />
 
