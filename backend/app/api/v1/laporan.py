@@ -122,7 +122,13 @@ def validate_reports(
     # CHECK 3: Hutang Consistency
     # Modal snapshot hutang should match Neraca total hutang.
     # ═══════════════════════════════════════════════════════════════
-    modal_hutang = float(modal.get("info", {}).get("aset", {}).get("hutang", {}).get("total", 0))
+    modal_hutang_info = modal.get("info", {}).get("aset", {}).get("hutang", {})
+    # Neraca menetting piutang booking ke piutang (bukan baris hutang), sedang
+    # snapshot modal mencatatnya di kedua sisi → samakan dulu agar booking DP
+    # tidak memunculkan MISMATCH palsu.
+    modal_hutang = float(modal_hutang_info.get("total", 0)) - float(
+        modal_hutang_info.get("breakdown", {}).get("piutang_booking", 0)
+    )
     neraca_hutang = float(neraca["hutang"]["total_hutang"])
     
     selisih_hutang = modal_hutang - neraca_hutang

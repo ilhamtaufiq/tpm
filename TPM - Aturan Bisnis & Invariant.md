@@ -23,6 +23,9 @@ tags: [tpm, aturan, finansial, dev-guidelines]
 6. **Persentase bagi hasil investor diisi manual per mobil setelah import** (template tidak punya kolom ini; default 0% = seluruh laba ke TPM).
 7. **Koreksi data berbasis ID produksi tidak boleh jalan otomatis tanpa cek nama** — setelah reset + import ulang, ID menunjuk record lain. `heal_sparepart_stock_discrepancies` kini cek nama + sekali jalan (flag `heal_sparepart_stock_20260928_done`).
 8. **Cek silang `/laporan/validate`**: laba Laba Rugi (`laba_operasional`, sebelum prive) dibandingkan dengan `info.laba_operasional` Perubahan Modal — bukan `laba_bersih` yang sudah dipotong prive.
+9. **Guard anti-duplikat KasBank** (ber-`nomor_referensi`): kunci = jenis + tipe + nomor_referensi + referensi_id + tanggal + **nominal + keterangan**. DP lalu pelunasan mobil / cicilan di hari yang sama sah; hanya input ulang identik yang ditolak 409.
+10. **`/validate` cek hutang**: hutang snapshot modal dikurangi `piutang_booking` dulu (Neraca menetting piutang booking ke piutang), agar booking DP tidak memunculkan MISMATCH palsu.
+11. **Pembelian aset tetap = dua langkah**: daftar aset di Master Data (tanpa kas) **dan** catat Kas Keluar sumber `ASET`. Hanya mendaftar aset tanpa kas keluar = aset muncul tanpa sumber dana → modal naik lewat baris *Penyesuaian Backdate*.
 
 ## 📝 Aturan Pengembangan (Dev Guidelines)
 

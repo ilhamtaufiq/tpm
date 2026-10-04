@@ -32,9 +32,16 @@ Uji `TPM_IMPORT_TEMPLATE_REAL_PERIODE_BERJALAN_KE-2.xlsx` lewat Settings > Data 
 - **Now**: -
 - **Next**: setelah deploy, buka Perubahan Modal produksi — baris setoran modal kini muncul dan baris penyesuaian backdate mengecil sebesar setoran manual.
 
+## Lanjutan: reset + import + 22 langkah transaksi
+
+- Reset via `/system/reset-database` → import xlsx (tanggal digeser ke 2026-10-01) → 22 langkah: jual mobil investor (40%) + pencairan, booking DP + pelunasan, biaya persiapan, servis internal JB Mobil, beli part kredit + bayar, jual bengkel tunai/piutang + pelunasan, kasbon, gaji, transfer, aset, beli mobil, jasa angkut, setoran, prive, cicilan ganda hutang/piutang.
+- Tiap langkah dicek: Δlaba = hitungan manual, Δmodal Neraca = Δlaba − Δprive + Δsetoran, backdate 0, LR = Perubahan Modal, `/validate` SYNCED.
+- Bug ditemukan & diperbaiki: guard duplikat KasBank menolak pelunasan booking di hari yang sama (409); `/validate` MISMATCH hutang palsu saat ada booking.
+- Temuan desain (belum diubah): daftar aset di Master Data tidak mencatat kas keluar.
+
 ## Open Questions
 
-None
+- Form aset: tambahkan pilihan sumber dana (kas/bank keluar atau setoran non-kas)?
 
 ## Working Set (file yang disentuh)
 
