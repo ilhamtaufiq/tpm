@@ -37,6 +37,7 @@ Tambahkan baris baru di atas (terbaru dulu) setiap bikin sesi baru:
 
 | Tanggal | Modul | Status | Sesi |
 |---|---|---|---|
+| 2026-10-04 | keuangan | done | [[Sessions/2026-10-04 1700 - Uji Import Periode Ke-2 & Fix Laporan Perubahan Modal]] |
 | 2026-09-30 | keuangan | done | [[Sessions/2026-09-30 1315 - Fix False Duplicate Error Pembayaran Hutang KasBank]] |
 | 2026-09-30 | mobil | done | [[Sessions/2026-09-30 1245 - Fix Double Count Biaya Admin Pajak Unit Mobil]] |
 | 2026-09-30 | lainnya | done | [[Sessions/2026-09-30 1200 - Perf Android Debounce Search FlatList Selector Zustand]] |

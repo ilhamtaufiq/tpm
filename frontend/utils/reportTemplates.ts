@@ -281,8 +281,10 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
     // Laba kumulatif sejak posisi pembuka s/d sehari sebelum tanggal_dari —
     // penyeimbang karena labaOperasional kini hanya periode filter (= Laba Rugi).
     const labaDitahanSebelumnya = data.info?.laba_ditahan_sebelumnya ?? data.laba_ditahan_sebelumnya ?? 0;
+    // Setoran − prive sejak posisi pembuka s/d sebelum tanggal_dari (setoran/prive di atas = periode filter).
+    const mutasiModalSebelumnya = data.info?.mutasi_modal_sebelumnya ?? data.mutasi_modal_sebelumnya ?? 0;
     const modalAkhir = data.modal_akhir || 0;
-    const perubahanBersih = setoranKas + penyesuaianBackdateNonImpor + modalNonKas + labaDitahanSebelumnya + labaOperasional - prive;
+    const perubahanBersih = setoranKas + penyesuaianBackdateNonImpor + modalNonKas + labaDitahanSebelumnya + mutasiModalSebelumnya + labaOperasional - prive;
     const expectedModalAkhirAliran = modalAwal + perubahanBersih;
     const validasi = data.info?.validasi;
     const expectedModalAkhir = validasi?.modal_teoritis ?? expectedModalAkhirAliran;
@@ -337,6 +339,11 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Laba Ditahan Sebelumnya</td>
                     <td class="amount positive">${formatCurrency(labaDitahanSebelumnya)}</td>
                 </tr>` : ''}
+                ${mutasiModalSebelumnya > 0 ? `
+                <tr>
+                    <td>Setoran Modal Bersih Sebelumnya</td>
+                    <td class="amount positive">${formatCurrency(mutasiModalSebelumnya)}</td>
+                </tr>` : ''}
                 ${labaOperasional >= 0 ? `
                 <tr>
                     <td>Laba Operasional Periode</td>
@@ -367,6 +374,11 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                 <tr>
                     <td>Rugi Ditahan Sebelumnya</td>
                     <td class="amount negative">(${formatCurrency(Math.abs(labaDitahanSebelumnya))})</td>
+                </tr>` : ''}
+                ${mutasiModalSebelumnya < 0 ? `
+                <tr>
+                    <td>Prive Bersih Sebelumnya</td>
+                    <td class="amount negative">(${formatCurrency(Math.abs(mutasiModalSebelumnya))})</td>
                 </tr>` : ''}
 
                 <tr class="total-row">

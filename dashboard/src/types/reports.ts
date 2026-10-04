@@ -205,6 +205,8 @@ export interface CapitalReport {
     laba_operasional?: number;
     /** Laba kumulatif sejak posisi pembuka s/d sehari sebelum tanggal_dari. */
     laba_ditahan_sebelumnya?: number;
+    /** Setoran − prive − pengembalian modal sejak posisi pembuka s/d sehari sebelum tanggal_dari. */
+    mutasi_modal_sebelumnya?: number;
     laba_investor: number;
     diskon_penjualan_bengkel?: number;
     validasi?: { modal_teoritis?: number; modal_aktual?: number; selisih?: number; status: string };
@@ -232,4 +234,6 @@ export interface CapitalReport {
    */
   modal_awal_flow_dari?: string;
   laba_ditahan_sebelumnya?: number;
+  /** Setoran − prive − pengembalian modal sejak posisi pembuka s/d sehari sebelum tanggal_dari. */
+  mutasi_modal_sebelumnya?: number;
 }

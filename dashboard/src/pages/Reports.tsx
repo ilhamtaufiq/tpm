@@ -610,13 +610,15 @@ export function Modal() {
   const labaBersih = r.info?.laba_bersih || 0;
   const labaOperasional = r.info?.laba_operasional ?? r.info?.laba_bersih ?? (labaBersih + priveTotal);
   const labaDitahanSebelumnya = r.info?.laba_ditahan_sebelumnya ?? r.laba_ditahan_sebelumnya ?? 0;
+  // Setoran − prive sejak posisi pembuka s/d sebelum tanggal_dari (setoran/prive = periode filter).
+  const mutasiModalSebelumnya = r.info?.mutasi_modal_sebelumnya ?? r.mutasi_modal_sebelumnya ?? 0;
   const labaInvestor = r.info?.laba_investor || 0;
   const diskonPenjualanBengkel = r.info?.diskon_penjualan_bengkel || 0;
   const modalAkhir = r.modal_akhir || 0;
 
   // Investor = hutang (bukan aliran modal) — selaras xlsx. Laba investor sudah
   // dipotong di dalam laba_operasional.
-  const perubahanBersih = setoranKas + penyesuaianBackdateNonImpor + penyesuaianHargaBeli + modalNonKas + labaDitahanSebelumnya + labaOperasional - priveTotal;
+  const perubahanBersih = setoranKas + penyesuaianBackdateNonImpor + penyesuaianHargaBeli + modalNonKas + labaDitahanSebelumnya + mutasiModalSebelumnya + labaOperasional - priveTotal;
   const expectedAliran = modalAwal + perubahanBersih;
   // Mutasi dihitung kumulatif sejak posisi pembuka (modal awal beku); bila
   // periode terpilih menjangkau sebelum itu, angkanya beda dengan Laba Rugi.
@@ -711,6 +713,12 @@ export function Modal() {
             <p className="mt-1 pl-6 text-[11px] text-slate-400">* laba periode sebelum {r.modal_awal_flow_dari ?? period.tanggal_dari} (posisi pembuka)</p>
           </>
         )}
+        {mutasiModalSebelumnya > 0 && (
+          <>
+            <FinancialRow label="Setoran Modal Bersih Sebelumnya" value={mutasiModalSebelumnya} small indent color="text-emerald-700" />
+            <p className="mt-1 pl-6 text-[11px] text-slate-400">* setoran − prive sejak {r.modal_awal_flow_dari ?? period.tanggal_dari} s/d sebelum periode terpilih</p>
+          </>
+        )}
         {labaOperasional >= 0 && (
           <>
             <FinancialRow label="Laba Operasional Periode" value={labaOperasional} small indent color="text-emerald-700" />
@@ -743,6 +751,9 @@ export function Modal() {
         )}
         {labaDitahanSebelumnya < 0 && (
           <FinancialRow label="Rugi Ditahan Sebelumnya" value={labaDitahanSebelumnya} small indent isNegative />
+        )}
+        {mutasiModalSebelumnya < 0 && (
+          <FinancialRow label="Prive Bersih Sebelumnya" value={mutasiModalSebelumnya} small indent isNegative />
         )}
         {labaInvestor !== 0 && (
           <>

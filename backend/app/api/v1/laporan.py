@@ -95,7 +95,9 @@ def validate_reports(
     # ═══════════════════════════════════════════════════════════════
     lr_laba_bersih = float(lr["summary"]["laba_bersih"])
     lr_laba_operasional = float(lr["summary"]["laba_operasional"])
-    modal_laba_period = float(modal.get("info", {}).get("laba_bersih", 0))
+    # Bandingkan sebelum-prive dengan sebelum-prive: info.laba_bersih sudah
+    # dipotong prive → selalu MISMATCH sebesar prive.
+    modal_laba_period = float(modal.get("info", {}).get("laba_operasional", 0))
     neraca_retained = float(neraca["modal"]["laba_ditahan"])
     neraca_prive = float(neraca["modal"]["prive"])
 

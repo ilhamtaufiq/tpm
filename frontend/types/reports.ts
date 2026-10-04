@@ -257,6 +257,8 @@ export interface CapitalReport {
         laba_operasional?: number;
         /** Laba kumulatif sejak posisi pembuka s/d sehari sebelum tanggal_dari. */
         laba_ditahan_sebelumnya?: number;
+        /** Setoran − prive − pengembalian modal sejak posisi pembuka s/d sehari sebelum tanggal_dari. */
+        mutasi_modal_sebelumnya?: number;
         units: {
             bengkel: UnitBreakdown;
             jasa_angkut: UnitBreakdown;
@@ -295,6 +297,8 @@ export interface CapitalReport {
      * filter agar sama dengan Laba Rugi; sisanya masuk baris ini.
      */
     laba_ditahan_sebelumnya?: number;
+    /** Setoran − prive − pengembalian modal sejak posisi pembuka s/d sehari sebelum tanggal_dari. */
+    mutasi_modal_sebelumnya?: number;
     /** Terisi bila periode berakhir sebelum saldo awal — angka semuanya nol. */
     catatan?: string;
     saldo_awal_date?: string;
