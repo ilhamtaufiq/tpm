@@ -176,7 +176,14 @@ class NeracaService(BaseReportService):
 
         # Revaluation (cumulative all events, informational memo — not equity).
         # Shown as a separate memo line below laba ditahan; never drops to zero.
-        reval_reserve = float(hist.get("revaluation", {}).get("cumulative", 0))
+        # Disamakan dengan Perubahan Modal: yang tampil = revaluasi yang sudah
+        # TEREALISASI (unit terjual; HPP pakai harga beli terakhir). Porsi yang
+        # belum terealisasi masih di nilai persediaan (harga perolehan).
+        _rev = hist.get("revaluation", {})
+        reval_kumulatif = float(_rev.get("cumulative", 0))
+        reval_belum = float(_rev.get("reserve", 0))
+        reval_reserve = reval_kumulatif - reval_belum
+        koreksi_stok = float(_rev.get("qty_correction_total", 0))
         
         # Modal Setoran Kas (Total cash inflow from MODAL source)
         setoran_modal_kas = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -232,11 +239,21 @@ class NeracaService(BaseReportService):
         ).scalar() or 0)
         
         # Aset tetap yang dibeli via KasBank (pengeluaran untuk beli aset)
-        pembelian_aset_kas = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.tipe == KasBankType.KELUAR,
+        # Netto: jurnal [VOID] (MASUK) dari hapus aset membatalkan pembelian.
+        pembelian_aset_kas = float(self.db.query(func.sum(
+            case((KasBank.tipe == KasBankType.KELUAR, KasBank.nominal), else_=-KasBank.nominal)
+        )).filter(
             KasBank.sumber == KasBankSource.ASET,
             KasBank.referensi_id.is_not(None),
             KasBank.tanggal <= as_of_date
+        ).scalar() or 0)
+        # Hutang pembelian aset tetap (nomor_referensi = kode aset).
+        from app.utils.constants import TRANSACTION_PREFIXES
+        from app.models.keuangan import HutangUsaha as _HutangAset
+        pembelian_aset_kas += float(self.db.query(func.sum(_HutangAset.nominal_hutang)).filter(
+            _HutangAset.nomor_referensi.like(f"{TRANSACTION_PREFIXES['aset']}-%"),
+            _HutangAset.status != HutangStatus.BATAL,
+            _HutangAset.tanggal <= as_of_date,
         ).scalar() or 0)
         
         # Pembelian mobil via KasBank
@@ -464,6 +481,12 @@ class NeracaService(BaseReportService):
                 "setoran_modal": setoran_modal,
                 "laba_ditahan": retained_earnings,
                 "penyesuaian_harga_beli_sparepart": reval_reserve,
+                "koreksi_stok_sparepart": koreksi_stok,
+                "revaluasi_sparepart": {
+                    "kumulatif": reval_kumulatif,
+                    "terealisasi": reval_reserve,
+                    "belum_terealisasi": reval_belum,
+                },
                 "prive": prive_total,
                 "modal_persediaan": modal_persediaan,
                 "modal_stok_mobil": modal_stok_mobil,

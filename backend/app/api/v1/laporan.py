@@ -95,7 +95,9 @@ def validate_reports(
     # ═══════════════════════════════════════════════════════════════
     lr_laba_bersih = float(lr["summary"]["laba_bersih"])
     lr_laba_operasional = float(lr["summary"]["laba_operasional"])
-    modal_laba_period = float(modal.get("info", {}).get("laba_bersih", 0))
+    # Bandingkan sebelum-prive dengan sebelum-prive: info.laba_bersih sudah
+    # dipotong prive → selalu MISMATCH sebesar prive.
+    modal_laba_period = float(modal.get("info", {}).get("laba_operasional", 0))
     neraca_retained = float(neraca["modal"]["laba_ditahan"])
     neraca_prive = float(neraca["modal"]["prive"])
 
@@ -120,7 +122,13 @@ def validate_reports(
     # CHECK 3: Hutang Consistency
     # Modal snapshot hutang should match Neraca total hutang.
     # ═══════════════════════════════════════════════════════════════
-    modal_hutang = float(modal.get("info", {}).get("aset", {}).get("hutang", {}).get("total", 0))
+    modal_hutang_info = modal.get("info", {}).get("aset", {}).get("hutang", {})
+    # Neraca menetting piutang booking ke piutang (bukan baris hutang), sedang
+    # snapshot modal mencatatnya di kedua sisi → samakan dulu agar booking DP
+    # tidak memunculkan MISMATCH palsu.
+    modal_hutang = float(modal_hutang_info.get("total", 0)) - float(
+        modal_hutang_info.get("breakdown", {}).get("piutang_booking", 0)
+    )
     neraca_hutang = float(neraca["hutang"]["total_hutang"])
     
     selisih_hutang = modal_hutang - neraca_hutang

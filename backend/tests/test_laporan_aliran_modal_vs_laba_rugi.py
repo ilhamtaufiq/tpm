@@ -14,7 +14,7 @@ Jalankan: cd backend && venv/Scripts/python.exe -m pytest tests/test_laporan_ali
 """
 import os
 import sys
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -35,6 +35,12 @@ def db():
     session.close()
 
 
+def _periode(db):
+    """Posisi pembuka aktif s/d hari ini — berlaku untuk data periode mana pun."""
+    anchor = ModalService(db)._saldo_awal_date() or date.today()
+    return anchor, max(date.today(), anchor)
+
+
 def _reports(db, dari, sampai):
     lr = LabaRugiService(db).get_report(dari, sampai)["summary"]
     md = ModalService(db).get_report(dari, sampai)
@@ -43,8 +49,8 @@ def _reports(db, dari, sampai):
 
 def test_rekap_laba_rugi_foot(db):
     """Σ baris rekap = laba_operasional, tanpa double-count overhead pusat."""
-    anchor = ModalService(db)._saldo_awal_date() or date(2026, 9, 12)
-    lr, _ = _reports(db, anchor, date(2026, 9, 18))
+    anchor, akhir = _periode(db)
+    lr, _ = _reports(db, anchor, akhir)
     rekap = (
         lr["total_revenue"]
         - lr["total_hpp"]
@@ -55,13 +61,15 @@ def test_rekap_laba_rugi_foot(db):
         f"rekap {rekap:,.0f} != laba_operasional {lr['laba_operasional']:,.0f}"
     )
     # Beban unit dan beban pusat harus BERBEDA — kalau sama, salah satunya salah isi.
-    assert lr["total_beban_operasional"] != lr["total_beban_umum"]
+    # (Keduanya 0 = belum ada beban sama sekali, mis. tepat setelah import.)
+    if lr["total_beban_operasional"] or lr["total_beban_umum"]:
+        assert lr["total_beban_operasional"] != lr["total_beban_umum"]
 
 
 def test_aliran_modal_sama_dengan_delta_modal(db):
     """Aliran ekuitas (setoran + laba ops − prive) == modal_akhir − modal_awal."""
-    anchor = ModalService(db)._saldo_awal_date() or date(2026, 9, 12)
-    _, md = _reports(db, anchor, date(2026, 9, 18))
+    anchor, akhir = _periode(db)
+    _, md = _reports(db, anchor, akhir)
     setoran = md["penambahan"].get("setoran_modal") or 0
     nonkas = (md["penambahan"].get("modal_non_kas") or {}).get("total") or 0
     prive = (md["pengurangan"].get("prive") or 0) + (
@@ -72,28 +80,32 @@ def test_aliran_modal_sama_dengan_delta_modal(db):
         or md["penambahan"].get("penyesuaian_backdate_non_impor")
         or 0
     )
-    reval_reserve = md["penambahan"].get("penyesuaian_harga_beli_sparepart") or 0
-    aliran = setoran + nonkas + pra_saldo_awal + reval_reserve + (md["info"].get("laba_operasional") or 0) - prive
+    reval_reserve = (md["penambahan"].get("penyesuaian_harga_beli_sparepart") or 0) + (
+        md["penambahan"].get("koreksi_stok_sparepart") or 0
+    )
+    sebelumnya = (md["info"].get("laba_ditahan_sebelumnya") or 0) + (md.get("mutasi_modal_sebelumnya") or 0)
+    aliran = setoran + nonkas + pra_saldo_awal + reval_reserve + sebelumnya + (md["info"].get("laba_operasional") or 0) - prive
     assert abs(aliran - (md["modal_akhir"] - md["modal_awal"])) < TOL, (
         "prive kemungkinan terhitung dua kali (laba_bersih sudah net prive)"
     )
 
 
 def test_lr_sama_dengan_modal_pada_periode_pasca_pembuka(db):
-    anchor = ModalService(db)._saldo_awal_date() or date(2026, 9, 12)
-    lr, md = _reports(db, anchor, date(2026, 9, 18))
+    anchor, akhir = _periode(db)
+    lr, md = _reports(db, anchor, akhir)
     assert abs(lr["laba_operasional"] - (md["info"].get("laba_operasional") or 0)) < TOL
     assert md.get("modal_awal_flow_dari") == anchor.isoformat()
 
 
 def test_flow_dari_menandai_periode_pra_pembuka(db):
     """Periode sebelum posisi pembuka → mutasi kumulatif, UI wajib diberi tahu."""
-    anchor = ModalService(db)._saldo_awal_date()
-    if not anchor or anchor <= date(2026, 9, 1):
-        pytest.skip("posisi pembuka tidak menjangkau periode uji")
-    lr, md = _reports(db, date(2026, 9, 1), date(2026, 9, 18))
+    if ModalService(db)._saldo_awal_date() is None:
+        pytest.skip("belum ada saldo awal impor")
+    anchor, akhir = _periode(db)
+    dari = anchor - timedelta(days=30)
+    lr, md = _reports(db, dari, akhir)
     assert md["modal_awal_flow_dari"] == anchor.isoformat()
-    assert md["modal_awal_flow_dari"] > date(2026, 9, 1).isoformat()
+    assert md["modal_awal_flow_dari"] > dari.isoformat()
     # Laba operasional periode filter sama dengan Laba Rugi; perbedaan pra-pembuka berada di laba_ditahan_sebelumnya / pra-saldo-awal.
     assert abs(lr["laba_operasional"] - (md["info"].get("laba_operasional") or 0)) < TOL
 
@@ -108,9 +120,9 @@ def test_tidak_ada_field_unit_yang_dijumlah_ganda(db):
     komponen b_ops/gaji/lembur (sudah ada di laba bersih unit). Test ini menjaga
     agar ringkasan tetap konsisten sehingga tak ada alasan menurunkan ulang.
     """
-    anchor = ModalService(db)._saldo_awal_date() or date(2026, 9, 12)
-    lr, _ = _reports(db, anchor, date(2026, 9, 18))
-    u = LabaRugiService(db).get_report(anchor, date(2026, 9, 18))["units"]
+    anchor, akhir = _periode(db)
+    lr, _ = _reports(db, anchor, akhir)
+    u = LabaRugiService(db).get_report(anchor, akhir)["units"]
 
     # total_laba_kotor harus == Σ laba_kotor unit (tanpa pembentukan ulang di klien).
     assert abs(lr["total_laba_kotor"] - sum(u[k]["laba_kotor"] for k in u)) < TOL

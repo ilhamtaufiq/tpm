@@ -61,8 +61,24 @@ export interface Asset {
     status: string;
     lokasi?: string;
     catatan?: string;
+    /** KAS / HUTANG / SETORAN_MODAL — kosong untuk aset lama / import saldo awal. */
+    sumber_dana?: 'KAS' | 'HUTANG' | 'SETORAN_MODAL' | null;
     created_at: string;
 }
+
+export interface AssetPaymentItem {
+    metode: 'TUNAI' | 'TRANSFER';
+    jumlah: number;
+    kas_jenis?: string;
+}
+
+/** Payload pembelian aset (seperti pembelian spare part). */
+export type AssetPurchasePayload = Partial<Omit<Asset, 'sumber_dana'>> & {
+    sumber_dana?: 'KAS' | 'HUTANG' | 'SETORAN_MODAL';
+    payments?: AssetPaymentItem[];
+    supplier_id?: number;
+    nama_penjual?: string;
+};
 
 // --- Service ---
 export const masterDataService = {
@@ -199,7 +215,7 @@ export const masterDataService = {
         return response.data;
     },
 
-    createAsset: async (data: Partial<Asset>): Promise<Asset> => {
+    createAsset: async (data: AssetPurchasePayload): Promise<Asset> => {
         const response = await api.post('/assets', data);
         return response.data;
     },

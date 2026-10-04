@@ -47,7 +47,78 @@ class ModalService(BaseReportService):
     FROZEN_MODAL_AWAL_KEY = "modal_awal_frozen"
     # Naikkan saat rumus modal_awal berubah → baris beku lama dianggap basi.
     # v4: Modal Awal per 12 Sept 2026 set to Rp 2.242.611.225 (sudah termasuk rugi/laba ditahan pra-saldo-awal).
-    FROZEN_MODAL_AWAL_V = 4
+    # v5: nilai v4 HANYA untuk anchor 2026-09-12. Anchor lain (import periode
+    # berikutnya) dihitung dari neraca(anchor) — dulu ikut dipaksa 2.242.611.225
+    # dan selisihnya tersembunyi di "penyesuaian_backdate_non_impor".
+    FROZEN_MODAL_AWAL_V = 5
+    MODAL_AWAL_OVERRIDE = {"2026-09-12": 2242611225.0}
+
+    @staticmethod
+    def _bukan_impor():
+        """Filter baris kas non-impor. `NOT LIKE` terhadap NULL bernilai NULL,
+        jadi tanpa `is_(None)` setoran manual (nomor_referensi kosong) ikut
+        terbuang dan setoran modal selalu tampil 0."""
+        return or_(
+            KasBank.nomor_referensi.is_(None),
+            ~KasBank.nomor_referensi.like("IMP-%"),
+        )
+
+    def _setoran_modal(self, dari: date, sampai: date) -> float:
+        if sampai < dari:
+            return 0.0
+        return float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.sumber == KasBankSource.MODAL,
+            KasBank.tipe == KasBankType.MASUK,
+            KasBank.tanggal >= dari,
+            KasBank.tanggal <= sampai,
+            self._bukan_impor(),
+        ).scalar() or 0)
+
+    def _setoran_aset(self, dari: date, sampai: date) -> float:
+        """Aset tetap yang disetor pemilik (sumber_dana=SETORAN_MODAL) — setoran
+        modal non-kas. Tanpa ini aset naik tanpa sumber → Penyesuaian Backdate."""
+        if sampai < dari:
+            return 0.0
+        from app.models.keuangan import Aset
+        return float(self.db.query(func.sum(Aset.harga_beli)).filter(
+            Aset.sumber_dana == "SETORAN_MODAL",
+            Aset.tanggal_beli >= dari,
+            Aset.tanggal_beli <= sampai,
+        ).scalar() or 0)
+
+    def _backdate_detail(self, anchor: date) -> Dict[str, Any]:
+        rows = self.db.query(KasBank).filter(
+            KasBank.tanggal < anchor,
+            self._bukan_impor(),
+        ).order_by(KasBank.tanggal.desc(), KasBank.id.desc()).all()
+        net = sum(
+            (float(k.nominal) if k.tipe == KasBankType.MASUK else -float(k.nominal)) for k in rows
+        )
+        return {
+            "sebelum": anchor.isoformat(),
+            "jumlah": len(rows),
+            "net_kas": net,
+            "items": [
+                {
+                    "tanggal": k.tanggal.isoformat(),
+                    "jenis": k.jenis.value if k.jenis else None,
+                    "tipe": k.tipe.value if k.tipe else None,
+                    "nominal": float(k.nominal),
+                    "keterangan": k.keterangan,
+                }
+                for k in rows[:20]
+            ],
+        }
+
+    def _pengembalian_modal(self, dari: date, sampai: date) -> float:
+        if sampai < dari:
+            return 0.0
+        return float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.sumber == KasBankSource.MODAL,
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.tanggal >= dari,
+            KasBank.tanggal <= sampai,
+        ).scalar() or 0)
 
     def _equity_flow_on(self, d: date) -> float:
         """Pergerakan ekuitas pada SATU hari.
@@ -58,17 +129,8 @@ class ModalService(BaseReportService):
         Komposisinya SAMA dengan raw_theoretical di get_report.
         """
         data = self.get_unit_financial_breakdown(d, d)
-        setoran = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.sumber == KasBankSource.MODAL,
-            KasBank.tipe == KasBankType.MASUK,
-            KasBank.tanggal == d,
-            ~KasBank.nomor_referensi.like("IMP-%"),
-        ).scalar() or 0)
-        pengembalian = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.sumber == KasBankSource.MODAL,
-            KasBank.tipe == KasBankType.KELUAR,
-            KasBank.tanggal == d,
-        ).scalar() or 0)
+        setoran = self._setoran_modal(d, d) + self._setoran_aset(d, d)
+        pengembalian = self._pengembalian_modal(d, d)
         return (
             setoran
             + float(data.get("retained_earnings", 0))
@@ -131,7 +193,7 @@ class ModalService(BaseReportService):
                 key=self.FROZEN_MODAL_AWAL_KEY,
                 description="Modal awal beku (snapshot neraca anchor, anti-geser backdate)",
             )
-        frozen_amount = 2242611225.0 if self.FROZEN_MODAL_AWAL_V == 4 else computed
+        frozen_amount = self.MODAL_AWAL_OVERRIDE.get(anchor.isoformat(), computed)
         row.value = json.dumps({
             "amount": frozen_amount, "as_of": anchor.isoformat(), "v": self.FROZEN_MODAL_AWAL_V,
         })
@@ -260,14 +322,14 @@ class ModalService(BaseReportService):
         qty_correction = float(data.get("revaluation", {}).get("qty_correction_total", 0))
         reval_reserve = (reval_cumulative + qty_correction) - reval_unrealized
 
-        # Modal Masuk (Setoran Baru in this period) — impor saldo awal IMP-* bukan setoran.
-        setoran_modal = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.sumber == KasBankSource.MODAL,
-            KasBank.tipe == KasBankType.MASUK,
-            KasBank.tanggal >= flow_dari,
-            KasBank.tanggal <= tanggal_sampai,
-            ~KasBank.nomor_referensi.like("IMP-%")
-        ).scalar() or 0)
+        # Setoran & pengembalian modal dipisah seperti laba: periode filter vs
+        # sisa kumulatif sejak anchor (masuk "mutasi_modal_sebelumnya"), agar
+        # baris setoran/prive sama dengan periode yang dipilih user.
+        # Impor saldo awal IMP-* bukan setoran.
+        period_dari = max(tanggal_dari, flow_dari)
+        sebelum_dari = period_dari - timedelta(days=1)
+        setoran_modal = self._setoran_modal(period_dari, tanggal_sampai)
+        setoran_modal_sebelumnya = self._setoran_modal(flow_dari, sebelum_dari)
 
         # Kumulatif sejak posisi pembuka (flow_dari), bukan tanggal_dari filter —
         # lihat catatan MODAL AWAL/BEKU di atas.
@@ -441,13 +503,21 @@ class ModalService(BaseReportService):
         )
 
         # Pengurangan Modal
-        prive = float(data.get("prive_global", 0))
-        pengembalian_modal = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.tipe == KasBankType.KELUAR,
-            KasBank.sumber == KasBankSource.MODAL,
-            KasBank.tanggal >= flow_dari,
-            KasBank.tanggal <= tanggal_sampai
-        ).scalar() or 0)
+        prive_kumulatif = float(data.get("prive_global", 0))
+        prive = (
+            float(data_period.get("prive_global", 0))
+            if tanggal_dari > flow_dari else prive_kumulatif
+        )
+        pengembalian_modal = self._pengembalian_modal(period_dari, tanggal_sampai)
+        pengembalian_modal_sebelumnya = self._pengembalian_modal(flow_dari, sebelum_dari)
+        # Setoran − prive − pengembalian antara anchor dan sehari sebelum
+        # tanggal_dari. Penyeimbang seperti laba_ditahan_sebelumnya.
+        mutasi_modal_sebelumnya = (
+            setoran_modal_sebelumnya
+            + self._setoran_aset(flow_dari, sebelum_dari)
+            - (prive_kumulatif - prive)
+            - pengembalian_modal_sebelumnya
+        )
 
         # Beban Gaji & Lembur
         gaji = float(b.get("gaji", 0))
@@ -730,10 +800,11 @@ class ModalService(BaseReportService):
         # to 0 hides the liability and breaks modal_teoritis vs modal_aktual.
         setoran_non_kas_import = (mobil_import + piutang_import) - hutang_import + reval_mobil
 
-        # Aset tetap pada posisi pembuka sudah ada di snapshot modal_awal, dan aset
-        # yang dibeli selama periode dibayar kas (kas turun, aset naik → net 0 pada
-        # ekuitas). Jadi tidak ada setoran non-kas yang perlu ditambahkan.
-        aset_import = 0.0
+        # Aset tetap pada posisi pembuka sudah ada di snapshot modal_awal; aset yang
+        # dibeli via kas/hutang net 0 pada ekuitas. Hanya aset setoran pemilik
+        # (sumber_dana=SETORAN_MODAL) yang menambah modal sebagai setoran non-kas.
+        aset_import = self._setoran_aset(period_dari, tanggal_sampai)
+        setoran_non_kas_import += aset_import
 
         # Clean expected theoretical ending modal based on classical accounting formula.
         # Investor = hutang: laba investor & pembayaran investor BUKAN aliran modal.
@@ -744,6 +815,7 @@ class ModalService(BaseReportService):
             setoran_non_kas_import +
             reval_reserve +
             laba_ditahan_sebelumnya +
+            mutasi_modal_sebelumnya +
             period_profit_sot -
             (prive + pengembalian_modal)
         )
@@ -767,7 +839,12 @@ class ModalService(BaseReportService):
                 "setoran_modal": setoran_modal,
                 "laba_ditahan_pra_saldo_awal": laba_ditahan_pra_saldo_awal,
                 "penyesuaian_backdate_non_impor": penyesuaian_backdate_non_impor,
-                "penyesuaian_harga_beli_sparepart": reval_reserve,
+                # Dipecah (jumlah keduanya = reval_reserve di raw_theoretical):
+                #   harga beli → revaluasi yang sudah terealisasi (HPP pakai harga
+                #   beli terakhir; selisih ke harga perolehan muncul di sini)
+                #   koreksi stok → selisih stok opname (edit stok di Master Data)
+                "penyesuaian_harga_beli_sparepart": reval_reserve - qty_correction,
+                "koreksi_stok_sparepart": qty_correction,
                 "penyesuaian_harga_beli_mobil": reval_mobil,
                 "modal_non_kas": {
                     "total": setoran_non_kas_import,
@@ -863,6 +940,10 @@ class ModalService(BaseReportService):
             # non-impor hari anchor — angka ini yang harus ditampilkan sebagai baris
             # "Mutasi hari saldo awal (dipindah dari modal awal)" agar Σ drill cocok.
             "modal_awal_penyesuaian": anchor_day_flow,
+            # Transaksi non-impor bertanggal SEBELUM saldo awal: tidak tercakup
+            # Modal Awal beku maupun arus periode → efeknya terbaca di baris
+            # penyeimbang "Penyesuaian Transaksi Backdate". Daftar ini untuk audit.
+            "backdate_detail": self._backdate_detail(anchor),
             "info": {
                 "laba_bengkel": laba_bengkel_tpm_gross,
                 "laba_mobil": laba_mobil_tpm_gross,
@@ -895,6 +976,7 @@ class ModalService(BaseReportService):
                 # Penyeimbang agar Modal Awal + mutasi = Modal Akhir tetap sah saat
                 # laba periode filter tak lagi kumulatif.
                 "laba_ditahan_sebelumnya": laba_ditahan_sebelumnya,
+                "mutasi_modal_sebelumnya": mutasi_modal_sebelumnya,
                 "units": data.get("units"),
                 "eliminasi_internal": internal_elimination,
                 "eliminasi_profit_internal": internal_profit_elimination,
@@ -939,6 +1021,7 @@ class ModalService(BaseReportService):
             "is_balanced": abs(selisih) < 100,
             "laba_ditahan_periode": period_profit_sot,
             "laba_ditahan_sebelumnya": laba_ditahan_sebelumnya,
+            "mutasi_modal_sebelumnya": mutasi_modal_sebelumnya,
             # Mutasi (termasuk laba) dihitung KUMULATIF sejak anchor karena modal
             # awal beku — bukan sejak tanggal_dari. UI memakai ini untuk memberi
             # tahu pengguna saat periode terpilih menjangkau sebelum posisi

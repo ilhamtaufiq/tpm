@@ -14,7 +14,7 @@ from app.config import settings
 from app.utils.sparepart_stock import ALWAYS_READY_STOCK, is_always_ready_stock
 from app.realtime import publish_realtime_event
 
-from app.models.bengkel import SparePart
+from app.models.bengkel import SparePart, SparePartRevaluation
 from app.schemas.bengkel import SparePartCreate, SparePartUpdate
 
 
@@ -176,9 +176,11 @@ class SparePartService:
                     detail=f"Spare part dengan nama '{update_data['nama']}' sudah ada",
                 )
 
+        stok_lama, harga_lama = spare_part.stok, spare_part.harga_beli
         for key, value in update_data.items():
             if hasattr(spare_part, key):
                 setattr(spare_part, key, value)
+        self._catat_penyesuaian_persediaan(spare_part, stok_lama, harga_lama)
 
         self.db.commit()
         self.db.refresh(spare_part)
@@ -343,6 +345,7 @@ class SparePartService:
             operation: 'add' or 'subtract'
         """
         spare_part = self.get_by_id(spare_part_id)
+        stok_lama, harga_lama = spare_part.stok, spare_part.harga_beli
 
         if operation == "add":
             if not is_always_ready_stock(spare_part.stok):
@@ -360,6 +363,7 @@ class SparePartService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Operation harus 'add' atau 'subtract'",
             )
+        self._catat_penyesuaian_persediaan(spare_part, stok_lama, harga_lama)
 
         self.db.commit()
         self.db.refresh(spare_part)
@@ -375,9 +379,11 @@ class SparePartService:
     ) -> SparePart:
         """Update spare part prices."""
         spare_part = self.get_by_id(spare_part_id)
+        stok_lama, harga_lama = spare_part.stok, spare_part.harga_beli
 
         if harga_beli is not None:
             spare_part.harga_beli = harga_beli
+        self._catat_penyesuaian_persediaan(spare_part, stok_lama, harga_lama)
         if harga_jual is not None:
             spare_part.harga_jual = harga_jual
 
@@ -386,6 +392,40 @@ class SparePartService:
         self._emit_change("price_updated", spare_part)
 
         return spare_part
+
+    def _catat_penyesuaian_persediaan(self, sp: SparePart, stok_lama, harga_lama) -> None:
+        """Catat edit harga beli / stok manual agar laporan bisa menjelaskannya.
+
+        Dulu edit di Master Data langsung mengubah nilai persediaan tanpa jejak:
+        modal naik/turun lewat baris "Penyesuaian Backdate" (dan ikut menggeser
+        nilai persediaan di tanggal lampau). Kini:
+          - harga beli berubah, stok > 0 → revaluasi (sama seperti pembelian
+            dengan harga baru): persediaan tetap dinilai harga perolehan, selisih
+            tampil di memo Penyesuaian Harga Beli Spare Part.
+          - stok berubah → koreksi qty (`is_qty_correction`) senilai
+            Δqty × harga beli; tampil sebagai penyesuaian, bukan backdate.
+        Stok "Always Ready" (katalog) tidak dinilai.
+        """
+        from app.utils.helpers import get_jakarta_date
+
+        def fisik(q):
+            return Decimal("0") if q is None or is_always_ready_stock(q) else Decimal(q)
+
+        q_lama, q_baru = fisik(stok_lama), fisik(sp.stok)
+        h_lama = Decimal(harga_lama or 0)
+        h_baru = Decimal(sp.harga_beli or 0)
+        hari = get_jakarta_date()
+        if h_baru != h_lama and q_lama > 0:
+            self.db.add(SparePartRevaluation(
+                spare_part_id=sp.id, tanggal=hari, qty_at_reval=q_lama,
+                harga_lama=h_lama, harga_baru=h_baru, amount=(h_baru - h_lama) * q_lama,
+            ))
+        if q_baru != q_lama:
+            self.db.add(SparePartRevaluation(
+                spare_part_id=sp.id, tanggal=hari, qty_at_reval=q_baru - q_lama,
+                harga_lama=h_baru, harga_baru=h_baru, amount=(q_baru - q_lama) * h_baru,
+                is_qty_correction=True,
+            ))
 
     def get_low_stock_items(self) -> List[SparePart]:
         """Get spare parts with low stock."""
@@ -400,28 +440,48 @@ class SparePartService:
             .all()
         )
 
+    # Koreksi satu kali data produksi (28 Sep 2026). ID di-pin ke DB produksi,
+    # jadi WAJIB dicek nama: setelah reset + import ulang, ID yang sama menunjuk
+    # part lain (mis. id 469 = KLIP BEKLEDING, stok 144 dipotong jadi 15).
+    # Flag SystemSetting memastikan hanya jalan sekali — tanpanya restock sah
+    # part ini di atas target ikut dipotong tiap Neraca dibuka.
+    HEAL_STOCK_FLAG_KEY = "heal_sparepart_stock_20260928_done"
+
     def heal_sparepart_stock_discrepancies(self) -> None:
         """Fix Stock Part discrepancies (Rp 4.810.000 diff: Rp 4.785.000 double-input vehicle HPP + Rp 25.000 Threebond 1 pcs)."""
-        discrepancies = {
-            469: 15.0,  # Lem Threebond: 16 -> 15 (1 pcs discrepancy, Rp 25.000)
-            557: 3.0,   # PAKING DEKSEL RINO: 4 -> 3 (Rp 425.000)
-            727: 1.0,   # SIL AS KUPLING RINO: 2 -> 1 (Rp 30.000)
-            994: 1.0,   # SLEEVE SYNCRO GIGI 2: 2 -> 1 (Rp 525.000)
-            995: 1.0,   # SLEEVE SYNCRO GIGI 3: 2 -> 1 (Rp 525.000)
-            996: 1.0,   # LAHER ROKO INPUT: 2 -> 1 (Rp 125.000)
-            998: 1.0,   # RING SEHER RINO: 2 -> 1 (Rp 1.075.000)
-            999: 1.0,   # BORING SET RINO: 2 -> 1 (Rp 1.900.000)
-            1000: 1.0,  # METAL JALAN STD: 2 -> 1 (Rp 180.000)
-        }
-        healed = False
-        for pid, target_stok in discrepancies.items():
-            sp = self.db.query(SparePart).filter(SparePart.id == pid, SparePart.deleted_at.is_(None)).first()
-            if sp and float(sp.stok) > target_stok:
-                sp.stok = target_stok
-                healed = True
+        from app.models.system_setting import SystemSetting
 
-        if healed:
-            self.db.commit()
+        flag = self.db.query(SystemSetting).filter(
+            SystemSetting.key == self.HEAL_STOCK_FLAG_KEY
+        ).first()
+        if flag is not None:
+            return
+
+        # id: (kata kunci nama, target stok)
+        discrepancies = {
+            469: ("THREEBOND", 15.0),       # Lem Threebond: 16 -> 15 (Rp 25.000)
+            557: ("PAKING DEKSEL", 3.0),    # PAKING DEKSEL RINO: 4 -> 3 (Rp 425.000)
+            727: ("SIL AS KUPLING", 1.0),   # SIL AS KUPLING RINO: 2 -> 1 (Rp 30.000)
+            994: ("SLEEVE SYNCRO", 1.0),    # SLEEVE SYNCRO GIGI 2: 2 -> 1 (Rp 525.000)
+            995: ("SLEEVE SYNCRO", 1.0),    # SLEEVE SYNCRO GIGI 3: 2 -> 1 (Rp 525.000)
+            996: ("LAHER", 1.0),            # LAHER ROKO INPUT: 2 -> 1 (Rp 125.000)
+            998: ("RING SEHER", 1.0),       # RING SEHER RINO: 2 -> 1 (Rp 1.075.000)
+            999: ("BORING SET", 1.0),       # BORING SET RINO: 2 -> 1 (Rp 1.900.000)
+            1000: ("METAL JALAN", 1.0),     # METAL JALAN STD: 2 -> 1 (Rp 180.000)
+        }
+        for pid, (keyword, target_stok) in discrepancies.items():
+            sp = self.db.query(SparePart).filter(SparePart.id == pid, SparePart.deleted_at.is_(None)).first()
+            if not sp or keyword not in (sp.nama or "").upper():
+                continue
+            if float(sp.stok) > target_stok:
+                sp.stok = target_stok
+
+        self.db.add(SystemSetting(
+            key=self.HEAL_STOCK_FLAG_KEY,
+            value="1",
+            description="Koreksi stok part 28 Sep 2026 sudah diterapkan (one-shot)",
+        ))
+        self.db.commit()
 
     def get_stock_value(self) -> Dict[str, Any]:
         """Get total stock value."""

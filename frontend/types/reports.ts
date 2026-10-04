@@ -56,6 +56,8 @@ export interface NeracaModal {
     modal_aset_tetap: number;
     laba_ditahan: number;
     penyesuaian_harga_beli_sparepart?: number;
+    koreksi_stok_sparepart?: number;
+    revaluasi_sparepart?: { kumulatif: number; terealisasi: number; belum_terealisasi: number };
     prive: number;
     total_modal: number;
     selisih_modal?: number;
@@ -185,6 +187,8 @@ export interface CapitalReport {
         laba_ditahan_pra_saldo_awal?: number;
         penyesuaian_backdate_non_impor?: number;
         penyesuaian_harga_beli_sparepart?: number;
+        /** Selisih stok opname (edit stok Master Data), Δqty × harga beli. */
+        koreksi_stok_sparepart?: number;
         investor_funding?: number;
         modal_non_kas?: {
             total: number;
@@ -257,6 +261,8 @@ export interface CapitalReport {
         laba_operasional?: number;
         /** Laba kumulatif sejak posisi pembuka s/d sehari sebelum tanggal_dari. */
         laba_ditahan_sebelumnya?: number;
+        /** Setoran − prive − pengembalian modal sejak posisi pembuka s/d sehari sebelum tanggal_dari. */
+        mutasi_modal_sebelumnya?: number;
         units: {
             bengkel: UnitBreakdown;
             jasa_angkut: UnitBreakdown;
@@ -295,6 +301,8 @@ export interface CapitalReport {
      * filter agar sama dengan Laba Rugi; sisanya masuk baris ini.
      */
     laba_ditahan_sebelumnya?: number;
+    /** Setoran − prive − pengembalian modal sejak posisi pembuka s/d sehari sebelum tanggal_dari. */
+    mutasi_modal_sebelumnya?: number;
     /** Terisi bila periode berakhir sebelum saldo awal — angka semuanya nol. */
     catatan?: string;
     saldo_awal_date?: string;
@@ -306,6 +314,13 @@ export interface CapitalReport {
      * bertanggal tepat di hari saldo awal.
      */
     modal_awal_penyesuaian?: number;
+    /** Transaksi non-impor bertanggal sebelum saldo awal (audit baris Penyesuaian Transaksi Backdate). */
+    backdate_detail?: {
+        sebelum: string;
+        jumlah: number;
+        net_kas: number;
+        items: { tanggal: string; jenis: string | null; tipe: string | null; nominal: number; keterangan: string }[];
+    };
     /**
      * Tanggal mulai perhitungan mutasi (= posisi pembuka/beku). Bila lebih besar
      * dari tanggal_dari filter, angka laba di sini kumulatif sejak tanggal itu —

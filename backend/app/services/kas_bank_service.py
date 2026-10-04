@@ -152,6 +152,12 @@ class KasBankService:
                     KasBank.nomor_referensi == data.nomor_referensi,
                     KasBank.referensi_id == data.referensi_id,
                     KasBank.tanggal == data.tanggal,
+                    # Pembayaran berbeda atas transaksi yang sama di hari yang
+                    # sama (DP lalu pelunasan mobil, cicilan piutang) berbagi
+                    # nomor_referensi + referensi_id → nominal & keterangan ikut
+                    # jadi kunci agar hanya input ulang identik yang ditolak.
+                    KasBank.nominal == data.nominal,
+                    KasBank.keterangan == data.keterangan,
                 ).first()
             else:
                 dup = self.db.query(KasBank).filter(

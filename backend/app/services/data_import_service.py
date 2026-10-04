@@ -1683,6 +1683,9 @@ class DataImportService:
                         warna=warna,
                         nomor_plat=plat,
                         harga_beli=hb,
+                        # Basis revaluasi = harga opening. Default 0 membuat seluruh
+                        # harga_beli terbaca "revaluasi mobil" di Perubahan Modal.
+                        harga_beli_awal=hb,
                         harga_jual=hj,
                         status=st,
                         tanggal_masuk=tgl,

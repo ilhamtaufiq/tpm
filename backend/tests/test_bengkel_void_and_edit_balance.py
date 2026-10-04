@@ -19,6 +19,7 @@ import pytest
 from app.database import SessionLocal
 from app.models.bengkel import SparePart, TransaksiPenjualanBengkel
 from app.models.mobil import Mobil
+from app.models.keuangan import PiutangUsaha, HutangUsaha
 from app.models.jasa_angkut import MuatanJasaAngkut, ArmadaJasaAngkut
 from app.schemas.bengkel import TransaksiBengkelCreate, DetailPartCreate, DetailServiceCreate
 from app.services.transaksi_bengkel_service import TransaksiBengkelService
@@ -60,6 +61,24 @@ def _assert_financial_reports_balanced(db_session, context_msg=""):
         f"[{context_msg}] Laporan Perubahan Modal TIDAK balance! "
         f"selisih: {modal_report.get('selisih')}, is_balanced: {modal_balanced}"
     )
+
+
+def _assert_internal_debts_follow(db_session, transaksi):
+    """Piutang & hutang internal wajib ikut grand_total setelah edit."""
+    db_session.expire_all()
+    rows = (
+        db_session.query(PiutangUsaha.nominal_piutang)
+        .filter(PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi, PiutangUsaha.is_internal == True)
+        .all()
+        + db_session.query(HutangUsaha.nominal_hutang)
+        .filter(HutangUsaha.nomor_referensi == transaksi.nomor_transaksi, HutangUsaha.is_internal == True)
+        .all()
+    )
+    assert rows, "piutang/hutang internal tidak terbentuk"
+    for (nominal,) in rows:
+        assert nominal == transaksi.grand_total, (
+            f"internal debt {nominal} != grand_total {transaksi.grand_total}"
+        )
 
 
 def test_kasus_1_bengkel_mobil_edit_dan_void_balance(db):
@@ -155,6 +174,7 @@ def test_kasus_1_bengkel_mobil_edit_dan_void_balance(db):
 
         updated_transaksi = service.update(transaksi.id, edit_payload, user_id=None)
         assert updated_transaksi.grand_total == Decimal("650000")  # (3 * 150k) + 200k
+        _assert_internal_debts_follow(db, updated_transaksi)
 
         # Verifikasi laporan keuangan pasca-edit
         _assert_financial_reports_balanced(db, "Kasus 1 - Pasca Edit Item Nota Bengkel Mobil")

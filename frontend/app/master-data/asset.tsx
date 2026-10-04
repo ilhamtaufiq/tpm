@@ -19,6 +19,7 @@ import {
     DollarSign,
     Trash2,
     Clock,
+    Wallet,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { Asset } from '../../services/masterData';
@@ -28,10 +29,34 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
+import { MasterDataSelector } from '../../components/ui/MasterDataSelector';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
+
+// Sumber dana pembelian aset — sama seperti pembelian spare part, plus setoran pemilik.
+type SumberDana = 'UTAMA_TUNAI' | 'UTAMA_TRANSFER' | 'HUTANG' | 'SETORAN_MODAL';
+type SumberKas = 'UTAMA_TUNAI' | 'UTAMA_TRANSFER';
+const SUMBER_DANA_OPTIONS: { value: SumberDana; label: string }[] = [
+    { value: 'UTAMA_TUNAI', label: 'Tunai Utama' },
+    { value: 'UTAMA_TRANSFER', label: 'Transfer' },
+    { value: 'HUTANG', label: 'Hutang Penuh' },
+    { value: 'SETORAN_MODAL', label: 'Setoran Pemilik' },
+];
+const SUMBER_KAS_OPTIONS: { value: SumberKas; label: string }[] = [
+    { value: 'UTAMA_TUNAI', label: 'Tunai Utama' },
+    { value: 'UTAMA_TRANSFER', label: 'Transfer Utama' },
+];
+const kasDetail = (sumber: SumberKas) =>
+    sumber === 'UTAMA_TRANSFER'
+        ? { metode: 'TRANSFER' as const, kas_jenis: 'BANK_UTAMA' }
+        : { metode: 'TUNAI' as const, kas_jenis: 'KAS_UTAMA' };
+const SUMBER_DANA_LABEL: Record<string, string> = {
+    KAS: 'Dibayar Kas/Bank',
+    HUTANG: 'Hutang ke Penjual',
+    SETORAN_MODAL: 'Setoran Pemilik (Non-Kas)',
+};
 
 const KATEGORI_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -106,6 +131,33 @@ export default function AssetScreen() {
         catatan: '',
     });
 
+    // Pembelian (hanya saat tambah aset)
+    const [sumberDana, setSumberDana] = useState<SumberDana | null>(null);
+    const [jumlahBayar, setJumlahBayar] = useState('');
+    const [isSplit, setIsSplit] = useState(false);
+    const [splitRows, setSplitRows] = useState<{ id: number; sumber: SumberKas; nominal: string }[]>([]);
+    const [supplier, setSupplier] = useState<any>(null);
+    const [namaPenjual, setNamaPenjual] = useState('');
+
+    const harga = parseInt(formData.harga_beli || '0', 10) || 0;
+    const isKas = sumberDana === 'UTAMA_TUNAI' || sumberDana === 'UTAMA_TRANSFER';
+    const totalBayar = isKas
+        ? (isSplit ? splitRows.reduce((acc, r) => acc + parseNumber(r.nominal), 0) : parseNumber(jumlahBayar))
+        : 0;
+    const sisaHutang = sumberDana === 'HUTANG' ? harga : isKas ? Math.max(0, harga - totalBayar) : 0;
+
+    const resetPembelian = () => {
+        setSumberDana(null);
+        setJumlahBayar('');
+        setIsSplit(false);
+        setSplitRows([
+            { id: 1, sumber: 'UTAMA_TUNAI', nominal: '' },
+            { id: 2, sumber: 'UTAMA_TRANSFER', nominal: '' },
+        ]);
+        setSupplier(null);
+        setNamaPenjual('');
+    };
+
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
         title: string;
@@ -173,6 +225,7 @@ export default function AssetScreen() {
             lokasi: '',
             catatan: '',
         });
+        resetPembelian();
         setViewMode('form');
         handleOpenSheet();
     };
@@ -221,13 +274,43 @@ export default function AssetScreen() {
             umur_ekonomis: parseInt(formData.umur_ekonomis),
         };
 
+        const warn = (message: string) => setDialogConfig({ visible: true, title: 'Validasi', message, variant: 'warning' });
+        let pembelian: Record<string, any> = {};
+        if (!selectedAsset) {
+            if (!sumberDana) return warn('Pilih sumber dana pembelian aset');
+            if (isKas) {
+                const payments = (isSplit
+                    ? splitRows.map(r => ({ ...kasDetail(r.sumber), jumlah: parseNumber(r.nominal) }))
+                    : [{ ...kasDetail(sumberDana as SumberKas), jumlah: parseNumber(jumlahBayar) }]
+                ).filter(p => p.jumlah > 0);
+                if (payments.length === 0) return warn('Isi jumlah pembayaran');
+                if (totalBayar > harga) return warn('Total pembayaran melebihi harga aset');
+                pembelian = { sumber_dana: 'KAS', payments };
+            } else {
+                pembelian = { sumber_dana: sumberDana };
+            }
+            if (sisaHutang > 0 && !supplier && !namaPenjual.trim()) {
+                return warn('Pilih supplier atau isi nama penjual untuk sisa yang dicatat sebagai hutang');
+            }
+            if (sisaHutang > 0) {
+                pembelian = { ...pembelian, supplier_id: supplier?.id, nama_penjual: namaPenjual.trim() || undefined };
+            }
+        }
+
         try {
             if (selectedAsset) {
                 await updateMutation.mutateAsync({ id: selectedAsset.id, data });
                 setDialogConfig({ visible: true, title: 'Sukses', message: 'Aset berhasil diupdate', variant: 'success' });
             } else {
-                await createMutation.mutateAsync(data);
-                setDialogConfig({ visible: true, title: 'Sukses', message: 'Aset baru berhasil ditambahkan', variant: 'success' });
+                await createMutation.mutateAsync({ ...data, ...pembelian });
+                setDialogConfig({
+                    visible: true,
+                    title: 'Sukses',
+                    message: sisaHutang > 0
+                        ? `Aset dibeli. Sisa ${formatCurrency(sisaHutang)} dicatat sebagai hutang.`
+                        : 'Aset baru berhasil ditambahkan',
+                    variant: 'success',
+                });
             }
             handleCloseSheet();
             onRefresh();
@@ -243,7 +326,9 @@ export default function AssetScreen() {
         setDialogConfig({
             visible: true,
             title: 'Hapus Aset',
-            message: `Yakin ingin menghapus ${selectedAsset.nama}?`,
+            message: selectedAsset.sumber_dana === 'KAS' || selectedAsset.sumber_dana === 'HUTANG'
+                ? `Yakin ingin menghapus ${selectedAsset.nama}? Pembayaran kas akan dibalik (VOID) dan hutang yang belum dibayar ikut dihapus.`
+                : `Yakin ingin menghapus ${selectedAsset.nama}?`,
             variant: 'error',
             type: 'confirm',
             onConfirm: async () => {
@@ -283,6 +368,161 @@ export default function AssetScreen() {
                 </View>
             </View>
         </Pressable>
+    );
+
+    const renderPembelian = () => (
+        <View>
+            <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Sumber Dana *</Typography>
+            <View className="flex-row flex-wrap">
+                {SUMBER_DANA_OPTIONS.map(opt => (
+                    <Pressable
+                        key={opt.value}
+                        onPress={() => {
+                            setSumberDana(opt.value);
+                            if (opt.value === 'UTAMA_TUNAI' || opt.value === 'UTAMA_TRANSFER') {
+                                setJumlahBayar(harga ? formatNumber(harga) : '');
+                            }
+                        }}
+                        className={`min-w-[45%] flex-1 mr-2 mb-2 py-3 rounded-2xl border items-center ${sumberDana === opt.value ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
+                    >
+                        <Typography weight="bold" className={sumberDana === opt.value ? 'text-white' : 'text-textGray'}>{opt.label}</Typography>
+                    </Pressable>
+                ))}
+            </View>
+
+            {isKas && !isSplit && (
+                <View className="bg-primary/5 border border-primary/10 p-4 rounded-2xl mb-3">
+                    <View className="flex-row justify-between items-center mb-2">
+                        <Typography variant="caption" weight="bold" className="text-primary uppercase">Jumlah Bayar (Rp)</Typography>
+                        <Pressable onPress={() => setJumlahBayar(formatNumber(harga))}>
+                            <Typography className="text-primary text-[10px] font-bold">BAYAR PAS</Typography>
+                        </Pressable>
+                    </View>
+                    <TextInput
+                        value={jumlahBayar}
+                        onChangeText={(v) => setJumlahBayar(formatNumber(parseNumber(v)))}
+                        placeholder="0"
+                        placeholderTextColor={placeholder}
+                        keyboardType="number-pad"
+                        inputMode="numeric"
+                        className="bg-surface rounded-2xl px-4 h-12 text-base text-textMain border border-primary/20"
+                    />
+                </View>
+            )}
+
+            {isKas && (
+                <Pressable
+                    onPress={() => setIsSplit(!isSplit)}
+                    className={`self-end px-3 py-1.5 rounded-full mb-3 ${isSplit ? 'bg-amber-100 border border-amber-200' : 'bg-background border border-transparent'}`}
+                >
+                    <Typography className={`text-[10px] font-bold ${isSplit ? 'text-amber-700' : 'text-textGray'}`}>
+                        {isSplit ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
+                    </Typography>
+                </Pressable>
+            )}
+
+            {isKas && isSplit && (
+                <View className="mb-3">
+                    {splitRows.map(row => (
+                        <View key={row.id} className="bg-surface/50 p-3 rounded-2xl border border-transparent mb-2">
+                            <View className="flex-row bg-surface rounded-xl overflow-hidden mb-2">
+                                {SUMBER_KAS_OPTIONS.map(opt => (
+                                    <Pressable
+                                        key={opt.value}
+                                        onPress={() => setSplitRows(rows => rows.map(r => r.id === row.id ? { ...r, sumber: opt.value } : r))}
+                                        className={`flex-1 py-2 items-center ${row.sumber === opt.value ? 'bg-primary' : 'bg-transparent'}`}
+                                    >
+                                        <Typography weight="bold" className={`text-[10px] ${row.sumber === opt.value ? 'text-white' : 'text-textGray'}`}>{opt.label}</Typography>
+                                    </Pressable>
+                                ))}
+                            </View>
+                            <View className="flex-row items-center">
+                                <TextInput
+                                    value={row.nominal}
+                                    onChangeText={(v) => setSplitRows(rows => rows.map(r => r.id === row.id ? { ...r, nominal: formatNumber(parseNumber(v)) } : r))}
+                                    placeholder="0"
+                                    placeholderTextColor={placeholder}
+                                    keyboardType="number-pad"
+                                    inputMode="numeric"
+                                    className="flex-1 bg-surface rounded-xl px-3 h-10 text-sm text-textMain border border-transparent"
+                                />
+                                {splitRows.length > 1 && (
+                                    <Pressable
+                                        onPress={() => setSplitRows(rows => rows.filter(r => r.id !== row.id))}
+                                        className="h-10 w-10 ml-2 items-center justify-center bg-rose-50 rounded-xl"
+                                    >
+                                        <Trash2 size={16} color="#F43F5E" />
+                                    </Pressable>
+                                )}
+                            </View>
+                        </View>
+                    ))}
+                    <Pressable
+                        onPress={() => setSplitRows(rows => [...rows, { id: Date.now(), sumber: 'UTAMA_TUNAI', nominal: '' }])}
+                        className="flex-row items-center justify-center py-2.5 bg-surface border border-dashed border-primary/30 rounded-xl"
+                    >
+                        <Plus size={14} color={themeColors.primary} />
+                        <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah Metode</Typography>
+                    </Pressable>
+                </View>
+            )}
+
+            {sisaHutang > 0 && (
+                <View className="bg-amber-50 border border-amber-100 p-4 rounded-2xl mb-3">
+                    <Typography variant="caption" weight="bold" className="text-amber-800 uppercase text-[10px] mb-1">
+                        {sumberDana === 'HUTANG' ? 'Hutang Penuh' : 'Sisa Jadi Hutang'}: {formatCurrency(sisaHutang)}
+                    </Typography>
+                    <Typography className="text-amber-700 text-xs mb-3">Pilih supplier atau isi nama penjual (kreditur).</Typography>
+                    <MasterDataSelector
+                        type="supplier"
+                        value={supplier}
+                        onSelect={setSupplier}
+                        placeholder="Pilih Supplier..."
+                    />
+                    {!supplier && (
+                        <TextInput
+                            className="bg-surface border border-transparent rounded-2xl px-4 py-3 text-textMain font-medium mt-2"
+                            placeholder="Atau nama penjual (bukan supplier)"
+                            placeholderTextColor={placeholder}
+                            value={namaPenjual}
+                            onChangeText={setNamaPenjual}
+                        />
+                    )}
+                </View>
+            )}
+
+            {sumberDana === 'SETORAN_MODAL' && (
+                <View className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl mb-3">
+                    <Typography className="text-emerald-700 text-xs">
+                        Aset disetor pemilik — tidak mengurangi kas. Tampil sebagai Setoran Modal Non-Kas di Laporan Perubahan Modal.
+                    </Typography>
+                </View>
+            )}
+
+            {(isKas || sumberDana === 'HUTANG') && (
+                <View className="flex-row justify-between items-center p-4 bg-primary/5 rounded-2xl border border-primary/10 mb-2">
+                    <View>
+                        <Typography variant="caption" weight="bold" className="text-primary text-[10px]">TOTAL DIBAYAR</Typography>
+                        <Typography weight="bold" className="text-primary text-lg">{formatCurrency(totalBayar)}</Typography>
+                    </View>
+                    <View className="items-end">
+                        {totalBayar > harga ? (
+                            <Typography weight="bold" className="text-rose-600">Melebihi harga</Typography>
+                        ) : sisaHutang > 0 ? (
+                            <>
+                                <Typography variant="caption" weight="bold" className="text-amber-600 text-[10px]">SISA HUTANG</Typography>
+                                <Typography weight="bold" className="text-amber-600 text-lg">{formatCurrency(sisaHutang)}</Typography>
+                            </>
+                        ) : (
+                            <>
+                                <Typography variant="caption" weight="bold" className="text-emerald-600 text-[10px]">STATUS</Typography>
+                                <Typography weight="bold" className="text-emerald-600 text-lg">LUNAS</Typography>
+                            </>
+                        )}
+                    </View>
+                </View>
+            )}
+        </View>
     );
 
     const renderSheetContent = () => {
@@ -348,6 +588,18 @@ export default function AssetScreen() {
                                 <Typography weight="semibold">{selectedAsset.lokasi || '-'} • {selectedAsset.kategori}</Typography>
                             </View>
                         </View>
+
+                        <View className="flex-row items-center bg-background p-3 rounded-2xl mt-4">
+                            <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
+                                <Wallet size={20} color="#6B7280" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography className="text-xs text-textGray font-bold uppercase">Sumber Dana</Typography>
+                                <Typography weight="semibold">
+                                    {selectedAsset.sumber_dana ? SUMBER_DANA_LABEL[selectedAsset.sumber_dana] : 'Saldo awal / tanpa pembayaran'}
+                                </Typography>
+                            </View>
+                        </View>
                     </Card>
 
                     {selectedAsset.catatan && (
@@ -368,7 +620,7 @@ export default function AssetScreen() {
         return (
             <View className="p-6">
                 <View className="flex-row justify-between items-center mb-6">
-                    <Typography variant="h2" weight="bold">{selectedAsset ? 'Edit Aset' : 'Tambah Aset'}</Typography>
+                    <Typography variant="h2" weight="bold">{selectedAsset ? 'Edit Aset' : 'Pembelian Aset Tetap'}</Typography>
                     <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
                         <X size={20} color="#6B7280" />
                     </Pressable>
@@ -422,6 +674,8 @@ export default function AssetScreen() {
                                     value={getFormattedValue(formData.harga_beli)}
                                     onChangeText={(text) => handleCurrencyChange(text, 'harga_beli')}
                                     keyboardType="numeric"
+                                    // Harga perolehan terikat ke kas/hutang pembelian — tidak bisa diubah setelah dibuat.
+                                    editable={!selectedAsset}
                                 />
                             </View>
                         </View>
@@ -448,6 +702,8 @@ export default function AssetScreen() {
                         </View>
                     </View>
 
+                    {!selectedAsset && renderPembelian()}
+
                     <View>
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Catatan</Typography>
                         <TextInput
@@ -461,7 +717,7 @@ export default function AssetScreen() {
                     </View>
 
                     <Button
-                        title={selectedAsset ? 'Simpan Perubahan' : 'Tambah Aset'}
+                        title={selectedAsset ? 'Simpan Perubahan' : 'Simpan Pembelian Aset'}
                         onPress={handleSubmit}
                         disabled={updateMutation.isPending || createMutation.isPending}
                         loading={updateMutation.isPending || createMutation.isPending}
