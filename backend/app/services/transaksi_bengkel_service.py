@@ -375,6 +375,51 @@ class TransaksiBengkelService:
             _apply(h, "nominal_hutang", "sisa_hutang",
                    HutangStatus.LUNAS, HutangStatus.SEBAGIAN, HutangStatus.BELUM_LUNAS)
 
+    def _sync_tanggal_terkait(self, nomor_transaksi: str, lama: date, baru: date) -> None:
+        """Pindahkan tanggal baris keuangan yang lahir BERSAMA transaksi.
+
+        Dulu edit tanggal hanya mengubah transaksi: pendapatan/HPP pindah ke
+        tanggal baru, tapi kas pembayaran tetap di tanggal lama → laporan di
+        antara kedua tanggal selisih sebesar pembayaran (Penyesuaian Backdate).
+        Yang dipindah hanya baris bertanggal `lama` (dibayar saat transaksi);
+        cicilan/pelunasan belakangan tetap di tanggal aslinya.
+        """
+        piutangs = self.db.query(PiutangUsaha).filter(
+            PiutangUsaha.nomor_referensi == nomor_transaksi,
+        ).all()
+        nomor_piutang = [p.nomor_piutang for p in piutangs if p.nomor_piutang]
+        for p in piutangs:
+            if p.tanggal == lama:
+                p.tanggal = baru
+        pembayaran_ids = []
+        if piutangs:
+            for pb in self.db.query(PembayaranPiutang).filter(
+                PembayaranPiutang.piutang_id.in_([p.id for p in piutangs]),
+                PembayaranPiutang.tanggal == lama,
+            ).all():
+                pb.tanggal = baru
+                pembayaran_ids.append(pb.id)
+        for h in self.db.query(HutangUsaha).filter(
+            HutangUsaha.nomor_referensi == nomor_transaksi,
+            HutangUsaha.is_internal == True,
+            HutangUsaha.tanggal == lama,
+        ).all():
+            h.tanggal = baru
+
+        kas_filters = [KasBank.nomor_referensi == nomor_transaksi]
+        if nomor_piutang:
+            kas_filters.append(KasBank.nomor_referensi.in_(nomor_piutang))
+        if pembayaran_ids:
+            kas_filters.append(
+                KasBank.referensi_id.in_(pembayaran_ids)
+                & KasBank.sumber.in_([KasBankSource.BENGKEL, KasBankSource.PIUTANG])
+            )
+        self.db.query(KasBank).filter(
+            or_(*kas_filters),
+            KasBank.tanggal == lama,
+            ~KasBank.keterangan.like("[VOID]%"),
+        ).update({"tanggal": baru}, synchronize_session=False)
+
     def _validate_customer(self, customer_id: int) -> Customer:
         """Validate customer exists."""
         customer = (
@@ -908,6 +953,7 @@ class TransaksiBengkelService:
         """Update an existing workshop transaction."""
         transaksi = self.get_by_id(transaksi_id)
         effective_tanggal = data.tanggal or transaksi.tanggal
+        tanggal_lama = transaksi.tanggal
         original_jumlah_bayar = transaksi.jumlah_bayar
 
         # 1. Restore stock (lock rows to prevent concurrent race on stok)
@@ -1128,6 +1174,8 @@ class TransaksiBengkelService:
 
         if not is_not_internal:
             self._sync_internal_debts_nominal(transaksi.nomor_transaksi, grand_total)
+        if tanggal_lama and effective_tanggal != tanggal_lama:
+            self._sync_tanggal_terkait(transaksi.nomor_transaksi, tanggal_lama, effective_tanggal)
 
         # Link entries (Mobil & Jasa Angkut)
         if transaksi.kategori == 'jual_beli_mobil' and transaksi.mobil_id:

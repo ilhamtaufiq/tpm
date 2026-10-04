@@ -52,9 +52,17 @@ Uji `TPM_IMPORT_TEMPLATE_REAL_PERIODE_BERJALAN_KE-2.xlsx` lewat Settings > Data 
 - Frontend `master-data/asset.tsx`: form "Pembelian Aset Tetap" (Tunai Utama / Transfer / Hutang Penuh / Setoran Pemilik, BAYAR PAS, split, sisa hutang).
 - Uji 11 langkah (beli lunas, split + sisa hutang, hutang penuh, setoran, bayar hutang, hapus, validasi): Δlaba 0, backdate 0, `/validate` SYNCED, selisih komponen modal = hutang investor saja.
 
+## Lanjutan: backdate & perubahan harga spare part
+
+- Uji P1–P9 (beli harga baru, jual harga override, edit harga/stok master, backdate pengeluaran/pembelian, edit tanggal nota).
+- Fix: edit harga/stok master kini berjejak (revaluasi / koreksi qty); persediaan historis tak lagi menyerap revaluasi & koreksi sesudah tanggal laporan; edit tanggal nota bengkel memindahkan kasnya.
+- Belum diubah (keputusan user): transaksi bertanggal SEBELUM saldo awal (masuk Penyesuaian Backdate); metode HPP harga beli terakhir vs rata-rata; koreksi stok opname sebagai beban vs penyesuaian modal.
+
 ## Open Questions
 
-None
+- Blokir transaksi bertanggal sebelum tanggal saldo awal?
+- HPP spare part: tetap harga beli terakhir + memo, atau rata-rata tertimbang?
+- Selisih stok opname: penyesuaian modal (sekarang) atau beban/pendapatan Laba Rugi?
 
 ## Working Set (file yang disentuh)
 

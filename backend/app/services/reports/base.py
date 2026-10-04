@@ -447,7 +447,24 @@ class BaseReportService:
         ).scalar() or 0)
         reval_reserve = total_reval - total_released
 
-        part_stock = max(0, current_stock_val - purchases_after + usage_after - reval_reserve)
+        # Nilai historis per tanggal_sampai. `current_stock_val` memakai harga beli
+        # SEKARANG, jadi revaluasi yang terjadi SESUDAH tanggal_sampai juga sudah
+        # tertanam di dalamnya dan wajib dikurangi; koreksi qty sesudah tanggal itu
+        # juga belum ada pada tanggal tsb. Dulu hanya reserve s/d tanggal yang
+        # dikurangi → persediaan masa lampau menggelembung sebesar revaluasi
+        # sesudahnya, dan Modal Awal beku ikut menggelembung bila laporan pertama
+        # dibuka setelah ada revaluasi (selisih muncul di Penyesuaian Backdate).
+        reval_sesudah = float(self.db.query(func.sum(SparePartRevaluation.amount)).filter(
+            SparePartRevaluation.tanggal > tanggal_sampai,
+            SparePartRevaluation.is_qty_correction == False,  # noqa: E712
+        ).scalar() or 0)
+        koreksi_qty_sesudah = float(self.db.query(func.sum(SparePartRevaluation.amount)).filter(
+            SparePartRevaluation.tanggal > tanggal_sampai,
+            SparePartRevaluation.is_qty_correction == True,  # noqa: E712
+        ).scalar() or 0)
+
+        part_stock = max(0, current_stock_val - purchases_after + usage_after - reval_reserve
+                         - reval_sesudah - koreksi_qty_sesudah)
         # Car Stock (Available as of date: masuk <= sampai AND (keluar is null OR keluar > sampai))
         # Total Capitalized Value = Purchase Price + Prep + Repairs for unsold cars
         car_stock = float(self.db.query(func.sum(Mobil.harga_beli)).filter(

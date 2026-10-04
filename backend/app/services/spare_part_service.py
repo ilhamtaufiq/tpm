@@ -14,7 +14,7 @@ from app.config import settings
 from app.utils.sparepart_stock import ALWAYS_READY_STOCK, is_always_ready_stock
 from app.realtime import publish_realtime_event
 
-from app.models.bengkel import SparePart
+from app.models.bengkel import SparePart, SparePartRevaluation
 from app.schemas.bengkel import SparePartCreate, SparePartUpdate
 
 
@@ -176,9 +176,11 @@ class SparePartService:
                     detail=f"Spare part dengan nama '{update_data['nama']}' sudah ada",
                 )
 
+        stok_lama, harga_lama = spare_part.stok, spare_part.harga_beli
         for key, value in update_data.items():
             if hasattr(spare_part, key):
                 setattr(spare_part, key, value)
+        self._catat_penyesuaian_persediaan(spare_part, stok_lama, harga_lama)
 
         self.db.commit()
         self.db.refresh(spare_part)
@@ -343,6 +345,7 @@ class SparePartService:
             operation: 'add' or 'subtract'
         """
         spare_part = self.get_by_id(spare_part_id)
+        stok_lama, harga_lama = spare_part.stok, spare_part.harga_beli
 
         if operation == "add":
             if not is_always_ready_stock(spare_part.stok):
@@ -360,6 +363,7 @@ class SparePartService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Operation harus 'add' atau 'subtract'",
             )
+        self._catat_penyesuaian_persediaan(spare_part, stok_lama, harga_lama)
 
         self.db.commit()
         self.db.refresh(spare_part)
@@ -375,9 +379,11 @@ class SparePartService:
     ) -> SparePart:
         """Update spare part prices."""
         spare_part = self.get_by_id(spare_part_id)
+        stok_lama, harga_lama = spare_part.stok, spare_part.harga_beli
 
         if harga_beli is not None:
             spare_part.harga_beli = harga_beli
+        self._catat_penyesuaian_persediaan(spare_part, stok_lama, harga_lama)
         if harga_jual is not None:
             spare_part.harga_jual = harga_jual
 
@@ -386,6 +392,40 @@ class SparePartService:
         self._emit_change("price_updated", spare_part)
 
         return spare_part
+
+    def _catat_penyesuaian_persediaan(self, sp: SparePart, stok_lama, harga_lama) -> None:
+        """Catat edit harga beli / stok manual agar laporan bisa menjelaskannya.
+
+        Dulu edit di Master Data langsung mengubah nilai persediaan tanpa jejak:
+        modal naik/turun lewat baris "Penyesuaian Backdate" (dan ikut menggeser
+        nilai persediaan di tanggal lampau). Kini:
+          - harga beli berubah, stok > 0 → revaluasi (sama seperti pembelian
+            dengan harga baru): persediaan tetap dinilai harga perolehan, selisih
+            tampil di memo Penyesuaian Harga Beli Spare Part.
+          - stok berubah → koreksi qty (`is_qty_correction`) senilai
+            Δqty × harga beli; tampil sebagai penyesuaian, bukan backdate.
+        Stok "Always Ready" (katalog) tidak dinilai.
+        """
+        from app.utils.helpers import get_jakarta_date
+
+        def fisik(q):
+            return Decimal("0") if q is None or is_always_ready_stock(q) else Decimal(q)
+
+        q_lama, q_baru = fisik(stok_lama), fisik(sp.stok)
+        h_lama = Decimal(harga_lama or 0)
+        h_baru = Decimal(sp.harga_beli or 0)
+        hari = get_jakarta_date()
+        if h_baru != h_lama and q_lama > 0:
+            self.db.add(SparePartRevaluation(
+                spare_part_id=sp.id, tanggal=hari, qty_at_reval=q_lama,
+                harga_lama=h_lama, harga_baru=h_baru, amount=(h_baru - h_lama) * q_lama,
+            ))
+        if q_baru != q_lama:
+            self.db.add(SparePartRevaluation(
+                spare_part_id=sp.id, tanggal=hari, qty_at_reval=q_baru - q_lama,
+                harga_lama=h_baru, harga_baru=h_baru, amount=(q_baru - q_lama) * h_baru,
+                is_qty_correction=True,
+            ))
 
     def get_low_stock_items(self) -> List[SparePart]:
         """Get spare parts with low stock."""
