@@ -58,11 +58,15 @@ Uji `TPM_IMPORT_TEMPLATE_REAL_PERIODE_BERJALAN_KE-2.xlsx` lewat Settings > Data 
 - Fix: edit harga/stok master kini berjejak (revaluasi / koreksi qty); persediaan historis tak lagi menyerap revaluasi & koreksi sesudah tanggal laporan; edit tanggal nota bengkel memindahkan kasnya.
 - Belum diubah (keputusan user): transaksi bertanggal SEBELUM saldo awal (masuk Penyesuaian Backdate); metode HPP harga beli terakhir vs rata-rata; koreksi stok opname sebagai beban vs penyesuaian modal.
 
+## Keputusan user (backdate & memo)
+
+1. Transaksi sebelum saldo awal tidak diblokir → baris penyeimbang "Penyesuaian Transaksi Backdate" (bertanda, + daftar transaksi `backdate_detail`).
+2. HPP tetap harga beli terakhir; selisih di memo, wajib balance → memo dipecah (harga beli terealisasi / koreksi stok) dan ikut rumus aliran di app & PDF (dulu hanya dashboard).
+3. Koreksi stok opname = edit stok Master Data (PUT stok / PATCH stock); tampil baris "Koreksi Stok Opname Spare Part".
+
 ## Open Questions
 
-- Blokir transaksi bertanggal sebelum tanggal saldo awal?
-- HPP spare part: tetap harga beli terakhir + memo, atau rata-rata tertimbang?
-- Selisih stok opname: penyesuaian modal (sekarang) atau beban/pendapatan Laba Rugi?
+None
 
 ## Working Set (file yang disentuh)
 

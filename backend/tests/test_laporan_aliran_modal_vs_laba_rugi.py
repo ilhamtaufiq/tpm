@@ -80,7 +80,9 @@ def test_aliran_modal_sama_dengan_delta_modal(db):
         or md["penambahan"].get("penyesuaian_backdate_non_impor")
         or 0
     )
-    reval_reserve = md["penambahan"].get("penyesuaian_harga_beli_sparepart") or 0
+    reval_reserve = (md["penambahan"].get("penyesuaian_harga_beli_sparepart") or 0) + (
+        md["penambahan"].get("koreksi_stok_sparepart") or 0
+    )
     sebelumnya = (md["info"].get("laba_ditahan_sebelumnya") or 0) + (md.get("mutasi_modal_sebelumnya") or 0)
     aliran = setoran + nonkas + pra_saldo_awal + reval_reserve + sebelumnya + (md["info"].get("laba_operasional") or 0) - prive
     assert abs(aliran - (md["modal_akhir"] - md["modal_awal"])) < TOL, (

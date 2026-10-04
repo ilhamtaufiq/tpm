@@ -176,7 +176,14 @@ class NeracaService(BaseReportService):
 
         # Revaluation (cumulative all events, informational memo — not equity).
         # Shown as a separate memo line below laba ditahan; never drops to zero.
-        reval_reserve = float(hist.get("revaluation", {}).get("cumulative", 0))
+        # Disamakan dengan Perubahan Modal: yang tampil = revaluasi yang sudah
+        # TEREALISASI (unit terjual; HPP pakai harga beli terakhir). Porsi yang
+        # belum terealisasi masih di nilai persediaan (harga perolehan).
+        _rev = hist.get("revaluation", {})
+        reval_kumulatif = float(_rev.get("cumulative", 0))
+        reval_belum = float(_rev.get("reserve", 0))
+        reval_reserve = reval_kumulatif - reval_belum
+        koreksi_stok = float(_rev.get("qty_correction_total", 0))
         
         # Modal Setoran Kas (Total cash inflow from MODAL source)
         setoran_modal_kas = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -474,6 +481,12 @@ class NeracaService(BaseReportService):
                 "setoran_modal": setoran_modal,
                 "laba_ditahan": retained_earnings,
                 "penyesuaian_harga_beli_sparepart": reval_reserve,
+                "koreksi_stok_sparepart": koreksi_stok,
+                "revaluasi_sparepart": {
+                    "kumulatif": reval_kumulatif,
+                    "terealisasi": reval_reserve,
+                    "belum_terealisasi": reval_belum,
+                },
                 "prive": prive_total,
                 "modal_persediaan": modal_persediaan,
                 "modal_stok_mobil": modal_stok_mobil,

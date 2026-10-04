@@ -98,6 +98,9 @@ export default function LaporanPerubahanModalScreen() {
                 modalAwal: 0,
                 setoranKas: 0,
                 modalNonKas: 0,
+                penyesuaianBackdateNonImpor: 0,
+                penyesuaianHargaBeli: 0,
+                koreksiStok: 0,
                 labaOperasional: 0,
                 labaBersih: 0,
                 labaDitahanSebelumnya: 0,
@@ -119,8 +122,10 @@ export default function LaporanPerubahanModalScreen() {
         const r = report;
         const modalAwal = r.modal_awal || 0;
         const setoranKas = r.penambahan?.setoran_modal || 0;
-        const penyesuaianBackdateNonImpor = r.penambahan?.laba_ditahan_pra_saldo_awal ?? r.penambahan?.penyesuaian_backdate_non_impor ?? 0;
+        const penyesuaianBackdateNonImpor: number = r.penambahan?.laba_ditahan_pra_saldo_awal ?? r.penambahan?.penyesuaian_backdate_non_impor ?? 0;
         const penyesuaianHargaBeli = r.penambahan?.penyesuaian_harga_beli_sparepart || 0;
+        // Selisih stok opname (edit stok di Master Data) — ikut aliran ekuitas.
+        const koreksiStok = r.penambahan?.koreksi_stok_sparepart || 0;
         const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
         // info.laba_operasional = laba SEBELUM prive (period_profit_sot). Inilah
@@ -145,7 +150,7 @@ export default function LaporanPerubahanModalScreen() {
         // Investor = hutang, BUKAN aliran modal — dana & pembayaran investor tidak
         // masuk rumus ini (selaras modal_service.raw_theoretical). labaInvestor
         // sudah dikurangkan di dalam laba_operasional (base.py: laba_mobil_tpm).
-        const perubahanBersihAliran = setoranKas + penyesuaianBackdateNonImpor + modalNonKas + labaDitahanSebelumnya + mutasiModalSebelumnya + labaOperasional - prive;
+        const perubahanBersihAliran = setoranKas + penyesuaianBackdateNonImpor + penyesuaianHargaBeli + koreksiStok + modalNonKas + labaDitahanSebelumnya + mutasiModalSebelumnya + labaOperasional - prive;
         const expectedModalAkhirAliran = modalAwal + perubahanBersihAliran;
 
         const validasi = r.info?.validasi;
@@ -158,6 +163,7 @@ export default function LaporanPerubahanModalScreen() {
             setoranKas,
             penyesuaianBackdateNonImpor,
             penyesuaianHargaBeli,
+            koreksiStok,
             modalNonKas,
             labaOperasional,
             labaBersih,
@@ -224,6 +230,29 @@ export default function LaporanPerubahanModalScreen() {
         } finally {
             setIsExporting(false);
         }
+    };
+
+    // Penyeimbang: transaksi bertanggal sebelum saldo awal tidak tercakup Modal
+    // Awal beku maupun arus periode. Nilainya ditampilkan apa adanya (+/−).
+    const renderBackdate = () => {
+        const nilai = equity.penyesuaianBackdateNonImpor ?? 0;
+        const detail = report?.backdate_detail;
+        return (
+            <>
+                <FinancialRow label="Penyesuaian Transaksi Backdate" value={Math.abs(nilai)} isNegative={nilai < 0} color={nilai < 0 ? undefined : 'text-emerald-700'} />
+                <Typography variant="caption" className="text-textGray text-[11px] mb-1 pl-1">
+                    * penyeimbang transaksi bertanggal sebelum saldo awal{detail?.sebelum ? ` (${detail.sebelum})` : ''}
+                </Typography>
+                {(detail?.items || []).slice(0, 5).map((it: any, idx: number) => (
+                    <Typography key={idx} variant="caption" className="text-textGray text-[10px] pl-3">
+                        · {it.tanggal} {it.tipe === 'KELUAR' ? '−' : '+'}{formatCurrency(it.nominal)} {it.keterangan}
+                    </Typography>
+                ))}
+                {(detail?.jumlah || 0) > 5 && (
+                    <Typography variant="caption" className="text-textGray text-[10px] pl-3 mb-2">· … {(detail?.jumlah || 0) - 5} transaksi lain</Typography>
+                )}
+            </>
+        );
     };
 
     const StatCard = ({ label, value, icon: Icon, subLabel, bgColor }: any) => (
@@ -334,17 +363,19 @@ export default function LaporanPerubahanModalScreen() {
                                 </Typography>
                             )}
                             <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={equity.penyesuaianHargaBeli || 0} color="text-slate-700" />
+                            <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* HPP memakai harga beli terakhir; selisih ke harga perolehan unit yang sudah terjual muncul di sini (ikut dijumlah ke Modal Akhir)</Typography>
+                            {equity.koreksiStok !== 0 && (
+                                <>
+                                    <FinancialRow label="Koreksi Stok Opname Spare Part" value={equity.koreksiStok} isNegative={equity.koreksiStok < 0} color="text-slate-700" />
+                                    <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* selisih stok fisik vs sistem dari edit stok di Master Data (Δqty × harga beli)</Typography>
+                                </>
+                            )}
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest">Penambahan</Typography>
                                 <FinancialRow label="Penambahan Modal" value={equity.setoranKas + equity.modalNonKas} color="text-emerald-700" />
                                 <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</Typography>
-                                {equity.penyesuaianBackdateNonImpor !== 0 && (
-                                    <>
-                                        <FinancialRow label="Laba Ditahan Pra-Saldo-Awal" value={equity.penyesuaianBackdateNonImpor || 0} color="text-emerald-700" />
-                                        <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* laba operasional pra-saldo-awal (penyeimbang modal awal beku)</Typography>
-                                    </>
-                                )}
+                                {(equity.penyesuaianBackdateNonImpor ?? 0) > 0 && renderBackdate()}
                                 {equity.labaDitahanSebelumnya >= 0 && equity.labaDitahanSebelumnya !== 0 && (
                                     <>
                                         <FinancialRow label="Laba Ditahan Sebelumnya" value={equity.labaDitahanSebelumnya} color="text-emerald-700" />
@@ -382,6 +413,7 @@ export default function LaporanPerubahanModalScreen() {
                                 {equity.labaDitahanSebelumnya < 0 && (
                                     <FinancialRow label="Rugi Ditahan Sebelumnya" value={Math.abs(equity.labaDitahanSebelumnya)} isNegative />
                                 )}
+                                {(equity.penyesuaianBackdateNonImpor ?? 0) < 0 && renderBackdate()}
                                 {equity.mutasiModalSebelumnya < 0 && (
                                     <>
                                         <FinancialRow label="Prive Bersih Sebelumnya" value={Math.abs(equity.mutasiModalSebelumnya)} isNegative />

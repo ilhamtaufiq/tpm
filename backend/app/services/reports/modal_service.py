@@ -86,6 +86,30 @@ class ModalService(BaseReportService):
             Aset.tanggal_beli <= sampai,
         ).scalar() or 0)
 
+    def _backdate_detail(self, anchor: date) -> Dict[str, Any]:
+        rows = self.db.query(KasBank).filter(
+            KasBank.tanggal < anchor,
+            self._bukan_impor(),
+        ).order_by(KasBank.tanggal.desc(), KasBank.id.desc()).all()
+        net = sum(
+            (float(k.nominal) if k.tipe == KasBankType.MASUK else -float(k.nominal)) for k in rows
+        )
+        return {
+            "sebelum": anchor.isoformat(),
+            "jumlah": len(rows),
+            "net_kas": net,
+            "items": [
+                {
+                    "tanggal": k.tanggal.isoformat(),
+                    "jenis": k.jenis.value if k.jenis else None,
+                    "tipe": k.tipe.value if k.tipe else None,
+                    "nominal": float(k.nominal),
+                    "keterangan": k.keterangan,
+                }
+                for k in rows[:20]
+            ],
+        }
+
     def _pengembalian_modal(self, dari: date, sampai: date) -> float:
         if sampai < dari:
             return 0.0
@@ -815,7 +839,12 @@ class ModalService(BaseReportService):
                 "setoran_modal": setoran_modal,
                 "laba_ditahan_pra_saldo_awal": laba_ditahan_pra_saldo_awal,
                 "penyesuaian_backdate_non_impor": penyesuaian_backdate_non_impor,
-                "penyesuaian_harga_beli_sparepart": reval_reserve,
+                # Dipecah (jumlah keduanya = reval_reserve di raw_theoretical):
+                #   harga beli → revaluasi yang sudah terealisasi (HPP pakai harga
+                #   beli terakhir; selisih ke harga perolehan muncul di sini)
+                #   koreksi stok → selisih stok opname (edit stok di Master Data)
+                "penyesuaian_harga_beli_sparepart": reval_reserve - qty_correction,
+                "koreksi_stok_sparepart": qty_correction,
                 "penyesuaian_harga_beli_mobil": reval_mobil,
                 "modal_non_kas": {
                     "total": setoran_non_kas_import,
@@ -911,6 +940,10 @@ class ModalService(BaseReportService):
             # non-impor hari anchor — angka ini yang harus ditampilkan sebagai baris
             # "Mutasi hari saldo awal (dipindah dari modal awal)" agar Σ drill cocok.
             "modal_awal_penyesuaian": anchor_day_flow,
+            # Transaksi non-impor bertanggal SEBELUM saldo awal: tidak tercakup
+            # Modal Awal beku maupun arus periode → efeknya terbaca di baris
+            # penyeimbang "Penyesuaian Transaksi Backdate". Daftar ini untuk audit.
+            "backdate_detail": self._backdate_detail(anchor),
             "info": {
                 "laba_bengkel": laba_bengkel_tpm_gross,
                 "laba_mobil": laba_mobil_tpm_gross,

@@ -273,6 +273,8 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
     const setoranKas = data.penambahan?.setoran_modal || 0;
     const penyesuaianBackdateNonImpor = data.penambahan?.penyesuaian_backdate_non_impor || 0;
     const penyesuaianHargaBeli = data.penambahan?.penyesuaian_harga_beli_sparepart || 0;
+    const koreksiStok = data.penambahan?.koreksi_stok_sparepart || 0;
+    const backdateDetail = data.backdate_detail;
     const modalNonKas = data.penambahan?.modal_non_kas?.total || 0;
     const labaBersih = data.info?.laba_bersih ?? data.laba_ditahan_periode ?? 0;
     const diskonPenjualanBengkel = data.info?.diskon_penjualan_bengkel || 0;
@@ -284,7 +286,7 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
     // Setoran − prive sejak posisi pembuka s/d sebelum tanggal_dari (setoran/prive di atas = periode filter).
     const mutasiModalSebelumnya = data.info?.mutasi_modal_sebelumnya ?? data.mutasi_modal_sebelumnya ?? 0;
     const modalAkhir = data.modal_akhir || 0;
-    const perubahanBersih = setoranKas + penyesuaianBackdateNonImpor + modalNonKas + labaDitahanSebelumnya + mutasiModalSebelumnya + labaOperasional - prive;
+    const perubahanBersih = setoranKas + penyesuaianBackdateNonImpor + penyesuaianHargaBeli + koreksiStok + modalNonKas + labaDitahanSebelumnya + mutasiModalSebelumnya + labaOperasional - prive;
     const expectedModalAkhirAliran = modalAwal + perubahanBersih;
     const validasi = data.info?.validasi;
     const expectedModalAkhir = validasi?.modal_teoritis ?? expectedModalAkhirAliran;
@@ -317,12 +319,17 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Penyesuaian Harga Beli Spare Part (Memo)</td>
                     <td class="amount">${formatCurrency(penyesuaianHargaBeli)}</td>
                 </tr>
+                ${koreksiStok !== 0 ? `
+                <tr>
+                    <td>Koreksi Stok Opname Spare Part</td>
+                    <td class="amount ${koreksiStok < 0 ? 'negative' : ''}">${koreksiStok < 0 ? `(${formatCurrency(Math.abs(koreksiStok))})` : formatCurrency(koreksiStok)}</td>
+                </tr>` : ''}
 
                 <tr class="section-title"><td colspan="2">B. PENAMBAHAN EKUITAS</td></tr>
                 ${penyesuaianBackdateNonImpor !== 0 ? `
                 <tr>
-                    <td>Penyesuaian Mutasi Pra-Saldo Awal (Backdate Non-Impor)</td>
-                    <td class="amount positive">${formatCurrency(penyesuaianBackdateNonImpor)}</td>
+                    <td>Penyesuaian Transaksi Backdate${backdateDetail?.sebelum ? ` (sebelum ${backdateDetail.sebelum})` : ''}</td>
+                    <td class="amount ${penyesuaianBackdateNonImpor < 0 ? 'negative' : 'positive'}">${penyesuaianBackdateNonImpor < 0 ? `(${formatCurrency(Math.abs(penyesuaianBackdateNonImpor))})` : formatCurrency(penyesuaianBackdateNonImpor)}</td>
                 </tr>` : ''}
                 ${setoranKas > 0 ? `
                 <tr>

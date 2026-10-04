@@ -18,7 +18,7 @@ tags: [tpm, aturan, finansial, dev-guidelines]
 1. **Modal Awal = Aktiva − Hutang pada tanggal saldo awal** (anchor = tanggal impor `IMP-*` paling awal), dihitung sekali lalu beku di `system_settings.modal_awal_frozen`. Angka manual Rp2.242.611.225 hanya berlaku untuk anchor **2026-09-12**; import periode berikutnya selalu memakai nilai hitung.
 2. **Filter non-impor wajib null-safe**: `nomor_referensi IS NULL OR nomor_referensi NOT LIKE 'IMP-%'`. `NOT LIKE` saja membuang baris ber-`nomor_referensi` NULL (mis. setoran modal manual).
 3. **Setoran, prive, dan laba di Perubahan Modal = periode filter** (sama dengan Laba Rugi). Sisa kumulatif sejak anchor s/d sehari sebelum `tanggal_dari` tampil di *Laba Ditahan Sebelumnya* dan *Setoran Modal / Prive Bersih Sebelumnya* (`mutasi_modal_sebelumnya`), agar Modal Awal + mutasi = Modal Akhir.
-4. **Baris "Penyesuaian Backdate" harus 0** pada data hasil import + transaksi normal. Nilai ≠ 0 berarti ada arus yang tidak terbaca — audit, jangan dianggap wajar.
+4. **Baris "Penyesuaian Transaksi Backdate"** = penyeimbang transaksi non-impor bertanggal **sebelum** tanggal saldo awal (tidak tercakup Modal Awal beku maupun arus periode). Nilai bertanda (+ di Penambahan, − di Pengurangan) dan disertai daftar transaksinya (`backdate_detail`). Tanpa transaksi semacam itu nilainya harus 0 — selain itu audit.
 5. **Import mobil mengisi `harga_beli_awal = harga_beli`.** Selisih keduanya = revaluasi stok (setoran non-kas); tanpa ini seluruh harga opening terbaca revaluasi.
 6. **Persentase bagi hasil investor diisi manual per mobil setelah import** (template tidak punya kolom ini; default 0% = seluruh laba ke TPM).
 7. **Koreksi data berbasis ID produksi tidak boleh jalan otomatis tanpa cek nama** — setelah reset + import ulang, ID menunjuk record lain. `heal_sparepart_stock_discrepancies` kini cek nama + sekali jalan (flag `heal_sparepart_stock_20260928_done`).
@@ -32,6 +32,7 @@ tags: [tpm, aturan, finansial, dev-guidelines]
 15. **Nilai persediaan historis** (Neraca tanggal lampau) = stok×harga sekarang − pembelian sesudah tanggal + pemakaian sesudah tanggal − reserve s/d tanggal − **revaluasi & koreksi qty sesudah tanggal**. Tanpa dua suku terakhir persediaan lampau menggelembung dan Modal Awal beku ikut salah.
 16. **Edit tanggal transaksi bengkel** memindahkan baris keuangan yang lahir bersamanya (kas pembayaran, piutang, pembayaran, hutang internal yang bertanggal sama dengan tanggal lama); cicilan belakangan tetap di tanggal aslinya.
 17. **Harga jual di nota boleh diubah** (override harga master): pendapatan = harga nota. HPP memakai harga beli terakhir; selisih ke harga perolehan (revaluasi yang terealisasi) tampil sebagai memo *Penyesuaian Harga Beli Spare Part* di Perubahan Modal — Laba Rugi tidak menyertakannya.
+18. **Memo spare part di laporan dipecah dan ikut aliran ekuitas**: *Penyesuaian Harga Beli Spare Part* = revaluasi yang sudah terealisasi (unit terjual), *Koreksi Stok Opname* = Σ Δqty × harga beli dari edit stok Master Data. Keduanya ikut dijumlah di Perubahan Bersih Modal (app, PDF, dashboard) sehingga Modal Awal + aliran = Modal Akhir. Neraca menampilkan angka yang sama (plus revaluasi belum terealisasi sebagai info).
 
 ## 📝 Aturan Pengembangan (Dev Guidelines)
 

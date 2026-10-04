@@ -603,6 +603,8 @@ export function Modal() {
   const setoranKas = r.penambahan?.setoran_modal || 0;
   const penyesuaianBackdateNonImpor = r.penambahan?.laba_ditahan_pra_saldo_awal ?? r.penambahan?.penyesuaian_backdate_non_impor ?? 0;
   const penyesuaianHargaBeli = r.penambahan?.penyesuaian_harga_beli_sparepart || 0;
+  // Selisih stok opname (edit stok di Master Data) — ikut aliran ekuitas.
+  const koreksiStok = r.penambahan?.koreksi_stok_sparepart || 0;
   const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
   const prive = r.pengurangan?.prive || 0;
   const pengembalianModal = r.pengurangan?.pengembalian_modal || 0;
@@ -618,7 +620,7 @@ export function Modal() {
 
   // Investor = hutang (bukan aliran modal) — selaras xlsx. Laba investor sudah
   // dipotong di dalam laba_operasional.
-  const perubahanBersih = setoranKas + penyesuaianBackdateNonImpor + penyesuaianHargaBeli + modalNonKas + labaDitahanSebelumnya + mutasiModalSebelumnya + labaOperasional - priveTotal;
+  const perubahanBersih = setoranKas + penyesuaianBackdateNonImpor + penyesuaianHargaBeli + koreksiStok + modalNonKas + labaDitahanSebelumnya + mutasiModalSebelumnya + labaOperasional - priveTotal;
   const expectedAliran = modalAwal + perubahanBersih;
   // Mutasi dihitung kumulatif sejak posisi pembuka (modal awal beku); bila
   // periode terpilih menjangkau sebelum itu, angkanya beda dengan Laba Rugi.
@@ -703,8 +705,11 @@ export function Modal() {
         <p className="mt-1 pl-6 text-[11px] text-slate-400">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</p>
         {penyesuaianBackdateNonImpor !== 0 && (
           <>
-            <FinancialRow label="Laba Ditahan Pra-Saldo-Awal" value={penyesuaianBackdateNonImpor} small indent color="text-emerald-700" />
-            <p className="mt-1 pl-6 text-[11px] text-slate-400">* laba operasional pra-saldo-awal (penyeimbang modal awal beku)</p>
+            <FinancialRow label="Penyesuaian Transaksi Backdate" value={penyesuaianBackdateNonImpor} small indent isNegative={penyesuaianBackdateNonImpor < 0} color={penyesuaianBackdateNonImpor < 0 ? undefined : 'text-emerald-700'} />
+            <p className="mt-1 pl-6 text-[11px] text-slate-400">* penyeimbang transaksi bertanggal sebelum saldo awal{r.backdate_detail?.sebelum ? ` (${r.backdate_detail.sebelum})` : ''}</p>
+            {(r.backdate_detail?.items ?? []).slice(0, 5).map((it, idx) => (
+              <p key={idx} className="pl-8 text-[10px] text-slate-400">· {it.tanggal} {it.tipe === 'KELUAR' ? '−' : '+'}{formatCurrencyDisplay(it.nominal)} {it.keterangan}</p>
+            ))}
           </>
         )}
         {labaDitahanSebelumnya >= 0 && labaDitahanSebelumnya !== 0 && (
@@ -735,6 +740,13 @@ export function Modal() {
           <>
             <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={penyesuaianHargaBeli} small indent color="text-slate-700" />
             <Drill spec={drillRevaluasi()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: period.tanggal_sampai }} amountKey="amount" total={penyesuaianHargaBeli} />
+            <p className="mt-1 pl-6 text-[11px] text-slate-400">* HPP memakai harga beli terakhir; selisih ke harga perolehan unit terjual (ikut dijumlah ke Modal Akhir)</p>
+          </>
+        )}
+        {koreksiStok !== 0 && (
+          <>
+            <FinancialRow label="Koreksi Stok Opname Spare Part" value={koreksiStok} small indent isNegative={koreksiStok < 0} color={koreksiStok < 0 ? undefined : 'text-slate-700'} />
+            <p className="mt-1 pl-6 text-[11px] text-slate-400">* selisih stok fisik vs sistem dari edit stok di Master Data (Δqty × harga beli)</p>
           </>
         )}
         {diskonPenjualanBengkel > 0 && (

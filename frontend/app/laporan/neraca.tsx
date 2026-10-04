@@ -311,7 +311,16 @@ export default function NeracaScreen() {
 
                     <View className="mb-4 w-full">
                         <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={m.penyesuaian_harga_beli_sparepart} bold large color="text-violet-700" />
-                        <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">Informasi saja — stok sudah dinilai historical cost, tidak menambah/mengurangi total modal.</Typography>
+                        <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">
+                            Selisih harga beli terakhir vs harga perolehan untuk unit yang sudah terjual — sudah termasuk di baris Modal (bukan laba Laba Rugi).
+                            {(m.revaluasi_sparepart?.belum_terealisasi || 0) !== 0 ? ` Belum terealisasi ${formatCurrencyDisplay(m.revaluasi_sparepart?.belum_terealisasi || 0)} masih di nilai persediaan.` : ''}
+                        </Typography>
+                        {(m.koreksi_stok_sparepart || 0) !== 0 && (
+                            <View className="mt-2">
+                                <FinancialRow label="Koreksi Stok Opname Spare Part (Memo)" value={m.koreksi_stok_sparepart} color="text-violet-700" />
+                                <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">Selisih stok fisik vs sistem (edit stok di Master Data), sudah termasuk di baris Modal.</Typography>
+                            </View>
+                        )}
                     </View>
 
                     <View className="mb-4 w-full">
