@@ -74,6 +74,18 @@ class ModalService(BaseReportService):
             self._bukan_impor(),
         ).scalar() or 0)
 
+    def _setoran_aset(self, dari: date, sampai: date) -> float:
+        """Aset tetap yang disetor pemilik (sumber_dana=SETORAN_MODAL) — setoran
+        modal non-kas. Tanpa ini aset naik tanpa sumber → Penyesuaian Backdate."""
+        if sampai < dari:
+            return 0.0
+        from app.models.keuangan import Aset
+        return float(self.db.query(func.sum(Aset.harga_beli)).filter(
+            Aset.sumber_dana == "SETORAN_MODAL",
+            Aset.tanggal_beli >= dari,
+            Aset.tanggal_beli <= sampai,
+        ).scalar() or 0)
+
     def _pengembalian_modal(self, dari: date, sampai: date) -> float:
         if sampai < dari:
             return 0.0
@@ -93,7 +105,7 @@ class ModalService(BaseReportService):
         Komposisinya SAMA dengan raw_theoretical di get_report.
         """
         data = self.get_unit_financial_breakdown(d, d)
-        setoran = self._setoran_modal(d, d)
+        setoran = self._setoran_modal(d, d) + self._setoran_aset(d, d)
         pengembalian = self._pengembalian_modal(d, d)
         return (
             setoran
@@ -478,6 +490,7 @@ class ModalService(BaseReportService):
         # tanggal_dari. Penyeimbang seperti laba_ditahan_sebelumnya.
         mutasi_modal_sebelumnya = (
             setoran_modal_sebelumnya
+            + self._setoran_aset(flow_dari, sebelum_dari)
             - (prive_kumulatif - prive)
             - pengembalian_modal_sebelumnya
         )
@@ -763,10 +776,11 @@ class ModalService(BaseReportService):
         # to 0 hides the liability and breaks modal_teoritis vs modal_aktual.
         setoran_non_kas_import = (mobil_import + piutang_import) - hutang_import + reval_mobil
 
-        # Aset tetap pada posisi pembuka sudah ada di snapshot modal_awal, dan aset
-        # yang dibeli selama periode dibayar kas (kas turun, aset naik → net 0 pada
-        # ekuitas). Jadi tidak ada setoran non-kas yang perlu ditambahkan.
-        aset_import = 0.0
+        # Aset tetap pada posisi pembuka sudah ada di snapshot modal_awal; aset yang
+        # dibeli via kas/hutang net 0 pada ekuitas. Hanya aset setoran pemilik
+        # (sumber_dana=SETORAN_MODAL) yang menambah modal sebagai setoran non-kas.
+        aset_import = self._setoran_aset(period_dari, tanggal_sampai)
+        setoran_non_kas_import += aset_import
 
         # Clean expected theoretical ending modal based on classical accounting formula.
         # Investor = hutang: laba investor & pembayaran investor BUKAN aliran modal.

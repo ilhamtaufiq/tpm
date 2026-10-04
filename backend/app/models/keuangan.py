@@ -363,6 +363,8 @@ class Aset(Base, TimestampMixin):
     )
     lokasi: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # KAS / HUTANG / SETORAN_MODAL — NULL untuk aset lama & import saldo awal.
+    sumber_dana: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     created_by: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id"),
         nullable=True,

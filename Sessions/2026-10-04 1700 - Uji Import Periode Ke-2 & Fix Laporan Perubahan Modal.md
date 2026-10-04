@@ -45,9 +45,16 @@ Uji `TPM_IMPORT_TEMPLATE_REAL_PERIODE_BERJALAN_KE-2.xlsx` lewat Settings > Data 
 - Tes snapshot produksi (financial_balance_audit, stock_mobil_part_audit, laporan_aliran) ditulis ulang jadi invariant; `test_muatan_date_sync` diperbaiki (filter kas hanya lulus bila id muatan == id pembayaran).
 - Hasil pytest: DB kosong 54 lulus/8 skip, xlsx asli 60/2 skip, xlsx + 24 langkah transaksi 62/0, dump produksi 61/1 skip — 0 gagal.
 
+## Lanjutan: fitur pembelian aset tetap (pilihan A user)
+
+- Migrasi `aset.sumber_dana`; `POST /assets` terima `sumber_dana` + `payments` (split) + supplier/nama penjual; hapus aset membalik kas & hutang.
+- Laporan: hutang aset dikecualikan dari beban (`manual_hutang_non_pinjaman`), setoran aset = setoran non-kas (`_setoran_aset`), Neraca bottom-up menetting VOID + hutang aset.
+- Frontend `master-data/asset.tsx`: form "Pembelian Aset Tetap" (Tunai Utama / Transfer / Hutang Penuh / Setoran Pemilik, BAYAR PAS, split, sisa hutang).
+- Uji 11 langkah (beli lunas, split + sisa hutang, hutang penuh, setoran, bayar hutang, hapus, validasi): Δlaba 0, backdate 0, `/validate` SYNCED, selisih komponen modal = hutang investor saja.
+
 ## Open Questions
 
-- Form aset: tambahkan pilihan sumber dana (kas/bank keluar atau setoran non-kas)?
+None
 
 ## Working Set (file yang disentuh)
 

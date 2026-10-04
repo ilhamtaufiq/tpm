@@ -162,13 +162,18 @@ export const useAssetStats = () => {
     });
 };
 
+// Pembelian/hapus aset menulis kas, hutang & laporan — segarkan semuanya.
+const ASSET_FINANCE_KEYS = [
+    'assets', 'asset_stats', 'kas_bank_balances', 'kas_bank_list', 'hutang_list',
+    'hutang_summary', 'neraca_report', 'capital_report', 'validate_reports', 'dashboard_summary',
+];
+
 export const useCreateAsset = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: masterDataService.createAsset,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['assets'] });
-            queryClient.invalidateQueries({ queryKey: ['asset_stats'] });
+            ASSET_FINANCE_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
         },
     });
 };
@@ -190,8 +195,7 @@ export const useDeleteAsset = () => {
     return useMutation({
         mutationFn: (id: number) => masterDataService.deleteAsset(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['assets'] });
-            queryClient.invalidateQueries({ queryKey: ['asset_stats'] });
+            ASSET_FINANCE_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
         },
     });
 };

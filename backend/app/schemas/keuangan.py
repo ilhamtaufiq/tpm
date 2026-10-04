@@ -370,6 +370,25 @@ class AssetCreate(BaseModel):
     status: AssetStatus = AssetStatus.AKTIF
     lokasi: Optional[str] = Field(None, max_length=100)
     catatan: Optional[str] = None
+    # Pembelian (seperti pembelian spare part). None = hanya daftar (klien lama).
+    #   KAS           : payments dari kas/bank; sisa yang belum dibayar jadi hutang
+    #   HUTANG        : seluruh harga jadi hutang ke penjual
+    #   SETORAN_MODAL : aset disetor pemilik (non-kas), tidak ada kas/hutang
+    sumber_dana: Optional[str] = Field(None, pattern="^(KAS|HUTANG|SETORAN_MODAL)$")
+    payments: List["AssetPaymentItem"] = []
+    supplier_id: Optional[int] = None
+    nama_penjual: Optional[str] = Field(None, max_length=100)
+
+
+class AssetPaymentItem(BaseModel):
+    """Satu baris pembayaran pembelian aset (split payment)."""
+
+    metode: PaymentMethod
+    jumlah: Decimal = Field(..., gt=0)
+    kas_jenis: Optional[KasBankJenis] = None
+
+
+AssetCreate.model_rebuild()
 
 
 class AssetUpdate(BaseModel):
@@ -398,6 +417,7 @@ class AssetResponse(BaseModel):
     status: AssetStatus
     lokasi: Optional[str] = None
     catatan: Optional[str] = None
+    sumber_dana: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

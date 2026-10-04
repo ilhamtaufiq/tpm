@@ -41,7 +41,8 @@ from app.utils.constants import (
     PaymentMethod,
     PiutangSource,
     InvestorDisbursementStatus,
-    WorkshopStatus
+    WorkshopStatus,
+    TRANSACTION_PREFIXES,
 )
 from app.utils.sparepart_stock import ALWAYS_READY_STOCK, is_always_ready_stock
 from app.utils.workshop_finance import (
@@ -658,6 +659,9 @@ class BaseReportService:
             HutangUsaha.status != HutangStatus.BATAL,
             HutangUsaha.is_internal != True,
             ~HutangUsaha.nomor_referensi.ilike("IMP-%"), # Exclude imported opening debt from P&L expense
+            # Hutang pembelian aset tetap (nomor_referensi = kode aset) membiayai
+            # aset, bukan beban.
+            ~HutangUsaha.nomor_referensi.like(f"{TRANSACTION_PREFIXES['aset']}-%"),
             ~self.db.query(KasBank.id).filter(
                 KasBank.tipe == KasBankType.MASUK,
                 KasBank.referensi_id == HutangUsaha.id,

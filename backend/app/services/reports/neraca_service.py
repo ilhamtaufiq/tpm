@@ -232,11 +232,21 @@ class NeracaService(BaseReportService):
         ).scalar() or 0)
         
         # Aset tetap yang dibeli via KasBank (pengeluaran untuk beli aset)
-        pembelian_aset_kas = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.tipe == KasBankType.KELUAR,
+        # Netto: jurnal [VOID] (MASUK) dari hapus aset membatalkan pembelian.
+        pembelian_aset_kas = float(self.db.query(func.sum(
+            case((KasBank.tipe == KasBankType.KELUAR, KasBank.nominal), else_=-KasBank.nominal)
+        )).filter(
             KasBank.sumber == KasBankSource.ASET,
             KasBank.referensi_id.is_not(None),
             KasBank.tanggal <= as_of_date
+        ).scalar() or 0)
+        # Hutang pembelian aset tetap (nomor_referensi = kode aset).
+        from app.utils.constants import TRANSACTION_PREFIXES
+        from app.models.keuangan import HutangUsaha as _HutangAset
+        pembelian_aset_kas += float(self.db.query(func.sum(_HutangAset.nominal_hutang)).filter(
+            _HutangAset.nomor_referensi.like(f"{TRANSACTION_PREFIXES['aset']}-%"),
+            _HutangAset.status != HutangStatus.BATAL,
+            _HutangAset.tanggal <= as_of_date,
         ).scalar() or 0)
         
         # Pembelian mobil via KasBank
