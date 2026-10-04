@@ -39,6 +39,12 @@ Uji `TPM_IMPORT_TEMPLATE_REAL_PERIODE_BERJALAN_KE-2.xlsx` lewat Settings > Data 
 - Bug ditemukan & diperbaiki: guard duplikat KasBank menolak pelunasan booking di hari yang sama (409); `/validate` MISMATCH hutang palsu saat ada booking.
 - Temuan desain (belum diubah): daftar aset di Master Data tidak mencatat kas keluar.
 
+## Lanjutan: piutang internal & tes
+
+- Bug: edit transaksi bengkel internal tidak menyinkronkan piutang/hutang internal (kasus produksi BGL2609230004: grand_total 2.083.000, piutang internal 68.000). Diperbaiki + assert di `test_bengkel_void_and_edit_balance`.
+- Tes snapshot produksi (financial_balance_audit, stock_mobil_part_audit, laporan_aliran) ditulis ulang jadi invariant; `test_muatan_date_sync` diperbaiki (filter kas hanya lulus bila id muatan == id pembayaran).
+- Hasil pytest: DB kosong 54 lulus/8 skip, xlsx asli 60/2 skip, xlsx + 24 langkah transaksi 62/0, dump produksi 61/1 skip — 0 gagal.
+
 ## Open Questions
 
 - Form aset: tambahkan pilihan sumber dana (kas/bank keluar atau setoran non-kas)?

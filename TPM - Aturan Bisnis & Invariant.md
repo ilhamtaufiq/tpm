@@ -26,6 +26,8 @@ tags: [tpm, aturan, finansial, dev-guidelines]
 9. **Guard anti-duplikat KasBank** (ber-`nomor_referensi`): kunci = jenis + tipe + nomor_referensi + referensi_id + tanggal + **nominal + keterangan**. DP lalu pelunasan mobil / cicilan di hari yang sama sah; hanya input ulang identik yang ditolak 409.
 10. **`/validate` cek hutang**: hutang snapshot modal dikurangi `piutang_booking` dulu (Neraca menetting piutang booking ke piutang), agar booking DP tidak memunculkan MISMATCH palsu.
 11. **Pembelian aset tetap = dua langkah**: daftar aset di Master Data (tanpa kas) **dan** catat Kas Keluar sumber `ASET`. Hanya mendaftar aset tanpa kas keluar = aset muncul tanpa sumber dana → modal naik lewat baris *Penyesuaian Backdate*.
+12. **Edit transaksi bengkel internal** (JB Mobil / Jasa Angkut) wajib menyamakan piutang & hutang internal ke `grand_total` baru (`_sync_internal_debts_nominal`); baris yang sudah LUNAS tetap lunas di nominal baru.
+13. **Tes backend tidak boleh mematok angka/ID data produksi.** Tes laporan memakai saldo awal aktif s/d hari ini dan memeriksa invariant (balance, Modal Awal beku, kas = Σ mutasi, menu stok = Neraca). Wajib lulus di DB kosong, setelah import xlsx, dan setelah transaksi.
 
 ## 📝 Aturan Pengembangan (Dev Guidelines)
 

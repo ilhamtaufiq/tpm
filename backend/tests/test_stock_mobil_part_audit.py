@@ -1,10 +1,11 @@
 """Test Stock Mobil & Stock Part Audit & Synchronization.
 
-Guarantees:
-  1. Menu JB Mobil stock value (total_modal_tersedia) matches Neraca value (Rp 1.705.796.850.0).
-  2. Stock Part value resolves Rp 4.810.000 discrepancy:
-     - Rp 4.785.000: Correct double-input HPP for JB Mobil vehicle back to stock part.
-     - Rp 25.000: Adjust 1 pcs Threebond glue quantity discrepancy.
+Dulu mematok angka produksi 28 Sep (stok mobil Rp1.705.796.850, part id 469 =
+15 pcs) — gagal begitu ada transaksi/edit sah setelahnya atau setelah reset +
+import ulang. Kini menjaga invariant yang berlaku untuk data apa pun:
+  1. Nilai stok JB Mobil di menu == Neraca pada tanggal yang sama.
+  2. Koreksi stok part 28 Sep (ID produksi) tidak pernah menyentuh part lain
+     yang kebetulan memakai ID itu setelah import ulang.
 """
 import os
 import sys
@@ -14,13 +15,21 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("DATABASE_URL", "mysql+pymysql://root:@localhost/tpm")
 
-from app.database import SessionLocal
-from app.services.mobil_service import MobilService
-from app.services.spare_part_service import SparePartService
-from app.services.reports.neraca_service import NeracaService
-from app.models.bengkel import SparePart
+from app.database import SessionLocal  # noqa: E402
+from app.models.bengkel import SparePart  # noqa: E402
+from app.models.mobil import Mobil  # noqa: E402
+from app.utils.constants import CarStatus  # noqa: E402
+from app.models.system_setting import SystemSetting  # noqa: E402
+from app.services.mobil_service import MobilService  # noqa: E402
+from app.services.spare_part_service import SparePartService  # noqa: E402
+from app.services.reports.neraca_service import NeracaService  # noqa: E402
 
 TOL = 1.0
+KATA_KUNCI = {
+    469: "THREEBOND", 557: "PAKING DEKSEL", 727: "SIL AS KUPLING",
+    994: "SLEEVE SYNCRO", 995: "SLEEVE SYNCRO", 996: "LAHER",
+    998: "RING SEHER", 999: "BORING SET", 1000: "METAL JALAN",
+}
 
 
 @pytest.fixture(scope="module")
@@ -31,53 +40,49 @@ def db():
 
 
 def test_stock_mobil_sync_menu_and_neraca(db):
-    """Sync JB Mobil stock value between Menu JB Mobil and Neraca to match valid Neraca value: Rp 1.705.796.850."""
-    ms = MobilService(db)
-    ns = NeracaService(db)
-
-    as_of = date(2026, 9, 28)
-    summary = ms.get_inventory_summary(tanggal_sampai=as_of)
-    neraca_report = ns.get_report(as_of)
-
-    menu_stock_val = summary["total_modal_tersedia"]
-    neraca_stock_val = neraca_report["aktiva_lancar"]["stok_mobil"]
-
-    assert abs(neraca_stock_val - 1705796850.0) < TOL
-    assert abs(menu_stock_val - neraca_stock_val) < TOL
-
-
-def test_stock_part_discrepancy_resolution(db):
-    """Fix Stock Part value by resolving Rp 4.810.000 diff (4.785.000 vehicle HPP + 25.000 Threebond glue)."""
-    sp_service = SparePartService(db)
-    ns = NeracaService(db)
-
-    # Trigger auto-heal/sync
-    sp_service.heal_sparepart_stock_discrepancies()
-
-    # Verify part 469 (Threebond glue) is corrected to 15.0 pcs
-    part_469 = db.query(SparePart).filter(SparePart.id == 469).first()
-    assert part_469 is not None
-    assert float(part_469.stok) == 15.0
-
-    # Verify vehicle HPP double-input parts are corrected
-    hpp_parts = {
-        557: 3.0,
-        727: 1.0,
-        994: 1.0,
-        995: 1.0,
-        996: 1.0,
-        998: 1.0,
-        999: 1.0,
-        1000: 1.0,
+    """Menu `total_modal_tersedia` hanya status TERSEDIA; Neraca juga memuat unit
+    BOOKING (belum terjual = masih persediaan). Bandingkan pada himpunan yang sama."""
+    as_of = date.today()
+    menu = MobilService(db).get_inventory_summary(tanggal_sampai=as_of)["total_modal_tersedia"]
+    al = NeracaService(db).get_report(as_of)["aktiva_lancar"]
+    detail = al["stok_mobil_detail"]
+    assert abs(sum(d["total"] for d in detail) - al["stok_mobil"]) < TOL
+    tersedia = {
+        m.id for m in db.query(Mobil).filter(
+            Mobil.status == CarStatus.TERSEDIA, Mobil.deleted_at.is_(None)
+        ).all()
     }
-    for pid, expected_stok in hpp_parts.items():
-        part = db.query(SparePart).filter(SparePart.id == pid).first()
-        assert part is not None
-        assert float(part.stok) == expected_stok
+    neraca_tersedia = sum(d["total"] for d in detail if d["id"] in tersedia)
+    assert abs(float(menu) - neraca_tersedia) < TOL
 
-    # Check stock value consistency
-    sp_val = sp_service.get_stock_value()["total_value"]
-    neraca_part_val = ns.get_report(date(2026, 9, 28))["aktiva_lancar"]["persediaan_sparepart"]
 
-    assert sp_val > 0
-    assert neraca_part_val > 0
+def test_heal_stok_part_tidak_menyentuh_part_lain(db):
+    sp_service = SparePartService(db)
+    flag = db.query(SystemSetting).filter(
+        SystemSetting.key == sp_service.HEAL_STOCK_FLAG_KEY
+    ).first()
+    flag_ada = flag is not None
+    if flag_ada:
+        db.delete(flag)
+        db.commit()
+    lain = {
+        sp.id: sp.stok
+        for sp in db.query(SparePart).filter(SparePart.id.in_(KATA_KUNCI)).all()
+        if KATA_KUNCI[sp.id] not in (sp.nama or "").upper()
+    }
+    try:
+        sp_service.heal_sparepart_stock_discrepancies()
+        db.expire_all()
+        for pid, stok in lain.items():
+            assert db.get(SparePart, pid).stok == stok, f"part {pid} ikut terpotong"
+        assert db.query(SystemSetting).filter(
+            SystemSetting.key == sp_service.HEAL_STOCK_FLAG_KEY
+        ).first() is not None
+    finally:
+        if not flag_ada:
+            row = db.query(SystemSetting).filter(
+                SystemSetting.key == sp_service.HEAL_STOCK_FLAG_KEY
+            ).first()
+            if row is not None:
+                db.delete(row)
+                db.commit()

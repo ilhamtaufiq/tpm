@@ -336,6 +336,45 @@ class TransaksiBengkelService:
             if suffix and suffix not in (hutang.catatan or ""):
                 hutang.catatan = (hutang.catatan or "") + suffix
 
+    def _sync_internal_debts_nominal(self, nomor_transaksi: str, grand_total: Decimal) -> None:
+        """Samakan piutang/hutang internal dengan grand_total setelah edit.
+
+        Dulu edit transaksi internal (JB Mobil / Jasa Angkut) hanya mengubah
+        grand_total; piutang & hutang internal tertinggal di nominal lama,
+        sehingga menu Hutang/Piutang dan pelunasan antar-unit salah.
+        Baris yang sudah LUNAS (di-settle saat mobil terjual / muatan lunas)
+        tetap lunas pada nominal baru.
+        """
+        def _apply(row, nominal_attr, sisa_attr, lunas_status, sebagian_status, belum_status):
+            setattr(row, nominal_attr, grand_total)
+            if row.status == lunas_status:
+                row.total_dibayar = grand_total
+                setattr(row, sisa_attr, Decimal("0"))
+                return
+            sisa = max(Decimal("0"), grand_total - (row.total_dibayar or Decimal("0")))
+            setattr(row, sisa_attr, sisa)
+            if sisa <= 0:
+                row.status = lunas_status
+            elif (row.total_dibayar or 0) > 0:
+                row.status = sebagian_status
+            else:
+                row.status = belum_status
+
+        for p in self.db.query(PiutangUsaha).filter(
+            PiutangUsaha.nomor_referensi == nomor_transaksi,
+            PiutangUsaha.is_internal == True,
+            PiutangUsaha.status != PiutangStatus.BATAL,
+        ).all():
+            _apply(p, "nominal_piutang", "sisa_piutang",
+                   PiutangStatus.LUNAS, PiutangStatus.SEBAGIAN, PiutangStatus.BELUM_LUNAS)
+        for h in self.db.query(HutangUsaha).filter(
+            HutangUsaha.nomor_referensi == nomor_transaksi,
+            HutangUsaha.is_internal == True,
+            HutangUsaha.status != HutangStatus.BATAL,
+        ).all():
+            _apply(h, "nominal_hutang", "sisa_hutang",
+                   HutangStatus.LUNAS, HutangStatus.SEBAGIAN, HutangStatus.BELUM_LUNAS)
+
     def _validate_customer(self, customer_id: int) -> Customer:
         """Validate customer exists."""
         customer = (
@@ -1086,6 +1125,9 @@ class TransaksiBengkelService:
                 existing_piutang.status = PiutangStatus.SEBAGIAN
             else:
                 existing_piutang.status = PiutangStatus.BELUM_LUNAS
+
+        if not is_not_internal:
+            self._sync_internal_debts_nominal(transaksi.nomor_transaksi, grand_total)
 
         # Link entries (Mobil & Jasa Angkut)
         if transaksi.kategori == 'jual_beli_mobil' and transaksi.mobil_id:

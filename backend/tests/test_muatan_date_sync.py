@@ -77,14 +77,17 @@ def test_muatan_date_sync_and_report_accuracy():
         assert pembayaran.tanggal == old_date
 
         # Check KasBank entries (linked via muatan.id, muatan.nomor_transaksi, or payment.id)
-        kas_entries = db.query(KasBank).filter(
-            KasBank.sumber.in_([KasBankSource.JASA_ANGKUT, KasBankSource.PIUTANG]),
-            or_(
-                KasBank.nomor_referensi == nomor_transaksi,
-                (KasBank.referensi_id == muatan_id) & (KasBank.sumber == KasBankSource.JASA_ANGKUT),
-                (KasBank.referensi_id == pembayaran.id) & (KasBank.sumber == KasBankSource.PIUTANG)
-            )
-        ).all()
+        # Kas pembayaran muatan memakai nomor_referensi = nomor piutang (AR...) dan
+        # referensi_id = id PembayaranPiutang. Dulu filter mencari referensi_id ==
+        # muatan_id → hanya lulus bila kedua id kebetulan sama (DB kosong).
+        def _kas_muatan():
+            return db.query(KasBank).filter(
+                KasBank.id > max_kas_id_before,
+                KasBank.sumber.in_([KasBankSource.JASA_ANGKUT, KasBankSource.PIUTANG]),
+                KasBank.nomor_referensi.in_([nomor_transaksi, piutang.nomor_piutang]),
+            ).all()
+
+        kas_entries = _kas_muatan()
         assert len(kas_entries) > 0, "Expected KasBank entries for payment"
         for kas in kas_entries:
             assert kas.tanggal == old_date, f"Initial KasBank date mismatch: {kas.tanggal} vs {old_date}"
@@ -113,14 +116,8 @@ def test_muatan_date_sync_and_report_accuracy():
         db.refresh(pembayaran)
         assert pembayaran.tanggal == new_date
 
-        kas_entries_updated = db.query(KasBank).filter(
-            KasBank.sumber.in_([KasBankSource.JASA_ANGKUT, KasBankSource.PIUTANG]),
-            or_(
-                KasBank.nomor_referensi == nomor_transaksi,
-                (KasBank.referensi_id == muatan_id) & (KasBank.sumber == KasBankSource.JASA_ANGKUT),
-                (KasBank.referensi_id == pembayaran.id) & (KasBank.sumber == KasBankSource.PIUTANG)
-            )
-        ).all()
+        db.expire_all()
+        kas_entries_updated = _kas_muatan()
         assert len(kas_entries_updated) > 0
         for kas in kas_entries_updated:
             assert kas.tanggal == new_date, f"KasBank id={kas.id} date is {kas.tanggal}, expected {new_date}"

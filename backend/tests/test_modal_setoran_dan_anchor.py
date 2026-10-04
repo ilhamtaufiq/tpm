@@ -55,19 +55,26 @@ def test_modal_awal_override_hanya_untuk_anchor_legacy():
         SystemSetting.key == ModalService.FROZEN_MODAL_AWAL_KEY
     ).first()
     asli = row.value if row else None
+    if row is not None:  # mulai tanpa nilai beku agar override/hitung yang diuji
+        db.delete(row)
+        db.commit()
     try:
         svc = ModalService(db)
         assert svc._frozen_modal_awal(date(2026, 10, 4), 123.45) == 123.45
+        db.query(SystemSetting).filter(
+            SystemSetting.key == ModalService.FROZEN_MODAL_AWAL_KEY
+        ).delete()
+        db.commit()
         assert svc._frozen_modal_awal(date(2026, 9, 12), 123.45) == 2242611225.0
     finally:
         row = db.query(SystemSetting).filter(
             SystemSetting.key == ModalService.FROZEN_MODAL_AWAL_KEY
         ).first()
-        if asli is None:
-            if row is not None:
-                db.delete(row)
-        else:
-            row.value = asli
+        if row is not None:
+            db.delete(row)
+            db.commit()
+        if asli is not None:
+            db.add(SystemSetting(key=ModalService.FROZEN_MODAL_AWAL_KEY, value=asli))
         db.commit()
         db.close()
 
