@@ -6,6 +6,7 @@ import { getCustomTabBarBottomPadding } from '../../../components/ui/CustomTabBa
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
+import { DatePicker } from '../../../components/ui/DatePicker';
 import { Button } from '../../../components/ui/Button';
 import {
     AlertCircle,
@@ -66,7 +67,7 @@ export default function PurchaseScreen() {
     const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
     const [nomorFaktur, setNomorFaktur] = useState('');
     const [tanggal, setTanggal] = useState(new Date());
-    const [tanggalText, setTanggalText] = useState(() => formatLocalDate(new Date()));
+    const [tanggalText, setTanggalText] = useState('');
     const [tanggalError, setTanggalError] = useState('');
     const [tanggalPickerOpen, setTanggalPickerOpen] = useState(false);
     const [tempTanggalText, setTempTanggalText] = useState(() => formatLocalDate(new Date()));
@@ -318,8 +319,8 @@ export default function PurchaseScreen() {
                 showNotice('error', 'Validasi', 'Pilih supplier terlebih dahulu.');
                 return;
             }
-            if (!isValidDateString(tanggalText)) {
-                showNotice('error', 'Validasi', 'Format tanggal tidak valid (YYYY-MM-DD).');
+            if (!tanggalText || !isValidDateString(tanggalText)) {
+                showNotice('error', 'Validasi', 'Mohon isi tanggal transaksi yang valid (YYYY-MM-DD).');
                 return;
             }
             // Sync tanggal from tanggalText
@@ -653,20 +654,19 @@ export default function PurchaseScreen() {
                             containerClassName="mb-6"
                         />
 
-                        <View className="mb-6">
-                            <Typography variant="body2" className="text-textGray text-sm mb-1 font-medium">Tanggal Pembelian</Typography>
-                            <Pressable
-                                onPress={openTanggalPicker}
-                                className="bg-background rounded-2xl px-4 h-[52px] justify-center border-2 border-transparent"
-                            >
-                                <View className="flex-row items-center">
-                                    <Calendar size={18} color="#767676" />
-                                    <Typography className="ml-2 font-medium">
-                                        {tanggal.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                    </Typography>
-                                </View>
-                            </Pressable>
-                        </View>
+                        <DatePicker
+                            label="Tanggal Pembelian"
+                            placeholder="Pilih Tanggal (YYYY-MM-DD)"
+                            value={tanggalText}
+                            onChange={(val) => {
+                                setTanggalText(val);
+                                if (isValidDateString(val)) {
+                                    const [y, m, d] = val.split('-').map(Number);
+                                    setTanggal(new Date(y, m - 1, d));
+                                }
+                            }}
+                            required
+                        />
 
                         <Input
                             label="Catatan (Opsional)"

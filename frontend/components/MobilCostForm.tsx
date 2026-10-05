@@ -3,6 +3,7 @@ import { View, ScrollView, TextInput, ActivityIndicator, Platform, StyleSheet, P
 // import { Pressable } from '@gorhom/bottom-sheet'; // Removed due to web compatibility issues
 import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
+import { DatePicker } from './ui/DatePicker';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
@@ -44,6 +45,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
 
 
     // Form States
+    const [tanggal, setTanggal] = useState('');
     const [newLainnya, setNewLainnya] = useState<{
         kategori: string;
         deskripsi: string;
@@ -107,6 +109,10 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     };
 
     const handleAddBiaya = () => {
+        if (!tanggal) {
+            setDialogConfig({ visible: true, title: 'Validasi', message: 'Tanggal biaya wajib diisi', variant: 'warning', type: 'alert' });
+            return;
+        }
         const finalAmount = isSplitPayment ? totalSplitAmount : parseNumber(newLainnya.jumlah);
 
         if (isNaN(finalAmount) || finalAmount <= 0) {
@@ -133,7 +139,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                 kategori: newLainnya.kategori || 'Admin',
                 deskripsi: newLainnya.deskripsi || newLainnya.kategori || 'Biaya Admin & Pajak',
                 jumlah: finalAmount,
-                tanggal: new Date().toISOString().split('T')[0],
+                tanggal: tanggal,
                 metode_bayar: isSplitPayment ? 'SPLIT' : (newLainnya.metode_bayar === 'TUNAI_MOBIL' || newLainnya.metode_bayar === 'TUNAI_UTAMA' ? 'TUNAI' : newLainnya.metode_bayar),
                 kas_jenis: isSplitPayment ? undefined : (
                     newLainnya.metode_bayar === 'TUNAI_MOBIL' ? 'KAS_UNIT_MOBIL' : 
@@ -274,6 +280,14 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                 </View>
 
                 <View className="mb-4">
+                    <DatePicker
+                        label="Tanggal Biaya"
+                        placeholder="Pilih Tanggal (YYYY-MM-DD)"
+                        value={tanggal}
+                        onChange={setTanggal}
+                        required
+                    />
+
                     <Input
                         label="Kategori"
                         placeholder="Pajak / BBN / ADM"

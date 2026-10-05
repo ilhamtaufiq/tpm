@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, ActivityIndicator, Text, ScrollView, Platform, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
 import { Typography } from '../ui/Typography';
 import { Input } from '../ui/Input';
+import { DatePicker } from '../ui/DatePicker';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { ProfitSplitCard } from './ProfitSplitCard';
@@ -29,7 +30,7 @@ interface MuatanFormProps {
 const MAX_SUGGESTIONS = 5;
 
 const emptyFormData = () => ({
-    tanggal: new Date().toISOString().split('T')[0],
+    tanggal: '',
     supir_id: '',
     supir_nama: '',
     armada_id: '',
@@ -54,7 +55,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     const [submitting, setSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
-        tanggal: new Date().toISOString().split('T')[0],
+        tanggal: '',
         supir_id: '',
         supir_nama: '', // Manual name
         armada_id: '',
@@ -355,6 +356,10 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     };
 
     const handleSubmit = async () => {
+        if (!formData.tanggal) {
+            setDialogConfig({ visible: true, title: 'Validasi', message: 'Tanggal transaksi wajib diisi', variant: 'warning' });
+            return;
+        }
         if (!formData.armada_id) {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Pilih armada terlebih dahulu', variant: 'warning' });
             return;
@@ -705,10 +710,12 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             }
 
             <View className="mb-2">
-                <Input
+                <DatePicker
                     label="Tanggal Transaksi"
+                    placeholder="Pilih Tanggal (YYYY-MM-DD)"
                     value={formData.tanggal}
-                    onChangeText={v => updateField('tanggal', v)}
+                    onChange={v => updateField('tanggal', v)}
+                    required
                 />
             </View>
 

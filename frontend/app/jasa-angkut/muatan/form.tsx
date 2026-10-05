@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Input } from '../../../components/ui/Input';
+import { DatePicker } from '../../../components/ui/DatePicker';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { ProfitSplitCard } from '../../../components/jasa-angkut/ProfitSplitCard';
@@ -32,7 +33,7 @@ export default function MuatanFormScreen() {
 
     // Form State
     const [formData, setFormData] = useState<MuatanFormState>({
-        tanggal: new Date().toISOString().split('T')[0],
+        tanggal: '',
         supir_id: '',
         asal: '',
         tujuan: '',
@@ -81,7 +82,7 @@ export default function MuatanFormScreen() {
     }, [formData]);
 
     const handleSubmit = async () => {
-        if (!formData.supir_id || !formData.asal || !formData.tujuan || !formData.pendapatan_kotor) {
+        if (!formData.tanggal || !formData.supir_id || !formData.asal || !formData.tujuan || !formData.pendapatan_kotor) {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Mohon lengkapi field wajib (*)', variant: 'warning' });
             return;
         }
@@ -140,10 +141,12 @@ export default function MuatanFormScreen() {
                         </View>
                     )}
 
-                    <Input
-                        label="Tanggal (YYYY-MM-DD)"
+                    <DatePicker
+                        label="Tanggal"
+                        placeholder="Pilih Tanggal (YYYY-MM-DD)"
                         value={formData.tanggal}
-                        onChangeText={v => updateField('tanggal', v)}
+                        onChange={v => updateField('tanggal', v)}
+                        required
                     />
 
                     <View className="flex-row space-x-2">

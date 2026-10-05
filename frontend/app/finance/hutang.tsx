@@ -7,6 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { DatePicker } from '../../components/ui/DatePicker';
 import {
     AlertTriangle,
     CheckCircle2,
@@ -131,7 +132,7 @@ export default function HutangUsahaScreen() {
     const [createAmount, setCreateAmount] = useState('');
     const [createSource, setCreateSource] = useState('LAINNYA');
     const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER' | undefined>(undefined);
-    const [createDate, setCreateDate] = useState(new Date().toISOString().split('T')[0]);
+    const [createDate, setCreateDate] = useState('');
     const [createNote, setCreateNote] = useState('');
     const [isCreateSplitPayment, setIsCreateSplitPayment] = useState(false);
     const [createPayments, setCreatePayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
@@ -282,6 +283,7 @@ export default function HutangUsahaScreen() {
     const handleOpenCreate = () => {
         setCreateName('');
         setCreateAmount('');
+        setCreateDate('');
         setCreateSource('LAINNYA');
         setCreateMethod(undefined);
         setIsCreateSplitPayment(false);
@@ -299,6 +301,10 @@ export default function HutangUsahaScreen() {
     const handleSubmitCreate = async () => {
         if (!createName || !createAmount) {
             showAlert('Error', 'Nama Kreditur dan Nominal wajib diisi', 'error');
+            return;
+        }
+        if (!createDate) {
+            showAlert('Error', 'Tanggal transaksi wajib diisi', 'error');
             return;
         }
 
@@ -516,11 +522,12 @@ export default function HutangUsahaScreen() {
                 )}
             </View>
 
-            <Input
-                label="Tanggal (YYYY-MM-DD)"
-                placeholder="2024-01-01"
+            <DatePicker
+                label="Tanggal Transaksi"
+                placeholder="Pilih Tanggal (YYYY-MM-DD)"
                 value={createDate}
-                onChangeText={setCreateDate}
+                onChange={setCreateDate}
+                required
             />
 
             <Input

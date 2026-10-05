@@ -34,6 +34,7 @@ import { MasterDataSelector } from '../../components/ui/MasterDataSelector';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
+import { DatePicker } from '../../components/ui/DatePicker';
 
 // Sumber dana pembelian aset — sama seperti pembelian spare part, plus setoran pemilik.
 type SumberDana = 'UTAMA_TUNAI' | 'UTAMA_TRANSFER' | 'HUTANG' | 'SETORAN_MODAL';
@@ -122,7 +123,7 @@ export default function AssetScreen() {
     const [formData, setFormData] = useState({
         nama: '',
         kategori: 'PERALATAN',
-        tanggal_beli: new Date().toISOString().split('T')[0],
+        tanggal_beli: '',
         harga_beli: '',
         nilai_residu: '0',
         umur_ekonomis: '4',
@@ -217,7 +218,7 @@ export default function AssetScreen() {
         setFormData({
             nama: '',
             kategori: 'PERALATAN',
-            tanggal_beli: new Date().toISOString().split('T')[0],
+            tanggal_beli: '',
             harga_beli: '',
             nilai_residu: '0',
             umur_ekonomis: '4',
@@ -656,12 +657,12 @@ export default function AssetScreen() {
 
                     <View className="flex-row space-x-3">
                         <View className="flex-1">
-                            <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Tanggal Beli *</Typography>
-                            <TextInput
-                                className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium"
-                                placeholder="YYYY-MM-DD"
+                            <DatePicker
+                                label="Tanggal Beli"
+                                placeholder="Pilih Tanggal (YYYY-MM-DD)"
                                 value={formData.tanggal_beli}
-                                onChangeText={(text) => setFormData({ ...formData, tanggal_beli: text })}
+                                onChange={(val) => setFormData({ ...formData, tanggal_beli: val })}
+                                required
                             />
                         </View>
                         <View className="flex-1">

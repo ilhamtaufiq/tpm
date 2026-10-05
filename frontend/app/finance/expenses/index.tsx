@@ -7,6 +7,7 @@ import { useUIStore } from '../../../store/useUIStore';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
+import { DatePicker } from '../../../components/ui/DatePicker';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import {
@@ -83,6 +84,7 @@ export default function ExpensesScreen() {
     const [selectedSparePart, setSelectedSparePart] = useState<any>(null);
 
     const [jumlah, setJumlah] = useState('');
+    const [tanggal, setTanggal] = useState('');
     const [deskripsi, setDeskripsi] = useState('');
     const [payMetode, setPayMetode] = useState('');
     const [kasJenis, setKasJenis] = useState<string | null>('KAS_UTAMA');
@@ -131,6 +133,7 @@ export default function ExpensesScreen() {
     const snapPoints = useMemo(() => ['95%'], []);
 
     const openForm = () => {
+        setTanggal('');
         setShowForm(true);
         if (Platform.OS !== 'web') sheetRef.current?.expand();
     };
@@ -161,6 +164,10 @@ export default function ExpensesScreen() {
 
     const handleSave = async () => {
         if (isSubmittingRef.current) return;
+        if (!tanggal) {
+            appAlert('Validasi', 'Mohon pilih tanggal transaksi');
+            return;
+        }
         if (!jumlah || !deskripsi) {
             appAlert('Validasi', 'Mohon isi jumlah dan keterangan');
             return;
@@ -182,7 +189,7 @@ export default function ExpensesScreen() {
         }
 
         const payload: any = {
-            tanggal: new Date().toISOString().split('T')[0],
+            tanggal,
             kategori,
             bisnis_kategori: bisnisKategori,
             muatan_id: selectedMuatan?.id || null,
@@ -407,6 +414,14 @@ export default function ExpensesScreen() {
                                         </View>
                                     </View>
                                 </View>
+
+                                <DatePicker
+                                    label="Tanggal Transaksi"
+                                    placeholder="Pilih Tanggal (YYYY-MM-DD)"
+                                    value={tanggal}
+                                    onChange={setTanggal}
+                                    required
+                                />
 
                                 <Input
                                     label="Keterangan Pengeluaran"

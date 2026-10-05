@@ -3,6 +3,7 @@ import { View, ScrollView, TextInput, ActivityIndicator, Platform, StyleSheet, P
 // import { Pressable } from '@gorhom/bottom-sheet'; // Reverted for web compatibility
 import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
+import { DatePicker } from './ui/DatePicker';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { User, CreditCard, Tag, Calculator, TrendingUp, Wallet, Trash2, PlusCircle, Info } from 'lucide-react-native';
@@ -27,7 +28,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
     const activeUnit = detailUnit || unit;
 
     const { mutate, isPending } = useCreatePenjualanMobil();
-    const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
+    const [tanggal, setTanggal] = useState('');
     const [namaPembeli, setNamaPembeli] = useState('');
     const [teleponPembeli, setTeleponPembeli] = useState('');
     const [hargaJual, setHargaJual] = useState('');
@@ -139,6 +140,15 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
 
     const handleSubmit = () => {
         try {
+            if (!tanggal) {
+                setDialogConfig({
+                    visible: true,
+                    title: 'Validasi',
+                    message: 'Tanggal transaksi wajib diisi',
+                    variant: 'warning'
+                });
+                return;
+            }
             if (!namaPembeli || !hargaJual) {
                 setDialogConfig({
                     visible: true,
@@ -304,6 +314,14 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                         </Typography>
                     </Pressable>
                 </View>
+
+                <DatePicker
+                    label="Tanggal Transaksi"
+                    placeholder="Pilih Tanggal (YYYY-MM-DD)"
+                    value={tanggal}
+                    onChange={setTanggal}
+                    required
+                />
 
                 <Input label="Harga Jual (Rp)" placeholder="0" keyboardType="numeric" value={hargaJual} onChangeText={(v) => setHargaJual(formatNumber(v))} />
 

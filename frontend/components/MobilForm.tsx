@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, TextInput, ActivityIndicator, Platform, StyleSheet, Pressable } from 'react-native';
 import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
+import { DatePicker } from './ui/DatePicker';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Info, User, DollarSign, Calendar, Car, ShieldCheck, Trash2, Plus } from 'lucide-react-native';
@@ -71,6 +72,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
     ]);
 
     const [confirmedPriceChange, setConfirmedPriceChange] = useState(false);
+    const [tanggalMasuk, setTanggalMasuk] = useState(initialData?.tanggal_masuk || '');
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -159,6 +161,16 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             return;
         }
 
+        if (!isEdit && !tanggalMasuk) {
+            setDialogConfig({
+                visible: true,
+                title: 'Validasi',
+                message: 'Tanggal masuk/beli mobil wajib diisi',
+                variant: 'warning'
+            });
+            return;
+        }
+
         if (!isEdit) {
             const isDebtWithoutDp = statusBayar === 'BELUM_LUNAS' && parseNumber(dp) <= 0;
 
@@ -224,7 +236,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             payload.kas_jenis = kasJenis;
             payload.status_bayar = statusBayar;
             payload.dp = parseNumber(dp) || 0;
-            payload.tanggal_masuk = new Date().toISOString().split('T')[0];
+            payload.tanggal_masuk = tanggalMasuk;
 
             if (sumberBayar === 'SPLIT') {
                 payload.payments = payments
@@ -378,6 +390,15 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                 </View>
 
                 <View className="space-y-6">
+                    {!isEdit && (
+                        <DatePicker
+                            label="Tanggal Beli / Masuk Mobil"
+                            placeholder="Pilih Tanggal (YYYY-MM-DD)"
+                            value={tanggalMasuk}
+                            onChange={setTanggalMasuk}
+                            required
+                        />
+                    )}
                     {/* Harga & Status Row */}
                     <View className="flex-row space-x-3">
                         <Input

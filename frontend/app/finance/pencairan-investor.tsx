@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { DatePicker } from '../../components/ui/DatePicker';
 import {
     Search,
     RefreshCw,
@@ -68,7 +69,7 @@ export default function PencairanInvestorScreen() {
     const paymentSnapPoints = useMemo(() => ['70%', '85%'], []);
 
     // Form states
-    const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
+    const [tanggal, setTanggal] = useState('');
     const [metode, setMetode] = useState<'TUNAI' | 'TRANSFER' | 'SPLIT'>('TRANSFER');
     const [payments, setPayments] = useState<{ metode: 'TUNAI' | 'TRANSFER', nominal: string, kas_jenis?: KasBankJenis }[]>([
         { metode: 'TUNAI', nominal: '', kas_jenis: 'KAS_UNIT_MOBIL' }
@@ -143,6 +144,7 @@ export default function PencairanInvestorScreen() {
     };
 
     const handleOpenModal = (item: any, mode: 'DISBURSE' | 'WITHDRAW' = 'DISBURSE') => {
+        setTanggal('');
         if (mode === 'WITHDRAW') {
             setSelectedMobilId(item.id);
             setSelectedId(null);
@@ -165,6 +167,10 @@ export default function PencairanInvestorScreen() {
 
     const handleProcessDisbursement = async () => {
         if (!selectedId) return;
+        if (!tanggal) {
+            showAlert('Validasi', 'Tanggal transaksi wajib diisi', 'error');
+            return;
+        }
 
         try {
             const requestData: any = {
@@ -211,6 +217,10 @@ export default function PencairanInvestorScreen() {
 
     const handleProcessWithdrawal = async () => {
         if (!selectedMobilId) return;
+        if (!tanggal) {
+            showAlert('Validasi', 'Tanggal transaksi wajib diisi', 'error');
+            return;
+        }
 
         try {
             const requestData: any = {
@@ -570,12 +580,12 @@ export default function PencairanInvestorScreen() {
 
                 <View className="flex-row gap-4 mb-6">
                     <View className="flex-1">
-                        <Input
+                        <DatePicker
                             label={isWithdraw ? 'Tanggal Tarik' : 'Tanggal Cair'}
-                            placeholder="YYYY-MM-DD"
+                            placeholder="Pilih Tanggal (YYYY-MM-DD)"
                             value={tanggal}
-                            onChangeText={(text) => setTanggal(text)}
-                            startIcon={<Calendar size={18} color="#9CA3AF" />}
+                            onChange={setTanggal}
+                            required
                             containerClassName="mb-0"
                         />
                     </View>
