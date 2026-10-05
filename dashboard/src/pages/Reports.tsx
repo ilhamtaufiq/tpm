@@ -469,6 +469,13 @@ export function Neraca() {
             <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Persediaan & Stok</p>
             <div className="pl-3">
               <FinancialRow label="Persediaan Sparepart" value={al.persediaan_sparepart} small />
+              {(al.revaluasi_sparepart_belum_terealisasi || 0) !== 0 && (
+                <div className="mb-1">
+                  <FinancialRow label="Nilai daftar stok (harga beli terbaru)" value={al.persediaan_sparepart_harga_terbaru || 0} small indent />
+                  <FinancialRow label="Selisih harga beli stok lama" value={al.revaluasi_sparepart_belum_terealisasi || 0} small indent />
+                  <p className="pl-6 text-[11px] text-slate-400">Stok lama tetap dinilai harga waktu dibeli. Selisihnya masuk Perubahan Modal saat stok lama terjual.</p>
+                </div>
+              )}
               <Drill spec={drillStokSparepart()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="nilai" total={al.persediaan_sparepart} />
               <FinancialRow label="Stok Mobil (Inventory)" value={stokAdj} small />
               <Drill spec={drillStokMobil()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="nilai_total" total={stokAdj} />

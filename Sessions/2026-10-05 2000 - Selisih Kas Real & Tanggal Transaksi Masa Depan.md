@@ -29,6 +29,9 @@ Feedback produksi 5 Okt: selisih neraca −460.200 vs real = kas/bank −455.500
 - Frontend/dashboard: semua default tanggal pakai `getTodayString()` (lokal), termasuk tombol "Hari Ini" `DatePicker` (commit 3da2019 masih UTC).
 - Skrip `scripts/fix_tanggal_masa_depan.py` (dry-run default, `--apply`) set `tanggal = DATE(created_at)` + `rebuild_balances`. Diuji di backup 19:22: 22 baris, Neraca tetap balance, kas = Σ mutasi (kas 1.649.500, bank 633.525.080,67).
 
+- Neraca menampilkan nilai daftar stok (harga beli terbaru) dan selisih harga beli stok lama di bawah Persediaan Sparepart (app, PDF, dashboard) agar −4.700 terlihat tanpa menunggu part terjual. Perhitungan tidak berubah (opsi aman).
+- Backup 21:19: semua 22 baris sudah dipindah ke 05-10 tetapi user tetap melaporkan −455.500 — perlu angka real per akun (kas, BCA, BRI) dan layar aplikasi yang dibandingkan.
+
 ## Verifikasi
 
 - `pytest tests` di backup produksi: 80 passed, 2 skipped (+16 tes baru).

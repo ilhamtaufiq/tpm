@@ -95,6 +95,10 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 </tr>
                 `).join('')}
                 <tr><td>Persediaan Sparepart</td><td class="amount">${formatCurrency(data.aktiva_lancar.persediaan_sparepart)}</td></tr>
+                ${(data.aktiva_lancar.revaluasi_sparepart_belum_terealisasi || 0) !== 0 ? `
+                <tr class="sub-item"><td>Nilai daftar stok (harga beli terbaru)</td><td class="amount">${formatCurrency(data.aktiva_lancar.persediaan_sparepart_harga_terbaru || 0)}</td></tr>
+                <tr class="sub-item"><td>Selisih harga beli stok lama (masuk modal saat terjual)</td><td class="amount">${formatCurrency(data.aktiva_lancar.revaluasi_sparepart_belum_terealisasi || 0)}</td></tr>
+                ` : ''}
                 <tr><td>Stok Unit Mobil (Inventory)</td><td class="amount">${formatCurrency(data.aktiva_lancar.stok_mobil)}</td></tr>
                 ${(data.aktiva_lancar.stok_mobil || 0) > 0 ? `
                 <tr class="sub-item"><td>Harga Beli Unit Mobil</td><td class="amount">${formatCurrency(stockBreakdown.harga_beli || data.aktiva_lancar.stok_mobil)}</td></tr>
