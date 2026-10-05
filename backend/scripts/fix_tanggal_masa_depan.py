@@ -16,6 +16,8 @@ Pemakaian (dari folder backend/):
     python scripts/fix_tanggal_masa_depan.py --apply             # perbaiki semua kandidat
     python scripts/fix_tanggal_masa_depan.py --apply --tanggal 2026-10-06
                                                                  # hanya baris bertanggal itu
+    python scripts/fix_tanggal_masa_depan.py --apply --kecuali kas_bank:30,35,36 pengeluaran_bengkel:16,17
+                                                                 # baris yang memang milik tanggal itu dilewati
 """
 import argparse
 import os
@@ -56,13 +58,19 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--apply', action='store_true', help='Tulis perbaikan (default: deteksi saja)')
     parser.add_argument('--tanggal', help='Batasi ke baris bertanggal ini (YYYY-MM-DD)')
+    parser.add_argument('--kecuali', nargs='*', default=[], metavar='TABEL:ID,ID',
+                        help='Lewati baris ini (transaksi yang memang milik tanggal tersebut)')
     args = parser.parse_args()
+    kecuali = {}
+    for item in args.kecuali:
+        tabel, _, ids = item.partition(':')
+        kecuali.setdefault(tabel, set()).update(int(i) for i in ids.split(',') if i)
 
     db = SessionLocal()
     try:
         total = 0
         for tabel in tabel_bertanggal(db):
-            rows = kandidat(db, tabel, args.tanggal)
+            rows = [r for r in kandidat(db, tabel, args.tanggal) if r.id not in kecuali.get(tabel, ())]
             if not rows:
                 continue
             total += len(rows)

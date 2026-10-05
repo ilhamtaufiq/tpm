@@ -21,6 +21,8 @@ Feedback produksi 5 Okt: selisih neraca −460.200 vs real = kas/bank −455.500
 - **Kas/bank**: 22 baris (kas_bank 12, pengeluaran 5, piutang 2, hutang 1, pembayaran hutang 2) diinput 5 Okt sejak 15:06 tetapi bertanggal **06-10** → tidak terhitung di Neraca 5 Okt (bersih −894.000; bank −2.505.500, kas +1.611.500). Server/pembelian tetap 05-10, jadi tanggal maju berasal dari perangkat/form, bukan backend.
 - Sebelumnya (12:52) selisih persediaan 5.000 = nota BGL2610050001 memakai TUTUP RADIATOR KCL (45rb) padahal fisik BSR (50rb); dikoreksi user lewat edit nota.
 
+- **Selisih kas/bank −455.500 terjelaskan penuh**: transaksi yang nyata terjadi 5 Okt tapi bertanggal 06-10 = piutang A Sandi 50.000 + token 203.000 + admin 2.500 + bus Sanggar 150.000 (= −405.500 saat lapor 15:43) + piutang Mang Las 50.000 (= −455.500). Belum terjadi di real: bayar hutang Shroud 240.000, makan sore 183.500, admin tarik tunai 15.000 (total 438.500). Koreksi selektif (`--kecuali kas_bank:30,35,36 pengeluaran_bengkel:16,17 pembayaran_hutang:2`) → kas+bank sistem 635.613.080,67 = real.
+
 ## Keputusan
 
 - Backend: `TanggalTransaksi` (schema input) tolak tanggal > hari ini WIB (422); `KasBankService.create` tolak 400 (ikut transfer & adjust).
