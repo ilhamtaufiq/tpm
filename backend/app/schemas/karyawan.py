@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Optional, List, Dict, Any
 
 from pydantic import BaseModel, Field
+from app.schemas.tanggal import TanggalTransaksi, OptionalTanggalTransaksi
 
 from app.utils.constants import (
     AttendanceStatus,
@@ -248,7 +249,7 @@ class KasbonCreate(BaseModel):
     """Schema for creating employee advance."""
 
     karyawan_id: int
-    tanggal: date
+    tanggal: TanggalTransaksi
     nominal: Decimal = Field(..., gt=0)
     keterangan: Optional[str] = None
     metode_bayar: Optional[PaymentMethod] = None

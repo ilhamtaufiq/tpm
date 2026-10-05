@@ -11,7 +11,7 @@ import { BoundedSheetPanel, BoundedSheetScrollView } from '../ui/BottomSheetCont
 import { useArmadaDetail } from '../../hooks/useJasaAngkut';
 import { useVoidTransaksiBengkel } from '../../hooks/useBengkel';
 import { useUIStore } from '../../store/useUIStore';
-import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
+import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString } from '../../utils/format';
 import { getErrorMessage } from '../../utils/error';
 import { isBengkelTransactionLocked, isBengkelTransactionVoided } from '../../utils/bengkelTransaction';
 import { AlertDialog } from '../ui/AlertDialog';
@@ -71,7 +71,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
     });
 
     const [expenseForm, setExpenseForm] = useState({
-        tanggal: new Date().toISOString().split('T')[0],
+        tanggal: getTodayString(),
         deskripsi: '',
         jumlah: '',
         catatan: '',
@@ -157,7 +157,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
             });
             setShowExpenseModal(false);
             setExpenseForm({
-                tanggal: new Date().toISOString().split('T')[0],
+                tanggal: getTodayString(),
                 deskripsi: '',
                 jumlah: '',
                 catatan: '',

@@ -1,7 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { dashboardService, financeService, reportService, stockService } from '../api/services';
 
-export const todayISO = () => new Date().toISOString().slice(0, 10);
+// Tanggal lokal perangkat (WIB) — toISOString() memberi tanggal UTC yang mundur sehari sebelum 07:00.
+export const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 export const monthStartISO = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;

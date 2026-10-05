@@ -29,7 +29,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, getTodayString } from '../../utils/format';
 import { Header } from '../../components/ui/Header';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -109,7 +109,7 @@ export default function AkunKeuanganScreen() {
     const [isAdjustModalVisible, setIsAdjustModalVisible] = useState(false);
     const [newNominal, setNewNominal] = useState('');
     const [keterangan, setKeterangan] = useState('');
-    const [adjustmentDate, setAdjustmentDate] = useState(new Date().toISOString().split('T')[0]);
+    const [adjustmentDate, setAdjustmentDate] = useState(getTodayString());
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Alert state

@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Optional, List
 
 from pydantic import BaseModel, Field
+from app.schemas.tanggal import TanggalTransaksi, OptionalTanggalTransaksi
 
 from app.utils.constants import (
     PaymentStatus, 
@@ -169,7 +170,7 @@ class DetailPembelianCreate(BaseModel):
 class PembelianSparePartCreate(BaseModel):
     """Schema for creating spare part purchase."""
 
-    tanggal: date
+    tanggal: TanggalTransaksi
     supplier_id: int
     nomor_faktur: Optional[str] = Field(None, max_length=50)
     detail: List[DetailPembelianCreate] = Field(..., min_length=1)
@@ -278,7 +279,7 @@ class DetailServiceCreate(BaseModel):
 class TransaksiBengkelCreate(BaseModel):
     """Schema for creating workshop transaction."""
 
-    tanggal: Optional[date] = None
+    tanggal: OptionalTanggalTransaksi = None
     customer_id: Optional[int] = None
     nama_customer: Optional[str] = Field(None, max_length=100)
     nomor_plat: Optional[str] = Field(None, max_length=15)
@@ -303,7 +304,7 @@ class TransaksiBengkelCreate(BaseModel):
 class TransaksiBengkelUpdate(BaseModel):
     """Schema for updating workshop transaction."""
 
-    tanggal: Optional[date] = None
+    tanggal: OptionalTanggalTransaksi = None
     customer_id: Optional[int] = None
     nama_customer: Optional[str] = Field(None, max_length=100)
     nomor_plat: Optional[str] = Field(None, max_length=15)
@@ -432,7 +433,7 @@ class PaymentUpdate(BaseModel):
 class PengeluaranBengkelCreate(BaseModel):
     """Schema for creating workshop expense."""
 
-    tanggal: date
+    tanggal: TanggalTransaksi
     bisnis_kategori: str = "umum"
     muatan_id: Optional[int] = None
     armada_id: Optional[int] = None
@@ -449,7 +450,7 @@ class PengeluaranBengkelCreate(BaseModel):
 class PengeluaranBengkelUpdate(BaseModel):
     """Schema for updating workshop expense."""
 
-    tanggal: Optional[date] = None
+    tanggal: OptionalTanggalTransaksi = None
     bisnis_kategori: Optional[str] = None
     muatan_id: Optional[int] = None
     armada_id: Optional[int] = None

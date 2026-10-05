@@ -22,7 +22,7 @@ import {
 import { useRouter } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { sdmService, Kasbon, KasbonSummary, PaymentStatus, Karyawan } from '../../services/sdm';
-import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
+import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString } from '../../utils/format';
 import { useAlert } from '../../context/AlertContext';
 import { getErrorMessage } from '../../utils/error';
 import { PaymentModal } from '../../components/PaymentModal';
@@ -196,7 +196,7 @@ export default function KasbonScreen() {
 
             await sdmService.createKasbon({
                 karyawan_id: formData.karyawan_id,
-                tanggal: new Date().toISOString().split('T')[0],
+                tanggal: getTodayString(),
                 nominal: nominalTotal,
                 metode_bayar: formData.metode_bayar as any,
                 unit,

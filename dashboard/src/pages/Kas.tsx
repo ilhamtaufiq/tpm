@@ -12,8 +12,9 @@ type Row = Record<string, unknown>;
 const num = (v: unknown) => (typeof v === 'number' ? v : parseFloat(String(v ?? '0')) || 0);
 const str = (v: unknown, fb = '-') => (v === null || v === undefined || v === '' ? fb : String(v));
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
-const monthISO = (d: Date) => d.toISOString().slice(0, 7);
+// Tanggal lokal (WIB), bukan UTC dari toISOString().
+const monthISO = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+const todayISO = (d: Date = new Date()) => `${monthISO(d)}-${String(d.getDate()).padStart(2, '0')}`;
 
 const periodRange = (mode: 'harian' | 'bulanan' | 'tahunan', val: string) => {
   if (mode === 'harian') return { dari: val, sampai: val };

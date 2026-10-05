@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Optional, List
 
 from pydantic import BaseModel, Field
+from app.schemas.tanggal import TanggalTransaksi, OptionalTanggalTransaksi
 
 from app.utils.constants import (
     PiutangStatus,
@@ -38,7 +39,7 @@ class PaymentDetail(BaseModel):
 class PiutangCreate(BaseModel):
     """Schema for creating receivable."""
 
-    tanggal: date
+    tanggal: TanggalTransaksi
     sumber: PiutangSource
     referensi_id: Optional[int] = None
     nomor_referensi: Optional[str] = Field(None, max_length=30)
@@ -122,7 +123,7 @@ class PiutangSummary(BaseModel):
 class HutangCreate(BaseModel):
     """Schema for creating payable."""
 
-    tanggal: date
+    tanggal: TanggalTransaksi
     sumber: HutangSource
     referensi_id: Optional[int] = None
     nomor_referensi: Optional[str] = Field(None, max_length=30)
@@ -205,7 +206,7 @@ class PembayaranPiutangCreate(BaseModel):
     """Schema for creating receivable payment."""
 
     piutang_id: int
-    tanggal: date
+    tanggal: TanggalTransaksi
     nominal: Decimal = Field(..., gt=0)
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
     kas_jenis: Optional[KasBankJenis] = None
@@ -217,7 +218,7 @@ class PembayaranPiutangSplit(BaseModel):
     """Schema for processing multiple payments for a receivable at once."""
 
     piutang_id: int
-    tanggal: date
+    tanggal: TanggalTransaksi
     payments: List[PaymentDetail]
     catatan: Optional[str] = None
 
@@ -244,7 +245,7 @@ class PembayaranHutangCreate(BaseModel):
     """Schema for creating payable payment."""
 
     hutang_id: int
-    tanggal: date
+    tanggal: TanggalTransaksi
     nominal: Decimal = Field(..., gt=0)
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
     catatan: Optional[str] = None
@@ -254,7 +255,7 @@ class PembayaranHutangSplit(BaseModel):
     """Schema for processing multiple payments for a payable at once."""
 
     hutang_id: int
-    tanggal: date
+    tanggal: TanggalTransaksi
     payments: List[PaymentDetail]
     catatan: Optional[str] = None
 
@@ -361,7 +362,7 @@ class KasBankAllSummary(BaseModel):
 class AssetCreate(BaseModel):
     """Schema for creating asset."""
 
-    tanggal_beli: date
+    tanggal_beli: TanggalTransaksi
     nama: str = Field(..., min_length=2, max_length=100)
     kategori: AssetCategory = AssetCategory.PERALATAN
     harga_beli: Decimal = Field(..., gt=0)

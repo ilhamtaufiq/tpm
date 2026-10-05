@@ -9,6 +9,7 @@ import { Card } from '../../../components/ui/Card';
 import { jasaAngkutService } from '../../../services/jasaAngkut';
 import { AlertDialog } from '../../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../../utils/error';
+import { getTodayString } from '../../../utils/format';
 
 export default function SupirFormScreen() {
     const router = useRouter();
@@ -25,7 +26,7 @@ export default function SupirFormScreen() {
         telepon: '',
         nomor_sim: '',
         jenis_sim: 'B1',
-        tanggal_bergabung: new Date().toISOString().split('T')[0],
+        tanggal_bergabung: getTodayString(),
         armada_default_id: '',
         nopol_kendaraan: '',
         info_kendaraan: '',

@@ -40,7 +40,7 @@ import { useRouter, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, isValid, parse } from 'date-fns';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatCurrency, formatDate, getTodayString } from '../../utils/format';
 import { Muatan, jasaAngkutService } from '../../services/jasaAngkut';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import {
@@ -1042,7 +1042,7 @@ export default function JasaAngkutScreen() {
                                 }
 
                                 try {
-                                    const tanggal = new Date().toISOString().split('T')[0];
+                                    const tanggal = getTodayString();
                                     const nominal = parseNumber(expenseAmount);
                                     let result;
 

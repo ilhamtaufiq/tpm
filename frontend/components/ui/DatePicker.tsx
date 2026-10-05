@@ -4,6 +4,7 @@ import { Calendar as LucideCalendar, X, RotateCcw } from 'lucide-react-native';
 import { Calendar } from 'react-native-calendars';
 import { cn } from './Card';
 import { usePlaceholderColor } from '../../utils/themeStyles';
+import { getTodayString } from '../../utils/format';
 
 interface DatePickerProps {
     label?: string;
@@ -28,7 +29,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     const [modalVisible, setModalVisible] = useState(false);
 
     const handleToday = () => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getTodayString();
         onChange(today);
         setModalVisible(false);
     };
@@ -146,7 +147,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                         </View>
 
                         <Calendar
-                            current={value || new Date().toISOString().split('T')[0]}
+                            current={value || getTodayString()}
                             onDayPress={(day: { dateString: string }) => {
                                 onChange(day.dateString);
                                 setModalVisible(false);

@@ -228,7 +228,7 @@ export default function MutasiKasScreen() {
                 dari: transferForm.dari,
                 ke: transferForm.ke,
                 nominal: parseNumber(transferForm.nominal),
-                tanggal: new Date().toISOString().split('T')[0],
+                tanggal: getTodayString(),
                 keterangan: transferForm.keterangan,
                 allow_negative: transferForm.allow_negative,
             };

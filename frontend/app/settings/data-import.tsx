@@ -30,6 +30,7 @@ import * as Sharing from 'expo-sharing';
 import { getErrorMessage } from '../../utils/error';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { getTodayString } from '../../utils/format';
 
 type PickedFile =
     | File
@@ -82,7 +83,7 @@ export default function DataImportScreen() {
     const handleDownloadTemplate = async () => {
         try {
             setBusy('template');
-            const filename = `TPM_IMPORT_TEMPLATE_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            const filename = `TPM_IMPORT_TEMPLATE_${getTodayString()}.xlsx`;
 
             if (Platform.OS === 'web') {
                 const data = await dataImportService.downloadTemplate();

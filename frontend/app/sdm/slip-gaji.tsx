@@ -25,7 +25,7 @@ import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom
 import { Calendar as RNCalendar } from 'react-native-calendars';
 import { useQuery } from '@tanstack/react-query';
 import { SlipGaji, SlipGajiPreviewItem, PaymentStatus, sdmService } from '../../services/sdm';
-import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
+import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString } from '../../utils/format';
 import { usePayrollList, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange, useVoidSlipGajiPayment, useDeletePayroll } from '../../hooks/useSDM';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
@@ -51,7 +51,7 @@ const getStartDateOfWeek = (w: number, y: number) => {
         ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
     else
         ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
-    return ISOweekStart.toISOString().split('T')[0];
+    return getTodayString(ISOweekStart);
 };
 
 const getDayName = (dateString: string): string => {
@@ -87,8 +87,8 @@ export default function SlipGajiScreen() {
         const saturday = new Date(monday);
         saturday.setDate(monday.getDate() + 5);
         return {
-            start: monday.toISOString().split('T')[0],
-            end: saturday.toISOString().split('T')[0]
+            start: getTodayString(monday),
+            end: getTodayString(saturday)
         };
     };
 
@@ -98,7 +98,7 @@ export default function SlipGajiScreen() {
     const [datePickingMode, setDatePickingMode] = useState<'start' | 'end' | 'slip'>('slip');
 
     // The "Tanggal Slip" user chooses
-    const [slipDate, setSlipDate] = useState(now.toISOString().split('T')[0]);
+    const [slipDate, setSlipDate] = useState(getTodayString(now));
 
     // Local state for edits
     const [attendanceEdits, setAttendanceEdits] = useState<Record<number, number>>({});

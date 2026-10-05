@@ -28,7 +28,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { keuanganService } from '../../services/keuangan';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, getTodayString } from '../../utils/format';
 import { Header } from '../../components/ui/Header';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,7 +60,7 @@ export default function LaporanKeuanganScreen() {
     // Setup Modal state
     const [isSetupModalVisible, setIsSetupModalVisible] = useState(false);
     const [setupForm, setSetupForm] = useState({
-        tanggal: new Date().toISOString().split('T')[0],
+        tanggal: getTodayString(),
         modal_awal: '',
         bca: '',
         kas_tunai: '',

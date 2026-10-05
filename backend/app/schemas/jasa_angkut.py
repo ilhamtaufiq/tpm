@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Optional, List
 
 from pydantic import BaseModel, Field
+from app.schemas.tanggal import TanggalTransaksi, OptionalTanggalTransaksi
 
 from app.utils.constants import PaymentStatus, PaymentMethod, MuatanStatus, KasBankJenis
 from app.schemas.keuangan import PaymentDetail, PembayaranPiutangResponse
@@ -30,7 +31,7 @@ class ArmadaCreate(ArmadaBase):
 
 class ArmadaExpenseCreate(BaseModel):
     """Schema for adding an expense to an armada."""
-    tanggal: date
+    tanggal: TanggalTransaksi
     kategori: str = "Operasional"
     deskripsi: str = Field(..., min_length=1, max_length=255)
     jumlah: Decimal = Field(..., ge=0)
@@ -185,7 +186,7 @@ class PartServiceResponse(BaseModel):
 class MuatanCreate(BaseModel):
     """Schema for creating transport load."""
 
-    tanggal: date
+    tanggal: TanggalTransaksi
     supir_id: Optional[int] = None
     supir_nama: Optional[str] = Field(None, max_length=1000)
     armada_id: Optional[int] = None
@@ -226,7 +227,7 @@ class MuatanCreate(BaseModel):
 class MuatanUpdate(BaseModel):
     """Schema for updating transport load."""
 
-    tanggal: Optional[date] = None
+    tanggal: OptionalTanggalTransaksi = None
     supir_id: Optional[int] = None
     supir_nama: Optional[str] = Field(None, max_length=100)
     armada_id: Optional[int] = None
@@ -312,7 +313,7 @@ class MuatanResponse(BaseModel):
 class MuatanPaymentSplit(BaseModel):
     """Schema for split payment of transport load."""
     muatan_id: int
-    tanggal: date
+    tanggal: TanggalTransaksi
     payments: List[PaymentDetail]
     catatan: Optional[str] = None
 
