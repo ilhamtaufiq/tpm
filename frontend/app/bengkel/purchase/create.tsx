@@ -30,7 +30,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../../services/offlineQueue';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { useCreatePembelianParts, useSparePartsList, useUpdatePembelianParts } from '../../../hooks/useBengkel';
-import { formatNumber, parseNumber, formatCurrency } from '../../../utils/format';
+import { formatNumber, parseNumber, formatCurrency, getTodayString } from '../../../utils/format';
 import { findSparePartByBarcode } from '../../../utils/barcodeScan';
 import { bengkelService } from '../../../services/bengkel';
 import { useDebounce } from '../../../hooks';
@@ -360,7 +360,7 @@ export default function PurchaseScreen() {
         }
 
         const payload = {
-            tanggal: tanggal.toISOString().split('T')[0],
+            tanggal: getTodayString(tanggal),
             supplier_id: selectedSupplier.id,
             nomor_faktur: nomorFaktur || '-',
             catatan: catatan,

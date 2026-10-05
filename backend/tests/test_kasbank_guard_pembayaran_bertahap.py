@@ -15,7 +15,7 @@ from app.schemas.keuangan import KasBankCreate
 from app.services.kas_bank_service import KasBankService
 from app.utils.constants import KasBankJenis, KasBankSource, KasBankType, PaymentMethod
 
-HARI = date(2099, 1, 2)
+HARI = date(2000, 1, 2)  # lampau: tanggal masa depan kini ditolak
 
 
 def _data(nominal, ket):

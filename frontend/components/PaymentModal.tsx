@@ -9,7 +9,7 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Plus, Trash2, X, Banknote, CreditCard, Wallet, CircleDollarSign, Building2, Store, ArrowUpRight } from 'lucide-react-native';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
+import { formatCurrency, formatNumber, parseNumber, getTodayString } from '../utils/format';
 import { useProcessPaymentSplit, useProcessHutangPaymentSplit } from '../hooks/useKeuangan';
 import { getErrorMessage } from '../utils/error';
 import { keuanganService } from '../services/keuangan';
@@ -183,7 +183,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         try {
             setLoading(true);
             const payload: any = {
-                tanggal: new Date().toISOString().split('T')[0],
+                tanggal: getTodayString(),
                 payments: validatedPayments,
                 catatan: paymentNote || undefined,
             };

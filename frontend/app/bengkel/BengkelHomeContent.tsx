@@ -58,7 +58,7 @@ import { id as localeID } from 'date-fns/locale';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
 import { buildBengkelPrintData } from '../../utils/buildPrintReceiptData';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
-import { formatCurrency, formatNumber, formatQty, parseNumber } from '../../utils/format';
+import { formatCurrency, formatNumber, formatQty, parseNumber, getTodayString } from '../../utils/format';
 import {
     buildSoldMobilIdSet,
     formatBengkelWorkStatusLabel,
@@ -1768,7 +1768,7 @@ export default function BengkelScreen() {
                                 try {
                                     if (expenseMode === 'KELUAR') {
                                         await createExpenseMutation.mutateAsync({
-                                            tanggal: new Date().toISOString().split('T')[0],
+                                            tanggal: getTodayString(),
                                             jumlah: parseNumber(expenseAmount),
                                             deskripsi: expenseNote,
                                             metode_bayar: expensePaymentMethod === 'BANK_UTAMA' ? 'TRANSFER' : 'TUNAI',
@@ -1782,13 +1782,13 @@ export default function BengkelScreen() {
                                             dari: 'KAS_UTAMA',
                                             ke: 'KAS_UNIT_BENGKEL',
                                             nominal: parseNumber(expenseAmount),
-                                            tanggal: new Date().toISOString().split('T')[0],
+                                            tanggal: getTodayString(),
                                             keterangan: expenseNote
                                         });
                                     } else if (expenseMode === 'PIUTANG') {
                                         // CREATE PIUTANG (Money out from Unit)
                                         await createPiutangMutation.mutateAsync({
-                                            tanggal: new Date().toISOString().split('T')[0],
+                                            tanggal: getTodayString(),
                                             sumber: expensePiutangType === 'KASBON' ? 'KASBON_KARYAWAN' : 'LAINNYA',
                                             unit: 'BENGKEL',
                                             nama_debitur: debiturName,
@@ -1809,7 +1809,7 @@ export default function BengkelScreen() {
                                             dari: 'KAS_UNIT_BENGKEL',
                                             ke: expensePaymentMethod as any,
                                             nominal: parseNumber(expenseAmount),
-                                            tanggal: new Date().toISOString().split('T')[0],
+                                            tanggal: getTodayString(),
                                             keterangan: expenseNote
                                         });
                                     }

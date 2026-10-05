@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Optional, List
 
 from pydantic import BaseModel, Field
+from app.schemas.tanggal import TanggalTransaksi, OptionalTanggalTransaksi
 
 from app.utils.constants import (
     CarStatus,
@@ -73,7 +74,7 @@ class MobilUpdate(BaseModel):
     persentase_investor: Optional[Decimal] = None
     nominal_investor: Optional[Decimal] = None
     status: Optional[CarStatus] = None
-    tanggal_masuk: Optional[date] = None
+    tanggal_masuk: OptionalTanggalTransaksi = None
     catatan: Optional[str] = None
     investor_kas_jenis: Optional[KasBankJenis] = None
 
@@ -106,7 +107,7 @@ class MobilResponse(MobilBase):
 class BiayaItem(BaseModel):
     keterangan: str
     nominal: Decimal
-    tanggal: Optional[date] = None
+    tanggal: OptionalTanggalTransaksi = None
 
 class PaymentItem(BaseModel):
     metode: PaymentMethod
@@ -115,7 +116,7 @@ class PaymentItem(BaseModel):
     catatan: Optional[str] = None
 
 class TransaksiMobilCreate(BaseModel):
-    tanggal: date
+    tanggal: TanggalTransaksi
     mobil_id: int
     customer_id: Optional[int] = None
     nama_pembeli: str = Field(..., min_length=2, max_length=100)
@@ -247,7 +248,7 @@ class MobilList(BaseModel):
 # MobilMediaResponse was moved up
 
 class MobilBiayaCreate(BaseModel):
-    tanggal: date
+    tanggal: TanggalTransaksi
     kategori: str
     deskripsi: str
     jumlah: Decimal = Field(..., ge=0)
@@ -257,7 +258,7 @@ class MobilBiayaCreate(BaseModel):
     catatan: Optional[str] = None
 
 class MobilPartServiceCreate(BaseModel):
-    tanggal: date
+    tanggal: TanggalTransaksi
     tipe: str
     deskripsi: str
     qty: int = Field(..., ge=1)

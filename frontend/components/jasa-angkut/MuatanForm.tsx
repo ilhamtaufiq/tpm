@@ -7,7 +7,7 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { ProfitSplitCard } from './ProfitSplitCard';
 import { jasaAngkutService, Supir, Armada } from '../../services/jasaAngkut';
-import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
+import { formatCurrency, formatNumber, parseNumber, getTodayString } from '../../utils/format';
 import { Plus, Trash2, Truck, PlusCircle, MapPin, ArrowRight } from 'lucide-react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from '../ui/AlertDialog';
@@ -121,7 +121,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
         if (initialData) {
             setFormData({
-                tanggal: initialData.tanggal?.split('T')[0] || new Date().toISOString().split('T')[0],
+                tanggal: initialData.tanggal?.split('T')[0] || getTodayString(),
                 supir_id: initialData.supir_id?.toString() || '',
                 supir_nama: initialData.supir_nama || initialData.supir_nama_manual || '',
                 armada_id: initialData.armada_id?.toString() || '',

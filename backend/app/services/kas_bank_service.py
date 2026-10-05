@@ -9,6 +9,7 @@ from fastapi import HTTPException, status
 
 from app.models.keuangan import KasBank
 from app.schemas.keuangan import KasBankCreate
+from app.utils.helpers import pesan_tanggal_masa_depan
 from app.utils.constants import (
     KasBankType,
     KasBankSource,
@@ -131,6 +132,12 @@ class KasBankService:
         commit: bool = True,
     ) -> KasBank:
         """Create a new cash/bank transaction."""
+        # Kas bertanggal besok tidak terhitung di saldo/Neraca hari ini ->
+        # saldo sistem diam-diam beda dengan real. Tolak di sumbernya.
+        pesan_tanggal = pesan_tanggal_masa_depan(data.tanggal)
+        if pesan_tanggal:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=pesan_tanggal)
+
         # Guard anti double-input: identitas (jenis, tipe, sumber, nominal,
         # tanggal) yang sama persis sudah ada -> tolak. Bug nyata: sync
         # BENGKEL 2026-09-26 19:46 meng-insert ulang 37 baris riwayat yang

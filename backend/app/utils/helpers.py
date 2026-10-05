@@ -17,6 +17,30 @@ def get_jakarta_date() -> date:
     return get_jakarta_now().date()
 
 
+def pesan_tanggal_masa_depan(tanggal: date) -> Optional[str]:
+    """Pesan error bila `tanggal` melewati hari ini (WIB), selain itu None.
+
+    Transaksi bertanggal besok tidak masuk Neraca/Kas hari ini sehingga saldo
+    sistem diam-diam beda dengan saldo real (kasus 5 Okt 2026: perangkat
+    kasir mengirim tanggal 06-10).
+    """
+    hari_ini = get_jakarta_date()
+    if tanggal is not None and tanggal > hari_ini:
+        return (
+            f"Tanggal transaksi {tanggal.isoformat()} melewati hari ini "
+            f"({hari_ini.isoformat()} WIB). Periksa tanggal/jam perangkat."
+        )
+    return None
+
+
+def validasi_tanggal_transaksi(tanggal: Optional[date]) -> Optional[date]:
+    """Validator Pydantic: tolak tanggal transaksi di masa depan."""
+    pesan = pesan_tanggal_masa_depan(tanggal)
+    if pesan:
+        raise ValueError(pesan)
+    return tanggal
+
+
 def generate_transaction_number(prefix: str, sequence: int = None) -> str:
     """
     Generate a unique transaction number.

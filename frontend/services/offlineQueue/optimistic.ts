@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { OfflineQueueItem } from './types';
+import { getTodayString } from '../../utils/format';
 
 /**
  * Best-effort optimistic patches so offline writes appear in local lists
@@ -18,7 +19,7 @@ export function applyOptimisticPatch(queryClient: QueryClient, item: OfflineQueu
             const row = {
                 id: item.optimisticId,
                 nomor_transaksi: `OFF-${String(item.optimisticId).slice(-6)}`,
-                tanggal: (item.payload.tanggal as string) || new Date().toISOString().slice(0, 10),
+                tanggal: (item.payload.tanggal as string) || getTodayString(),
                 customer_nama: (item.payload.customer_nama as string) || 'Offline',
                 plat_nomor: (item.payload.plat_nomor as string) || '-',
                 total_biaya: (item.payload.total_biaya as number) ?? 0,
@@ -42,7 +43,7 @@ export function applyOptimisticPatch(queryClient: QueryClient, item: OfflineQueu
             const row = {
                 id: item.optimisticId,
                 nomor_transaksi: `OFF-P-${String(item.optimisticId).slice(-6)}`,
-                tanggal: (item.payload.tanggal as string) || new Date().toISOString().slice(0, 10),
+                tanggal: (item.payload.tanggal as string) || getTodayString(),
                 total_biaya: (item.payload.total_biaya as number) ?? 0,
                 status_bayar: (item.payload.status_bayar as string) || 'BELUM_LUNAS',
                 ...flag,
@@ -53,7 +54,7 @@ export function applyOptimisticPatch(queryClient: QueryClient, item: OfflineQueu
         case 'bengkel.createPengeluaran': {
             const row = {
                 id: item.optimisticId,
-                tanggal: (item.payload.tanggal as string) || new Date().toISOString().slice(0, 10),
+                tanggal: (item.payload.tanggal as string) || getTodayString(),
                 jumlah: (item.payload.jumlah as number) ?? 0,
                 deskripsi: (item.payload.deskripsi as string) || item.label,
                 kategori: (item.payload.kategori as string) || 'LAINNYA',
@@ -81,7 +82,7 @@ export function applyOptimisticPatch(queryClient: QueryClient, item: OfflineQueu
                 id: item.optimisticId,
                 nama_debitur: (item.payload.nama_debitur as string) || 'Offline',
                 nominal_piutang: (item.payload.nominal_piutang as number) ?? 0,
-                tanggal: (item.payload.tanggal as string) || new Date().toISOString().slice(0, 10),
+                tanggal: (item.payload.tanggal as string) || getTodayString(),
                 sisa_piutang: (item.payload.nominal_piutang as number) ?? 0,
                 ...flag,
             };
@@ -93,7 +94,7 @@ export function applyOptimisticPatch(queryClient: QueryClient, item: OfflineQueu
                 id: item.optimisticId,
                 nama_kreditur: (item.payload.nama_kreditur as string) || 'Offline',
                 nominal_hutang: (item.payload.nominal_hutang as number) ?? 0,
-                tanggal: (item.payload.tanggal as string) || new Date().toISOString().slice(0, 10),
+                tanggal: (item.payload.tanggal as string) || getTodayString(),
                 sisa_hutang: (item.payload.nominal_hutang as number) ?? 0,
                 ...flag,
             };
@@ -137,7 +138,7 @@ export function applyOptimisticPatch(queryClient: QueryClient, item: OfflineQueu
             const row = {
                 id: item.optimisticId,
                 nomor_muatan: `OFF-M-${String(item.optimisticId).slice(-6)}`,
-                tanggal: (item.payload.tanggal as string) || new Date().toISOString().slice(0, 10),
+                tanggal: (item.payload.tanggal as string) || getTodayString(),
                 status: (item.payload.status as string) || 'DRAFT',
                 ...flag,
             };

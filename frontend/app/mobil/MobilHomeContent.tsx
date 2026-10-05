@@ -52,7 +52,7 @@ import { FILE_URL } from '../../utils/api';
 import { useKasBankBalances, useUnitWalletHistory, useCreateTransaction, useTransfer, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 
 import { useCreatePengeluaran } from '../../hooks/useBengkel';
-import { formatCurrency, formatNumber, parseNumber, formatDate } from '../../utils/format';
+import { formatCurrency, formatNumber, parseNumber, formatDate, getTodayString } from '../../utils/format';
 import { Platform, Modal, TouchableOpacity, Share } from 'react-native';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
@@ -1127,7 +1127,7 @@ export default function MobilInventoryScreen() {
                                 try {
                                     if (expenseMode === 'KELUAR') {
                                         await createExpenseMutation.mutateAsync({
-                                            tanggal: new Date().toISOString().split('T')[0],
+                                            tanggal: getTodayString(),
                                             jumlah: parseNumber(expenseAmount),
                                             deskripsi: expenseNote,
                                             metode_bayar: expensePaymentMethod === 'BANK_UTAMA' ? 'TRANSFER' : 'TUNAI',
@@ -1140,13 +1140,13 @@ export default function MobilInventoryScreen() {
                                             dari: 'KAS_UTAMA',
                                             ke: 'KAS_UNIT_MOBIL',
                                             nominal: parseNumber(expenseAmount),
-                                            tanggal: new Date().toISOString().split('T')[0],
+                                            tanggal: getTodayString(),
                                             keterangan: expenseNote
                                         });
                                     } else if (expenseMode === 'PIUTANG') {
                                         // CREATE PIUTANG (Money out from Unit)
                                         await createPiutangMutation.mutateAsync({
-                                            tanggal: new Date().toISOString().split('T')[0],
+                                            tanggal: getTodayString(),
                                             sumber: expensePiutangType === 'KASBON' ? 'KASBON_KARYAWAN' : 'LAINNYA',
                                             unit: 'JUAL_BELI_MOBIL',
                                             nama_debitur: debiturName,
@@ -1167,7 +1167,7 @@ export default function MobilInventoryScreen() {
                                             dari: 'KAS_UNIT_MOBIL',
                                             ke: keAccount as any,
                                             nominal: parseNumber(expenseAmount),
-                                            tanggal: new Date().toISOString().split('T')[0],
+                                            tanggal: getTodayString(),
                                             keterangan: expenseNote
                                         });
                                     }

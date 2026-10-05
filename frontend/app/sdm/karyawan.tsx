@@ -26,7 +26,7 @@ import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop, BottomSheetTex
 import { Platform, Modal } from 'react-native';
 
 import { sdmService, Karyawan, EmployeeStatus } from '../../services/sdm';
-import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
+import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString } from '../../utils/format';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { useQueryClient } from '@tanstack/react-query';
@@ -182,7 +182,7 @@ export default function KaryawanScreen() {
             gaji_pokok: '',
             tunjangan: '',
             tanggal_lahir: '',
-            tanggal_bergabung: new Date().toISOString().split('T')[0],
+            tanggal_bergabung: getTodayString(),
             catatan: '',
         });
         setViewMode('form');
