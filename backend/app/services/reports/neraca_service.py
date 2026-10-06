@@ -431,6 +431,10 @@ class NeracaService(BaseReportService):
                 "piutang_lainnya": piutang_lainnya,
                 "total_piutang": total_piutang,
                 "persediaan_sparepart": total_stock_parts,
+                # Info saja (tidak masuk total): nilai daftar stok = stok x harga
+                # beli terbaru. Selisihnya = revaluasi stok lama yang belum terjual.
+                "persediaan_sparepart_harga_terbaru": total_stock_parts + reval_belum,
+                "revaluasi_sparepart_belum_terealisasi": reval_belum,
                 "stok_mobil": total_stock_mobil,
                 "stok_mobil_detail": raw_stock_mobil.get("details", []),
                 "total_aktiva_lancar": total_assets - total_fixed_assets

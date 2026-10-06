@@ -225,6 +225,13 @@ export default function NeracaScreen() {
                         </View>
                         <View className="w-full pl-3">
                             <FinancialRow label="Persediaan Sparepart" value={al.persediaan_sparepart} small />
+                            {(al.revaluasi_sparepart_belum_terealisasi || 0) !== 0 && (
+                                <View className="w-full mb-1">
+                                    <FinancialRow label="Nilai daftar stok (harga beli terbaru)" value={al.persediaan_sparepart_harga_terbaru || 0} small indent />
+                                    <FinancialRow label="Selisih harga beli stok lama" value={al.revaluasi_sparepart_belum_terealisasi || 0} small indent />
+                                    <Typography variant="caption" className="text-slate-400 text-[10px] mt-1 pl-3">Stok lama tetap dinilai harga waktu dibeli. Selisihnya masuk Perubahan Modal saat stok lama terjual.</Typography>
+                                </View>
+                            )}
                             <FinancialRow label="Stok Mobil (Inventory)" value={totalStokAdj} small />
                             {(totalStokAdj || 0) > 0 && (
                                 <View className="bg-amber-50/60 w-full p-3 rounded-xl border border-amber-100 mt-2">
