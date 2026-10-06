@@ -74,8 +74,8 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     });
 
     // Hooks for data fetching
-    const { data: activeArmada = [], isLoading: loadingArmada } = useActiveArmada(formData.tanggal);
-    const { data: activeDrivers = [], isLoading: loadingDrivers } = useActiveSupir();
+    const { data: activeArmada = [], isLoading: loadingArmada, isError: errorArmada } = useActiveArmada(formData.tanggal);
+    const { data: activeDrivers = [], isLoading: loadingDrivers, isError: errorDrivers } = useActiveSupir();
     const [activeSuggestionField, setActiveSuggestionField] = useState<{ index: number; field: 'asal' | 'tujuan' } | null>(null);
     const suggestionQuery = useMemo(() => {
         if (!activeSuggestionField) return '';
@@ -600,7 +600,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                     </Pressable>
                                                 ))
                                             ) : (
-                                                <Typography variant="caption" className="text-textGray italic mb-2 ml-1">Semua armada sedang bertugas</Typography>
+                                                <Typography variant="caption" className="text-textGray italic mb-2 ml-1">{errorArmada ? 'Gagal memuat daftar armada, coba muat ulang' : 'Semua armada sedang bertugas'}</Typography>
                                             )}
                                         </View>
                                         <Typography variant="caption" className="text-textGray italic ml-1">Atau cari armada lain di atas...</Typography>
@@ -697,7 +697,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                     </Pressable>
                                                 ))
                                             ) : (
-                                                <Typography variant="caption" className="text-textGray italic mb-2 ml-1">Semua supir sedang bertugas</Typography>
+                                                <Typography variant="caption" className="text-textGray italic mb-2 ml-1">{errorDrivers ? 'Gagal memuat daftar supir, coba muat ulang' : 'Semua supir sedang bertugas'}</Typography>
                                             )}
                                         </View>
                                         <Typography variant="caption" className="text-textGray italic ml-1 text-[10px]">Atau cari supir lain di atas...</Typography>

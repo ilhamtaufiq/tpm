@@ -211,7 +211,9 @@ export const jasaAngkutService = {
     },
 
     getActiveArmada: async (tanggal?: string) => {
-        const response = await api.get('/armada/active', { params: { tanggal } });
+        // Tanggal form muatan boleh kosong (wajib dipilih); `tanggal=` kosong ditolak 422
+        // oleh backend -> daftar armada kosong -> "Semua armada sedang bertugas".
+        const response = await api.get('/armada/active', { params: tanggal ? { tanggal } : undefined });
         return response.data;
     },
 
