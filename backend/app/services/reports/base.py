@@ -428,9 +428,11 @@ class BaseReportService:
             TransaksiPenjualanBengkel.tanggal > tanggal_sampai
         ).scalar() or 0)
         
-        # Revaluation reserve for spare part harga_beli changes (unrealized).
-        # Stock is valued at historical cost, so subtract the unrealized reserve
-        # from the latest-price stock value: historical = latest − unrealized.
+        # Persediaan spare part dinilai HARGA BELI TERBARU (stok x harga_beli),
+        # sama dengan daftar stok. Selisih harga stok lama saat harga beli berubah
+        # (SparePartRevaluation) langsung diakui di Perubahan Modal sebagai
+        # Penyesuaian Harga Beli Spare Part (+ laba / − rugi), tidak ditahan
+        # sebagai reserve sampai terjual. `reserve` di bawah hanya info historis.
         # Reserve bersifat as-of-date: reval & release difilter `<= tanggal_sampai`,
         # sejalan dengan snapshot di bawah (`current_stock_val`, `purchases_after`,
         # `usage_after`). Tanpa filter, reserve statis di semua tanggal — angka hari
@@ -463,7 +465,7 @@ class BaseReportService:
             SparePartRevaluation.is_qty_correction == True,  # noqa: E712
         ).scalar() or 0)
 
-        part_stock = max(0, current_stock_val - purchases_after + usage_after - reval_reserve
+        part_stock = max(0, current_stock_val - purchases_after + usage_after
                          - reval_sesudah - koreksi_qty_sesudah)
         # Car Stock (Available as of date: masuk <= sampai AND (keluar is null OR keluar > sampai))
         # Total Capitalized Value = Purchase Price + Prep + Repairs for unsold cars

@@ -400,8 +400,8 @@ class SparePartService:
         modal naik/turun lewat baris "Penyesuaian Backdate" (dan ikut menggeser
         nilai persediaan di tanggal lampau). Kini:
           - harga beli berubah, stok > 0 → revaluasi (sama seperti pembelian
-            dengan harga baru): persediaan tetap dinilai harga perolehan, selisih
-            tampil di memo Penyesuaian Harga Beli Spare Part.
+            dengan harga baru): persediaan ikut harga beli baru, selisih stok
+            lama masuk Penyesuaian Harga Beli Spare Part di Perubahan Modal.
           - stok berubah → koreksi qty (`is_qty_correction`) senilai
             Δqty × harga beli; tampil sebagai penyesuaian, bukan backdate.
         Stok "Always Ready" (katalog) tidak dinilai.

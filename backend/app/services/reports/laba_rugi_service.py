@@ -32,9 +32,10 @@ class LabaRugiService(BaseReportService):
         b_gaji = b["gaji"]
         b_lembur = b.get("lembur", 0)
         b_ops = b["total_expenses"] # Wallet-based
-        # Revaluation reserve realized this period — MEMO ONLY, does not adjust
-        # profit (COGS already uses the latest harga_beli).
-        b_penyesuaian_harga_beli = float(data.get("revaluation", {}).get("released_periode", 0))
+        # Selisih harga beli spare part kini diakui di Perubahan Modal saat harga
+        # berubah (persediaan = harga beli terbaru), bukan saat terjual — tidak
+        # ada lagi memo "terealisasi" di Laba Rugi.
+        b_penyesuaian_harga_beli = 0.0
         # Unit specific pure profit
         b_laba_bersih = b_laba_kotor - b_gaji - b_lembur - b_ops
 

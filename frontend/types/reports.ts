@@ -25,8 +25,6 @@ export interface NeracaAset {
     piutang_usaha: number;
     total_piutang: number;
     persediaan_sparepart: number;
-    persediaan_sparepart_harga_terbaru?: number;
-    revaluasi_sparepart_belum_terealisasi?: number;
     stok_mobil: number;
     stok_mobil_detail?: Array<{
         id: number;
@@ -59,7 +57,6 @@ export interface NeracaModal {
     laba_ditahan: number;
     penyesuaian_harga_beli_sparepart?: number;
     koreksi_stok_sparepart?: number;
-    revaluasi_sparepart?: { kumulatif: number; terealisasi: number; belum_terealisasi: number };
     prive: number;
     total_modal: number;
     selisih_modal?: number;

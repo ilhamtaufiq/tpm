@@ -3,7 +3,8 @@
 1. Nilai persediaan historis (tanggal lampau) tidak boleh ikut berubah oleh
    revaluasi / koreksi qty yang terjadi SESUDAH tanggal itu.
 2. Edit harga beli di Master Data (stok > 0) dicatat sebagai revaluasi →
-   persediaan tetap harga perolehan, modal tidak bergeser.
+   persediaan ikut harga beli baru dan selisihnya masuk Penyesuaian Harga Beli
+   Spare Part di Perubahan Modal (Neraca tetap balance).
 3. Edit tanggal transaksi bengkel ikut memindahkan kas pembayarannya.
 """
 from datetime import date, timedelta
@@ -21,6 +22,7 @@ from app.models.bengkel import (
 from app.models.keuangan import KasBank, PiutangUsaha
 from app.schemas.bengkel import DetailServiceCreate, TransaksiBengkelCreate
 from app.services.reports.base import BaseReportService
+from app.services.reports.neraca_service import NeracaService
 from app.services.spare_part_service import SparePartService
 from app.services.transaksi_bengkel_service import TransaksiBengkelService
 from app.utils.constants import PaymentMethod, WorkshopStatus
@@ -32,6 +34,10 @@ TOL = 0.01
 
 def _persediaan(db, d):
     return float(BaseReportService(db).get_unit_financial_breakdown(d, d)["assets"]["persediaan_part"])
+
+
+def _penyesuaian(db, d):
+    return float(NeracaService(db).get_report(d)["modal"]["penyesuaian_harga_beli_sparepart"])
 
 
 def _part_berstok(db):
@@ -75,11 +81,16 @@ def test_edit_harga_beli_master_dicatat_revaluasi():
     max_id = db.query(SparePartRevaluation.id).order_by(SparePartRevaluation.id.desc()).limit(1).scalar() or 0
     try:
         sebelum = _persediaan(db, hari)
+        modal_sebelum = _penyesuaian(db, hari)
         SparePartService(db).update_price(sp_id, harga_beli=harga_awal + Decimal("1000"))
         rev = db.query(SparePartRevaluation).filter(SparePartRevaluation.id > max_id).all()
         assert len(rev) == 1 and not rev[0].is_qty_correction
         assert rev[0].amount == Decimal("1000") * stok
-        assert abs(_persediaan(db, hari) - sebelum) < TOL, "edit harga master menggeser nilai persediaan"
+        naik = float(Decimal("1000") * stok)
+        assert abs(_persediaan(db, hari) - sebelum - naik) < TOL, "persediaan harus ikut harga beli baru"
+        assert abs(_penyesuaian(db, hari) - modal_sebelum - naik) < TOL, "selisih harga harus masuk Penyesuaian"
+        neraca = NeracaService(db).get_report(hari)
+        assert neraca["is_balanced"]
     finally:
         db.query(SparePartRevaluation).filter(SparePartRevaluation.id > max_id).delete(synchronize_session=False)
         db.query(SparePart).filter(SparePart.id == sp_id).update({"harga_beli": harga_awal})

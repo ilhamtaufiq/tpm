@@ -469,13 +469,6 @@ export function Neraca() {
             <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Persediaan & Stok</p>
             <div className="pl-3">
               <FinancialRow label="Persediaan Sparepart" value={al.persediaan_sparepart} small />
-              {(al.revaluasi_sparepart_belum_terealisasi || 0) !== 0 && (
-                <div className="mb-1">
-                  <FinancialRow label="Nilai daftar stok (harga beli terbaru)" value={al.persediaan_sparepart_harga_terbaru || 0} small indent />
-                  <FinancialRow label="Selisih harga beli stok lama" value={al.revaluasi_sparepart_belum_terealisasi || 0} small indent />
-                  <p className="pl-6 text-[11px] text-slate-400">Stok lama tetap dinilai harga waktu dibeli. Selisihnya masuk Perubahan Modal saat stok lama terjual.</p>
-                </div>
-              )}
               <Drill spec={drillStokSparepart()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="nilai" total={al.persediaan_sparepart} />
               <FinancialRow label="Stok Mobil (Inventory)" value={stokAdj} small />
               <Drill spec={drillStokMobil()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: asOf }} amountKey="nilai_total" total={stokAdj} />
@@ -511,7 +504,7 @@ export function Neraca() {
           <FinancialRow label="Setoran Modal" value={m.setoran_modal} small />
           <FinancialRow label="Laba Ditahan" value={labaAdj} bold color="text-indigo-700" />
           {m.penyesuaian_harga_beli_sparepart !== undefined && m.penyesuaian_harga_beli_sparepart !== 0 && (
-            <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={m.penyesuaian_harga_beli_sparepart} small color="text-slate-500" />
+            <FinancialRow label="Penyesuaian Harga Beli Spare Part" value={m.penyesuaian_harga_beli_sparepart} small color={m.penyesuaian_harga_beli_sparepart < 0 ? undefined : 'text-slate-500'} />
           )}
           {m.prive !== 0 && (
             <FinancialRow label="Prive (Pengambilan Pemilik)" value={m.prive} isNegative small />
@@ -745,9 +738,9 @@ export function Modal() {
         )}
         {penyesuaianHargaBeli !== 0 && (
           <>
-            <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={penyesuaianHargaBeli} small indent color="text-slate-700" />
+            <FinancialRow label="Penyesuaian Harga Beli Spare Part" value={penyesuaianHargaBeli} small indent color={penyesuaianHargaBeli < 0 ? undefined : 'text-slate-700'} />
             <Drill spec={drillRevaluasi()} period={{ tanggal_dari: '2024-01-01', tanggal_sampai: period.tanggal_sampai }} amountKey="amount" total={penyesuaianHargaBeli} />
-            <p className="mt-1 pl-6 text-[11px] text-slate-400">* HPP memakai harga beli terakhir; selisih ke harga perolehan unit terjual (ikut dijumlah ke Modal Akhir)</p>
+            <p className="mt-1 pl-6 text-[11px] text-slate-400">* Selisih harga beli stok lama saat harga beli berubah: positif = laba, negatif = rugi. Persediaan dinilai harga beli terbaru. Ikut dijumlah ke Modal Akhir.</p>
           </>
         )}
         {koreksiStok !== 0 && (

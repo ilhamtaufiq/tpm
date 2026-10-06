@@ -95,10 +95,6 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 </tr>
                 `).join('')}
                 <tr><td>Persediaan Sparepart</td><td class="amount">${formatCurrency(data.aktiva_lancar.persediaan_sparepart)}</td></tr>
-                ${(data.aktiva_lancar.revaluasi_sparepart_belum_terealisasi || 0) !== 0 ? `
-                <tr class="sub-item"><td>Nilai daftar stok (harga beli terbaru)</td><td class="amount">${formatCurrency(data.aktiva_lancar.persediaan_sparepart_harga_terbaru || 0)}</td></tr>
-                <tr class="sub-item"><td>Selisih harga beli stok lama (masuk modal saat terjual)</td><td class="amount">${formatCurrency(data.aktiva_lancar.revaluasi_sparepart_belum_terealisasi || 0)}</td></tr>
-                ` : ''}
                 <tr><td>Stok Unit Mobil (Inventory)</td><td class="amount">${formatCurrency(data.aktiva_lancar.stok_mobil)}</td></tr>
                 ${(data.aktiva_lancar.stok_mobil || 0) > 0 ? `
                 <tr class="sub-item"><td>Harga Beli Unit Mobil</td><td class="amount">${formatCurrency(stockBreakdown.harga_beli || data.aktiva_lancar.stok_mobil)}</td></tr>
@@ -135,7 +131,7 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 <tr class="section-title"><td colspan="2">II. EKUITAS (MODAL)</td></tr>
                 <tr><td>Setoran Modal Pemilik</td><td class="amount">${formatCurrency(data.modal.setoran_modal)}</td></tr>
                 <tr><td>Laba Ditahan (Retained Earnings)</td><td class="amount">${formatCurrency(data.modal.laba_ditahan)}</td></tr>
-                <tr><td>Penyesuaian Harga Beli Spare Part (Memo)</td><td class="amount">${formatCurrency(data.modal.penyesuaian_harga_beli_sparepart)}</td></tr>
+                <tr><td>Penyesuaian Harga Beli Spare Part</td><td class="amount">${formatCurrency(data.modal.penyesuaian_harga_beli_sparepart)}</td></tr>
                 <tr><td>Prive (Pengambilan Pemilik)</td><td class="amount negative">(${formatCurrency(data.modal.prive)})</td></tr>
                 <tr class="total-row"><td>TOTAL EKUITAS</td><td class="amount">${formatCurrency(data.modal.total_modal)}</td></tr>
                 <tr class="grand-total" style="background-color: #4338ca;"><td>TOTAL PASIVA</td><td class="amount">${formatCurrency(data.total_pasiva)}</td></tr>
@@ -180,7 +176,6 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
                 <tr class="section-title"><td colspan="2">II. BEBAN POKOK (HPP)</td></tr>
                 <tr><td>HPP Sparepart Terjual</td><td class="amount negative">(${formatCurrency(data.units.bengkel.hpp)})</td></tr>
                 <tr class="total-row"><td>LABA KOTOR BENGKEL</td><td class="amount">${formatCurrency(data.units.bengkel.laba_kotor)}</td></tr>
-                ${(data.units.bengkel.laba_penyesuaian_harga_beli || 0) !== 0 ? `<tr><td>Laba Penyesuaian Harga Beli Spare Part</td><td class="amount">${formatCurrency(data.units.bengkel.laba_penyesuaian_harga_beli)}</td></tr>` : ''}
 
                 <tr class="section-title"><td colspan="2">III. BEBAN OPERASIONAL UNIT</td></tr>
                 <tr><td>Beban Gaji Karyawan</td><td class="amount negative">(${formatCurrency(data.units.bengkel.beban_gaji || 0)})</td></tr>
@@ -320,7 +315,7 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td class="amount">${formatCurrency(modalAwal)}</td>
                 </tr>
                 <tr>
-                    <td>Penyesuaian Harga Beli Spare Part (Memo)</td>
+                    <td>Penyesuaian Harga Beli Spare Part</td>
                     <td class="amount">${formatCurrency(penyesuaianHargaBeli)}</td>
                 </tr>
                 ${koreksiStok !== 0 ? `
