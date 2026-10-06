@@ -88,19 +88,14 @@ def test_heal_stok_part_tidak_menyentuh_part_lain(db):
                 db.commit()
 
 
-def test_neraca_info_nilai_daftar_stok_part(db):
-    """Neraca menampilkan nilai daftar stok (stok x harga beli terbaru) di samping
-    persediaan harga perolehan; selisihnya = revaluasi belum terealisasi dan
-    sama dengan memo di bagian Modal. Info saja, total persediaan tidak berubah."""
+def test_persediaan_part_neraca_sama_dengan_daftar_stok(db):
+    """Persediaan Sparepart di Neraca hari ini = daftar stok (stok x harga beli
+    terbaru), sama dengan hitungan stok di Excel."""
     from app.utils.helpers import get_jakarta_date
-    rep = NeracaService(db).get_report(get_jakarta_date())
-    al = rep["aktiva_lancar"]
-    belum = rep["modal"]["revaluasi_sparepart"]["belum_terealisasi"]
-    assert abs(al["revaluasi_sparepart_belum_terealisasi"] - belum) < TOL
-    assert abs(al["persediaan_sparepart_harga_terbaru"] - al["persediaan_sparepart"] - belum) < TOL
+    al = NeracaService(db).get_report(get_jakarta_date())["aktiva_lancar"]
     daftar = sum(
         float(sp.stok or 0) * float(sp.harga_beli or 0)
         for sp in db.query(SparePart).filter(SparePart.deleted_at.is_(None)).all()
         if float(sp.stok or 0) > 0
     )
-    assert abs(al["persediaan_sparepart_harga_terbaru"] - daftar) < TOL
+    assert abs(al["persediaan_sparepart"] - daftar) < TOL

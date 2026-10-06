@@ -32,6 +32,9 @@ Feedback produksi 5 Okt: selisih neraca −460.200 vs real = kas/bank −455.500
 - Neraca menampilkan nilai daftar stok (harga beli terbaru) dan selisih harga beli stok lama di bawah Persediaan Sparepart (app, PDF, dashboard) agar −4.700 terlihat tanpa menunggu part terjual. Perhitungan tidak berubah (opsi aman).
 - Backup 21:19: semua 22 baris sudah dipindah ke 05-10 tetapi user tetap melaporkan −455.500 — perlu angka real per akun (kas, BCA, BRI) dan layar aplikasi yang dibandingkan.
 
+- 6 Okt (permintaan user): persediaan spare part dinilai **harga beli terbaru** (= daftar stok, 111.589.443,25 di backup 21:19); seluruh selisih harga stok lama langsung masuk *Penyesuaian Harga Beli Spare Part* (−4.700, label tanpa "(Memo)") di Perubahan Modal & Neraca; baris info "nilai daftar stok/selisih" dihapus; memo LR "laba penyesuaian" dihapus. Uji jual 1 paking knalpot lama: persediaan −12.000 = HPP, penyesuaian tetap −4.700, balance, SYNCED.
+- Tertunda: Perubahan Modal backup 21:19 menampilkan *Penyesuaian Transaksi Backdate* 350.000 tanpa daftar transaksi (bukan dari pemindahan tanggal; sudah ada sebelum perubahan spare part).
+
 ## Verifikasi
 
 - `pytest tests` di backup produksi: 80 passed, 2 skipped (+16 tes baru).

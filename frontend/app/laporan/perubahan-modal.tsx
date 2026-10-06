@@ -362,8 +362,8 @@ export default function LaporanPerubahanModalScreen() {
                                     · sudah bersih dari aktivitas hari saldo awal ({formatCurrency(report.modal_awal_penyesuaian || 0)} dipindah ke baris mutasi di bawah)
                                 </Typography>
                             )}
-                            <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={equity.penyesuaianHargaBeli || 0} color="text-slate-700" />
-                            <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* HPP memakai harga beli terakhir; selisih ke harga perolehan unit yang sudah terjual muncul di sini (ikut dijumlah ke Modal Akhir)</Typography>
+                            <FinancialRow label="Penyesuaian Harga Beli Spare Part" value={equity.penyesuaianHargaBeli || 0} color={(equity.penyesuaianHargaBeli || 0) < 0 ? undefined : 'text-slate-700'} />
+                            <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* Selisih harga beli stok lama saat harga beli berubah: positif = laba, negatif = rugi. Persediaan dinilai harga beli terbaru. Ikut dijumlah ke Modal Akhir.</Typography>
                             {equity.koreksiStok !== 0 && (
                                 <>
                                     <FinancialRow label="Koreksi Stok Opname Spare Part" value={equity.koreksiStok} isNegative={equity.koreksiStok < 0} color="text-slate-700" />

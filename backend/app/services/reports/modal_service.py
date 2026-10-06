@@ -316,11 +316,12 @@ class ModalService(BaseReportService):
         start_stok_mobil = float(neraca_awal["aktiva_lancar"]["stok_mobil"])
         start_piutang = float(neraca_awal["aktiva_lancar"]["total_piutang"])
 
-        # Revaluation reserve (memo info): penyesuaian harga beli spare part yang mempengaruhi ekuitas.
+        # Penyesuaian spare part yang mempengaruhi ekuitas: seluruh selisih harga
+        # beli stok lama (diakui saat harga berubah, karena persediaan dinilai
+        # harga beli terbaru) + koreksi stok opname.
         reval_cumulative = float(data.get("revaluation", {}).get("cumulative", 0))
-        reval_unrealized = float(data.get("revaluation", {}).get("reserve", 0))
         qty_correction = float(data.get("revaluation", {}).get("qty_correction_total", 0))
-        reval_reserve = (reval_cumulative + qty_correction) - reval_unrealized
+        reval_reserve = reval_cumulative + qty_correction
 
         # Setoran & pengembalian modal dipisah seperti laba: periode filter vs
         # sisa kumulatif sejak anchor (masuk "mutasi_modal_sebelumnya"), agar
@@ -840,8 +841,8 @@ class ModalService(BaseReportService):
                 "laba_ditahan_pra_saldo_awal": laba_ditahan_pra_saldo_awal,
                 "penyesuaian_backdate_non_impor": penyesuaian_backdate_non_impor,
                 # Dipecah (jumlah keduanya = reval_reserve di raw_theoretical):
-                #   harga beli → revaluasi yang sudah terealisasi (HPP pakai harga
-                #   beli terakhir; selisih ke harga perolehan muncul di sini)
+                #   harga beli → selisih harga beli stok lama saat harga berubah
+                #   (+ laba / − rugi; persediaan dinilai harga beli terbaru)
                 #   koreksi stok → selisih stok opname (edit stok di Master Data)
                 "penyesuaian_harga_beli_sparepart": reval_reserve - qty_correction,
                 "koreksi_stok_sparepart": qty_correction,

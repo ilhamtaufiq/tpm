@@ -174,15 +174,11 @@ class NeracaService(BaseReportService):
         # Laba bersih (after prive) for cross-validation with Laba Rugi
         laba_bersih = float(hist.get("laba_bersih", retained_earnings - prive_total))
 
-        # Revaluation (cumulative all events, informational memo — not equity).
-        # Shown as a separate memo line below laba ditahan; never drops to zero.
-        # Disamakan dengan Perubahan Modal: yang tampil = revaluasi yang sudah
-        # TEREALISASI (unit terjual; HPP pakai harga beli terakhir). Porsi yang
-        # belum terealisasi masih di nilai persediaan (harga perolehan).
+        # Penyesuaian Harga Beli Spare Part = seluruh selisih harga beli stok lama
+        # (persediaan dinilai harga beli terbaru), sama dengan Perubahan Modal.
+        # Sudah termasuk di total modal (identitas aset − hutang).
         _rev = hist.get("revaluation", {})
-        reval_kumulatif = float(_rev.get("cumulative", 0))
-        reval_belum = float(_rev.get("reserve", 0))
-        reval_reserve = reval_kumulatif - reval_belum
+        reval_reserve = float(_rev.get("cumulative", 0))
         koreksi_stok = float(_rev.get("qty_correction_total", 0))
         
         # Modal Setoran Kas (Total cash inflow from MODAL source)
@@ -323,10 +319,8 @@ class NeracaService(BaseReportService):
         # Formula: Setoran Modal (Kas + Non-Kas) + Laba Ditahan - Prive
         # This MUST match (Assets - Liabilities) if accounting is correct
         # ═══════════════════════════════════════════════════════════════
-        # reval_reserve is NOT added here: stock is already valued at
-        # historical cost (see base.py part_stock), so the unrealized
-        # revaluation reserve would double-count. It is shown separately
-        # as an informational memo line, not part of equity total.
+        # reval_reserve tidak ditambahkan terpisah: persediaan sudah dinilai
+        # harga beli terbaru, jadi selisihnya sudah ada di identitas aset − hutang.
 
         # IDENTITY-BASED EQUITY: From balance sheet identity
         equity_from_identity = total_assets - total_liabilities
@@ -431,10 +425,6 @@ class NeracaService(BaseReportService):
                 "piutang_lainnya": piutang_lainnya,
                 "total_piutang": total_piutang,
                 "persediaan_sparepart": total_stock_parts,
-                # Info saja (tidak masuk total): nilai daftar stok = stok x harga
-                # beli terbaru. Selisihnya = revaluasi stok lama yang belum terjual.
-                "persediaan_sparepart_harga_terbaru": total_stock_parts + reval_belum,
-                "revaluasi_sparepart_belum_terealisasi": reval_belum,
                 "stok_mobil": total_stock_mobil,
                 "stok_mobil_detail": raw_stock_mobil.get("details", []),
                 "total_aktiva_lancar": total_assets - total_fixed_assets
@@ -486,11 +476,6 @@ class NeracaService(BaseReportService):
                 "laba_ditahan": retained_earnings,
                 "penyesuaian_harga_beli_sparepart": reval_reserve,
                 "koreksi_stok_sparepart": koreksi_stok,
-                "revaluasi_sparepart": {
-                    "kumulatif": reval_kumulatif,
-                    "terealisasi": reval_reserve,
-                    "belum_terealisasi": reval_belum,
-                },
                 "prive": prive_total,
                 "modal_persediaan": modal_persediaan,
                 "modal_stok_mobil": modal_stok_mobil,

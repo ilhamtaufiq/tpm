@@ -225,13 +225,6 @@ export default function NeracaScreen() {
                         </View>
                         <View className="w-full pl-3">
                             <FinancialRow label="Persediaan Sparepart" value={al.persediaan_sparepart} small />
-                            {(al.revaluasi_sparepart_belum_terealisasi || 0) !== 0 && (
-                                <View className="w-full mb-1">
-                                    <FinancialRow label="Nilai daftar stok (harga beli terbaru)" value={al.persediaan_sparepart_harga_terbaru || 0} small indent />
-                                    <FinancialRow label="Selisih harga beli stok lama" value={al.revaluasi_sparepart_belum_terealisasi || 0} small indent />
-                                    <Typography variant="caption" className="text-slate-400 text-[10px] mt-1 pl-3">Stok lama tetap dinilai harga waktu dibeli. Selisihnya masuk Perubahan Modal saat stok lama terjual.</Typography>
-                                </View>
-                            )}
                             <FinancialRow label="Stok Mobil (Inventory)" value={totalStokAdj} small />
                             {(totalStokAdj || 0) > 0 && (
                                 <View className="bg-amber-50/60 w-full p-3 rounded-xl border border-amber-100 mt-2">
@@ -317,10 +310,9 @@ export default function NeracaScreen() {
                     </View>
 
                     <View className="mb-4 w-full">
-                        <FinancialRow label="Penyesuaian Harga Beli Spare Part (Memo)" value={m.penyesuaian_harga_beli_sparepart} bold large color="text-violet-700" />
+                        <FinancialRow label="Penyesuaian Harga Beli Spare Part" value={m.penyesuaian_harga_beli_sparepart || 0} bold large color={(m.penyesuaian_harga_beli_sparepart || 0) < 0 ? undefined : 'text-violet-700'} />
                         <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">
-                            Selisih harga beli terakhir vs harga perolehan untuk unit yang sudah terjual — sudah termasuk di baris Modal (bukan laba Laba Rugi).
-                            {(m.revaluasi_sparepart?.belum_terealisasi || 0) !== 0 ? ` Belum terealisasi ${formatCurrencyDisplay(m.revaluasi_sparepart?.belum_terealisasi || 0)} masih di nilai persediaan.` : ''}
+                            Selisih harga beli stok lama saat harga beli berubah: positif = laba, negatif = rugi. Persediaan dinilai harga beli terbaru. Sudah termasuk di baris Modal.
                         </Typography>
                         {(m.koreksi_stok_sparepart || 0) !== 0 && (
                             <View className="mt-2">
