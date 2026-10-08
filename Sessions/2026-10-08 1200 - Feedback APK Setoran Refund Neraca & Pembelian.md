@@ -46,5 +46,5 @@ Feedback APK 8 Okt: 7 poin (gaji, pembelian part, hutang/piutang pusat, pembatal
 ## Next
 
 - Pembatalan penjualan LUNAS (`cancel-sale`): UI dan mode LANGSUNG/HUTANG sudah ditambahkan (tes `test_pembatalan_penjualan_refund.py`).
-- Dashboard web masih menampilkan pengeluaran gaji berbasis kas (cair), bukan akrual.
+- Dashboard: pengeluaran gaji sudah memakai beban gaji akrual (`_beban_gaji` di `dashboard.py`), sama dengan Laba Rugi.
 - Pembatalan penjualan LUNAS (`cancel-sale`) belum punya UI; jalur refund langsung/hutang yang sama bisa dipasang bila user mau.
