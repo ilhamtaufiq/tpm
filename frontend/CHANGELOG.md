@@ -2,6 +2,14 @@
 
 Dokumen ini mencatat riwayat perubahan desain dan perbaikan *bug* pada sisi Frontend (Mobile/Web).
 
+## [Unreleased] - Optimasi Performa Android
+
+### ⚡ Performa
+- **Transaksi Bengkel**: Baris sparepart, jasa, dan sheet pemilihan dipisah ke komponen `memo` (`PartPickRow`, `ServicePickRow`, `ServiceSheetRow`) dengan handler `useCallback`. Tap satu item tidak lagi me-render ulang seluruh daftar.
+- **Scanner Barcode**: Animasi laser memakai `Animated` dengan `useNativeDriver` (translateY), tidak lagi `setState` tiap 30 ms yang me-render ulang `CameraView`.
+- **Backup**: Timer detik dipisah ke komponen `ElapsedText` sehingga tick per detik tidak me-render seluruh layar. Progress bar memakai `translateX`/`scaleX` agar berjalan di native thread.
+- **Root Layout**: Listener dimensi hanya aktif di web. Di Android, event dimensi (keyboard mode `resize`, rotasi) tidak lagi me-render ulang root.
+
 ## [Unreleased] - Jual Beli Mobil Redesign & Fixes
 
 ### 🚀 Fitur & Desain Baru (Halaman Jual Beli Mobil)
