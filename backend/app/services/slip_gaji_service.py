@@ -2,7 +2,7 @@ from datetime import datetime, date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional, Dict, Any, List
 
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 
@@ -149,6 +149,29 @@ class SlipGajiService:
         daily_rate = karyawan.gaji_pokok / Decimal("6")
         gaji = (daily_rate * hadir).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
         return hadir, gaji
+
+    def _slip_bentrok(
+        self,
+        karyawan_id: int,
+        tanggal_mulai: date,
+        tanggal_akhir: date,
+        minggu: int,
+        tahun: int,
+    ) -> Optional[SlipGaji]:
+        """Slip yang menghalangi pembuatan slip baru: satu slip per karyawan per minggu
+        (unique constraint) atau rentang tanggal yang tumpang tindih (akrual tidak boleh
+        dibayar dua kali)."""
+        return (
+            self.db.query(SlipGaji)
+            .filter(
+                SlipGaji.karyawan_id == karyawan_id,
+                or_(
+                    and_(SlipGaji.periode_minggu == minggu, SlipGaji.periode_tahun == tahun),
+                    and_(SlipGaji.tanggal_mulai <= tanggal_akhir, SlipGaji.tanggal_akhir >= tanggal_mulai),
+                ),
+            )
+            .first()
+        )
 
     def _get_kasbon_total(self, karyawan_id: int) -> Decimal:
         """Get total unpaid kasbon for employee using PiutangUsaha remaining balance."""
@@ -323,6 +346,11 @@ class SlipGajiService:
 
         items = []
         for emp in employees:
+            # Sudah punya slip di rentang ini: tidak perlu muncul sebagai pending.
+            m_slip, t_slip = get_current_week(tanggal_mulai)
+            if self._slip_bentrok(emp.id, tanggal_mulai, tanggal_akhir, m_slip, t_slip):
+                continue
+
             # Attendance & gaji pokok dalam rentang (akrual dari absensi untuk periode baru)
             jumlah_hadir, gaji_pokok_pro_rated = self._hadir_dan_gaji(emp, tanggal_mulai, tanggal_akhir)
 
@@ -445,25 +473,14 @@ class SlipGajiService:
     ) -> Dict[str, Any]:
         """Create payroll slips for a custom date range."""
         if not items:
-            return {"created": 0, "skipped": 0, "total_employees": 0}
+            return {"created": 0, "skipped": 0, "total_employees": 0, "skipped_detail": []}
 
         created = 0
+        skipped = 0
+        skipped_detail: List[str] = []
         for item in items:
             karyawan_id = item.get("karyawan_id")
             jumlah_hadir = item.get("jumlah_hadir", 0)
-
-            # Check if already exists for this specific period
-            existing = (
-                self.db.query(SlipGaji)
-                .filter(
-                    SlipGaji.karyawan_id == karyawan_id,
-                    SlipGaji.periode_minggu == minggu,
-                    SlipGaji.periode_tahun == tahun,
-                )
-                .first()
-            )
-            if existing:
-                continue
 
             # Get employee
             karyawan = (
@@ -472,6 +489,15 @@ class SlipGajiService:
                 .first()
             )
             if not karyawan:
+                continue
+
+            # Sudah ada slip di minggu ini atau rentang yang tumpang tindih: dilewati, dilaporkan.
+            existing = self._slip_bentrok(karyawan_id, tanggal_mulai, tanggal_akhir, minggu, tahun)
+            if existing:
+                skipped += 1
+                skipped_detail.append(
+                    f"{karyawan.nama}: sudah ada slip {existing.nomor_slip} ({existing.tanggal_mulai} s/d {existing.tanggal_akhir})"
+                )
                 continue
 
             # Get kasbon and overtime from item or default to 0
@@ -509,8 +535,9 @@ class SlipGajiService:
         self.db.commit()
         return {
             "created": created,
-            "skipped": 0,
+            "skipped": skipped,
             "total_employees": len(items),
+            "skipped_detail": skipped_detail,
         }
 
         # Otherwise, auto-calculate for all active employees

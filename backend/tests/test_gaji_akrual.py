@@ -151,3 +151,27 @@ def test_periode_sebelum_cutoff_tidak_diakui(ctx):
     assert sebelum < GAJI_AKRUAL_MULAI
     _absen(db, kar, sebelum, AttendanceStatus.HADIR)
     assert akrual_gaji_periode(db, sebelum, sebelum, kar.id) == Decimal("0")
+
+
+def test_slip_ganda_dilewati_dan_tidak_muncul_di_pending(ctx):
+    """Satu slip per karyawan per minggu, dan rentang tanggal tidak boleh tumpang tindih.
+    Yang dilewati harus dilaporkan (bukan diam-diam), dan tidak lagi pending."""
+    db, kar = ctx
+    for d in (12, 13, 14, 15, 16, 17):
+        _absen(db, kar, date(2026, 10, d), AttendanceStatus.HADIR)
+    svc = SlipGajiService(db)
+    items = [{"karyawan_id": kar.id, "jumlah_hadir": 6, "potongan_kasbon": 0, "uang_lembur": 0}]
+
+    awal = svc.create_bulk_by_range(SENIN, SABTU, 42, 2026, items, None)
+    assert awal["created"] == 1 and awal["skipped"] == 0
+
+    ulang = svc.create_bulk_by_range(SENIN, SABTU, 42, 2026, items, None)
+    assert ulang["created"] == 0 and ulang["skipped"] == 1
+    assert "sudah ada slip" in ulang["skipped_detail"][0]
+
+    # Rentang minggu berikutnya yang menyentuh tanggal 17 juga bentrok (akrual tidak dibayar dua kali).
+    tumpang = svc.create_bulk_by_range(date(2026, 10, 17), date(2026, 10, 23), 43, 2026, items, None)
+    assert tumpang["created"] == 0 and tumpang["skipped"] == 1
+
+    pending = [i for i in svc.get_preview_by_range(SENIN, SABTU)["items"] if i["karyawan_id"] == kar.id]
+    assert pending == []

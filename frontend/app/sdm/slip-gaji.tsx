@@ -258,16 +258,19 @@ export default function SlipGajiScreen() {
         const finalOvertime = getOvertimeValue(item);
 
         try {
-            await createBulkMutation.mutateAsync({
+            const result = await createBulkMutation.mutateAsync({
                 tanggalDari: startDate,
                 tanggalSampai: endDate,
                 items: [{ ...item, jumlah_hadir: finalAttendance, potongan_kasbon: finalKasbon, uang_lembur: finalOvertime }],
             });
+            const skippedDetail: string[] = result?.skipped_detail || [];
             setDialogConfig({
                 visible: true,
-                title: 'Sukses',
-                message: `Slip gaji ${item.karyawan_nama} berhasil dibuat`,
-                variant: 'success'
+                title: result?.created ? 'Sukses' : 'Tidak Dibuat',
+                message: result?.created
+                    ? `Slip gaji ${item.karyawan_nama} berhasil dibuat`
+                    : `Slip gaji ${item.karyawan_nama} tidak dibuat. ${skippedDetail.join('; ')}`,
+                variant: result?.created ? 'success' : 'warning'
             });
             onRefresh();
         } catch (error: any) {
@@ -294,17 +297,21 @@ export default function SlipGajiScreen() {
                 uang_lembur: getOvertimeValue(item)
             }));
 
-            await createBulkMutation.mutateAsync({
+            const result = await createBulkMutation.mutateAsync({
                 tanggalDari: startDate,
                 tanggalSampai: endDate,
                 items: itemsToGenerate,
             });
 
+            const created = result?.created ?? itemsToGenerate.length;
+            const skippedDetail: string[] = result?.skipped_detail || [];
             setDialogConfig({
                 visible: true,
-                title: 'Sukses',
-                message: `${itemsToGenerate.length} slip gaji berhasil dibuat`,
-                variant: 'success'
+                title: created > 0 ? 'Sukses' : 'Tidak Dibuat',
+                message: skippedDetail.length > 0
+                    ? `${created} slip gaji berhasil dibuat. ${skippedDetail.length} dilewati: ${skippedDetail.join('; ')}`
+                    : `${created} slip gaji berhasil dibuat`,
+                variant: created > 0 ? 'success' : 'warning'
             });
             onRefresh();
         } catch (error: any) {
