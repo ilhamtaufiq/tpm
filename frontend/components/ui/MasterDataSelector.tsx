@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { CustomerFormModal } from './CustomerFormModal';
+import { SupplierFormModal } from './SupplierFormModal';
 import { useUIStore } from '../../store/useUIStore';
 import { useDebounce } from '../../hooks/useDebounce';
 
@@ -174,7 +175,7 @@ export const MasterDataSelector = ({
                         </Pressable>
                     )}
 
-                    {type === 'customer' && onAddNew && (
+                    {onAddNew && (
                         <Pressable onPress={() => setIsAddModalOpen(true)} className="mb-3">
                             <Card className="p-3 bg-blue-500/10 border border-dashed border-blue-500/40 flex-row items-center">
                                 <UserPlus size={18} color="#2563EB" />
@@ -350,6 +351,16 @@ export const MasterDataSelector = ({
             {/* Quick Add Customer Modal */}
             {type === 'customer' && (
                 <CustomerFormModal
+                    visible={isAddModalOpen}
+                    onClose={() => setIsAddModalOpen(false)}
+                    onSuccess={handleAddNew}
+                    initialName={searchQuery}
+                />
+            )}
+
+            {/* Quick Add Supplier Modal */}
+            {type === 'supplier' && onAddNew && (
+                <SupplierFormModal
                     visible={isAddModalOpen}
                     onClose={() => setIsAddModalOpen(false)}
                     onSuccess={handleAddNew}

@@ -147,6 +147,8 @@ class NeracaService(BaseReportService):
         # Internal payables are only kept for trace/debug. Consolidated neraca
         # must not count company-to-company unit payables as external liabilities.
         hutang_internal = raw_hutang.get("breakdown", {}).get("internal", 0)
+        # Hutang gaji karyawan (akrual absensi belum dicairkan), lihat gaji_akrual_service.
+        hutang_gaji = raw_hutang.get("breakdown", {}).get("gaji", 0)
 
         total_liabilities = (
             hutang_part
@@ -155,6 +157,7 @@ class NeracaService(BaseReportService):
             + hutang_lainnya
             + hutang_ja
             + uang_muka_penjualan
+            + hutang_gaji
         )
 
         # 3. EQUITY & PROFIT — Bottom-Up Component Approach
@@ -445,6 +448,7 @@ class NeracaService(BaseReportService):
                 "hutang_jasa_angkut": hutang_ja,
                 "uang_muka_penjualan": uang_muka_penjualan,
                 "hutang_internal": hutang_internal,
+                "hutang_gaji": hutang_gaji,
                 "piutang_booking": piutang_booking,
                 "total_hutang": total_liabilities
             },

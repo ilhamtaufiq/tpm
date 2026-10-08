@@ -86,15 +86,6 @@ export default function PurchaseIndexScreen() {
                 onBackButtonPress={handleBack}
                 showProfile={false}
                 showBell={false}
-                rightElement={
-                    <Pressable
-                        onPress={() => router.push('/bengkel/purchase/create')}
-                        className="bg-primary px-4 py-2 rounded-xl flex-row items-center active:opacity-90"
-                    >
-                        <Plus size={16} color="white" />
-                        <Typography weight="bold" className="text-white text-xs ml-1">Tambah</Typography>
-                    </Pressable>
-                }
             />
 
             {/* Search Box */}
@@ -183,6 +174,18 @@ export default function PurchaseIndexScreen() {
                 )}
                 <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 24) }} />
             </ScrollView>
+
+            {/* FAB pojok kanan bawah (di atas tab bar): header desktop menutupi tombol di kanan atas */}
+            {true && (
+                <Pressable
+                    onPress={() => router.push('/bengkel/purchase/create')}
+                    accessibilityLabel="Tambah pembelian sparepart"
+                    style={{ position: 'absolute', right: 20, bottom: getCustomTabBarBottomPadding(insets.bottom, 16), elevation: 5, zIndex: 999 }}
+                    className="bg-primary w-14 h-14 rounded-full items-center justify-center shadow-xl active:opacity-90"
+                >
+                    <Plus size={26} color="white" strokeWidth={2.5} />
+                </Pressable>
+            )}
 
             {/* Detail Modal */}
             <Modal

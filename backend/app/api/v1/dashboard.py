@@ -29,6 +29,16 @@ from sqlalchemy import func, or_, and_, case
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
+def _beban_gaji(gaji_summary: dict) -> float:
+    """Beban gaji periode: gaji pokok (akrual absensi + slip lama yang cair) + lembur.
+    Kasbon yang dipotong tetap beban (sama dengan Laba Rugi), bukan kas bersih."""
+    return (
+        float(gaji_summary.get("total_gaji_pokok", 0))
+        + float(gaji_summary.get("total_gaji_pokok_akrual", 0))
+        + float(gaji_summary.get("total_uang_lembur", 0))
+    )
+
+
 def _workshop_activity_recognized(item) -> bool:
     """Match financial recognition: billed workshop orders, excluding voided."""
     if (item.grand_total or 0) <= 0:
@@ -126,9 +136,10 @@ def get_dashboard_summary(
     hutang_service = HutangService(db)
     hutang_summary = hutang_service.get_summary(tanggal_dari, tanggal_sampai)
 
-    # Salary summary
+    # Salary summary (beban gaji = sama dengan Laba Rugi: gaji pokok akrual + slip lama + lembur)
     slip_gaji_service = SlipGajiService(db)
     gaji_summary = slip_gaji_service.get_summary_by_date_range(tanggal_dari, tanggal_sampai)
+    beban_gaji = _beban_gaji(gaji_summary)
 
     # Cash/Bank
     kas_bank_service = KasBankService(db)
@@ -185,7 +196,7 @@ def get_dashboard_summary(
             "saldo_cash": float(kas_bank_summary.get("kas_unit_bengkel", {}).get("saldo", 0)),
         },
         "pengeluaran": {
-            "total": pengeluaran_summary["total_pengeluaran"] + gaji_summary["total"],
+            "total": pengeluaran_summary["total_pengeluaran"] + beban_gaji,
             "jumlah_transaksi": pengeluaran_summary["total_transaksi"] + gaji_summary["count"],
             "breakdown": overhead_data
         },
@@ -261,14 +272,15 @@ def get_daily_dashboard(
     # Salary summary for the day
     slip_gaji_service = SlipGajiService(db)
     gaji_summary = slip_gaji_service.get_summary_by_date_range(tanggal, tanggal)
+    beban_gaji = _beban_gaji(gaji_summary)
 
     # Update pengeluaran_daily
-    pengeluaran_daily["total_pengeluaran"] += gaji_summary["total"]
+    pengeluaran_daily["total_pengeluaran"] += beban_gaji
     pengeluaran_daily["jumlah_transaksi"] += gaji_summary["count"]
     if "gaji" in pengeluaran_daily["per_kategori"]:
-        pengeluaran_daily["per_kategori"]["gaji"] += gaji_summary["total"]
+        pengeluaran_daily["per_kategori"]["gaji"] += beban_gaji
     else:
-        pengeluaran_daily["per_kategori"]["gaji"] = gaji_summary["total"]
+        pengeluaran_daily["per_kategori"]["gaji"] = beban_gaji
 
     return {
         "tanggal": tanggal.isoformat(),

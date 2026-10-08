@@ -113,13 +113,30 @@ export const usePayPenjualanMobil = () => {
 export const useCancelBookingMobil = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, data }: { id: number; data: { penalti: number; metode_refund?: string; refund_payments?: { metode: string; nominal: number }[]; alasan?: string } }) =>
+        mutationFn: ({ id, data }: { id: number; data: { penalti: number; refund_mode?: 'LANGSUNG' | 'HUTANG'; refund_payments?: { metode: string; kas_jenis?: string; nominal: number }[]; alasan?: string } }) =>
             mobilService.cancelBookingMobil(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['penjualan_mobil'] });
             queryClient.invalidateQueries({ queryKey: ['mobils'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
+        },
+    });
+};
+
+export const useCancelSaleMobil = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: { alasan?: string; refund_mode?: 'LANGSUNG' | 'HUTANG'; refund_kas?: { metode: string; kas_jenis: string } } }) =>
+            mobilService.cancelSaleMobil(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['penjualan_mobil'] });
+            queryClient.invalidateQueries({ queryKey: ['mobils'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
             queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
         },

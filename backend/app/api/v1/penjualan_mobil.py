@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Literal, Optional, List
 from datetime import date
 from decimal import Decimal
 
@@ -30,16 +30,33 @@ class SplitPaymentRequest(BaseModel):
 
 
 class CancelBookingRequest(BaseModel):
-    """Schema for cancelling a booking."""
+    """Schema for cancelling a booking.
+
+    refund_mode LANGSUNG: refund dibayar sekarang, `refund_payments` wajib berisi
+    metode + kas/bank per baris dengan total = sisa DP.
+    refund_mode HUTANG (default): sisa DP dicatat sebagai hutang, dilunasi dari menu Hutang.
+    """
     penalti: Decimal = Field(default=Decimal("0"), ge=0, description="Penalty amount to deduct from DP")
-    metode_refund: Optional[PaymentMethod] = PaymentMethod.TUNAI
+    refund_mode: Literal["LANGSUNG", "HUTANG"] = "HUTANG"
     refund_payments: List[PaymentEntry] = []
     alasan: Optional[str] = Field(default="", max_length=500, description="Reason for cancellation")
 
 
+class RefundKasRequest(BaseModel):
+    """Kas/bank tempat refund penjualan dibayar langsung."""
+    metode: PaymentMethod
+    kas_jenis: KasBankJenis
+
+
 class CancelSaleRequest(BaseModel):
-    """Schema for cancelling a completed sale."""
+    """Schema for cancelling a completed sale.
+
+    refund_mode LANGSUNG: uang pembeli dikembalikan sekarang dari `refund_kas`.
+    refund_mode HUTANG: sisa uang diterima dicatat sebagai hutang, dilunasi dari menu Hutang.
+    """
     alasan: Optional[str] = Field(default="", max_length=500, description="Reason for cancellation")
+    refund_mode: Literal["LANGSUNG", "HUTANG"] = "LANGSUNG"
+    refund_kas: Optional[RefundKasRequest] = None
 
 
 class ReverseInvestorDisbursementRequest(BaseModel):
@@ -208,16 +225,15 @@ def cancel_booking(
 ):
     """Cancel a booking, recognize penalty income, and defer refund via hutang."""
     service = PenjualanMobilService(db)
-    # Build refund entries
-    refund_entries = []
-    if data.refund_payments:
-        refund_entries = [(p.metode, p.nominal) for p in data.refund_payments]
-    elif data.metode_refund:
-        refund_entries = [(data.metode_refund, None)]  # None = use calculated refund
+    refund_payments = [
+        {"metode": p.metode, "nominal": p.nominal, "kas_jenis": p.kas_jenis}
+        for p in data.refund_payments
+    ]
     return service.cancel_booking(
         transaksi_id=transaksi_id,
         penalti=data.penalti,
-        refund_entries=refund_entries,
+        refund_mode=data.refund_mode,
+        refund_payments=refund_payments,
         alasan=data.alasan or "",
         user_id=current_user.id,
     )
@@ -232,10 +248,15 @@ def cancel_sale(
 ):
     """Cancel a completed sale and reverse finance."""
     service = PenjualanMobilService(db)
+    refund_kas = None
+    if data.refund_kas is not None:
+        refund_kas = {"metode": data.refund_kas.metode, "kas_jenis": data.refund_kas.kas_jenis}
     return service.cancel_sale(
         transaksi_id=transaksi_id,
         alasan=data.alasan or "",
         user_id=current_user.id,
+        refund_mode=data.refund_mode,
+        refund_kas=refund_kas,
     )
 
 

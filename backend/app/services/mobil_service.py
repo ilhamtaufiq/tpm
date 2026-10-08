@@ -624,7 +624,6 @@ class MobilService:
                 sale_service.cancel_booking(
                     mobil.penjualan.id,
                     penalti=Decimal("0"),
-                    refund_entries=[],
                     alasan="Dihapus dari modul mobil",
                 )
 

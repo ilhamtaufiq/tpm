@@ -98,12 +98,12 @@ export const mobilService = {
         const response = await api.patch(`/penjualan-mobil/${id}/payment`, data);
         return response.data;
     },
-    cancelBookingMobil: async (id: number, data: { penalti: number; metode_refund?: string; refund_payments?: { metode: string; nominal: number }[]; alasan?: string }) => {
+    cancelBookingMobil: async (id: number, data: { penalti: number; refund_mode?: 'LANGSUNG' | 'HUTANG'; refund_payments?: { metode: string; kas_jenis?: string; nominal: number }[]; alasan?: string }) => {
         const response = await api.post(`/penjualan-mobil/${id}/cancel`, data);
         return response.data;
     },
 
-    cancelSaleMobil: async (id: number, data: { alasan?: string }) => {
+    cancelSaleMobil: async (id: number, data: { alasan?: string; refund_mode?: 'LANGSUNG' | 'HUTANG'; refund_kas?: { metode: string; kas_jenis: string } }) => {
         const response = await api.post(`/penjualan-mobil/${id}/cancel-sale`, data);
         return response.data;
     },

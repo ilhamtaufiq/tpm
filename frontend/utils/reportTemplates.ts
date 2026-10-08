@@ -121,6 +121,7 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 <tr><td>Hutang Lainnya / Manual Unit</td><td class="amount">${formatCurrency(data.hutang.hutang_lainnya)}</td></tr>
                 ${(data.hutang.hutang_jasa_angkut || 0) > 0 ? `<tr><td>Hutang Jasa Angkut</td><td class="amount">${formatCurrency(data.hutang.hutang_jasa_angkut || 0)}</td></tr>` : ''}
                 ${(data.hutang.uang_muka_penjualan || 0) > 0 ? `<tr><td>Uang Muka Penjualan</td><td class="amount">${formatCurrency(data.hutang.uang_muka_penjualan || 0)}</td></tr>` : ''}
+                ${(data.hutang.hutang_gaji || 0) > 0 ? `<tr><td>Hutang Gaji Karyawan</td><td class="amount">${formatCurrency(data.hutang.hutang_gaji || 0)}</td></tr>` : ''}
                 ${(data.hutang.piutang_booking || 0) > 0 ? `<tr><td>Sisa Kewajiban Booking Mobil</td><td class="amount">${formatCurrency(data.hutang.piutang_booking || 0)}</td></tr>` : ''}
                 ${(data.hutang.hutang_internal || 0) > 0 ? `<tr class="sub-item"><td>Info Hutang Internal Perbaikan Mobil</td><td class="amount">${formatCurrency(data.hutang.hutang_internal || 0)}</td></tr>` : ''}
                 ${data.cross_validation?.mismatches?.filter(m => m.hutang > 0).map((m, idx) => `

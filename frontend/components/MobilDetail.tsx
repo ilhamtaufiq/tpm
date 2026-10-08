@@ -37,7 +37,7 @@ import {
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
-import { useMobilDetail, useUploadMedia, useDeleteMedia, usePenjualanMobilList, usePayPenjualanMobil, useCancelBookingMobil } from '../hooks/useMobil';
+import { useMobilDetail, useUploadMedia, useDeleteMedia, usePenjualanMobilList, usePayPenjualanMobil, useCancelBookingMobil, useCancelSaleMobil } from '../hooks/useMobil';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../services/offlineQueue';
 import { useHutangList } from '../hooks/useKeuangan';
@@ -53,6 +53,14 @@ import { PaymentModal } from './PaymentModal';
 import { AlertDialog } from './ui/AlertDialog';
 
 const { width, height } = Dimensions.get('window');
+
+// Pilihan kas/bank untuk refund DP booking yang dibayar langsung.
+type RefundKasKey = 'KAS_UNIT_MOBIL' | 'KAS_UTAMA' | 'BANK_UTAMA';
+const REFUND_KAS_OPTIONS: { key: RefundKasKey; label: string; metode: 'TUNAI' | 'TRANSFER' }[] = [
+    { key: 'KAS_UNIT_MOBIL', label: 'Kas Unit Mobil (Tunai)', metode: 'TUNAI' },
+    { key: 'KAS_UTAMA', label: 'Kas Utama (Tunai)', metode: 'TUNAI' },
+    { key: 'BANK_UTAMA', label: 'Bank Utama (Transfer)', metode: 'TRANSFER' },
+];
 
 interface MobilDetailProps {
     unit: any;
@@ -111,6 +119,9 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
         { metode: 'TRANSFER', nominal: '' }
     ]);
     const [cancelAlasan, setCancelAlasan] = useState('');
+    // Refund DP: HUTANG = masuk hutang (default), LANGSUNG = keluar kas sekarang.
+    const [cancelRefundMode, setCancelRefundMode] = useState<'HUTANG' | 'LANGSUNG'>('HUTANG');
+    const [cancelRefundKas, setCancelRefundKas] = useState<RefundKasKey>('KAS_UNIT_MOBIL');
     const [cancelSuccess, setCancelSuccess] = useState(false);
     const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
     const [cancelError, setCancelError] = useState<string | null>(null);
@@ -131,6 +142,12 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
         (tx: any) => tx.mobil_id === activeUnit?.id && tx.status_bayar !== 'BATAL'
     );
     const cancelMutation = useCancelBookingMobil();
+    const cancelSaleMutation = useCancelSaleMobil();
+    const [showCancelSaleModal, setShowCancelSaleModal] = useState(false);
+    const [cancelSaleAlasan, setCancelSaleAlasan] = useState('');
+    const [cancelSaleMode, setCancelSaleMode] = useState<'HUTANG' | 'LANGSUNG'>('LANGSUNG');
+    const [cancelSaleKas, setCancelSaleKas] = useState<RefundKasKey>('KAS_UNIT_MOBIL');
+    const [cancelSaleError, setCancelSaleError] = useState<string | null>(null);
 
     // Fetch purchase debt if any
     const { data: hutangData } = useHutangList(
@@ -801,6 +818,8 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                             setCancelAlasan('');
                                             setRefundSplits([{ metode: 'TUNAI', nominal: String(activeTx.dp) }]);
                                             setCancelSuccess(false);
+                                            setCancelRefundMode('HUTANG');
+                                            setCancelRefundKas('KAS_UNIT_MOBIL');
                                             setShowCancelModal(true);
                                         }}
                                         className="bg-surface flex-row items-center justify-center py-4 rounded-2xl border-2 border-red-200"
@@ -811,6 +830,23 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 </View>
                             </Card>
                         </View>
+                    )}
+
+                    {/* Pembatalan penjualan LUNAS (refund langsung atau hutang) */}
+                    {!isBooking && activeTx?.status_bayar === 'LUNAS' && (
+                        <Pressable
+                            onPress={() => {
+                                setCancelSaleAlasan('');
+                                setCancelSaleMode('LANGSUNG');
+                                setCancelSaleKas('KAS_UNIT_MOBIL');
+                                setCancelSaleError(null);
+                                setShowCancelSaleModal(true);
+                            }}
+                            className="bg-surface flex-row items-center justify-center py-4 rounded-2xl border-2 border-red-200 mb-6"
+                        >
+                            <Ban size={18} color="#EF4444" />
+                            <Typography weight="bold" className="text-red-500 text-base ml-2">Batalkan Penjualan</Typography>
+                        </Pressable>
                     )}
 
                     {/* Related Workshop Transactions */}
@@ -991,6 +1027,110 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
             </Modal>
 
 
+            {/* Cancel Sale Modal (penjualan LUNAS) */}
+            <Modal visible={showCancelSaleModal} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setShowCancelSaleModal(false)}>
+                <View className="flex-1 bg-black/50 justify-end">
+                    <Pressable className="absolute inset-0" onPress={() => setShowCancelSaleModal(false)} />
+                    <View className="bg-surface rounded-t-[36px] px-6 pt-8 pb-10">
+                        <Typography variant="h2" weight="bold" className="text-red-600">Batalkan Penjualan</Typography>
+                        <Typography variant="caption" className="text-textGray mt-1 mb-5">{activeTx?.nomor_transaksi}</Typography>
+
+                        <Typography className="text-textGray text-sm mb-5 leading-relaxed">
+                            Unit kembali ke stok TERSEDIA dan jurnal penjualan dibalik. Pilih cara pengembalian uang pembeli.
+                        </Typography>
+
+                        <Typography weight="bold" className="text-textMain mb-2">Pengembalian Dana</Typography>
+                        <View className="flex-row mb-3">
+                            {([
+                                { key: 'HUTANG', label: 'Tidak Langsung', desc: 'Masuk hutang, dilunasi dari menu Hutang' },
+                                { key: 'LANGSUNG', label: 'Langsung', desc: 'Dikembalikan sekarang dari kas' },
+                            ] as const).map((opt) => {
+                                const active = cancelSaleMode === opt.key;
+                                return (
+                                    <Pressable
+                                        key={opt.key}
+                                        onPress={() => setCancelSaleMode(opt.key)}
+                                        className={`flex-1 p-3 rounded-2xl border mr-2 ${active ? 'bg-blue-50 border-blue-300' : 'bg-background border-transparent'}`}
+                                    >
+                                        <Typography weight="bold" className={`text-xs ${active ? 'text-primary' : 'text-textGray'}`}>{opt.label}</Typography>
+                                        <Typography className="text-textGray text-[10px] mt-1">{opt.desc}</Typography>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+
+                        {cancelSaleMode === 'LANGSUNG' && (
+                            <View className="mb-3">
+                                <Typography className="text-textGray text-[10px] font-bold uppercase mb-2">Dikembalikan dari</Typography>
+                                {REFUND_KAS_OPTIONS.map((opt) => {
+                                    const active = cancelSaleKas === opt.key;
+                                    return (
+                                        <Pressable
+                                            key={opt.key}
+                                            onPress={() => setCancelSaleKas(opt.key)}
+                                            className={`flex-row items-center p-3 rounded-xl border mb-2 ${active ? 'bg-emerald-50 border-emerald-300' : 'bg-background border-transparent'}`}
+                                        >
+                                            <View className={`w-4 h-4 rounded-full border mr-3 ${active ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`} />
+                                            <Typography weight="bold" className="text-xs text-textMain">{opt.label}</Typography>
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
+                        )}
+
+                        <Typography weight="bold" className="text-textMain mb-2">Alasan (opsional)</Typography>
+                        <TextInput
+                            value={cancelSaleAlasan}
+                            onChangeText={setCancelSaleAlasan}
+                            placeholder="Contoh: pembeli membatalkan pembelian"
+                            placeholderTextColor="#94A3B8"
+                            multiline
+                            className="bg-background rounded-2xl px-4 py-3 text-sm text-textMain mb-4"
+                        />
+
+                        {cancelSaleError && (
+                            <Typography className="text-red-600 text-xs mb-3">{cancelSaleError}</Typography>
+                        )}
+
+                        <Pressable
+                            disabled={cancelSaleMutation.isPending || !activeTx}
+                            onPress={() => {
+                                if (!activeTx) return;
+                                const kasOpt = REFUND_KAS_OPTIONS.find((o) => o.key === cancelSaleKas);
+                                setCancelSaleError(null);
+                                cancelSaleMutation.mutate(
+                                    {
+                                        id: activeTx.id,
+                                        data: {
+                                            alasan: cancelSaleAlasan,
+                                            refund_mode: cancelSaleMode,
+                                            refund_kas: cancelSaleMode === 'LANGSUNG' && kasOpt
+                                                ? { metode: kasOpt.metode, kas_jenis: kasOpt.key }
+                                                : undefined,
+                                        },
+                                    },
+                                    {
+                                        onSuccess: () => {
+                                            setShowCancelSaleModal(false);
+                                            appAlert('Berhasil', 'Penjualan berhasil dibatalkan');
+                                        },
+                                        onError: (err: any) => {
+                                            const detail = err?.response?.data?.detail;
+                                            setCancelSaleError(typeof detail === 'string' ? detail : 'Gagal membatalkan penjualan');
+                                        },
+                                    },
+                                );
+                            }}
+                            className={`py-5 rounded-2xl items-center ${(cancelSaleMutation.isPending || !activeTx) ? 'bg-gray-300' : 'bg-red-600'}`}
+                        >
+                            <Typography weight="bold" className="text-white">
+                                {cancelSaleMutation.isPending ? 'Memproses...' : 'Ya, Batalkan Penjualan'}
+                            </Typography>
+                        </Pressable>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Cancel Booking Modal */}
             <Modal
                 visible={showCancelModal}
@@ -1112,19 +1252,64 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                 <View className="flex-row items-center">
                                                     <ArrowDownLeft size={16} color="#10B981" />
                                                     <Typography weight="bold" className="text-emerald-600 ml-1">
-                                                        {refundVal > 0 ? 'Sisa DP (Hutang Refund)' : 'Refund ke Pembeli'}
+                                                        {refundVal > 0 ? (cancelRefundMode === 'LANGSUNG' ? 'Refund Langsung' : 'Sisa DP (Hutang Refund)') : 'Refund ke Pembeli'}
                                                     </Typography>
                                                 </View>
                                                 <Typography variant="h3" weight="bold" className="text-emerald-600">{formatCurrency(refundVal)}</Typography>
                                             </View>
-                                            {refundVal > 0 && (
-                                                <Typography variant="caption" className="text-textGray mt-3 leading-relaxed">
-                                                    Sisa DP dicatat sebagai hutang di menu Hutang. Kas tidak keluar saat pembatalan; refund dibayar dari menu Hutang.
-                                                </Typography>
-                                            )}
                                         </View>
                                     );
                                 })()}
+
+                                {/* Pengembalian dana: langsung (kas keluar sekarang) atau tidak langsung (hutang) */}
+                                {(parseFloat(String(activeTx?.dp || 0)) - (parseNumber(cancelPenalti) || 0)) > 0 && (
+                                    <View className="mb-5">
+                                        <Typography weight="bold" className="text-textMain mb-2">Pengembalian Dana</Typography>
+                                        <View className="flex-row mb-3">
+                                            {([
+                                                { key: 'HUTANG', label: 'Tidak Langsung', desc: 'Masuk hutang, dilunasi dari menu Hutang' },
+                                                { key: 'LANGSUNG', label: 'Langsung', desc: 'Dibayar sekarang dari kas' },
+                                            ] as const).map((opt) => {
+                                                const active = cancelRefundMode === opt.key;
+                                                return (
+                                                    <Pressable
+                                                        key={opt.key}
+                                                        onPress={() => setCancelRefundMode(opt.key)}
+                                                        className={`flex-1 p-3 rounded-2xl border mr-2 ${active ? 'bg-blue-50 border-blue-300' : 'bg-background border-transparent'}`}
+                                                    >
+                                                        <Typography weight="bold" className={`text-xs ${active ? 'text-primary' : 'text-textGray'}`}>{opt.label}</Typography>
+                                                        <Typography className="text-textGray text-[10px] mt-1">{opt.desc}</Typography>
+                                                    </Pressable>
+                                                );
+                                            })}
+                                        </View>
+
+                                        {cancelRefundMode === 'LANGSUNG' && (
+                                            <View className="mb-2">
+                                                <Typography className="text-textGray text-[10px] font-bold uppercase mb-2">Dibayar dari</Typography>
+                                                {REFUND_KAS_OPTIONS.map((opt) => {
+                                                    const active = cancelRefundKas === opt.key;
+                                                    return (
+                                                        <Pressable
+                                                            key={opt.key}
+                                                            onPress={() => setCancelRefundKas(opt.key)}
+                                                            className={`flex-row items-center p-3 rounded-xl border mb-2 ${active ? 'bg-emerald-50 border-emerald-300' : 'bg-background border-transparent'}`}
+                                                        >
+                                                            <View className={`w-4 h-4 rounded-full border mr-3 ${active ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`} />
+                                                            <Typography weight="bold" className="text-xs text-textMain">{opt.label}</Typography>
+                                                        </Pressable>
+                                                    );
+                                                })}
+                                            </View>
+                                        )}
+
+                                        <Typography variant="caption" className="text-textGray leading-relaxed">
+                                            {cancelRefundMode === 'LANGSUNG'
+                                                ? 'Refund langsung dicatat sebagai kas keluar saat pembatalan.'
+                                                : 'Sisa DP dicatat sebagai hutang di menu Hutang. Kas tidak keluar saat pembatalan; refund dibayar dari menu Hutang.'}
+                                        </Typography>
+                                    </View>
+                                )}
 
                                 {/* Reason */}
                                 <View className="mb-8">
@@ -1175,6 +1360,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                 }
 
                                                 const penaltiVal = parseNumber(cancelPenalti) || 0;
+                                                const refundNominal = Math.max(0, parseFloat(String(activeTx.dp || 0)) - penaltiVal);
 
                                                 setCancelError(null);
 
@@ -1187,6 +1373,14 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                             data: {
                                                                 penalti: penaltiVal,
                                                                 alasan: cancelAlasan,
+                                                                refund_mode: cancelRefundMode,
+                                                                refund_payments: cancelRefundMode === 'LANGSUNG' && refundNominal > 0
+                                                                    ? [{
+                                                                        metode: REFUND_KAS_OPTIONS.find((o) => o.key === cancelRefundKas)?.metode || 'TUNAI',
+                                                                        kas_jenis: cancelRefundKas,
+                                                                        nominal: refundNominal,
+                                                                    }]
+                                                                    : [],
                                                             },
                                                         },
                                                         {

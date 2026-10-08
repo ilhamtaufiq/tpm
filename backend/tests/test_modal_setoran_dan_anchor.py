@@ -98,3 +98,51 @@ def test_import_mobil_mengisi_harga_beli_awal():
     finally:
         db.rollback()
         db.close()
+
+
+def test_setoran_sebelum_anchor_tampil_sebagai_penambahan_modal():
+    """Setoran bertanggal sebelum saldo awal (impor kedua) tidak boleh hilang
+    di dalam Modal Awal: harus tampil sebagai Penambahan Modal, dan laporan
+    tetap seimbang (Modal Awal + mutasi = Modal Akhir)."""
+    db = SessionLocal()
+    anchor = date(2099, 3, 10)
+    setoran_tgl = date(2099, 3, 2)
+    nomor_imp = "IMP-TEST-ANCHOR-2099"
+    try:
+        svc = ModalService(db)
+        imp = KasBank(
+            nomor_transaksi=NOMOR_UJI + "-IMP", tanggal=anchor,
+            jenis=KasBankJenis.BANK_UTAMA, metode_bayar=PaymentMethod.TRANSFER,
+            tipe=KasBankType.MASUK, nominal=Decimal("1000000"),
+            sumber=KasBankSource.LAINNYA, nomor_referensi=nomor_imp,
+            keterangan="Saldo awal uji",
+        )
+        imp.calculate_saldo(Decimal("0"))
+        setoran = KasBank(
+            nomor_transaksi=NOMOR_UJI + "-SET", tanggal=setoran_tgl,
+            jenis=KasBankJenis.BANK_UTAMA, metode_bayar=PaymentMethod.TRANSFER,
+            tipe=KasBankType.MASUK, nominal=Decimal("5000000"),
+            sumber=KasBankSource.MODAL, nomor_referensi=None,
+            keterangan="Setoran modal uji sebelum anchor",
+        )
+        setoran.calculate_saldo(Decimal("0"))
+        db.add_all([imp, setoran])
+        db.commit()
+        if svc._saldo_awal_date() != anchor:
+            # DB berisi impor saldo awal yang lebih awal → anchor uji tidak berlaku.
+            return
+
+        r = svc.get_report(date(2099, 3, 1), date(2099, 3, 31))
+        assert r["penambahan"]["setoran_modal"] == 5000000.0
+        assert r["is_balanced"] is True
+        assert all(
+            it["nominal"] != 5000000.0 or it["keterangan"] != "Setoran modal uji sebelum anchor"
+            for it in r["backdate_detail"]["items"]
+        )
+    finally:
+        # get_report melakukan commit internal, jadi rollback tidak cukup.
+        db.query(KasBank).filter(KasBank.nomor_transaksi.like(NOMOR_UJI + "%")).delete(
+            synchronize_session=False
+        )
+        db.commit()
+        db.close()
