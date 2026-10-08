@@ -103,7 +103,7 @@ export const mobilService = {
         return response.data;
     },
 
-    cancelSaleMobil: async (id: number, data: { alasan?: string }) => {
+    cancelSaleMobil: async (id: number, data: { alasan?: string; refund_mode?: 'LANGSUNG' | 'HUTANG'; refund_kas?: { metode: string; kas_jenis: string } }) => {
         const response = await api.post(`/penjualan-mobil/${id}/cancel-sale`, data);
         return response.data;
     },

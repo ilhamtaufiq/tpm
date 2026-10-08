@@ -42,9 +42,21 @@ class CancelBookingRequest(BaseModel):
     alasan: Optional[str] = Field(default="", max_length=500, description="Reason for cancellation")
 
 
+class RefundKasRequest(BaseModel):
+    """Kas/bank tempat refund penjualan dibayar langsung."""
+    metode: PaymentMethod
+    kas_jenis: KasBankJenis
+
+
 class CancelSaleRequest(BaseModel):
-    """Schema for cancelling a completed sale."""
+    """Schema for cancelling a completed sale.
+
+    refund_mode LANGSUNG: uang pembeli dikembalikan sekarang dari `refund_kas`.
+    refund_mode HUTANG: sisa uang diterima dicatat sebagai hutang, dilunasi dari menu Hutang.
+    """
     alasan: Optional[str] = Field(default="", max_length=500, description="Reason for cancellation")
+    refund_mode: Literal["LANGSUNG", "HUTANG"] = "LANGSUNG"
+    refund_kas: Optional[RefundKasRequest] = None
 
 
 class ReverseInvestorDisbursementRequest(BaseModel):
@@ -236,10 +248,15 @@ def cancel_sale(
 ):
     """Cancel a completed sale and reverse finance."""
     service = PenjualanMobilService(db)
+    refund_kas = None
+    if data.refund_kas is not None:
+        refund_kas = {"metode": data.refund_kas.metode, "kas_jenis": data.refund_kas.kas_jenis}
     return service.cancel_sale(
         transaksi_id=transaksi_id,
         alasan=data.alasan or "",
         user_id=current_user.id,
+        refund_mode=data.refund_mode,
+        refund_kas=refund_kas,
     )
 
 

@@ -126,6 +126,23 @@ export const useCancelBookingMobil = () => {
     });
 };
 
+export const useCancelSaleMobil = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: { alasan?: string; refund_mode?: 'LANGSUNG' | 'HUTANG'; refund_kas?: { metode: string; kas_jenis: string } } }) =>
+            mobilService.cancelSaleMobil(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['penjualan_mobil'] });
+            queryClient.invalidateQueries({ queryKey: ['mobils'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang_list'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
+        },
+    });
+};
+
 export const useMobilDetail = (id: number) => {
     return useQuery({
         queryKey: ['mobils', id],
