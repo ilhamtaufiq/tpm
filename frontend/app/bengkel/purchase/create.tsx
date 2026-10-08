@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Modal, ActivityIndicator } from 'react-native';
 import { appAlert } from '../../../utils/appAlert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,6 +62,9 @@ export default function PurchaseScreen() {
 
     // Step management
     const [step, setStep] = useState<1 | 2 | 3>(1);
+    // Urutan isi: part dulu (default) atau supplier dulu. Hanya mengubah urutan langkah 1 & 2.
+    const [urutan, setUrutan] = useState<'PART' | 'SUPPLIER'>('PART');
+    const stepOrder: (1 | 2 | 3)[] = urutan === 'SUPPLIER' ? [2, 1, 3] : [1, 2, 3];
 
     // Form State
     const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
@@ -203,21 +206,6 @@ export default function PurchaseScreen() {
         setItems(items.filter(item => item.id !== id));
     };
 
-    const setItemQty = (index: number, qty: number) => {
-        const newItems = [...items];
-        // Pembelian sparepart boleh pecahan; backend Numeric(15,2) gt=0.
-        newItems[index] = { ...newItems[index], qty: String(Math.max(0.01, Math.round(qty * 100) / 100)) };
-        setItems(newItems);
-    };
-
-    const setItemPrice = (index: number, val: string) => {
-        const newItems = [...items];
-        // Pastikan konversi string ke number aman sebelum format
-        const numericVal = parseNumber(val);
-        newItems[index] = { ...newItems[index], price: formatNumber(numericVal) };
-        setItems(newItems);
-    };
-
     // Payment handlers
     const handleAddPaymentRow = () => {
         setPayments([...payments, { id: Date.now() + Math.random(), sumber: 'BENGKEL_TUNAI', nominal: '' }]);
@@ -243,22 +231,46 @@ export default function PurchaseScreen() {
     };
 
     // Part selection — inline (no bottom sheet)
-    const toggleItem = (part: any) => {
-        const exists = items.find(i => i.spare_part_id === part.id);
-        if (exists) {
-            // Remove
-            setItems(items.filter(i => i.id !== exists.id));
-        } else {
-            // Add
-            setItems([...items, {
+    // Callback stabil (functional setItems) supaya baris katalog ber-React.memo
+    // tidak ikut render ulang setiap ada perubahan item lain.
+    const toggleItem = useCallback((part: any) => {
+        setItems(prev => {
+            const exists = prev.find(i => i.spare_part_id === part.id);
+            if (exists) {
+                return prev.filter(i => i.id !== exists.id);
+            }
+            return [...prev, {
                 id: Date.now() + Math.random(),
                 spare_part_id: part.id,
                 name: part.nama,
                 qty: '1',
                 price: formatNumber(Number(part.harga_beli ?? 0)),
-            }]);
-        }
-    };
+            }];
+        });
+    }, []);
+
+    const changeItemQtyById = useCallback((itemId: number, qty: number) => {
+        setItems(prev => prev.map(it => (
+            it.id === itemId
+                // Pembelian sparepart boleh pecahan; backend Numeric(15,2) gt=0.
+                ? { ...it, qty: String(Math.max(0.01, Math.round(qty * 100) / 100)) }
+                : it
+        )));
+    }, []);
+
+    const changeItemPriceById = useCallback((itemId: number, val: string) => {
+        const numericVal = parseNumber(val);
+        setItems(prev => prev.map(it => (
+            it.id === itemId ? { ...it, price: formatNumber(numericVal) } : it
+        )));
+    }, []);
+
+    // Lookup O(1) item terpilih per part (hindari findIndex per kartu saat render).
+    const selectedByPartId = useMemo(() => {
+        const map = new Map<number, any>();
+        items.forEach(item => map.set(item.spare_part_id, item));
+        return map;
+    }, [items]);
 
     // Scan handler
     const handleScanPart = (data: string): boolean => {
@@ -328,7 +340,20 @@ export default function PurchaseScreen() {
             setTanggal(new Date(y, m - 1, d));
         }
         setNotice(null);
-        setStep(prev => Math.min(3, prev + 1) as 1 | 2 | 3);
+        const idx = stepOrder.indexOf(step);
+        setStep(stepOrder[Math.min(stepOrder.length - 1, idx + 1)]);
+    };
+
+    const handleBackStep = () => {
+        const idx = stepOrder.indexOf(step);
+        setNotice(null);
+        setStep(stepOrder[Math.max(0, idx - 1)]);
+    };
+
+    const handleChangeUrutan = (value: 'PART' | 'SUPPLIER') => {
+        setUrutan(value);
+        setNotice(null);
+        setStep(value === 'SUPPLIER' ? 2 : 1);
     };
 
     const confirmSubmit = (withPayment = false) => {
@@ -539,6 +564,29 @@ export default function PurchaseScreen() {
                 onScroll={handlePartsScroll}
                 scrollEventThrottle={16}
             >
+                {/* Pilih urutan isi: sebelum ada part/supplier terpilih */}
+                {!isEditMode && items.length === 0 && !selectedSupplier && (
+                    <View className="mb-4">
+                        <Typography className="text-textGray text-[10px] font-bold uppercase mb-2">Mulai isi dari</Typography>
+                        <View className="flex-row bg-background rounded-2xl p-1">
+                            {(['PART', 'SUPPLIER'] as const).map((opt) => {
+                                const active = urutan === opt;
+                                return (
+                                    <Pressable
+                                        key={opt}
+                                        onPress={() => handleChangeUrutan(opt)}
+                                        className={`flex-1 py-2.5 rounded-xl items-center ${active ? 'bg-primary' : ''}`}
+                                    >
+                                        <Typography weight="bold" className={`text-xs ${active ? 'text-white' : 'text-textGray'}`}>
+                                            {opt === 'PART' ? 'Part dulu' : 'Supplier dulu'}
+                                        </Typography>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+                    </View>
+                )}
+
                 {/* STEP 1: Item Selection — inline picker like transaksi */}
                 {step === 1 && (
                     <View>
@@ -555,74 +603,16 @@ export default function PurchaseScreen() {
                             {isLoadingParts ? (
                                 <ActivityIndicator color="#023C69" />
                             ) : (
-                                spareParts.map((part: any) => {
-                                    const itemIdx = items.findIndex(i => i.spare_part_id === part.id);
-                                    const selected = itemIdx >= 0;
-                                    const currentItem = selected ? items[itemIdx] : null;
-
-                                    return (
-                                        <View
-                                            key={part.id}
-                                            className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-blue-50 border-blue-200' : 'bg-surface border-transparent'}`}
-                                        >
-                                            <Pressable onPress={() => toggleItem(part)} className="flex-row items-start">
-                                                <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : 'border-transparent'}`}>
-                                                    {selected && <Check size={16} color="white" />}
-                                                </View>
-                                                <View className="flex-1">
-                                                    <View className="flex-row items-center">
-                                                        <Package size={18} color={selected ? '#2563EB' : '#94A3B8'} />
-                                                        <Typography weight="bold" className="text-sm ml-2 flex-1 text-textMain" numberOfLines={1}>
-                                                            {part.nama}
-                                                        </Typography>
-                                                    </View>
-                                                    <Typography className="text-textGray text-[11px] mt-1">
-                                                        {part.kode || '-'} • Stok: {isAlwaysReadyStock(part.stok) ? 'Tanpa Stok' : Number(part.stok || 0)}
-                                                    </Typography>
-                                                    {!selected && (
-                                                        <Typography className="text-primary text-xs font-bold mt-1">
-                                                            {formatCurrency(part.harga_beli)}
-                                                        </Typography>
-                                                    )}
-                                                </View>
-                                            </Pressable>
-
-                                            {selected && currentItem && (
-                                                <View className="mt-3 pt-3 border-t border-blue-100">
-                                                    <View className="flex-row items-center space-x-3">
-                                                        <View className="flex-1">
-                                                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Qty</Typography>
-                                                            <QtyControl
-                                                                value={Number(currentItem.qty)}
-                                                                color="blue"
-                                                                onMinus={() => setItemQty(itemIdx, Number(currentItem.qty) - (Number(currentItem.qty) % 1 ? 0.5 : 1))}
-                                                                onPlus={() => setItemQty(itemIdx, Number(currentItem.qty) + (Number(currentItem.qty) % 1 ? 0.5 : 1))}
-                                                                onChangeQty={(qty) => setItemQty(itemIdx, qty)}
-                                                            />
-                                                        </View>
-                                                        <View className="flex-1">
-                                                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Harga Beli</Typography>
-                                                            <View className="flex-row items-center bg-surface rounded-xl border border-blue-100 px-3 h-9">
-                                                                <Typography className="text-blue-600 text-xs font-bold mr-1">Rp</Typography>
-                                                                <TextInput
-                                                                    value={currentItem.price}
-                                                                    onChangeText={(val) => setItemPrice(itemIdx, val)}
-                                                                    keyboardType="number-pad"
-                                                                    className="flex-1 text-blue-600 text-xs font-bold p-0"
-                                                                />
-                                                            </View>
-                                                        </View>
-                                                    </View>
-                                                    <View className="flex-row justify-end mt-2">
-                                                        <Typography className="text-blue-700 text-[10px] font-bold">
-                                                            Subtotal: {formatCurrency((Number(currentItem.qty) || 0) * (Number(parseNumber(currentItem.price)) || 0))}
-                                                        </Typography>
-                                                    </View>
-                                                </View>
-                                            )}
-                                        </View>
-                                    );
-                                })
+                                spareParts.map((part: any) => (
+                                    <PurchasePartRow
+                                        key={part.id}
+                                        part={part}
+                                        selectedItem={selectedByPartId.get(part.id) ?? null}
+                                        onToggle={toggleItem}
+                                        onQtyChange={changeItemQtyById}
+                                        onPriceChange={changeItemPriceById}
+                                    />
+                                ))
                             )}
                             {isFetchingNextPage && (
                                 <View className="py-4">
@@ -642,6 +632,7 @@ export default function PurchaseScreen() {
                                 label="Informasi Supplier"
                                 value={selectedSupplier}
                                 onSelect={setSelectedSupplier}
+                                onAddNew={(supplier) => setSelectedSupplier(supplier)}
                                 placeholder="Pilih Supplier..."
                             />
                         </Card>
@@ -730,10 +721,10 @@ export default function PurchaseScreen() {
                     )}
                 </View>
                 <View className="flex-row space-x-3">
-                    {step > 1 && (
-                        <Button title="Kembali" variant="outline" className="flex-1" onPress={() => setStep(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} />
+                    {stepOrder.indexOf(step) > 0 && (
+                        <Button title="Kembali" variant="outline" className="flex-1" onPress={handleBackStep} />
                     )}
-                    {step < 3 ? (
+                    {stepOrder.indexOf(step) < stepOrder.length - 1 ? (
                         <Button
                             title="Lanjut"
                             className="flex-1"
@@ -1130,6 +1121,82 @@ function NoticeBanner({ type, title, message, onClose }: { type: NoticeType; tit
         </View>
     );
 }
+
+const PurchasePartRow = React.memo(function PurchasePartRow({
+    part,
+    selectedItem,
+    onToggle,
+    onQtyChange,
+    onPriceChange,
+}: {
+    part: any;
+    selectedItem: any | null;
+    onToggle: (part: any) => void;
+    onQtyChange: (itemId: number, qty: number) => void;
+    onPriceChange: (itemId: number, val: string) => void;
+}) {
+    const selected = selectedItem !== null;
+
+    return (
+        <View className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-blue-50 border-blue-200' : 'bg-surface border-transparent'}`}>
+            <Pressable onPress={() => onToggle(part)} className="flex-row items-start">
+                <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : 'border-transparent'}`}>
+                    {selected && <Check size={16} color="white" />}
+                </View>
+                <View className="flex-1">
+                    <View className="flex-row items-center">
+                        <Package size={18} color={selected ? '#2563EB' : '#94A3B8'} />
+                        <Typography weight="bold" className="text-sm ml-2 flex-1 text-textMain" numberOfLines={1}>
+                            {part.nama}
+                        </Typography>
+                    </View>
+                    <Typography className="text-textGray text-[11px] mt-1">
+                        {part.kode || '-'} • Stok: {isAlwaysReadyStock(part.stok) ? 'Tanpa Stok' : Number(part.stok || 0)}
+                    </Typography>
+                    {!selected && (
+                        <Typography className="text-primary text-xs font-bold mt-1">
+                            {formatCurrency(part.harga_beli)}
+                        </Typography>
+                    )}
+                </View>
+            </Pressable>
+
+            {selected && selectedItem && (
+                <View className="mt-3 pt-3 border-t border-blue-100">
+                    <View className="flex-row items-center space-x-3">
+                        <View className="flex-1">
+                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Qty</Typography>
+                            <QtyControl
+                                value={Number(selectedItem.qty)}
+                                color="blue"
+                                onMinus={() => onQtyChange(selectedItem.id, Number(selectedItem.qty) - (Number(selectedItem.qty) % 1 ? 0.5 : 1))}
+                                onPlus={() => onQtyChange(selectedItem.id, Number(selectedItem.qty) + (Number(selectedItem.qty) % 1 ? 0.5 : 1))}
+                                onChangeQty={(qty) => onQtyChange(selectedItem.id, qty)}
+                            />
+                        </View>
+                        <View className="flex-1">
+                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Harga Beli</Typography>
+                            <View className="flex-row items-center bg-surface rounded-xl border border-blue-100 px-3 h-9">
+                                <Typography className="text-blue-600 text-xs font-bold mr-1">Rp</Typography>
+                                <TextInput
+                                    value={selectedItem.price}
+                                    onChangeText={(val) => onPriceChange(selectedItem.id, val)}
+                                    keyboardType="number-pad"
+                                    className="flex-1 text-blue-600 text-xs font-bold p-0"
+                                />
+                            </View>
+                        </View>
+                    </View>
+                    <View className="flex-row justify-end mt-2">
+                        <Typography className="text-blue-700 text-[10px] font-bold">
+                            Subtotal: {formatCurrency((Number(selectedItem.qty) || 0) * (Number(parseNumber(selectedItem.price)) || 0))}
+                        </Typography>
+                    </View>
+                </View>
+            )}
+        </View>
+    );
+});
 
 function QtyControl({ value, color, onMinus, onPlus, onChangeQty }: {
     value: number;

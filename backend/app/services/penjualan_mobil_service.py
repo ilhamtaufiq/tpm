@@ -900,15 +900,73 @@ class PenjualanMobilService:
 
         return f"{prefix}{date_str}{new_num:04d}"
 
+    def _catat_refund_booking_langsung(
+        self,
+        transaksi: TransaksiPenjualanMobil,
+        refund: Decimal,
+        refund_payments: List[Dict[str, Any]],
+        user_id: Optional[int] = None,
+    ) -> None:
+        """Catat refund DP booking sebagai kas KELUAR (satu baris per metode/kas)."""
+        entries = []
+        for item in refund_payments:
+            nominal = Decimal(str(item.get("nominal", 0)))
+            if nominal <= 0:
+                continue
+            kas_jenis = item.get("kas_jenis")
+            if kas_jenis is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Pilih kas/bank untuk refund langsung",
+                )
+            entries.append((item["metode"], kas_jenis, nominal))
+
+        total = sum((nominal for _, _, nominal in entries), Decimal("0"))
+        if total != refund:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Total refund langsung ({total}) harus sama dengan sisa DP ({refund})",
+            )
+
+        for metode, kas_jenis, nominal in entries:
+            create_kas_entry(
+                db=self.db,
+                tanggal=date.today(),
+                tipe=KasBankType.KELUAR,
+                nominal=nominal,
+                sumber=KasBankSource.JUAL_BELI_MOBIL,
+                metode_bayar=metode,
+                referensi_id=transaksi.id,
+                nomor_referensi=transaksi.nomor_transaksi,
+                keterangan=f"Refund DP pembatalan booking {transaksi.nomor_transaksi}",
+                kas_jenis=kas_jenis,
+                user_id=user_id,
+                commit=False,
+            )
+
     def cancel_booking(
         self,
         transaksi_id: int,
         penalti: Decimal = Decimal("0"),
-        refund_entries: List[tuple[PaymentMethod, Optional[Decimal]]] = None,
+        refund_mode: str = "HUTANG",
+        refund_payments: Optional[List[Dict[str, Any]]] = None,
         alasan: str = "",
         user_id: Optional[int] = None,
     ) -> TransaksiPenjualanMobil:
-        """Cancel a booking, recognize penalty income, and defer refund via hutang."""
+        """Cancel a booking, recognize penalty income, and refund the remaining DP.
+
+        refund_mode:
+          - "LANGSUNG": refund dibayar sekarang. `refund_payments` berisi
+            [{metode, kas_jenis, nominal}] dan totalnya harus sama dengan sisa DP.
+            Dicatat sebagai kas KELUAR.
+          - "HUTANG" (default): refund ditunda sebagai hutang uang muka penjualan,
+            kas tidak berubah, dan dilunasi dari menu Hutang.
+        """
+        if refund_mode not in ("LANGSUNG", "HUTANG"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Mode refund harus LANGSUNG atau HUTANG",
+            )
         transaksi = self.get_by_id(transaksi_id)
 
         # Validate: must be a non-LUNAS booking
@@ -1023,9 +1081,13 @@ class PenjualanMobilService:
 
         self.db.flush()
 
-        # 5. Defer refund as hutang DP jual mobil (uang muka penjualan).
-        # Cash stays unchanged until refund is paid from the Hutang menu.
-        if refund > 0:
+        # 5a. Refund langsung: kas keluar sekarang sesuai metode/kas yang dipilih.
+        if refund > 0 and refund_mode == "LANGSUNG":
+            self._catat_refund_booking_langsung(transaksi, refund, refund_payments or [], user_id)
+
+        # 5b. Refund ditunda: hutang uang muka penjualan. Kas tetap sampai dilunasi
+        # dari menu Hutang.
+        if refund > 0 and refund_mode == "HUTANG":
             refund_hutang = HutangUsaha(
                 nomor_hutang=self._generate_nomor_hutang(),
                 tanggal=date.today(),

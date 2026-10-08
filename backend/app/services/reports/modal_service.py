@@ -87,8 +87,11 @@ class ModalService(BaseReportService):
         ).scalar() or 0)
 
     def _backdate_detail(self, anchor: date) -> Dict[str, Any]:
+        # Setoran modal (sumber MODAL) bertanggal sebelum anchor sudah diakui di
+        # baris Setoran Modal sendiri, jadi tidak didaftar sebagai backdate.
         rows = self.db.query(KasBank).filter(
             KasBank.tanggal < anchor,
+            KasBank.sumber != KasBankSource.MODAL,
             self._bukan_impor(),
         ).order_by(KasBank.tanggal.desc(), KasBank.id.desc()).all()
         net = sum(
@@ -331,6 +334,19 @@ class ModalService(BaseReportService):
         sebelum_dari = period_dari - timedelta(days=1)
         setoran_modal = self._setoran_modal(period_dari, tanggal_sampai)
         setoran_modal_sebelumnya = self._setoran_modal(flow_dari, sebelum_dari)
+
+        # Setoran modal non-impor yang bertanggal SEBELUM anchor sudah ikut di
+        # Modal Awal beku (snapshot neraca(anchor) memuat kasnya), sehingga tidak
+        # pernah tampil sebagai Penambahan Modal. Porsinya dikeluarkan dari Modal
+        # Awal lalu diakui sebagai setoran: yang jatuh di periode filter masuk
+        # Penambahan Modal, sisanya masuk Setoran Modal Bersih Sebelumnya.
+        # Total Modal Akhir tidak berubah (Modal Awal + mutasi tetap sama).
+        anchor_kemarin = anchor - timedelta(days=1)
+        setoran_pra_anchor = self._setoran_modal(date(1900, 1, 1), anchor_kemarin)
+        setoran_pra_anchor_periode = self._setoran_modal(tanggal_dari, anchor_kemarin)
+        setoran_modal += setoran_pra_anchor_periode
+        setoran_modal_sebelumnya += setoran_pra_anchor - setoran_pra_anchor_periode
+        modal_awal_theoretical -= setoran_pra_anchor
 
         # Kumulatif sejak posisi pembuka (flow_dari), bukan tanggal_dari filter —
         # lihat catatan MODAL AWAL/BEKU di atas.

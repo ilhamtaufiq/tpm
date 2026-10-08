@@ -730,14 +730,6 @@ export default function HutangUsahaScreen() {
                 subtitle={unitLabel ? `Daftar hutang unit ${unitLabel}` : 'Monitoring Kewajiban & Pembayaran'}
                 showBackButton
                 onBackButtonPress={handleGoBack}
-                rightElement={canCreate ? (
-                    <Pressable
-                        onPress={handleOpenCreate}
-                        className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
-                    >
-                        <Plus size={20} color="#1F2937" />
-                    </Pressable>
-                ) : undefined}
             />
 
             {/* Filters & Search */}
@@ -970,6 +962,18 @@ export default function HutangUsahaScreen() {
                 variant={alertState.variant}
                 onClose={hideAlert}
             />
+
+            {/* FAB pojok kanan bawah (di atas tab bar): header desktop menutupi tombol di kanan atas */}
+            {canCreate && (
+                <Pressable
+                    onPress={handleOpenCreate}
+                    accessibilityLabel="Buat hutang baru"
+                    style={{ position: 'absolute', right: 20, bottom: getCustomTabBarBottomPadding(insets.bottom, 16), elevation: 5, zIndex: 999 }}
+                    className="bg-primary w-14 h-14 rounded-full items-center justify-center shadow-xl active:opacity-90"
+                >
+                    <Plus size={26} color="white" strokeWidth={2.5} />
+                </Pressable>
+            )}
         </View>
     );
 }

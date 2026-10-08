@@ -113,7 +113,7 @@ export const usePayPenjualanMobil = () => {
 export const useCancelBookingMobil = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, data }: { id: number; data: { penalti: number; metode_refund?: string; refund_payments?: { metode: string; nominal: number }[]; alasan?: string } }) =>
+        mutationFn: ({ id, data }: { id: number; data: { penalti: number; refund_mode?: 'LANGSUNG' | 'HUTANG'; refund_payments?: { metode: string; kas_jenis?: string; nominal: number }[]; alasan?: string } }) =>
             mobilService.cancelBookingMobil(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['penjualan_mobil'] });
