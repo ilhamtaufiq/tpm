@@ -364,6 +364,9 @@ export default function NeracaScreen() {
                     {(h.uang_muka_penjualan || 0) > 0 && (
                         <FinancialRow label="Uang Muka Penjualan" value={h.uang_muka_penjualan} small large />
                     )}
+                    {(h.hutang_gaji || 0) > 0 && (
+                        <FinancialRow label="Hutang Gaji Karyawan" value={h.hutang_gaji} small large />
+                    )}
                     {(h.piutang_booking || 0) > 0 && (
                         <FinancialRow label="Sisa Kewajiban Booking Mobil" value={h.piutang_booking} small large />
                     )}

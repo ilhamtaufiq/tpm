@@ -37,7 +37,7 @@ Tambahkan baris baru di atas (terbaru dulu) setiap bikin sesi baru:
 
 | Tanggal | Modul | Status | Sesi |
 |---|---|---|---|
-| 2026-10-08 | keuangan | partial | [[Sessions/2026-10-08 1200 - Feedback APK Setoran Refund Neraca & Pembelian]] |
+| 2026-10-08 | keuangan | done | [[Sessions/2026-10-08 1200 - Feedback APK Setoran Refund Neraca & Pembelian]] |
 | 2026-10-04 | keuangan | done | [[Sessions/2026-10-04 1700 - Uji Import Periode Ke-2 & Fix Laporan Perubahan Modal]] |
 | 2026-10-05 | keuangan | done | [[Sessions/2026-10-05 2000 - Selisih Kas Real & Tanggal Transaksi Masa Depan]] |
 | 2026-09-30 | keuangan | done | [[Sessions/2026-09-30 1315 - Fix False Duplicate Error Pembayaran Hutang KasBank]] |

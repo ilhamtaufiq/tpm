@@ -72,6 +72,7 @@ export interface NeracaHutang {
     hutang_jasa_angkut?: number;
     hutang_internal?: number;
     uang_muka_penjualan?: number;
+    hutang_gaji?: number;
     piutang_booking?: number;
     total_hutang: number;
 }

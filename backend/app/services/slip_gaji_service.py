@@ -18,6 +18,11 @@ from app.utils.constants import (
     KasBankSource,
 )
 from app.services.kas_bank_integration import create_kas_entry
+from app.services.gaji_akrual_service import (
+    GAJI_AKRUAL_MULAI,
+    akrual_gaji_periode,
+    hadir_dan_gaji_slip,
+)
 
 
 def get_week_dates(tahun: int, minggu: int) -> tuple[date, date]:
@@ -116,6 +121,35 @@ class SlipGajiService:
 
         return total
 
+    def _hadir_dan_gaji(
+        self,
+        karyawan: Karyawan,
+        tanggal_mulai: date,
+        tanggal_akhir: date,
+        hadir_input: Optional[Any] = None,
+    ) -> tuple[Decimal, Decimal]:
+        """Jumlah hadir & gaji pokok slip.
+
+        Periode >= GAJI_AKRUAL_MULAI: dari absensi (sudah diakui saat diisi), hadir
+        input yang berbeda ditolak. Periode lama: rumus lama (Gaji Pokok / 6 x hadir).
+        """
+        if tanggal_mulai >= GAJI_AKRUAL_MULAI:
+            hadir, gaji = hadir_dan_gaji_slip(self.db, karyawan.id, tanggal_mulai, tanggal_akhir)
+            if hadir_input is not None and Decimal(str(hadir_input)) != hadir:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Jumlah hadir {hadir_input} untuk {karyawan.nama} tidak sama dengan absensi ({hadir}). Akrual gaji mengikuti absensi; ubah absensi dulu.",
+                )
+            return hadir, gaji
+
+        if hadir_input is not None:
+            hadir = Decimal(str(hadir_input))
+        else:
+            hadir = self._get_weekly_attendance(karyawan.id, tanggal_mulai, tanggal_akhir)
+        daily_rate = karyawan.gaji_pokok / Decimal("6")
+        gaji = (daily_rate * hadir).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        return hadir, gaji
+
     def _get_kasbon_total(self, karyawan_id: int) -> Decimal:
         """Get total unpaid kasbon for employee using PiutangUsaha remaining balance."""
         from app.models.keuangan import PiutangUsaha
@@ -174,12 +208,8 @@ class SlipGajiService:
         # Get week dates
         tanggal_mulai, tanggal_akhir = get_week_dates(data.periode_tahun, data.periode_minggu)
 
-        # Get attendance count
-        jumlah_hadir = self._get_weekly_attendance(
-            data.karyawan_id,
-            tanggal_mulai,
-            tanggal_akhir,
-        )
+        # Jumlah hadir & gaji pokok (akrual dari absensi untuk periode baru)
+        jumlah_hadir, gaji_pokok_pro_rated = self._hadir_dan_gaji(karyawan, tanggal_mulai, tanggal_akhir)
 
         # Get kasbon and overtime from data or default to 0
         potongan_kasbon = data.potongan_kasbon if data.potongan_kasbon is not None else Decimal("0")
@@ -187,10 +217,6 @@ class SlipGajiService:
 
         # Generate slip number
         nomor_slip = self._generate_nomor_slip(data.periode_minggu, data.periode_tahun)
-
-        # Calculate pro-rated salary: (Gaji Pokok / 6) * jumlah_hadir
-        daily_rate = karyawan.gaji_pokok / Decimal("6")
-        gaji_pokok_pro_rated = (daily_rate * jumlah_hadir).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
         # Create slip
         slip = SlipGaji(
@@ -251,15 +277,11 @@ class SlipGajiService:
             if existing:
                 continue
 
-            # Get attendance
-            jumlah_hadir = self._get_weekly_attendance(emp.id, tanggal_mulai, tanggal_akhir)
+            # Attendance & gaji pokok (akrual dari absensi untuk periode baru)
+            jumlah_hadir, gaji_pokok_pro_rated = self._hadir_dan_gaji(emp, tanggal_mulai, tanggal_akhir)
 
             # Get kasbon
             kasbon_total = self._get_kasbon_total(emp.id)
-
-            # Pro-rated formula: (Gaji Pokok / 6) * jumlah_hadir
-            daily_rate = emp.gaji_pokok / Decimal("6")
-            gaji_pokok_pro_rated = (daily_rate * jumlah_hadir).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
             gaji_bersih = gaji_pokok_pro_rated
 
             items.append({
@@ -301,15 +323,11 @@ class SlipGajiService:
 
         items = []
         for emp in employees:
-            # Get attendance within range
-            jumlah_hadir = self._get_weekly_attendance(emp.id, tanggal_mulai, tanggal_akhir)
+            # Attendance & gaji pokok dalam rentang (akrual dari absensi untuk periode baru)
+            jumlah_hadir, gaji_pokok_pro_rated = self._hadir_dan_gaji(emp, tanggal_mulai, tanggal_akhir)
 
             # Get kasbon
             kasbon_total = self._get_kasbon_total(emp.id)
-
-            # Pro-rated formula: (Gaji Pokok / 6) * jumlah_hadir
-            daily_rate = emp.gaji_pokok / Decimal("6")
-            gaji_pokok_pro_rated = (daily_rate * jumlah_hadir).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
             gaji_bersih = gaji_pokok_pro_rated - kasbon_total
 
             items.append({
@@ -384,11 +402,10 @@ class SlipGajiService:
                 # Generate slip number
                 nomor_slip = self._generate_nomor_slip(minggu, tahun)
 
-                # Calculate pro-rated salary: (Gaji Pokok / 6) * jumlah_hadir
-                # Note: item.get("jumlah_hadir") might be float now
-                hadir_val = Decimal(str(jumlah_hadir))
-                daily_rate = karyawan.gaji_pokok / Decimal("6")
-                gaji_pokok_pro_rated = (daily_rate * hadir_val).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+                # Gaji pokok: akrual absensi untuk periode baru, rumus lama untuk periode lama
+                hadir_val, gaji_pokok_pro_rated = self._hadir_dan_gaji(
+                    karyawan, tanggal_mulai, tanggal_akhir, jumlah_hadir
+                )
 
                 # Create slip with overridden attendance, kasbon, and overtime
                 slip = SlipGaji(
@@ -464,10 +481,10 @@ class SlipGajiService:
             # Generate slip number
             nomor_slip = self._generate_nomor_slip(minggu, tahun)
 
-            # Calculate pro-rated salary: (Gaji Pokok / 6) * jumlah_hadir
-            hadir_val = Decimal(str(jumlah_hadir))
-            daily_rate = karyawan.gaji_pokok / Decimal("6")
-            gaji_pokok_pro_rated = (daily_rate * hadir_val).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+            # Gaji pokok: akrual absensi untuk periode baru, rumus lama untuk periode lama
+            hadir_val, gaji_pokok_pro_rated = self._hadir_dan_gaji(
+                karyawan, tanggal_mulai, tanggal_akhir, jumlah_hadir
+            )
 
             # Create slip with range dates, kasbon and overtime
             slip = SlipGaji(
@@ -848,10 +865,19 @@ class SlipGajiService:
             func.sum(SlipGaji.potongan_kasbon).label("total_potongan_kasbon"),
         ).first()
 
+        # Gaji pokok slip periode baru sudah diakui sebagai beban saat absensi diisi
+        # (lihat gaji_akrual_service), jadi hanya slip periode lama yang jadi beban di sini.
+        gaji_pokok_lama = (
+            query.filter(SlipGaji.tanggal_mulai < GAJI_AKRUAL_MULAI)
+            .with_entities(func.sum(SlipGaji.gaji_pokok))
+            .scalar()
+        ) or Decimal("0")
+
         return {
             "count": result.count or 0,
             "total": float(result.total or 0),
-            "total_gaji_pokok": float(result.total_gaji_pokok or 0),
+            "total_gaji_pokok": float(gaji_pokok_lama),
+            "total_gaji_pokok_akrual": float(akrual_gaji_periode(self.db, tanggal_dari, tanggal_sampai)),
             "total_uang_lembur": float(result.total_uang_lembur or 0),
             "total_potongan_kasbon": float(result.total_potongan_kasbon or 0),
         }

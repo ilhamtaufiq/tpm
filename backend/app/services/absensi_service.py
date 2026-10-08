@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status as http_status
 
 from app.models.karyawan import Karyawan, Absensi
+from app.services.gaji_akrual_service import pastikan_absensi_belum_di_slip
 from app.schemas.karyawan import AbsensiCreate, AbsensiUpdate
 from app.utils.constants import AttendanceStatus, EmployeeStatus
 from app.utils.helpers import get_jakarta_date, get_jakarta_now
@@ -60,6 +61,7 @@ class AbsensiService:
                 status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Absensi untuk tanggal {data.tanggal} sudah ada",
             )
+        pastikan_absensi_belum_di_slip(self.db, data.karyawan_id, data.tanggal)
 
         absensi = Absensi(
             karyawan_id=data.karyawan_id,
@@ -85,6 +87,7 @@ class AbsensiService:
         results = []
 
         for item in items:
+            pastikan_absensi_belum_di_slip(self.db, item.karyawan_id, tanggal)
             # Skip if exists
             existing = (
                 self.db.query(Absensi)
@@ -189,6 +192,9 @@ class AbsensiService:
     def update(self, absensi_id: int, data: AbsensiUpdate) -> Absensi:
         """Update attendance record."""
         absensi = self.get_by_id(absensi_id)
+        pastikan_absensi_belum_di_slip(self.db, absensi.karyawan_id, absensi.tanggal)
+        if getattr(data, "tanggal", None) is not None:
+            pastikan_absensi_belum_di_slip(self.db, absensi.karyawan_id, data.tanggal)
 
         update_data = data.model_dump(exclude_unset=True)
 
@@ -203,6 +209,7 @@ class AbsensiService:
     def delete(self, absensi_id: int) -> bool:
         """Delete attendance record."""
         absensi = self.get_by_id(absensi_id)
+        pastikan_absensi_belum_di_slip(self.db, absensi.karyawan_id, absensi.tanggal)
 
         self.db.delete(absensi)
         self.db.commit()
@@ -374,6 +381,7 @@ class AbsensiService:
 
         tanggal = tanggal or get_jakarta_date()
         jam = jam or get_jakarta_now().time()
+        pastikan_absensi_belum_di_slip(self.db, karyawan_id, tanggal)
 
         # Check if already clocked in
         existing = (
@@ -419,6 +427,7 @@ class AbsensiService:
 
         tanggal = tanggal or get_jakarta_date()
         jam = jam or get_jakarta_now().time()
+        pastikan_absensi_belum_di_slip(self.db, karyawan_id, tanggal)
 
         # Find today's attendance
         absensi = (

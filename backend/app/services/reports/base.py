@@ -12,6 +12,7 @@ from app.services.pengeluaran_service import PengeluaranService
 from app.services.penjualan_mobil_service import PenjualanMobilService
 from app.services.muatan_service import MuatanService
 from app.services.slip_gaji_service import SlipGajiService
+from app.services.gaji_akrual_service import hutang_gaji_asof
 from app.services.kas_bank_service import KasBankService
 
 from app.models.bengkel import (
@@ -812,7 +813,9 @@ class BaseReportService:
         # Consolidated hutang excludes internal unit payables. Internal balances
         # are kept in the breakdown for unit tracing, but the company does not
         # owe itself in the consolidated balance sheet.
-        hutang_total = hutang_part + hutang_mobil + hutang_ja + hutang_investor + hutang_lainnya + customer_dp + net_booking_piutang
+        # Hutang gaji: akrual absensi yang belum dicairkan lewat slip (kewajiban ke karyawan).
+        hutang_gaji = float(hutang_gaji_asof(self.db, tanggal_sampai))
+        hutang_total = hutang_part + hutang_mobil + hutang_ja + hutang_investor + hutang_lainnya + customer_dp + net_booking_piutang + hutang_gaji
 
         # Piutang Breakdown
         def get_piutang_balance(unit: Optional[KasBankSource] = None, source: Optional[PiutangSource] = None, include_internal: bool = False, unit_in: Optional[List[KasBankSource]] = None, exclude_sources: Optional[List[PiutangSource]] = None) -> float:
@@ -956,7 +959,8 @@ class BaseReportService:
         total_laba_gross = laba_mobil_tpm + laba_bengkel_kotor + laba_ja_tpm
         
         # Gaji total (salary) — must be included as expense for retained_earnings
-        gaji_pokok = float(gaji_summary.get("total_gaji_pokok", 0))
+        # Gaji pokok = slip periode lama yang dicairkan + akrual absensi periode ini.
+        gaji_pokok = float(gaji_summary.get("total_gaji_pokok", 0)) + float(gaji_summary.get("total_gaji_pokok_akrual", 0))
         gaji_lembur = float(gaji_summary.get("total_uang_lembur", 0))
         
         # Investor sharing only from realized unit sales — penalty stays separate.
@@ -1267,7 +1271,8 @@ class BaseReportService:
                         "uang_muka_penjualan": customer_dp,
                         "piutang_booking": net_booking_piutang,
                         "lainnya": hutang_lainnya,
-                        "internal": hutang_internal
+                        "internal": hutang_internal,
+                        "gaji": hutang_gaji
                     }
                 },
                 "piutang": {
