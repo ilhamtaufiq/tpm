@@ -58,14 +58,15 @@ export function useResponsive() {
 }
 
 /** Subscribe to dimension changes outside React tree (e.g. root layout). */
-export function useDimensionsListener() {
+export function useDimensionsListener(enabled = true) {
     const [dimensions, setDimensions] = useState(() => Dimensions.get('window'));
 
     useEffect(() => {
+        if (!enabled) return;
         const handler = ({ window }: { window: ScaledSize }) => setDimensions(window);
         const subscription = Dimensions.addEventListener('change', handler);
         return () => subscription.remove();
-    }, []);
+    }, [enabled]);
 
     return dimensions;
 }

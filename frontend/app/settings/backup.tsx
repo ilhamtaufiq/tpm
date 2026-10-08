@@ -1,6 +1,6 @@
 import { appAlert } from '../../utils/appAlert';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Animated, Easing } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Animated, Easing, Text } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -36,17 +36,32 @@ import { id as idLocale } from 'date-fns/locale';
  * Byte-level bar when the platform reports Content-Length, else an indeterminate
  * sweep. `progress: null` means unknown — zip/mysqldump give no byte counts.
  */
+// Timer detik dipisah ke komponen sendiri: tick tiap detik hanya me-render teks ini,
+// bukan seluruh BackupScreen.
+function ElapsedText({ active }: { active: boolean }) {
+    const [seconds, setSeconds] = useState(0);
+    useEffect(() => {
+        if (!active) return;
+        setSeconds(0);
+        const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+        return () => clearInterval(id);
+    }, [active]);
+    return <Text>{seconds}s</Text>;
+}
+
 function ProgressBar({ progress, color }: { progress: number | null; color: string }) {
     const anim = useRef(new Animated.Value(0)).current;
     const sweep = useRef(new Animated.Value(0)).current;
+    const [trackWidth, setTrackWidth] = useState(0);
 
     useEffect(() => {
         if (progress === null) return;
+        // Pakai transform (translateX/scaleX), bukan animasi width, supaya jalan di native thread.
         Animated.timing(anim, {
             toValue: Math.min(100, Math.max(0, progress)),
             duration: 300,
             easing: Easing.out(Easing.quad),
-            useNativeDriver: false,
+            useNativeDriver: true,
         }).start();
     }, [progress, anim]);
 
@@ -79,13 +94,21 @@ function ProgressBar({ progress, color }: { progress: number | null; color: stri
         );
     }
 
+    // Bar dibentang selebar track lalu diskalakan dari kiri: translateX menjaga tepi kiri tetap di 0.
     return (
-        <View className="h-1.5 w-full overflow-hidden rounded-full bg-background">
+        <View
+            className="h-1.5 w-full overflow-hidden rounded-full bg-background"
+            onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+        >
             <Animated.View
                 className="h-full rounded-full"
                 style={{
+                    width: trackWidth,
                     backgroundColor: color,
-                    width: anim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }),
+                    transform: [
+                        { translateX: anim.interpolate({ inputRange: [0, 100], outputRange: [-trackWidth / 2, 0] }) },
+                        { scaleX: anim.interpolate({ inputRange: [0, 100], outputRange: [0, 1] }) },
+                    ],
                 }}
             />
         </View>
@@ -103,8 +126,6 @@ export default function BackupScreen() {
     // Byte-level % when the platform reports sizes; null renders the indeterminate sweep.
     const [progress, setProgress] = useState<number | null>(null);
     const [downloadingName, setDownloadingName] = useState<string | null>(null);
-    // Create/restore are single blocking calls with no byte counts — show elapsed instead.
-    const [elapsed, setElapsed] = useState(0);
 
     const { data: backups, isLoading, refetch } = useBackupList();
     const createMutation = useCreateBackup();
@@ -115,12 +136,6 @@ export default function BackupScreen() {
     const creating = createMutation.isPending;
     const restoring = isRestoring;
     const timed = creating || restoring;
-    useEffect(() => {
-        if (!timed) return;
-        setElapsed(0);
-        const id = setInterval(() => setElapsed((s) => s + 1), 1000);
-        return () => clearInterval(id);
-    }, [timed]);
 
     const busyLabel = creating
         ? 'Membuat backup (dump DB + zip)…'
@@ -418,7 +433,7 @@ export default function BackupScreen() {
                                 {busyLabel}
                             </Typography>
                             <Typography className="text-slate-400 text-[10px] font-bold ml-2">
-                                {progress !== null ? `${progress}%` : `${elapsed}s`}
+                                {progress !== null ? `${progress}%` : <ElapsedText active={timed} />}
                             </Typography>
                         </View>
                         <ProgressBar
@@ -528,7 +543,7 @@ export default function BackupScreen() {
                                 {isRestoring ? (
                                     <>
                                         <ActivityIndicator color="white" />
-                                        <Typography weight="bold" className="text-white text-base ml-3">Merestore… {elapsed}s</Typography>
+                                        <Typography weight="bold" className="text-white text-base ml-3">Merestore… <ElapsedText active={isRestoring} /></Typography>
                                     </>
                                 ) : (
                                     <>
