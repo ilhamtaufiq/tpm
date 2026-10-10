@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from app.database.connection import SessionLocal
 from app.models.karyawan import Absensi, Karyawan, SlipGaji
 from app.models.keuangan import KasBank
-from app.schemas.karyawan import SlipGajiCreate, SlipGajiUpdate, AbsensiUpdate
+from app.schemas.karyawan import AbsensiCreate, SlipGajiCreate, SlipGajiUpdate, AbsensiUpdate
 from app.services.absensi_service import AbsensiService
 from app.services.gaji_akrual_service import (
     GAJI_AKRUAL_MULAI,
@@ -53,8 +53,12 @@ def _bersihkan(db):
     db.commit()
 
 
+HARI_INI_UJI = date(2026, 10, 30)  # setelah periode tes; slip hanya untuk periode selesai
+
+
 @pytest.fixture
-def ctx():
+def ctx(monkeypatch):
+    monkeypatch.setattr("app.services.slip_gaji_service.get_jakarta_date", lambda: HARI_INI_UJI)
     db = SessionLocal()
     _bersihkan(db)
     kar = Karyawan(
@@ -175,3 +179,31 @@ def test_slip_ganda_dilewati_dan_tidak_muncul_di_pending(ctx):
 
     pending = [i for i in svc.get_preview_by_range(SENIN, SABTU)["items"] if i["karyawan_id"] == kar.id]
     assert pending == []
+
+
+def test_slip_periode_berjalan_ditolak(ctx, monkeypatch):
+    """Slip periode yang belum selesai ditolak, supaya absensi hari berikutnya tidak terkunci."""
+    db, kar = ctx
+    monkeypatch.setattr("app.services.slip_gaji_service.get_jakarta_date", lambda: date(2026, 10, 14))
+    _absen(db, kar, SENIN, AttendanceStatus.HADIR)
+    with pytest.raises(HTTPException) as salah:
+        SlipGajiService(db).create_bulk_by_range(
+            SENIN, SABTU, 42, 2026,
+            items=[{"karyawan_id": kar.id, "jumlah_hadir": 1, "potongan_kasbon": 0, "uang_lembur": 0}],
+        )
+    assert salah.value.status_code == 400
+    assert db.query(SlipGaji).filter(SlipGaji.karyawan_id == kar.id).count() == 0
+
+
+def test_absensi_di_luar_slip_tetap_bisa_diisi(ctx):
+    """Kunci absensi hanya berlaku untuk tanggal yang sudah masuk slip."""
+    db, kar = ctx
+    _absen(db, kar, SENIN, AttendanceStatus.HADIR)
+    SlipGajiService(db).create_bulk_by_range(
+        SENIN, SABTU, 42, 2026,
+        items=[{"karyawan_id": kar.id, "jumlah_hadir": 1, "potongan_kasbon": 0, "uang_lembur": 0}],
+    )
+    absensi = AbsensiService(db).create(AbsensiCreate(
+        karyawan_id=kar.id, tanggal=date(2026, 10, 20), status=AttendanceStatus.HADIR,
+    ))
+    assert absensi.id is not None
