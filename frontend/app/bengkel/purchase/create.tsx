@@ -578,7 +578,7 @@ export default function PurchaseScreen() {
                                         className={`flex-1 py-2.5 rounded-xl items-center ${active ? 'bg-primary' : ''}`}
                                     >
                                         <Typography weight="bold" className={`text-xs ${active ? 'text-white' : 'text-textGray'}`}>
-                                            {opt === 'PART' ? 'Part dulu' : 'Supplier dulu'}
+                                            {opt === 'PART' ? 'Part' : 'Supplier'}
                                         </Typography>
                                     </Pressable>
                                 );
