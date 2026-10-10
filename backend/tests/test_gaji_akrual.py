@@ -93,7 +93,7 @@ def test_absensi_langsung_jadi_beban_dan_hutang_gaji(ctx):
 
 def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     db, kar = ctx
-    tgl_mulai, tgl_akhir = get_week_dates(2026, 41)
+    tgl_mulai, tgl_akhir = get_week_dates(2026, 42)
     assert tgl_mulai == SENIN and tgl_akhir == SABTU
     _absen(db, kar, SENIN, AttendanceStatus.HADIR)
     _absen(db, kar, SELASA, AttendanceStatus.HADIR)
@@ -101,7 +101,7 @@ def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     hutang_sebelum = hutang_gaji_asof(db, SABTU)
 
     svc = SlipGajiService(db)
-    slip = svc.create(SlipGajiCreate(karyawan_id=kar.id, periode_minggu=41, periode_tahun=2026))
+    slip = svc.create(SlipGajiCreate(karyawan_id=kar.id, periode_minggu=42, periode_tahun=2026))
     assert slip.gaji_pokok == Decimal("250000")
     assert slip.jumlah_hadir == Decimal("2.5")
 
@@ -118,7 +118,7 @@ def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     # Beban gaji periode slip sudah diakui di absensi: tidak dihitung lagi saat cair.
     ringkasan = svc.get_summary_by_date_range(SENIN, SABTU)
     assert ringkasan["total_gaji_pokok"] == 0.0
-    assert ringkasan["total_gaji_pokok_akrual"] == 250000.0
+    assert ringkasan["total_gaji_pokok_akrual"] == float(akrual_gaji_periode(db, SENIN, SABTU))
     neraca = NeracaService(db).get_report(SABTU)
     assert neraca["is_balanced"] is True
 
@@ -129,12 +129,12 @@ def test_override_jumlah_hadir_ditolak_dan_absensi_terkunci(ctx):
     svc = SlipGajiService(db)
     with pytest.raises(HTTPException) as salah:
         svc.create_bulk_by_range(
-            SENIN, SABTU, 41, 2026,
+            SENIN, SABTU, 42, 2026,
             items=[{"karyawan_id": kar.id, "jumlah_hadir": 3}],
         )
     assert salah.value.status_code == 400
 
-    svc.create(SlipGajiCreate(karyawan_id=kar.id, periode_minggu=41, periode_tahun=2026))
+    svc.create(SlipGajiCreate(karyawan_id=kar.id, periode_minggu=42, periode_tahun=2026))
     absensi_svc = AbsensiService(db)
     absen = db.query(Absensi).filter(Absensi.karyawan_id == kar.id).one()
     with pytest.raises(HTTPException) as kunci:

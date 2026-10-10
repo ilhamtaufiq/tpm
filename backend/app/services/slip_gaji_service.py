@@ -26,22 +26,19 @@ from app.services.gaji_akrual_service import (
 
 
 def get_week_dates(tahun: int, minggu: int) -> tuple[date, date]:
-    """Get start and end dates for a week number."""
-    # Get first day of year
-    first_day = date(tahun, 1, 1)
-    # Find first Monday
-    days_to_monday = (7 - first_day.weekday()) % 7
-    if first_day.weekday() != 0:
-        first_monday = first_day + timedelta(days=days_to_monday)
-    else:
-        first_monday = first_day
+    """Senin–Sabtu untuk nomor minggu ISO.
 
-    # Calculate week start (Monday)
-    week_start = first_monday + timedelta(weeks=minggu - 1)
-    # Week end is Saturday (6 days for workweek Mon-Sat)
-    week_end = week_start + timedelta(days=5)
-
-    return week_start, week_end
+    Harus sama dengan get_current_week (ISO) dan UI: slip yang dibuat per minggu
+    menghitung absensi di tanggal yang benar, bukan minggu lain.
+    """
+    try:
+        week_start = date.fromisocalendar(tahun, minggu, 1)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Minggu {minggu} tidak ada di tahun {tahun}",
+        )
+    return week_start, week_start + timedelta(days=5)
 
 
 def get_current_week(tanggal: date = None) -> tuple[int, int]:
