@@ -18,6 +18,7 @@ from app.utils.constants import (
     KasBankSource,
 )
 from app.services.kas_bank_integration import create_kas_entry
+from app.utils.helpers import get_jakarta_date
 from app.services.gaji_akrual_service import (
     GAJI_AKRUAL_MULAI,
     akrual_gaji_periode,
@@ -147,6 +148,17 @@ class SlipGajiService:
         gaji = (daily_rate * hadir).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
         return hadir, gaji
 
+    def _pastikan_periode_selesai(self, tanggal_mulai: date, tanggal_akhir: date) -> None:
+        """Slip periode akrual hanya dibuat setelah periodenya selesai. Kalau tidak,
+        absensi hari-hari berikutnya ikut terkunci dan akrualnya tidak masuk slip."""
+        if tanggal_mulai < GAJI_AKRUAL_MULAI:
+            return
+        if tanggal_akhir > get_jakarta_date():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Periode {tanggal_mulai} s/d {tanggal_akhir} belum selesai. Slip gaji dibuat setelah {tanggal_akhir}.",
+            )
+
     def _slip_bentrok(
         self,
         karyawan_id: int,
@@ -227,6 +239,7 @@ class SlipGajiService:
 
         # Get week dates
         tanggal_mulai, tanggal_akhir = get_week_dates(data.periode_tahun, data.periode_minggu)
+        self._pastikan_periode_selesai(tanggal_mulai, tanggal_akhir)
 
         # Jumlah hadir & gaji pokok (akrual dari absensi untuk periode baru)
         jumlah_hadir, gaji_pokok_pro_rated = self._hadir_dan_gaji(karyawan, tanggal_mulai, tanggal_akhir)
@@ -471,6 +484,7 @@ class SlipGajiService:
         """Create payroll slips for a custom date range."""
         if not items:
             return {"created": 0, "skipped": 0, "total_employees": 0, "skipped_detail": []}
+        self._pastikan_periode_selesai(tanggal_mulai, tanggal_akhir)
 
         created = 0
         skipped = 0
