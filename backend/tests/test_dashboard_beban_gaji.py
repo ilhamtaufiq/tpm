@@ -20,14 +20,15 @@ def test_beban_gaji_pakai_akrual_bukan_kas_bersih():
                        status=EmployeeStatus.AKTIF)
         db.add(kar)
         db.flush()
+        # Dibandingkan selisihnya: DB bersama bisa berisi absensi lain.
+        sebelum = _beban_gaji(SlipGajiService(db).get_summary_by_date_range(date(2026, 10, 12), date(2026, 10, 13)))
         db.add(Absensi(karyawan_id=kar.id, tanggal=date(2026, 10, 12), status=AttendanceStatus.HADIR))
         db.add(Absensi(karyawan_id=kar.id, tanggal=date(2026, 10, 13), status=AttendanceStatus.HADIR))
         db.commit()
-
         ringkasan = SlipGajiService(db).get_summary_by_date_range(date(2026, 10, 12), date(2026, 10, 13))
-        # Belum ada slip cair: beban = akrual 2 hari (2 x 100.000), kas bersih = 0.
+        # Belum ada slip cair: beban bertambah 2 x 100.000 dari absensi, kas bersih tidak berubah.
+        assert _beban_gaji(ringkasan) - sebelum == 200000.0
         assert ringkasan["total"] == 0.0
-        assert _beban_gaji(ringkasan) == 200000.0
     finally:
         db.rollback()
         if kar is not None:
