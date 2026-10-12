@@ -841,7 +841,33 @@ export default function SlipGajiScreen() {
                                     isFetchingNextHistoryPage ? <ActivityIndicator className="py-4" color="#023C69" /> : null
                                 }
                                 ListHeaderComponent={
-                                    <View className="flex-row mb-4">
+                                    <View>
+                                        {summary && (
+                                            <View className="bg-surface rounded-3xl p-4 mb-4 border border-transparent shadow-sm">
+                                                <Typography className="text-textGray text-[10px] font-black uppercase tracking-wider">
+                                                    Ringkasan minggu {summary.periode_minggu} · {formatDate(summary.tanggal_mulai)} – {formatDate(summary.tanggal_akhir)}
+                                                </Typography>
+                                                {summary.total_karyawan === 0 ? (
+                                                    <Typography className="text-textGray text-sm mt-2">Belum ada slip di minggu ini.</Typography>
+                                                ) : (
+                                                    <View className="flex-row mt-3">
+                                                        <View className="flex-1 mr-2">
+                                                            <Typography className="text-textGray text-[9px] font-bold uppercase">Total</Typography>
+                                                            <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(summary.total_dibayar + summary.total_belum_dibayar)}</Typography>
+                                                        </View>
+                                                        <View className="flex-1 mr-2">
+                                                            <Typography className="text-emerald-600 text-[9px] font-bold uppercase">Sudah</Typography>
+                                                            <Typography weight="bold" className="text-emerald-600 text-sm" numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(summary.total_dibayar)}</Typography>
+                                                        </View>
+                                                        <View className="flex-1">
+                                                            <Typography className="text-amber-500 text-[9px] font-bold uppercase">Belum</Typography>
+                                                            <Typography weight="bold" className="text-amber-500 text-sm" numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(summary.total_belum_dibayar)}</Typography>
+                                                        </View>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        )}
+                                        <View className="flex-row mb-4">
                                         {(Object.keys(RIWAYAT_FILTER_LABEL) as RiwayatFilter[]).map((f) => (
                                             <Pressable
                                                 key={f}
@@ -853,6 +879,7 @@ export default function SlipGajiScreen() {
                                                 </Typography>
                                             </Pressable>
                                         ))}
+                                        </View>
                                     </View>
                                 }
                                 keyExtractor={(item) => item.id.toString()}
@@ -899,20 +926,6 @@ export default function SlipGajiScreen() {
                     )}
                 </View>
             </ScrollView>
-
-            {/* Summary Panel for History — hide while detail sheet open */}
-            {activeTab === 'history' && summary && !selectedSlip && (
-                <View className="absolute left-0 right-0 bg-surface p-4 sm:p-6 rounded-t-[40px] sm:rounded-t-[48px] shadow-2xl border-t border-transparent flex-row items-center justify-between" style={{ bottom: 85, elevation: 10, zIndex: 50 }}>
-                    <View className="flex-1 mr-3">
-                        <Typography className="text-textGray text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-1" numberOfLines={1}>Total Pengeluaran</Typography>
-                        <Typography className="text-textMain text-lg sm:text-xl font-black" numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(summary.total_dibayar + summary.total_belum_dibayar)}</Typography>
-                    </View>
-                    <View className="items-end flex-shrink-0">
-                        <Typography className="text-amber-500 font-bold text-xs">Belum: {formatCurrency(summary.total_belum_dibayar)}</Typography>
-                        <Typography className="text-emerald-600 font-bold text-xs">Sudah: {formatCurrency(summary.total_dibayar)}</Typography>
-                    </View>
-                </View>
-            )}
 
             {/* Detail Sheet */}
             {Platform.OS === 'web' ? (
