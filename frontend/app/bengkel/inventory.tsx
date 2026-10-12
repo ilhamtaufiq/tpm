@@ -26,7 +26,6 @@ import {
     Download,
     Boxes,
     TrendingUp,
-    ShoppingCart,
     ChevronRight,
     Receipt,
 } from 'lucide-react-native';
@@ -368,7 +367,6 @@ export default function InventoryScreen() {
             <View className="flex-row gap-2 mb-4">
                 {[
                     { label: 'Scan', icon: BarcodeIcon, color: '#2563EB', onPress: () => setIsScannerOpen(true) },
-                    { label: 'Restock', icon: ShoppingCart, color: '#059669', onPress: () => router.push('/bengkel/purchase') },
                     { label: 'Export', icon: Download, color: '#D97706', onPress: () => setIsExportModalVisible(true) },
                     { label: 'Transaksi', icon: Receipt, color: 'themeColors.primary', onPress: () => router.push({ pathname: '/bengkel/transaksi', params: { mode: 'all' } } as any) },
                 ].map((action) => {
@@ -456,15 +454,6 @@ export default function InventoryScreen() {
                 onBackButtonPress={handleBack}
                 showProfile={false}
                 showBell={false}
-                rightElement={
-                    <Pressable
-                        onPress={() => router.push('/bengkel/purchase')}
-                        className="bg-primary px-4 py-2 rounded-xl flex-row items-center active:opacity-90"
-                    >
-                        <Plus size={16} color="white" />
-                        <Typography weight="bold" className="text-white text-xs ml-1">Restock</Typography>
-                    </Pressable>
-                }
             />
 
             {isLoading ? (
@@ -933,6 +922,16 @@ export default function InventoryScreen() {
                     </BottomSheetScrollView>
                 </BottomSheet>
             )}
+
+            {/* FAB pojok kanan bawah: tambah restock sparepart */}
+            <Pressable
+                onPress={() => router.push('/bengkel/purchase')}
+                accessibilityLabel="Restock sparepart"
+                style={{ position: 'absolute', right: 20, bottom: getCustomTabBarBottomPadding(insets.bottom, 16), elevation: 5, zIndex: 999 }}
+                className="bg-primary w-14 h-14 rounded-full items-center justify-center shadow-xl active:opacity-90"
+            >
+                <Plus size={26} color="white" strokeWidth={2.5} />
+            </Pressable>
         </View>
     );
 
