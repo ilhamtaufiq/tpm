@@ -125,10 +125,15 @@ def list_slip_gaji(
     status: Optional[PaymentStatus] = None,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
+    periode_dari: Optional[date] = None,
+    periode_sampai: Optional[date] = None,
     sort_by: str = "periode",
     sort_order: str = "desc",
 ):
-    """Get list of weekly payroll slips with pagination and filters."""
+    """Get list of weekly payroll slips with pagination and filters.
+
+    periode_dari/periode_sampai: filter tanggal mulai periode slip (mis. per bulan).
+    """
     service = SlipGajiService(db)
     return service.get_list(
         skip=skip,
@@ -139,6 +144,8 @@ def list_slip_gaji(
         status=status,
         tanggal_dari=tanggal_dari,
         tanggal_sampai=tanggal_sampai,
+        periode_dari=periode_dari,
+        periode_sampai=periode_sampai,
         sort_by=sort_by,
         sort_order=sort_order,
     )

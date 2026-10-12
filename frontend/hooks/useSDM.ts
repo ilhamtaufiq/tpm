@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sdmService } from '../services/sdm';
 
 // =============================================
@@ -152,6 +152,19 @@ export const useSlipGajiList = (params?: any) => {
     return useQuery({
         queryKey: ['slip_gaji', params],
         queryFn: () => sdmService.getSlipGajiList(params),
+    });
+};
+
+// Riwayat slip dengan paginasi (halaman berikutnya saat daftar sampai bawah).
+export const useSlipGajiListInfinite = (params?: any) => {
+    return useInfiniteQuery({
+        queryKey: ['slip_gaji', 'infinite', params],
+        queryFn: ({ pageParam = 0 }) => sdmService.getSlipGajiList({ ...params, skip: pageParam }),
+        getNextPageParam: (lastPage, allPages) => {
+            const loaded = allPages.reduce((n: number, p: any) => n + (p.data?.length || 0), 0);
+            return loaded < lastPage.total ? loaded : undefined;
+        },
+        initialPageParam: 0,
     });
 };
 

@@ -26,12 +26,20 @@ import { Calendar as RNCalendar } from 'react-native-calendars';
 import { useQuery } from '@tanstack/react-query';
 import { SlipGaji, SlipGajiPreviewItem, PaymentStatus, sdmService } from '../../services/sdm';
 import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString } from '../../utils/format';
-import { usePayrollList, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange, useVoidSlipGajiPayment, useDeletePayroll } from '../../hooks/useSDM';
+import { useSlipGajiListInfinite, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange, useVoidSlipGajiPayment, useDeletePayroll } from '../../hooks/useSDM';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { Header } from '../../components/ui/Header';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
+
+type RiwayatFilter = 'MINGGU' | 'BULAN' | 'TAHUN' | 'SEMUA';
+const RIWAYAT_FILTER_LABEL: Record<RiwayatFilter, string> = {
+    MINGGU: 'Minggu',
+    BULAN: 'Bulan',
+    TAHUN: 'Tahun',
+    SEMUA: 'Semua',
+};
 
 // Helper to get current week number
 const getWeekNumber = (d: Date): number => {
@@ -130,14 +138,31 @@ export default function SlipGajiScreen() {
     });
 
     // API Hooks
-    // 1. History (Processed Slips)
-    const { data: listData, isLoading: isLoadingList, refetch: refetchList } = usePayrollList({
-        limit: 100,
-        // For history, we can still filter by the year/week of the startDate for consistency,
-        // or just show all. Let's use the startDate's week for now to avoid breaking the backend summary.
-        periode_minggu: getWeekNumber(new Date(startDate)),
-        periode_tahun: new Date(startDate).getFullYear(),
-    });
+    // 1. History (Processed Slips) — filter Minggu / Bulan / Tahun / Semua
+    const [riwayatFilter, setRiwayatFilter] = useState<RiwayatFilter>('MINGGU');
+    const riwayatParams = useMemo(() => {
+        const acuan = new Date(startDate);
+        if (riwayatFilter === 'MINGGU') {
+            return { limit: 100, periode_minggu: getWeekNumber(acuan), periode_tahun: acuan.getFullYear() };
+        }
+        if (riwayatFilter === 'BULAN') {
+            const awal = new Date(acuan.getFullYear(), acuan.getMonth(), 1);
+            const akhir = new Date(acuan.getFullYear(), acuan.getMonth() + 1, 0);
+            return { limit: 100, periode_dari: getTodayString(awal), periode_sampai: getTodayString(akhir) };
+        }
+        if (riwayatFilter === 'TAHUN') {
+            return { limit: 100, periode_tahun: acuan.getFullYear() };
+        }
+        return { limit: 100 };
+    }, [riwayatFilter, startDate]);
+    const {
+        data: listData,
+        isLoading: isLoadingList,
+        refetch: refetchList,
+        fetchNextPage: fetchNextHistoryPage,
+        hasNextPage: hasNextHistoryPage,
+        isFetchingNextPage: isFetchingNextHistoryPage,
+    } = useSlipGajiListInfinite(riwayatParams);
 
     // 2. Summary
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePayrollSummary(
@@ -165,7 +190,10 @@ export default function SlipGajiScreen() {
     const voidPaymentMutation = useVoidSlipGajiPayment();
     const deleteMutation = useDeletePayroll();
 
-    const slipHistory = listData?.data || [];
+    const slipHistory = useMemo(
+        () => listData?.pages.flatMap((page: any) => page.data || []) || [],
+        [listData]
+    );
     const pendingEmployees = previewData?.items || [];
 
     // Filtered Lists
@@ -752,7 +780,7 @@ export default function SlipGajiScreen() {
                             </Typography>
                             <View className={`ml-2 px-2 py-0.5 rounded-full items-center justify-center ${activeTab === 'history' ? 'bg-white/25' : 'bg-gray-200/70'}`}>
                                 <Typography className={`text-[10px] font-bold ${activeTab === 'history' ? 'text-white' : 'text-textGray'}`}>
-                                    {filteredHistory.length}
+                                    {searchQuery ? filteredHistory.length : (listData?.pages?.[0]?.total ?? slipHistory.length)}
                                 </Typography>
                             </View>
                         </Pressable>
@@ -788,6 +816,26 @@ export default function SlipGajiScreen() {
                             <FlatList
                                 data={filteredHistory}
                                 renderItem={renderHistoryItem}
+                                onEndReached={() => { if (hasNextHistoryPage && !isFetchingNextHistoryPage) fetchNextHistoryPage(); }}
+                                onEndReachedThreshold={0.5}
+                                ListFooterComponent={
+                                    isFetchingNextHistoryPage ? <ActivityIndicator className="py-4" color="#023C69" /> : null
+                                }
+                                ListHeaderComponent={
+                                    <View className="flex-row mb-4">
+                                        {(Object.keys(RIWAYAT_FILTER_LABEL) as RiwayatFilter[]).map((f) => (
+                                            <Pressable
+                                                key={f}
+                                                onPress={() => setRiwayatFilter(f)}
+                                                className={`px-4 py-2 rounded-xl mr-2 ${riwayatFilter === f ? 'bg-primary' : 'bg-background'}`}
+                                            >
+                                                <Typography weight="bold" className={`text-xs ${riwayatFilter === f ? 'text-white' : 'text-textGray'}`}>
+                                                    {RIWAYAT_FILTER_LABEL[f]}
+                                                </Typography>
+                                            </Pressable>
+                                        ))}
+                                    </View>
+                                }
                                 keyExtractor={(item) => item.id.toString()}
                                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 200, paddingTop: 10 }}
                                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}

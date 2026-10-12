@@ -18,6 +18,7 @@ from app.utils.constants import (
     KasBankSource,
 )
 from app.services.kas_bank_integration import create_kas_entry
+from app.utils.helpers import get_jakarta_date
 from app.services.gaji_akrual_service import (
     GAJI_AKRUAL_MULAI,
     akrual_gaji_periode,
@@ -26,22 +27,19 @@ from app.services.gaji_akrual_service import (
 
 
 def get_week_dates(tahun: int, minggu: int) -> tuple[date, date]:
-    """Get start and end dates for a week number."""
-    # Get first day of year
-    first_day = date(tahun, 1, 1)
-    # Find first Monday
-    days_to_monday = (7 - first_day.weekday()) % 7
-    if first_day.weekday() != 0:
-        first_monday = first_day + timedelta(days=days_to_monday)
-    else:
-        first_monday = first_day
+    """Senin–Sabtu untuk nomor minggu ISO.
 
-    # Calculate week start (Monday)
-    week_start = first_monday + timedelta(weeks=minggu - 1)
-    # Week end is Saturday (6 days for workweek Mon-Sat)
-    week_end = week_start + timedelta(days=5)
-
-    return week_start, week_end
+    Harus sama dengan get_current_week (ISO) dan UI: slip yang dibuat per minggu
+    menghitung absensi di tanggal yang benar, bukan minggu lain.
+    """
+    try:
+        week_start = date.fromisocalendar(tahun, minggu, 1)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Minggu {minggu} tidak ada di tahun {tahun}",
+        )
+    return week_start, week_start + timedelta(days=5)
 
 
 def get_current_week(tanggal: date = None) -> tuple[int, int]:
@@ -150,6 +148,17 @@ class SlipGajiService:
         gaji = (daily_rate * hadir).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
         return hadir, gaji
 
+    def _pastikan_periode_selesai(self, tanggal_mulai: date, tanggal_akhir: date) -> None:
+        """Slip periode akrual hanya dibuat setelah periodenya selesai. Kalau tidak,
+        absensi hari-hari berikutnya ikut terkunci dan akrualnya tidak masuk slip."""
+        if tanggal_mulai < GAJI_AKRUAL_MULAI:
+            return
+        if tanggal_akhir > get_jakarta_date():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Periode {tanggal_mulai} s/d {tanggal_akhir} belum selesai. Slip gaji dibuat setelah {tanggal_akhir}.",
+            )
+
     def _slip_bentrok(
         self,
         karyawan_id: int,
@@ -230,6 +239,7 @@ class SlipGajiService:
 
         # Get week dates
         tanggal_mulai, tanggal_akhir = get_week_dates(data.periode_tahun, data.periode_minggu)
+        self._pastikan_periode_selesai(tanggal_mulai, tanggal_akhir)
 
         # Jumlah hadir & gaji pokok (akrual dari absensi untuk periode baru)
         jumlah_hadir, gaji_pokok_pro_rated = self._hadir_dan_gaji(karyawan, tanggal_mulai, tanggal_akhir)
@@ -474,6 +484,7 @@ class SlipGajiService:
         """Create payroll slips for a custom date range."""
         if not items:
             return {"created": 0, "skipped": 0, "total_employees": 0, "skipped_detail": []}
+        self._pastikan_periode_selesai(tanggal_mulai, tanggal_akhir)
 
         created = 0
         skipped = 0
@@ -618,9 +629,17 @@ class SlipGajiService:
         tanggal_sampai: Optional[date] = None,
         sort_by: str = "periode_tahun",
         sort_order: str = "desc",
+        periode_dari: Optional[date] = None,
+        periode_sampai: Optional[date] = None,
     ) -> Dict[str, Any]:
         """Get list of payroll slips with pagination and filters."""
         query = self.db.query(SlipGaji).options(joinedload(SlipGaji.karyawan))
+
+        # Filter periode (tanggal mulai slip), mis. satu bulan
+        if periode_dari:
+            query = query.filter(SlipGaji.tanggal_mulai >= periode_dari)
+        if periode_sampai:
+            query = query.filter(SlipGaji.tanggal_mulai <= periode_sampai)
 
         # Employee filter
         if karyawan_id:

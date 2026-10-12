@@ -462,6 +462,8 @@ export const sdmService = {
         karyawan_id?: number;
         periode_minggu?: number;
         periode_tahun?: number;
+        periode_dari?: string;
+        periode_sampai?: string;
         status?: PaymentStatus;
     }) => {
         const response = await api.get('/slip-gaji', { params });

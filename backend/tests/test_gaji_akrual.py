@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from app.database.connection import SessionLocal
 from app.models.karyawan import Absensi, Karyawan, SlipGaji
 from app.models.keuangan import KasBank
-from app.schemas.karyawan import SlipGajiCreate, SlipGajiUpdate, AbsensiUpdate
+from app.schemas.karyawan import AbsensiCreate, SlipGajiCreate, SlipGajiUpdate, AbsensiUpdate
 from app.services.absensi_service import AbsensiService
 from app.services.gaji_akrual_service import (
     GAJI_AKRUAL_MULAI,
@@ -53,8 +53,12 @@ def _bersihkan(db):
     db.commit()
 
 
+HARI_INI_UJI = date(2026, 10, 30)  # setelah periode tes; slip hanya untuk periode selesai
+
+
 @pytest.fixture
-def ctx():
+def ctx(monkeypatch):
+    monkeypatch.setattr("app.services.slip_gaji_service.get_jakarta_date", lambda: HARI_INI_UJI)
     db = SessionLocal()
     _bersihkan(db)
     kar = Karyawan(
@@ -93,7 +97,7 @@ def test_absensi_langsung_jadi_beban_dan_hutang_gaji(ctx):
 
 def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     db, kar = ctx
-    tgl_mulai, tgl_akhir = get_week_dates(2026, 41)
+    tgl_mulai, tgl_akhir = get_week_dates(2026, 42)
     assert tgl_mulai == SENIN and tgl_akhir == SABTU
     _absen(db, kar, SENIN, AttendanceStatus.HADIR)
     _absen(db, kar, SELASA, AttendanceStatus.HADIR)
@@ -101,7 +105,7 @@ def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     hutang_sebelum = hutang_gaji_asof(db, SABTU)
 
     svc = SlipGajiService(db)
-    slip = svc.create(SlipGajiCreate(karyawan_id=kar.id, periode_minggu=41, periode_tahun=2026))
+    slip = svc.create(SlipGajiCreate(karyawan_id=kar.id, periode_minggu=42, periode_tahun=2026))
     assert slip.gaji_pokok == Decimal("250000")
     assert slip.jumlah_hadir == Decimal("2.5")
 
@@ -118,7 +122,7 @@ def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     # Beban gaji periode slip sudah diakui di absensi: tidak dihitung lagi saat cair.
     ringkasan = svc.get_summary_by_date_range(SENIN, SABTU)
     assert ringkasan["total_gaji_pokok"] == 0.0
-    assert ringkasan["total_gaji_pokok_akrual"] == 250000.0
+    assert ringkasan["total_gaji_pokok_akrual"] == float(akrual_gaji_periode(db, SENIN, SABTU))
     neraca = NeracaService(db).get_report(SABTU)
     assert neraca["is_balanced"] is True
 
@@ -129,12 +133,12 @@ def test_override_jumlah_hadir_ditolak_dan_absensi_terkunci(ctx):
     svc = SlipGajiService(db)
     with pytest.raises(HTTPException) as salah:
         svc.create_bulk_by_range(
-            SENIN, SABTU, 41, 2026,
+            SENIN, SABTU, 42, 2026,
             items=[{"karyawan_id": kar.id, "jumlah_hadir": 3}],
         )
     assert salah.value.status_code == 400
 
-    svc.create(SlipGajiCreate(karyawan_id=kar.id, periode_minggu=41, periode_tahun=2026))
+    svc.create(SlipGajiCreate(karyawan_id=kar.id, periode_minggu=42, periode_tahun=2026))
     absensi_svc = AbsensiService(db)
     absen = db.query(Absensi).filter(Absensi.karyawan_id == kar.id).one()
     with pytest.raises(HTTPException) as kunci:
@@ -175,3 +179,64 @@ def test_slip_ganda_dilewati_dan_tidak_muncul_di_pending(ctx):
 
     pending = [i for i in svc.get_preview_by_range(SENIN, SABTU)["items"] if i["karyawan_id"] == kar.id]
     assert pending == []
+
+
+def test_slip_periode_berjalan_ditolak(ctx, monkeypatch):
+    """Slip periode yang belum selesai ditolak, supaya absensi hari berikutnya tidak terkunci."""
+    db, kar = ctx
+    monkeypatch.setattr("app.services.slip_gaji_service.get_jakarta_date", lambda: date(2026, 10, 14))
+    _absen(db, kar, SENIN, AttendanceStatus.HADIR)
+    with pytest.raises(HTTPException) as salah:
+        SlipGajiService(db).create_bulk_by_range(
+            SENIN, SABTU, 42, 2026,
+            items=[{"karyawan_id": kar.id, "jumlah_hadir": 1, "potongan_kasbon": 0, "uang_lembur": 0}],
+        )
+    assert salah.value.status_code == 400
+    assert db.query(SlipGaji).filter(SlipGaji.karyawan_id == kar.id).count() == 0
+
+
+def test_absensi_di_luar_slip_tetap_bisa_diisi(ctx):
+    """Kunci absensi hanya berlaku untuk tanggal yang sudah masuk slip."""
+    db, kar = ctx
+    _absen(db, kar, SENIN, AttendanceStatus.HADIR)
+    SlipGajiService(db).create_bulk_by_range(
+        SENIN, SABTU, 42, 2026,
+        items=[{"karyawan_id": kar.id, "jumlah_hadir": 1, "potongan_kasbon": 0, "uang_lembur": 0}],
+    )
+    absensi = AbsensiService(db).create(AbsensiCreate(
+        karyawan_id=kar.id, tanggal=date(2026, 10, 20), status=AttendanceStatus.HADIR,
+    ))
+    assert absensi.id is not None
+
+
+def test_filter_periode_bulan_pada_riwayat_slip(ctx):
+    """Riwayat per bulan: slip ikut tampil di bulannya (tanggal mulai), tidak di bulan lain."""
+    db, kar = ctx
+    _absen(db, kar, SENIN, AttendanceStatus.HADIR)
+    svc = SlipGajiService(db)
+    svc.create_bulk_by_range(
+        SENIN, SABTU, 42, 2026,
+        items=[{"karyawan_id": kar.id, "jumlah_hadir": 1, "potongan_kasbon": 0, "uang_lembur": 0}],
+    )
+    oktober = svc.get_list(periode_dari=date(2026, 10, 1), periode_sampai=date(2026, 10, 31), limit=100)["data"]
+    november = svc.get_list(periode_dari=date(2026, 11, 1), periode_sampai=date(2026, 11, 30), limit=100)["data"]
+    assert any(s.karyawan_id == kar.id for s in oktober)
+    assert not any(s.karyawan_id == kar.id for s in november)
+
+
+def test_paginasi_riwayat_slip_halaman_kedua(ctx):
+    """Daftar riwayat memakai skip/limit: halaman berikutnya memuat slip yang berbeda."""
+    db, kar = ctx
+    _absen(db, kar, SENIN, AttendanceStatus.HADIR)                      # minggu 42
+    _absen(db, kar, date(2026, 10, 19), AttendanceStatus.HADIR)         # minggu 43
+    svc = SlipGajiService(db)
+    for dari, sampai, minggu in [(SENIN, SABTU, 42), (date(2026, 10, 19), date(2026, 10, 24), 43)]:
+        svc.create_bulk_by_range(
+            dari, sampai, minggu, 2026,
+            items=[{"karyawan_id": kar.id, "jumlah_hadir": 1, "potongan_kasbon": 0, "uang_lembur": 0}],
+        )
+    hal1 = svc.get_list(karyawan_id=kar.id, skip=0, limit=1)
+    hal2 = svc.get_list(karyawan_id=kar.id, skip=1, limit=1)
+    assert hal1["total"] == 2
+    assert len(hal1["data"]) == 1 and len(hal2["data"]) == 1
+    assert hal1["data"][0].id != hal2["data"][0].id
