@@ -26,7 +26,7 @@ import { Calendar as RNCalendar } from 'react-native-calendars';
 import { useQuery } from '@tanstack/react-query';
 import { SlipGaji, SlipGajiPreviewItem, PaymentStatus, sdmService } from '../../services/sdm';
 import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString } from '../../utils/format';
-import { usePayrollList, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange, useVoidSlipGajiPayment, useDeletePayroll } from '../../hooks/useSDM';
+import { useSlipGajiListInfinite, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange, useVoidSlipGajiPayment, useDeletePayroll } from '../../hooks/useSDM';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -155,7 +155,14 @@ export default function SlipGajiScreen() {
         }
         return { limit: 100 };
     }, [riwayatFilter, startDate]);
-    const { data: listData, isLoading: isLoadingList, refetch: refetchList } = usePayrollList(riwayatParams);
+    const {
+        data: listData,
+        isLoading: isLoadingList,
+        refetch: refetchList,
+        fetchNextPage: fetchNextHistoryPage,
+        hasNextPage: hasNextHistoryPage,
+        isFetchingNextPage: isFetchingNextHistoryPage,
+    } = useSlipGajiListInfinite(riwayatParams);
 
     // 2. Summary
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePayrollSummary(
@@ -183,7 +190,10 @@ export default function SlipGajiScreen() {
     const voidPaymentMutation = useVoidSlipGajiPayment();
     const deleteMutation = useDeletePayroll();
 
-    const slipHistory = listData?.data || [];
+    const slipHistory = useMemo(
+        () => listData?.pages.flatMap((page: any) => page.data || []) || [],
+        [listData]
+    );
     const pendingEmployees = previewData?.items || [];
 
     // Filtered Lists
@@ -806,6 +816,11 @@ export default function SlipGajiScreen() {
                             <FlatList
                                 data={filteredHistory}
                                 renderItem={renderHistoryItem}
+                                onEndReached={() => { if (hasNextHistoryPage && !isFetchingNextHistoryPage) fetchNextHistoryPage(); }}
+                                onEndReachedThreshold={0.5}
+                                ListFooterComponent={
+                                    isFetchingNextHistoryPage ? <ActivityIndicator className="py-4" color="#023C69" /> : null
+                                }
                                 ListHeaderComponent={
                                     <View className="flex-row mb-4">
                                         {(Object.keys(RIWAYAT_FILTER_LABEL) as RiwayatFilter[]).map((f) => (
