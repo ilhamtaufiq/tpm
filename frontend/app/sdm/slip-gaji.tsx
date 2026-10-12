@@ -103,6 +103,11 @@ export default function SlipGajiScreen() {
     const initialRange = getInitialRange();
     const [startDate, setStartDate] = useState(initialRange.start);
     const [endDate, setEndDate] = useState(initialRange.end);
+    // Sama dengan GAJI_AKRUAL_MULAI di backend (gaji_akrual_service.py): periode mulai di sini
+    // gaji dari absensi, hadir tidak bisa diubah manual, dan slip hanya setelah periode selesai.
+    const GAJI_AKRUAL_MULAI = '2026-10-12';
+    const isAkrualPeriod = startDate >= GAJI_AKRUAL_MULAI;
+    const periodeSelesai = endDate < getTodayString();
     const [datePickingMode, setDatePickingMode] = useState<'start' | 'end' | 'slip'>('slip');
 
     // The "Tanggal Slip" user chooses
@@ -513,8 +518,12 @@ export default function SlipGajiScreen() {
         const currentKasbon = getKasbonValue(item);
         const currentOvertime = getOvertimeValue(item);
 
-        // Dynamic calculation: (Base / 6) * Current Attendance + Overtime - Kasbon
-        const currentGajiPokok = Math.round((item.gaji_pokok_dasar / 6) * currentAttendance);
+        // Periode akrual: gaji pokok dari server (pembulatan per hari, sama dengan slip).
+        // Hadir mengikuti absensi, jadi hanya dihitung ulang kalau sudah diedit.
+        const hadirBerubah = currentAttendance !== item.jumlah_hadir;
+        const currentGajiPokok = isAkrualPeriod && !hadirBerubah
+            ? item.gaji_pokok
+            : Math.round((item.gaji_pokok_dasar / 6) * currentAttendance);
         const currentGajiBersih = currentGajiPokok + currentOvertime - currentKasbon;
 
         return (
@@ -533,16 +542,26 @@ export default function SlipGajiScreen() {
 
                     <View className="items-end flex-shrink-0">
                         <Typography className="text-[8px] text-textGray font-black uppercase mb-1 tracking-widest text-right">Kehadiran</Typography>
-                        <View className="flex-row items-center bg-background rounded-xl border border-transparent px-3 py-1.5 min-w-[70px] justify-center">
-                            <TextInput
-                                className="text-primary font-black p-0 text-base w-8 text-center"
-                                keyboardType="numeric"
-                                value={String(currentAttendance)}
-                                onChangeText={(v) => handleUpdateAttendance(item.karyawan_id, v)}
-                                selectTextOnFocus
-                            />
-                            <Typography className="text-textGray text-[10px] font-bold ml-1 uppercase">Hari</Typography>
-                        </View>
+                        {isAkrualPeriod ? (
+                            <View className="flex-row items-center bg-background rounded-xl border border-transparent px-3 py-1.5 min-w-[70px] justify-center">
+                                <Typography className="text-primary font-black text-base">{currentAttendance}</Typography>
+                                <Typography className="text-textGray text-[10px] font-bold ml-1 uppercase">Hari</Typography>
+                            </View>
+                        ) : (
+                            <View className="flex-row items-center bg-background rounded-xl border border-transparent px-3 py-1.5 min-w-[70px] justify-center">
+                                <TextInput
+                                    className="text-primary font-black p-0 text-base w-8 text-center"
+                                    keyboardType="numeric"
+                                    value={String(currentAttendance)}
+                                    onChangeText={(v) => handleUpdateAttendance(item.karyawan_id, v)}
+                                    selectTextOnFocus
+                                />
+                                <Typography className="text-textGray text-[10px] font-bold ml-1 uppercase">Hari</Typography>
+                            </View>
+                        )}
+                        {isAkrualPeriod && (
+                            <Typography className="text-[9px] text-textGray mt-1">dari absensi</Typography>
+                        )}
                     </View>
                 </View>
 
@@ -603,14 +622,14 @@ export default function SlipGajiScreen() {
 
                     <Pressable
                         onPress={() => handleGenerateSingle(item)}
-                        disabled={isGenerating || !!generatingId}
-                        className={`h-14 px-4 sm:px-6 rounded-2xl flex-row items-center justify-center flex-shrink-0 ${isGenerating ? 'bg-background' : 'bg-primary shadow-lg shadow-primary/30'}`}
+                        disabled={isGenerating || !!generatingId || !periodeSelesai}
+                        className={`h-14 px-4 sm:px-6 rounded-2xl flex-row items-center justify-center flex-shrink-0 ${isGenerating ? 'bg-background' : periodeSelesai ? 'bg-primary shadow-lg shadow-primary/30' : 'bg-gray-300'}`}
                     >
                         {isGenerating ? (
                             <ActivityIndicator size="small" color="#023C69" />
                         ) : (
                             <>
-                                <Typography className="text-white text-xs font-black uppercase tracking-widest mr-2">Proses</Typography>
+                                <Typography className="text-white text-xs font-black uppercase tracking-widest mr-2">{periodeSelesai ? 'Proses' : 'Belum Selesai'}</Typography>
                                 <ArrowRight size={16} color="white" />
                             </>
                         )}
@@ -864,12 +883,14 @@ export default function SlipGajiScreen() {
                         <View className="absolute left-6 right-6" style={{ bottom: 100, elevation: 5, zIndex: 50 }}>
                             <Pressable
                                 onPress={handleGenerateBulk}
-                                disabled={createBulkMutation.isPending}
-                                className="bg-primary h-16 rounded-[24px] items-center justify-center flex-row shadow-2xl border border-white/20"
+                                disabled={createBulkMutation.isPending || !periodeSelesai}
+                                className={`h-16 rounded-[24px] items-center justify-center flex-row shadow-2xl border border-white/20 ${periodeSelesai ? 'bg-primary' : 'bg-gray-400'}`}
                             >
                                 {createBulkMutation.isPending ? <ActivityIndicator color="white" /> : (
                                     <>
-                                        <Typography weight="bold" className="text-white text-lg mr-2">Generate Semua ({filteredPending.length})</Typography>
+                                        <Typography weight="bold" className="text-white text-lg mr-2">
+                                            {periodeSelesai ? `Generate Semua (${filteredPending.length})` : `Periode belum selesai (s/d ${endDate})`}
+                                        </Typography>
                                         <TrendingUp size={20} color="white" />
                                     </>
                                 )}
