@@ -207,3 +207,18 @@ def test_absensi_di_luar_slip_tetap_bisa_diisi(ctx):
         karyawan_id=kar.id, tanggal=date(2026, 10, 20), status=AttendanceStatus.HADIR,
     ))
     assert absensi.id is not None
+
+
+def test_filter_periode_bulan_pada_riwayat_slip(ctx):
+    """Riwayat per bulan: slip ikut tampil di bulannya (tanggal mulai), tidak di bulan lain."""
+    db, kar = ctx
+    _absen(db, kar, SENIN, AttendanceStatus.HADIR)
+    svc = SlipGajiService(db)
+    svc.create_bulk_by_range(
+        SENIN, SABTU, 42, 2026,
+        items=[{"karyawan_id": kar.id, "jumlah_hadir": 1, "potongan_kasbon": 0, "uang_lembur": 0}],
+    )
+    oktober = svc.get_list(periode_dari=date(2026, 10, 1), periode_sampai=date(2026, 10, 31), limit=100)["data"]
+    november = svc.get_list(periode_dari=date(2026, 11, 1), periode_sampai=date(2026, 11, 30), limit=100)["data"]
+    assert any(s.karyawan_id == kar.id for s in oktober)
+    assert not any(s.karyawan_id == kar.id for s in november)

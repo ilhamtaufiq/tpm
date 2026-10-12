@@ -629,9 +629,17 @@ class SlipGajiService:
         tanggal_sampai: Optional[date] = None,
         sort_by: str = "periode_tahun",
         sort_order: str = "desc",
+        periode_dari: Optional[date] = None,
+        periode_sampai: Optional[date] = None,
     ) -> Dict[str, Any]:
         """Get list of payroll slips with pagination and filters."""
         query = self.db.query(SlipGaji).options(joinedload(SlipGaji.karyawan))
+
+        # Filter periode (tanggal mulai slip), mis. satu bulan
+        if periode_dari:
+            query = query.filter(SlipGaji.tanggal_mulai >= periode_dari)
+        if periode_sampai:
+            query = query.filter(SlipGaji.tanggal_mulai <= periode_sampai)
 
         # Employee filter
         if karyawan_id:
