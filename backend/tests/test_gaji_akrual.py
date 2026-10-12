@@ -222,3 +222,21 @@ def test_filter_periode_bulan_pada_riwayat_slip(ctx):
     november = svc.get_list(periode_dari=date(2026, 11, 1), periode_sampai=date(2026, 11, 30), limit=100)["data"]
     assert any(s.karyawan_id == kar.id for s in oktober)
     assert not any(s.karyawan_id == kar.id for s in november)
+
+
+def test_paginasi_riwayat_slip_halaman_kedua(ctx):
+    """Daftar riwayat memakai skip/limit: halaman berikutnya memuat slip yang berbeda."""
+    db, kar = ctx
+    _absen(db, kar, SENIN, AttendanceStatus.HADIR)                      # minggu 42
+    _absen(db, kar, date(2026, 10, 19), AttendanceStatus.HADIR)         # minggu 43
+    svc = SlipGajiService(db)
+    for dari, sampai, minggu in [(SENIN, SABTU, 42), (date(2026, 10, 19), date(2026, 10, 24), 43)]:
+        svc.create_bulk_by_range(
+            dari, sampai, minggu, 2026,
+            items=[{"karyawan_id": kar.id, "jumlah_hadir": 1, "potongan_kasbon": 0, "uang_lembur": 0}],
+        )
+    hal1 = svc.get_list(karyawan_id=kar.id, skip=0, limit=1)
+    hal2 = svc.get_list(karyawan_id=kar.id, skip=1, limit=1)
+    assert hal1["total"] == 2
+    assert len(hal1["data"]) == 1 and len(hal2["data"]) == 1
+    assert hal1["data"][0].id != hal2["data"][0].id

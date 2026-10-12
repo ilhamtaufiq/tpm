@@ -780,7 +780,7 @@ export default function SlipGajiScreen() {
                             </Typography>
                             <View className={`ml-2 px-2 py-0.5 rounded-full items-center justify-center ${activeTab === 'history' ? 'bg-white/25' : 'bg-gray-200/70'}`}>
                                 <Typography className={`text-[10px] font-bold ${activeTab === 'history' ? 'text-white' : 'text-textGray'}`}>
-                                    {filteredHistory.length}
+                                    {searchQuery ? filteredHistory.length : (listData?.pages?.[0]?.total ?? slipHistory.length)}
                                 </Typography>
                             </View>
                         </Pressable>
