@@ -198,6 +198,7 @@ export const useCreateBulkSlipGaji = () => {
             sdmService.createBulkSlipGaji(tahun, minggu, items, tanggalMulai),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['slip_gaji'] });
+            queryClient.invalidateQueries({ queryKey: ['slip_gaji_weekly'] });
             queryClient.invalidateQueries({ queryKey: ['slip_gaji_preview'] });
             queryClient.invalidateQueries({ queryKey: ['slip_gaji_preview_range'] });
         },
@@ -211,6 +212,7 @@ export const useCreateBulkSlipGajiRange = () => {
             sdmService.createBulkSlipGajiRange(tanggalDari, tanggalSampai, items),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['slip_gaji'] });
+            queryClient.invalidateQueries({ queryKey: ['slip_gaji_weekly'] });
             queryClient.invalidateQueries({ queryKey: ['slip_gaji_preview'] });
             queryClient.invalidateQueries({ queryKey: ['slip_gaji_preview_range'] });
         },
