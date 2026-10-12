@@ -197,7 +197,9 @@ function RootLayoutContent() {
     const setWebMobilePreview = useUIStore(s => s.setWebMobilePreview);
     const webPreviewOrientation = useUIStore(s => s.webPreviewOrientation);
     const setWebPreviewOrientation = useUIStore(s => s.setWebPreviewOrientation);
-    const dimensions = useDimensionsListener();
+    // Listener dimensi hanya dibutuhkan untuk preview web; di Android event ini muncul tiap keyboard
+    // (softwareKeyboardLayoutMode: resize) dan memicu render ulang seluruh root.
+    const dimensions = useDimensionsListener(Platform.OS === 'web');
     const windowWidth = Platform.OS === 'web' ? dimensions.width : dimensions.width;
     useOrientationLock();
     // API state fetching

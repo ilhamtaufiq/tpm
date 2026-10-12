@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Share, StatusBar, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -567,7 +567,9 @@ export default function BengkelTransaksiScreen() {
         else router.replace('/bengkel');
     };
 
-    const togglePart = (part: any) => {
+    // Dibungkus useCallback (deps kosong, hanya pakai setState fungsional) supaya
+    // referensi stabil dan row ter-memo tidak ikut render ulang tiap tap.
+    const togglePart = useCallback((part: any) => {
         if (!isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0) return;
         setSelectedParts(prev => {
             const next = { ...prev };
@@ -575,15 +577,15 @@ export default function BengkelTransaksiScreen() {
             else next[part.id] = { item: part, qty: 1 };
             return next;
         });
-    };
+    }, []);
 
-    const setPartQty = (partId: number, qty: number) => {
+    const setPartQty = useCallback((partId: number, qty: number) => {
         // Sparepart boleh pecahan (0.5 liter oli); backend Numeric(15,2) gt=0.
         const nextQty = roundQty(Math.max(0.01, qty));
         setSelectedParts(prev => prev[partId] ? { ...prev, [partId]: { ...prev[partId], qty: nextQty } } : prev);
-    };
+    }, []);
 
-    const toggleService = (service: any) => {
+    const toggleService = useCallback((service: any) => {
         setSelectedServices(prev => {
             const next = { ...prev };
             const key = String(service.id);
@@ -591,14 +593,14 @@ export default function BengkelTransaksiScreen() {
             else next[key] = { item: service, qty: 1 };
             return next;
         });
-    };
+    }, []);
 
-    const setServiceQty = (serviceId: number, qty: number) => {
+    const setServiceQty = useCallback((serviceId: number, qty: number) => {
         const key = String(serviceId);
         setSelectedServices(prev => prev[key] ? { ...prev, [key]: { ...prev[key], qty: Math.max(1, qty) } } : prev);
-    };
+    }, []);
 
-    const setServicePrice = (serviceId: number, priceStr: string, fallbackItem?: any) => {
+    const setServicePrice = useCallback((serviceId: number, priceStr: string, fallbackItem?: any) => {
         const key = String(serviceId);
         setSelectedServices(prev => {
             const existing = prev[key];
@@ -620,7 +622,7 @@ export default function BengkelTransaksiScreen() {
                 }
             };
         });
-    };
+    }, []);
 
     const addScannedPart = (part: any): boolean => {
         if (!isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0) {
@@ -1264,36 +1266,9 @@ export default function BengkelTransaksiScreen() {
 
                         {showParts && (
                         <View className="w-full">
-                            {isPartsLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleParts.map((part: any) => {
-                                const selected = selectedParts[part.id];
-                                const outOfStock = !selected && !isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0;
-                                return (
-                                    <Pressable key={part.id} disabled={outOfStock} onPress={() => togglePart(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-background border-transparent opacity-60' : selected ? 'bg-blue-500/10 border-blue-500/40' : 'bg-surface border-transparent'}`}>
-                                        <View className="flex-row items-start">
-                                            <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : outOfStock ? 'bg-background border-transparent' : 'border-transparent'}`}>
-                                                {selected && <Check size={16} color="white" />}
-                                            </View>
-                                            <View className="flex-1">
-                                                <View className="flex-row items-center">
-                                                    <Package size={18} color={selected ? '#2563EB' : outOfStock ? '#CBD5E1' : '#94A3B8'} />
-                                                    <Typography weight="bold" className={`text-sm ml-2 flex-1 ${outOfStock ? 'text-textGray' : 'text-textMain'}`} numberOfLines={1}>{part.nama}</Typography>
-                                                </View>
-                                                <Typography className="text-textGray text-[11px] mt-1">{part.kode || '-'} - Stok {isAlwaysReadyStock(part.stok) ? 'Tanpa Stok' : Number(part.stok || 0)}</Typography>
-                                                {outOfStock && <Typography className="text-rose-500 text-[10px] font-bold mt-1">STOK HABIS</Typography>}
-                                                <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(part.harga_jual || 0)}</Typography>
-                                            </View>
-                                        </View>
-                                        {selected && (
-                                            <QtyControl
-                                                value={selected.qty}
-                                                color="blue"
-                                                allowDecimal
-                                                onChangeQty={(qty) => setPartQty(part.id, qty)}
-                                            />
-                                        )}
-                                    </Pressable>
-                                );
-                            })}
+                            {isPartsLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleParts.map((part: any) => (
+                                <PartPickRow key={part.id} part={part} selected={selectedParts[part.id]} onToggle={togglePart} onQtyChange={setPartQty} />
+                            ))}
                             {isFetchingNextPartsPage && (
                                 <View className="py-4">
                                     <ActivityIndicator color={themeColors.primary} />
@@ -1304,45 +1279,9 @@ export default function BengkelTransaksiScreen() {
 
                         {showServiceCatalog && (
                         <View className="w-full">
-                            {isJasaLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleServices.map((service: any) => {
-                                const selected = selectedServices[String(service.id)];
-                                return (
-                                    <View key={`service-${service.id}`} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-surface border-transparent'}`}>
-                                        <View className="flex-row items-start">
-                                            <Pressable onPress={() => toggleService(service)} className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-emerald-600 border-emerald-600' : 'border-transparent'}`}>
-                                                {selected && <Check size={16} color="white" />}
-                                            </Pressable>
-                                            <View className="flex-1">
-                                                <View className="flex-row items-center">
-                                                    <Wrench size={18} color={selected ? '#059669' : '#94A3B8'} />
-                                                    <Typography weight="bold" className="text-sm text-textMain ml-2 flex-1" numberOfLines={1}>{service.nama}</Typography>
-                                                </View>
-                                                <Typography className="text-textGray text-[11px] mt-1">{service.kategori || 'Servis'}</Typography>
-                                                {selected ? (
-                                                    <View className="flex-row items-center bg-surface rounded-lg px-2 py-1 border border-emerald-100 self-start mt-1">
-                                                        <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
-                                                        <TextInput
-                                                            value={formatNumber(Number(selected.item.harga ?? service.harga ?? 0))}
-                                                            onChangeText={(val) => setServicePrice(service.id, val)}
-                                                            keyboardType="number-pad"
-                                                            className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
-                                                        />
-                                                    </View>
-                                                ) : (
-                                                    <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(service.harga || 0)}</Typography>
-                                                )}
-                                            </View>
-                                        </View>
-                                        {selected && (
-                                            <QtyControl
-                                                value={selected.qty}
-                                                color="emerald"
-                                                onChangeQty={(qty) => setServiceQty(service.id, qty)}
-                                            />
-                                        )}
-                                    </View>
-                                );
-                            })}
+                            {isJasaLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleServices.map((service: any) => (
+                                <ServicePickRow key={`service-${service.id}`} service={service} selected={selectedServices[String(service.id)]} onToggle={toggleService} onQtyChange={setServiceQty} onPriceChange={setServicePrice} />
+                            ))}
                         </View>
                         )}
                     </View>
@@ -2130,36 +2069,9 @@ export default function BengkelTransaksiScreen() {
                             onScroll={handlePartsScroll}
                             scrollEventThrottle={16}
                         >
-                            {isPartsLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleParts.map((part: any) => {
-                                const selected = selectedParts[part.id];
-                                const outOfStock = !selected && !isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0;
-                                return (
-                                    <Pressable key={`sheet-part-${part.id}`} disabled={outOfStock} onPress={() => togglePart(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-background border-transparent opacity-60' : selected ? 'bg-blue-500/10 border-blue-500/40' : 'bg-surface border-transparent'}`}>
-                                        <View className="flex-row items-start">
-                                            <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : outOfStock ? 'bg-background border-transparent' : 'border-transparent'}`}>
-                                                {selected && <Check size={16} color="white" />}
-                                            </View>
-                                            <View className="flex-1">
-                                                <View className="flex-row items-center">
-                                                    <Package size={18} color={selected ? '#2563EB' : outOfStock ? '#CBD5E1' : '#94A3B8'} />
-                                                    <Typography weight="bold" className={`text-sm ml-2 flex-1 ${outOfStock ? 'text-textGray' : 'text-textMain'}`} numberOfLines={1}>{part.nama}</Typography>
-                                                </View>
-                                                <Typography className="text-textGray text-[11px] mt-1">{part.kode || '-'} - Stok {isAlwaysReadyStock(part.stok) ? 'Tanpa Stok' : Number(part.stok || 0)}</Typography>
-                                                {outOfStock && <Typography className="text-rose-500 text-[10px] font-bold mt-1">STOK HABIS</Typography>}
-                                                <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(part.harga_jual || 0)}</Typography>
-                                            </View>
-                                        </View>
-                                        {selected && (
-                                            <QtyControl
-                                                value={selected.qty}
-                                                color="blue"
-                                                allowDecimal
-                                                onChangeQty={(qty) => setPartQty(part.id, qty)}
-                                            />
-                                        )}
-                                    </Pressable>
-                                );
-                            })}
+                            {isPartsLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleParts.map((part: any) => (
+                                <PartPickRow key={part.id} part={part} selected={selectedParts[part.id]} onToggle={togglePart} onQtyChange={setPartQty} />
+                            ))}
                             {isFetchingNextPartsPage && (
                                 <View className="py-4">
                                     <ActivityIndicator color={themeColors.primary} />
@@ -2190,45 +2102,9 @@ export default function BengkelTransaksiScreen() {
                             contentBottomPad={16}
                             showsVerticalScrollIndicator={false}
                         >
-                            {isJasaLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleServices.map((service: any) => {
-                                const selected = selectedServices[String(service.id)];
-                                return (
-                                    <Pressable key={`sheet-service-${service.id}`} onPress={() => toggleService(service)} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-surface border-transparent'}`}>
-                                        <View className="flex-row items-start">
-                                            <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-emerald-600 border-emerald-600' : 'border-transparent'}`}>
-                                                {selected && <Check size={16} color="white" />}
-                                            </View>
-                                            <View className="flex-1">
-                                                <View className="flex-row items-center">
-                                                    <Wrench size={18} color={selected ? '#059669' : '#94A3B8'} />
-                                                    <Typography weight="bold" className="text-sm text-textMain ml-2 flex-1" numberOfLines={1}>{service.nama}</Typography>
-                                                </View>
-                                                <Typography className="text-textGray text-[11px] mt-1">{service.kategori || 'Servis'}</Typography>
-                                                {selected ? (
-                                                    <View className="flex-row items-center bg-surface rounded-lg px-2 py-1 border border-emerald-100 self-start mt-1">
-                                                        <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
-                                                        <TextInput
-                                                            value={formatNumber(Number(selected.item.harga ?? service.harga ?? 0))}
-                                                            onChangeText={(val) => setServicePrice(service.id, val)}
-                                                            keyboardType="number-pad"
-                                                            className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
-                                                        />
-                                                    </View>
-                                                ) : (
-                                                    <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(service.harga || 0)}</Typography>
-                                                )}
-                                            </View>
-                                        </View>
-                                        {selected && (
-                                            <QtyControl
-                                                value={selected.qty}
-                                                color="emerald"
-                                                onChangeQty={(qty) => setServiceQty(service.id, qty)}
-                                            />
-                                        )}
-                                    </Pressable>
-                                );
-                            })}
+                            {isJasaLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleServices.map((service: any) => (
+                                <ServiceSheetRow key={`sheet-service-${service.id}`} service={service} selected={selectedServices[String(service.id)]} onToggle={toggleService} onQtyChange={setServiceQty} onPriceChange={setServicePrice} />
+                            ))}
                         </BoundedSheetScrollView>
                 </BottomSheetContainer>
             </Modal>
@@ -2374,3 +2250,151 @@ function SummaryRow({ label, value, muted = false }: { label: string; value: str
         </View>
     );
 }
+
+
+const PartPickRow = memo(function PartPickRow({
+    part,
+    selected,
+    onToggle,
+    onQtyChange,
+}: {
+    part: any;
+    selected?: { item: any; qty: number };
+    onToggle: (part: any) => void;
+    onQtyChange: (partId: number, qty: number) => void;
+}) {
+    const outOfStock = !selected && !isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0;
+    const handleQtyChange = useCallback((qty: number) => onQtyChange(part.id, qty), [onQtyChange, part.id]);
+    return (
+        <Pressable disabled={outOfStock} onPress={() => onToggle(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-background border-transparent opacity-60' : selected ? 'bg-blue-500/10 border-blue-500/40' : 'bg-surface border-transparent'}`}>
+            <View className="flex-row items-start">
+                <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : outOfStock ? 'bg-background border-transparent' : 'border-transparent'}`}>
+                    {selected && <Check size={16} color="white" />}
+                </View>
+                <View className="flex-1">
+                    <View className="flex-row items-center">
+                        <Package size={18} color={selected ? '#2563EB' : outOfStock ? '#CBD5E1' : '#94A3B8'} />
+                        <Typography weight="bold" className={`text-sm ml-2 flex-1 ${outOfStock ? 'text-textGray' : 'text-textMain'}`} numberOfLines={1}>{part.nama}</Typography>
+                    </View>
+                    <Typography className="text-textGray text-[11px] mt-1">{part.kode || '-'} - Stok {isAlwaysReadyStock(part.stok) ? 'Tanpa Stok' : Number(part.stok || 0)}</Typography>
+                    {outOfStock && <Typography className="text-rose-500 text-[10px] font-bold mt-1">STOK HABIS</Typography>}
+                    <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(part.harga_jual || 0)}</Typography>
+                </View>
+            </View>
+            {selected && (
+                <QtyControl
+                    value={selected.qty}
+                    color="blue"
+                    allowDecimal
+                    onChangeQty={handleQtyChange}
+                />
+            )}
+        </Pressable>
+    );
+});
+
+const ServicePickRow = memo(function ServicePickRow({
+    service,
+    selected,
+    onToggle,
+    onQtyChange,
+    onPriceChange,
+}: {
+    service: any;
+    selected?: { item: any; qty: number };
+    onToggle: (service: any) => void;
+    onQtyChange: (serviceId: number, qty: number) => void;
+    onPriceChange: (serviceId: number, priceStr: string) => void;
+}) {
+    const handleQtyChange = useCallback((qty: number) => onQtyChange(service.id, qty), [onQtyChange, service.id]);
+    const handlePriceChange = useCallback((val: string) => onPriceChange(service.id, val), [onPriceChange, service.id]);
+    return (
+        <View className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-surface border-transparent'}`}>
+            <View className="flex-row items-start">
+                <Pressable onPress={() => onToggle(service)} className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-emerald-600 border-emerald-600' : 'border-transparent'}`}>
+                    {selected && <Check size={16} color="white" />}
+                </Pressable>
+                <View className="flex-1">
+                    <View className="flex-row items-center">
+                        <Wrench size={18} color={selected ? '#059669' : '#94A3B8'} />
+                        <Typography weight="bold" className="text-sm text-textMain ml-2 flex-1" numberOfLines={1}>{service.nama}</Typography>
+                    </View>
+                    <Typography className="text-textGray text-[11px] mt-1">{service.kategori || 'Servis'}</Typography>
+                    {selected ? (
+                        <View className="flex-row items-center bg-surface rounded-lg px-2 py-1 border border-emerald-100 self-start mt-1">
+                            <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
+                            <TextInput
+                                value={formatNumber(Number(selected.item.harga ?? service.harga ?? 0))}
+                                onChangeText={handlePriceChange}
+                                keyboardType="number-pad"
+                                className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
+                            />
+                        </View>
+                    ) : (
+                        <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(service.harga || 0)}</Typography>
+                    )}
+                </View>
+            </View>
+            {selected && (
+                <QtyControl
+                    value={selected.qty}
+                    color="emerald"
+                    onChangeQty={handleQtyChange}
+                />
+            )}
+        </View>
+    );
+});
+
+const ServiceSheetRow = memo(function ServiceSheetRow({
+    service,
+    selected,
+    onToggle,
+    onQtyChange,
+    onPriceChange,
+}: {
+    service: any;
+    selected?: { item: any; qty: number };
+    onToggle: (service: any) => void;
+    onQtyChange: (serviceId: number, qty: number) => void;
+    onPriceChange: (serviceId: number, priceStr: string) => void;
+}) {
+    const handleQtyChange = useCallback((qty: number) => onQtyChange(service.id, qty), [onQtyChange, service.id]);
+    const handlePriceChange = useCallback((val: string) => onPriceChange(service.id, val), [onPriceChange, service.id]);
+    return (
+        <Pressable onPress={() => onToggle(service)} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-surface border-transparent'}`}>
+            <View className="flex-row items-start">
+                <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-emerald-600 border-emerald-600' : 'border-transparent'}`}>
+                    {selected && <Check size={16} color="white" />}
+                </View>
+                <View className="flex-1">
+                    <View className="flex-row items-center">
+                        <Wrench size={18} color={selected ? '#059669' : '#94A3B8'} />
+                        <Typography weight="bold" className="text-sm text-textMain ml-2 flex-1" numberOfLines={1}>{service.nama}</Typography>
+                    </View>
+                    <Typography className="text-textGray text-[11px] mt-1">{service.kategori || 'Servis'}</Typography>
+                    {selected ? (
+                        <View className="flex-row items-center bg-surface rounded-lg px-2 py-1 border border-emerald-100 self-start mt-1">
+                            <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
+                            <TextInput
+                                value={formatNumber(Number(selected.item.harga ?? service.harga ?? 0))}
+                                onChangeText={handlePriceChange}
+                                keyboardType="number-pad"
+                                className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
+                            />
+                        </View>
+                    ) : (
+                        <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(service.harga || 0)}</Typography>
+                    )}
+                </View>
+            </View>
+            {selected && (
+                <QtyControl
+                    value={selected.qty}
+                    color="emerald"
+                    onChangeQty={handleQtyChange}
+                />
+            )}
+        </Pressable>
+    );
+});

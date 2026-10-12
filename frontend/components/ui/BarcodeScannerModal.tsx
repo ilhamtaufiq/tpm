@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, FC } from 'react';
-import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput, Animated, Keyboard, Linking } from 'react-native';
+import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput, Animated, Easing, Keyboard, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, type BarcodeType } from 'expo-camera';
@@ -52,8 +52,9 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
     const [torch, setTorch] = useState(false);
-    const [laserPos, setLaserPos] = useState(0);
-    const [movingDown, setMovingDown] = useState(true);
+    // Posisi laser dianimasikan di native thread (translateY). Sebelumnya setState tiap 30ms
+    // me-render ulang seluruh modal termasuk CameraView.
+    const laserAnim = useRef(new Animated.Value(0)).current;
     const scanBox = useMemo(
         () => preferLinearBarcode
             ? { width: 320, height: 100, laserMax: 88, laserMin: 8 }
@@ -115,19 +116,19 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     // Laser Animation Effect
     useEffect(() => {
         if (!visible) return;
-        const interval = setInterval(() => {
-            setLaserPos((prev: number) => {
-                if (movingDown) {
-                    if (prev >= scanBox.laserMax) { setMovingDown(false); return scanBox.laserMax; }
-                    return prev + 5;
-                } else {
-                    if (prev <= scanBox.laserMin) { setMovingDown(true); return scanBox.laserMin; }
-                    return prev - 5;
-                }
-            });
-        }, 30);
-        return () => clearInterval(interval);
-    }, [visible, movingDown, scanBox.laserMax, scanBox.laserMin]);
+        // Kecepatan sama seperti versi lama: 5px tiap 30ms, bolak-balik antara laserMin..laserMax.
+        const travel = scanBox.laserMax - scanBox.laserMin;
+        const duration = (travel / 5) * 30;
+        laserAnim.setValue(0);
+        const loop = Animated.loop(
+            Animated.sequence([
+                Animated.timing(laserAnim, { toValue: travel, duration, easing: Easing.linear, useNativeDriver: true }),
+                Animated.timing(laserAnim, { toValue: 0, duration, easing: Easing.linear, useNativeDriver: true }),
+            ])
+        );
+        loop.start();
+        return () => loop.stop();
+    }, [visible, laserAnim, scanBox.laserMax, scanBox.laserMin]);
 
     useEffect(() => {
         let mounted = true;
@@ -456,7 +457,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             <View style={[styles.corner, styles.bottomRight]} />
 
                                             {/* Laser Line */}
-                                            <View style={[styles.laser, { top: laserPos }]} />
+                                            <Animated.View style={[styles.laser, { top: scanBox.laserMin, transform: [{ translateY: laserAnim }] }]} />
 
                                             {/* Scan match indicator: green for match, red for no-match */}
                                             {scanMatch === 'match' && (
