@@ -82,6 +82,7 @@ import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
 import { useDeferredReady } from '../../hooks/useDeferredReady';
+import { labelSetoran, isSetoranAutoNote } from '../../utils/setoranTunai';
 /** Lightweight menu card — no Reanimated (was stalling first paint). */
 const BengkelServiceCard = React.memo(function BengkelServiceCard({
     menu,
@@ -1713,7 +1714,7 @@ export default function BengkelScreen() {
                                     ].map((opt) => (
                                         <View key={opt.id} className="w-1/2 p-1">
                                             <Pressable
-                                                onPress={() => setExpensePaymentMethod(opt.id)}
+                                                onPress={() => { setExpensePaymentMethod(opt.id); setExpenseNote(prev => (isSetoranAutoNote(prev) ? labelSetoran(opt.id) : prev)); }}
                                                 className={`p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
                                                     ? 'bg-blue-600 border-blue-600 shadow-sm'
                                                     : 'bg-surface border-gray-100'
@@ -1726,6 +1727,11 @@ export default function BengkelScreen() {
                                         </View>
                                     ))}
                                 </View>
+                                {expensePaymentMethod !== 'KAS_UTAMA' && (
+                                    <Typography variant="caption" className="text-amber-600 mt-3 px-1">
+                                        Tujuan bukan Cash Utama. Pastikan tujuan ini sudah benar.
+                                    </Typography>
+                                )}
                             </View>
                         )}
 

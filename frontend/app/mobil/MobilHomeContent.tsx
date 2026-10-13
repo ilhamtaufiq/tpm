@@ -59,6 +59,7 @@ import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useDeferredReady } from '../../hooks/useDeferredReady';
+import { labelSetoran, isSetoranAutoNote } from '../../utils/setoranTunai';
 
 const MobilCardMedia = React.memo(({ media }: { media?: any[] }) => {
     // Tanpa auto-slide: interval 3 detik per kartu = N timer + setState + decode
@@ -1088,7 +1089,7 @@ export default function MobilInventoryScreen() {
                                     ].map((opt) => (
                                         <View key={opt.id} className="w-1/2 p-1">
                                             <Pressable
-                                                onPress={() => setExpensePaymentMethod(opt.id)}
+                                                onPress={() => { setExpensePaymentMethod(opt.id); setExpenseNote(prev => (isSetoranAutoNote(prev) ? labelSetoran(opt.id) : prev)); }}
                                                 className={`p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
                                                     ? 'bg-blue-600 border-blue-600 shadow-sm'
                                                     : 'bg-surface border-gray-100'
@@ -1101,6 +1102,11 @@ export default function MobilInventoryScreen() {
                                         </View>
                                     ))}
                                 </View>
+                                {expensePaymentMethod !== 'KAS_UTAMA' && (
+                                    <Typography variant="caption" className="text-amber-600 mt-3 px-1">
+                                        Tujuan bukan Cash Utama. Pastikan tujuan ini sudah benar.
+                                    </Typography>
+                                )}
                             </View>
                         )}
 
