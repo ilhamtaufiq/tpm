@@ -72,6 +72,7 @@ import { useDeferredReady } from '../../hooks/useDeferredReady';
 import { MuatanForm } from '../../components/jasa-angkut/MuatanForm';
 import { PaymentModal } from '../../components/PaymentModal';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
+import { labelSetoran, isSetoranAutoNote } from '../../utils/setoranTunai';
 
 type TripDeduction = { label: string; amount: number; kategori?: string };
 
@@ -1005,7 +1006,7 @@ export default function JasaAngkutScreen() {
                                     ].map((opt) => (
                                         <View key={opt.id} className="w-1/2 p-1">
                                             <Pressable
-                                                onPress={() => setExpensePaymentMethod(opt.id)}
+                                                onPress={() => { setExpensePaymentMethod(opt.id); setExpenseNote(prev => (isSetoranAutoNote(prev) ? labelSetoran(opt.id) : prev)); }}
                                                 className={`p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
                                                     ? 'bg-blue-600 border-blue-600 shadow-sm'
                                                     : 'bg-surface border-gray-100'
@@ -1018,6 +1019,11 @@ export default function JasaAngkutScreen() {
                                         </View>
                                     ))}
                                 </View>
+                                {expensePaymentMethod !== 'KAS_UTAMA' && (
+                                    <Typography variant="caption" className="text-amber-600 mt-3 px-1">
+                                        Tujuan bukan Cash Utama. Pastikan tujuan ini sudah benar.
+                                    </Typography>
+                                )}
                             </View>
                         )}
 
