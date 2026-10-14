@@ -581,12 +581,19 @@ class MuatanService:
                 pembayaran_ids.append(pymt.id)
 
         # 4. Update KasBank entries
+        # referensi_id saja tidak unik antar sumber (kas pembayaran piutang memakai
+        # referensi_id = pembayaran.id), jadi selalu dipasangkan dengan nomor_referensi.
         kas_filters = [
-            (KasBank.referensi_id == muatan.id) & (KasBank.sumber == KasBankSource.JASA_ANGKUT),
+            (KasBank.referensi_id == muatan.id) & (KasBank.sumber == KasBankSource.JASA_ANGKUT)
+            & self._kas_milik_muatan(KasBank, muatan),
             KasBank.nomor_referensi == muatan.nomor_transaksi,
         ]
-        if pembayaran_ids:
-            kas_filters.append((KasBank.referensi_id.in_(pembayaran_ids)) & (KasBank.sumber.in_([KasBankSource.JASA_ANGKUT, KasBankSource.PIUTANG])))
+        if pembayaran_ids and piutang_nomors:
+            kas_filters.append(
+                (KasBank.referensi_id.in_(pembayaran_ids))
+                & (KasBank.sumber.in_([KasBankSource.JASA_ANGKUT, KasBankSource.PIUTANG]))
+                & (KasBank.nomor_referensi.in_(piutang_nomors))
+            )
         if piutang_nomors:
             kas_filters.append(KasBank.nomor_referensi.in_(piutang_nomors))
 
@@ -715,6 +722,8 @@ class MuatanService:
         muatan.laba_tpm = profit["laba_tpm"]
         muatan.laba_supir = profit["laba_supir"]
 
+        self._sesuaikan_piutang_lunas(muatan, total_dynamic_cost)
+
         self.db.commit()
         self.db.refresh(muatan)
 
@@ -728,7 +737,12 @@ class MuatanService:
                 PiutangUsaha.referensi_id == muatan.id,
                 PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
             ).first()
-            
+
+            # Uang yang sudah masuk lewat pembayaran piutang sudah punya kas sendiri
+            # (nomor_referensi = nomor piutang). Jangan dicatat ulang sebagai kas muatan.
+            piutang_lunas_sebelumnya = piutang is not None and piutang.status == PiutangStatus.LUNAS
+            sudah_dibayar_piutang = Decimal(str(piutang.total_dibayar or 0)) if piutang else Decimal("0")
+
             if piutang and piutang.status != PiutangStatus.LUNAS:
                 # If transitioning to LUNAS via update, mark the piutang as closed
                 # The cash entries will be created below or through process_payment
@@ -737,17 +751,23 @@ class MuatanService:
                 piutang.total_dibayar = piutang.nominal_piutang
             
             # 2. Reconcile KasBank entries
+            # Wajib cocok nomor_referensi: kas pembayaran piutang (referensi_id =
+            # pembayaran.id) bisa punya referensi_id sama dengan muatan.id, dan dulu
+            # tertimpa nominal laba_tpm muatan lain.
             existing_kas = self.db.query(KasBank).filter(
                 KasBank.referensi_id == muatan.id,
+                KasBank.nomor_referensi == muatan.nomor_transaksi,
                 KasBank.sumber == KasBankSource.JASA_ANGKUT,
                 KasBank.tipe == KasBankType.MASUK
             ).first()
             
-            if not existing_kas:
+            if not existing_kas and not piutang_lunas_sebelumnya:
                 current_costs = sum(b.jumlah for b in muatan.biaya_tambahan)
-                tpm_net_portion = max(Decimal("0"), muatan.laba_tpm - current_costs)
+                tpm_net_portion = max(Decimal("0"), muatan.laba_tpm - current_costs - sudah_dibayar_piutang)
                 
-                if data.payments and len(data.payments) > 0:
+                if tpm_net_portion <= 0:
+                    pass
+                elif data.payments and len(data.payments) > 0:
                     # Normalized Split Payment: ensure sum matches net share
                     total_input = sum(p.nominal for p in data.payments)
                     if total_input > 0 and total_input != tpm_net_portion:
@@ -785,7 +805,7 @@ class MuatanService:
                         user_id=None,
                         kas_jenis=data.kas_jenis,
                     )
-            else:
+            elif existing_kas:
                 # Update existing single KasBank entry if laba_tpm changed and it's not a split payment
                 # For split payments, we skip auto-update to avoid complex mapping issues
                 if muatan.metode_bayar != PaymentMethod.SPLIT and existing_kas.nominal != muatan.laba_tpm:
@@ -821,6 +841,7 @@ class MuatanService:
                         # Remove associated KasBank entry
                         self.db.query(KasBank).filter(
                             KasBank.referensi_id == ep.id,
+                            KasBank.nomor_referensi == piutang.nomor_piutang,
                             KasBank.sumber == KasBankSource.JASA_ANGKUT,
                             KasBank.tipe == KasBankType.MASUK
                         ).delete(synchronize_session=False)
@@ -1075,10 +1096,12 @@ class MuatanService:
             piutang.catatan = (piutang.catatan or "") + " | DIBATALKAN"
 
         # 2. Reverse related KasBank entries (Direct Payments, Operational Costs, and Workshop Repairs)
+        # Hanya kas milik muatan ini: referensi_id tidak unik antar sumber, jadi
+        # harus cocok nomor_referensi / keterangan muatan supaya kas transaksi lain
+        # (mis. pembayaran piutang dengan id sama) tidak ikut dibalik.
         kas_entries_direct = self.db.query(KasBank).filter(
             KasBank.referensi_id == muatan.id,
-            # We reverse ALL entries linked to this muatan to ensure cash reconciliation remains balanced.
-            # This includes JASA_ANGKUT (payouts/revenue) and BENGKEL (internal workshop repairs).
+            self._kas_milik_muatan(KasBank, muatan),
         ).all()
         for entry in kas_entries_direct:
             self._reverse_kas_entry(entry, "Void Muatan")
@@ -1091,6 +1114,60 @@ class MuatanService:
         self.db.commit()
         self._emit_change(muatan, "voided")
         return True
+
+    def _sesuaikan_piutang_lunas(self, muatan: MuatanJasaAngkut, total_biaya) -> None:
+        """Muatan yang sudah lunas lewat pembayaran piutang lalu harganya diubah.
+
+        Dulu piutang LUNAS tidak ikut disesuaikan, sehingga laba (pendapatan) dan
+        uang yang tercatat masuk berbeda (kasus JAS2610130007/14: selisih 220.000).
+        - Bagian TPM naik  → piutang dibuka lagi sebesar selisihnya (ditagih lewat
+          pembayaran piutang), muatan kembali BELUM_LUNAS.
+        - Bagian TPM turun di bawah yang sudah dibayar → ditolak (perlu pengembalian).
+        """
+        if muatan.status_bayar != PaymentStatus.LUNAS:
+            return
+        piutang = self.db.query(PiutangUsaha).filter(
+            PiutangUsaha.referensi_id == muatan.id,
+            PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT,
+            PiutangUsaha.nomor_referensi == muatan.nomor_transaksi,
+            PiutangUsaha.status == PiutangStatus.LUNAS,
+        ).first()
+        if piutang is None:
+            return
+        dibayar = sum((Decimal(str(p.nominal)) for p in piutang.pembayaran), Decimal("0"))
+        if dibayar <= 0:
+            # Lunas tanpa pembayaran piutang (ditandai lunas saat edit): kasnya
+            # tercatat langsung di muatan, tidak lewat piutang.
+            return
+        net_share = max(Decimal("0"), Decimal(str(muatan.laba_tpm)) - Decimal(str(total_biaya or 0)))
+        if net_share == Decimal(str(piutang.nominal_piutang)):
+            return
+        if net_share < dibayar:
+            self.db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Bagian TPM baru Rp{net_share:,.0f} lebih kecil dari yang sudah dibayar "
+                    f"Rp{dibayar:,.0f} lewat piutang {piutang.nomor_piutang}. "
+                    "Catat pengembalian kelebihan bayar dulu."
+                ).replace(",", "."),
+            )
+        piutang.nominal_piutang = net_share
+        piutang.total_dibayar = dibayar
+        piutang.sisa_piutang = net_share - dibayar
+        if piutang.sisa_piutang > 0:
+            piutang.status = PiutangStatus.SEBAGIAN
+            piutang.tanggal_lunas = None
+            muatan.status_bayar = PaymentStatus.BELUM_LUNAS
+
+    @staticmethod
+    def _kas_milik_muatan(KasBank, muatan):
+        """Filter kas yang benar-benar dibuat untuk muatan ini (bukan sekadar
+        referensi_id sama)."""
+        return or_(
+            KasBank.nomor_referensi == muatan.nomor_transaksi,
+            KasBank.keterangan.ilike(f"%{muatan.nomor_transaksi}%"),
+        )
 
     def _reverse_kas_entry(self, entry: KasBank, reason: str):
         """Create a neutralizing reversing entry for a KasBank record."""
