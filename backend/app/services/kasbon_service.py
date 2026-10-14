@@ -430,8 +430,11 @@ class KasbonService:
         # Delete related KasBank entries (Money OUT records)
         # This ensures the cash balance returns to what it was
         from app.models.keuangan import KasBank
+        # nomor_referensi wajib: kas pelunasan kasbon lama memakai sumber KASBON
+        # dengan referensi_id = id pembayaran piutang (bisa sama dengan kasbon.id).
         self.db.query(KasBank).filter(
             KasBank.referensi_id == kasbon.id,
+            KasBank.nomor_referensi == kasbon.nomor_kasbon,
             KasBank.sumber == KasBankSource.KASBON,
         ).delete()
 

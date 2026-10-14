@@ -1209,6 +1209,7 @@ class PenjualanMobilService:
             self.db.query(KasBank)
             .filter(
                 KasBank.referensi_id == transaksi.id,
+                KasBank.nomor_referensi == transaksi.nomor_transaksi,
                 KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
                 KasBank.tipe == KasBankType.KELUAR,
                 KasBank.keterangan.ilike("%Pencairan Investor%"),

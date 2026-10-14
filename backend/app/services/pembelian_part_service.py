@@ -125,6 +125,7 @@ class PembelianPartService:
             self.db.query(KasBank)
             .filter(
                 KasBank.referensi_id == pembelian.id,
+                KasBank.nomor_referensi == pembelian.nomor_transaksi,
                 KasBank.sumber == KasBankSource.PEMBELIAN_PART,
                 KasBank.tipe == KasBankType.KELUAR,
             )
@@ -378,6 +379,7 @@ class PembelianPartService:
 
         self.db.query(KasBank).filter(
             KasBank.referensi_id == pembelian.id,
+            KasBank.nomor_referensi == pembelian.nomor_transaksi,
             KasBank.sumber == KasBankSource.PEMBELIAN_PART,
         ).delete(synchronize_session=False)
 
