@@ -409,10 +409,11 @@ class TransaksiBengkelService:
         kas_filters = [KasBank.nomor_referensi == nomor_transaksi]
         if nomor_piutang:
             kas_filters.append(KasBank.nomor_referensi.in_(nomor_piutang))
-        if pembayaran_ids:
+        if pembayaran_ids and nomor_piutang:
             kas_filters.append(
                 KasBank.referensi_id.in_(pembayaran_ids)
                 & KasBank.sumber.in_([KasBankSource.BENGKEL, KasBankSource.PIUTANG])
+                & KasBank.nomor_referensi.in_(nomor_piutang)
             )
         self.db.query(KasBank).filter(
             or_(*kas_filters),
@@ -1933,8 +1934,13 @@ class TransaksiBengkelService:
                     KasBankSource.JUAL_BELI_MOBIL,
                 ]),
             ).delete(synchronize_session=False)
+            # referensi_id tidak unik antar sumber (kas pembayaran piutang memakai
+            # referensi_id = pembayaran.id). Dulu filter referensi_id saja ikut
+            # menghapus kas pembayaran piutang lain yang id-nya sama (13 Okt 2026:
+            # void BGL2610130004 id 31 menghapus kas retur 350.000 PTG2610050006).
             self.db.query(KasBank).filter(
                 KasBank.referensi_id == transaksi.id,
+                KasBank.nomor_referensi == transaksi.nomor_transaksi,
                 KasBank.sumber == KasBankSource.BENGKEL,
             ).delete(synchronize_session=False)
 
@@ -1943,6 +1949,7 @@ class TransaksiBengkelService:
                 if pembayaran_ids:
                     self.db.query(KasBank).filter(
                         KasBank.referensi_id.in_(pembayaran_ids),
+                        KasBank.nomor_referensi == piutang.nomor_piutang,
                         or_(KasBank.sumber == KasBankSource.PIUTANG, KasBank.sumber == KasBankSource.BENGKEL)
                     ).delete(synchronize_session=False)
 
