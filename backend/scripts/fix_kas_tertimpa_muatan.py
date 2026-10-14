@@ -254,6 +254,12 @@ def main():
             if k is None or not k.keterangan.startswith(("Transfer ke ", "Transfer dari ")):
                 print(f"  id={kid} bukan baris transfer, dilewati.")
                 continue
+            sudah = db.query(KasBank.id).filter(
+                KasBank.keterangan.like(f"[KOREKSI] Setoran dari saldo semu {k.nomor_transaksi}:%")
+            ).first()
+            if sudah:
+                print(f"  id={kid} sudah dikoreksi (kas id={sudah.id}), dilewati.")
+                continue
             balik = KasBankType.KELUAR if k.tipe == KasBankType.MASUK else KasBankType.MASUK
             koreksi(db, k, balik, "Setoran dari saldo semu")
             affected.add(k.jenis)
