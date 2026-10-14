@@ -25,6 +25,12 @@ Defect 4 — harga muatan diubah setelah piutang lunas:
     dari bagian TPM. Perbaikan (hanya nomor piutang yang diminta): nominal piutang
     = bagian TPM, tambah pembayaran piutang sebesar selisihnya + kas MASUK.
 
+Defect 5 — kas pembayaran piutang ikut terhapus saat void transaksi bengkel:
+    Void bengkel menghapus kas `referensi_id == transaksi.id` (sumber BENGKEL),
+    termasuk kas pembayaran piutang yang id pembayarannya sama (13 Okt 2026:
+    void BGL2610130004 id 31 menghapus kas pembayaran #31 PTG2610050006 350.000).
+    Perbaikan: buat ulang kas dari baris pembayaran_piutang (akun eksplisit).
+
 Script TIDAK menebak: tanpa --apply hanya menampilkan kandidat.
 
 Pemakaian (dari folder backend/):
@@ -32,7 +38,8 @@ Pemakaian (dari folder backend/):
     python scripts/fix_kas_tertimpa_muatan.py --apply \\
         --restore 105:BANK_UTAMA 106:BANK_UTAMA 108:KAS_UTAMA \\
         --balik-ganda 182 --balik-setoran 184 185 \\
-        --tambah-bayar AR2610130007 AR2610130014 --tanggal-bayar 2026-10-13
+        --tambah-bayar AR2610130007 AR2610130014 --tanggal-bayar 2026-10-13 \\
+        --pulihkan-bayar 31:KAS_UTAMA
 """
 import argparse
 import os
@@ -134,6 +141,31 @@ def piutang_kurang_bayar(db):
     return out
 
 
+def bayar_tanpa_kas(db):
+    """Pembayaran piutang tanpa kas apa pun yang merujuk nomornya dengan nominal sama."""
+    from sqlalchemy import or_
+    out = []
+    rows = (
+        db.query(PembayaranPiutang, PiutangUsaha)
+        .join(PiutangUsaha, PiutangUsaha.id == PembayaranPiutang.piutang_id)
+        .filter(PiutangUsaha.status != PiutangStatus.BATAL)
+        .order_by(PembayaranPiutang.id)
+        .all()
+    )
+    for b, p in rows:
+        refs = [r for r in (p.nomor_piutang, p.nomor_referensi) if r]
+        ada = db.query(KasBank.id).filter(
+            KasBank.tipe == KasBankType.MASUK,
+            or_(
+                (KasBank.referensi_id == b.id) & (KasBank.nomor_referensi == p.nomor_piutang),
+                KasBank.nomor_referensi.in_(refs) & (KasBank.nominal == b.nominal),
+            ),
+        ).first()
+        if not ada:
+            out.append((b, p))
+    return out
+
+
 def koreksi(db, entry, tipe, alasan):
     return create_kas_entry(
         db=db,
@@ -158,6 +190,7 @@ def main():
     ap.add_argument("--balik-ganda", nargs="*", type=int, default=[])
     ap.add_argument("--balik-setoran", nargs="*", type=int, default=[])
     ap.add_argument("--tambah-bayar", nargs="*", default=[], help="nomor piutang")
+    ap.add_argument("--pulihkan-bayar", nargs="*", default=[], help="ID_PEMBAYARAN:AKUN, mis. 31:KAS_UTAMA")
     ap.add_argument("--tanggal-bayar", type=date.fromisoformat, default=None)
     args = ap.parse_args()
 
@@ -182,6 +215,11 @@ def main():
         kurang = {p.nomor_piutang: (p, m, n, d) for p, m, n, d in piutang_kurang_bayar(db)}
         for p, m, n, d in kurang.values():
             print(f"  {p.nomor_piutang} {m.nomor_transaksi} bagian TPM {n:>12,.2f} dibayar {d:>12,.2f} selisih {n - d:>12,.2f}")
+
+        print("== Defect 5: pembayaran piutang tanpa kas ==")
+        tanpa_kas = {b.id: (b, p) for b, p in bayar_tanpa_kas(db)}
+        for b, p in tanpa_kas.values():
+            print(f"  pembayaran #{b.id} {b.tanggal} {p.nomor_piutang} {p.nama_debitur} {b.metode_bayar.value} {b.nominal:>12,.2f} {b.catatan or ''}")
 
         if not args.apply:
             print("\nMode kering. Tambahkan --apply dengan ID eksplisit untuk menulis.")
@@ -259,6 +297,33 @@ def main():
             )
             affected.add(KasBankJenis.BANK_UTAMA)
             print(f"  {nomor}: tambah bayar {selisih:,.2f} TRANSFER BANK_UTAMA {tanggal}")
+
+        for spec in args.pulihkan_bayar:
+            bid, akun = spec.split(":")
+            bid = int(bid)
+            if bid not in tanpa_kas:
+                print(f"  pembayaran #{bid} bukan kandidat defect 5, dilewati.")
+                continue
+            b, p = tanpa_kas[bid]
+            target = KasBankJenis(akun)
+            unit = p.unit or KasBankSource.PIUTANG
+            label = str(getattr(unit, "value", unit)).replace("_", " ").title()
+            create_kas_entry(
+                db=db,
+                tanggal=b.tanggal,
+                tipe=KasBankType.MASUK,
+                nominal=b.nominal,
+                sumber=unit,
+                metode_bayar=b.metode_bayar,
+                referensi_id=b.id,
+                nomor_referensi=p.nomor_piutang,
+                keterangan=f"[KOREKSI] [{label}] Pembayaran piutang {p.nomor_piutang} - {p.nama_debitur} ({b.metode_bayar.value}) dipulihkan",
+                kas_jenis=target,
+                allow_negative=True,
+                commit=False,
+            )
+            affected.add(target)
+            print(f"  pulihkan kas pembayaran #{bid}: MASUK {b.nominal:,.2f} {target.value} {b.tanggal}")
 
         if not affected:
             db.rollback()
