@@ -1085,6 +1085,7 @@ class MuatanService:
             if pembayaran_ids:
                 kas_entries = self.db.query(KasBank).filter(
                     KasBank.referensi_id.in_(pembayaran_ids),
+                    KasBank.nomor_referensi == piutang.nomor_piutang,
                     KasBank.sumber == KasBankSource.PIUTANG,
                 ).all()
                 for entry in kas_entries:
