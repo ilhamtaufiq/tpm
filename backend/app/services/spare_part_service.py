@@ -246,6 +246,9 @@ class SparePartService:
         # Search filter
         if search:
             words = [w.strip() for w in search.split() if w.strip()]
+            if words:
+                # Hasil paling relevan (awalan cocok) tampil di atas, sebelum sort pilihan user.
+                query = query.order_by(self._relevance_rank(" ".join(words)).asc())
             for word in words:
                 search_filter = f"%{word}%"
                 query = query.filter(
@@ -514,6 +517,25 @@ class SparePartService:
             "total_products": int(result.total_products or 0),
         }
 
+    @staticmethod
+    def _relevance_rank(query: str):
+        """Peringkat kecocokan pencarian (lebih kecil = lebih relevan).
+
+        0 = cocok di awal nama/kode, 1 = cocok di awal salah satu kata,
+        2 = cocok di tengah kata. Collation kolom case-insensitive, jadi huruf
+        besar/kecil tidak perlu ditangani di sini.
+        """
+        q = query.strip()
+        prefix = f"{q}%"
+        word_start = f"% {q}%"
+        contains = f"%{q}%"
+        kolom = [SparePart.nama, SparePart.kode, SparePart.kode_part, SparePart.kode_ean]
+        return case(
+            (or_(*[c.ilike(prefix) for c in kolom]), 0),
+            (or_(*[c.ilike(word_start) for c in kolom]), 1),
+            else_=2,
+        )
+
     def search_for_transaction(
         self,
         query: str,
@@ -533,7 +555,7 @@ class SparePartService:
                     SparePart.kode_ean.ilike(search_filter),
                 ),
             )
-            .order_by(SparePart.nama.asc())
+            .order_by(self._relevance_rank(query).asc(), SparePart.nama.asc())
             .limit(limit)
             .all()
         )

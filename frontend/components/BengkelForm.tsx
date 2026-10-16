@@ -221,16 +221,21 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
     const selectedServicesForDisplay = useMemo(() => services.filter((service) => service.service_id !== 0 || service.nama_jasa.trim().length > 0), [services]);
     const hasBillableItems = selectedPartsForDisplay.length > 0 || selectedServicesForDisplay.length > 0;
 
-    // Re-hydrate only when a *different record* is loaded. Keying on the object
-    // itself re-ran this on every background refetch and silently discarded
-    // whatever the user had typed.
-    const hydratedRecordRef = useRef<number | string | null>(null);
+    // Re-hydrate when the loaded record *version* changes: a different id, a newer
+    // updated_at, or a different line count. Keying on the object itself re-ran
+    // this on every background refetch and discarded whatever the user typed.
+    // Keying on id alone was worse: when a stale cached copy (e.g. 0 lines) was
+    // shown first, the fresh copy from the server was ignored until remount.
+    const hydratedRecordRef = useRef<string | null>(null);
 
     useEffect(() => {
-        if (initialData && hydratedRecordRef.current === initialData.id) {
+        const recordKey = initialData
+            ? `${initialData.id}|${initialData.updated_at ?? ''}|${initialData.detail_services?.length ?? 0}|${initialData.detail_parts?.length ?? 0}`
+            : null;
+        if (recordKey === hydratedRecordRef.current) {
             return;
         }
-        hydratedRecordRef.current = initialData?.id ?? null;
+        hydratedRecordRef.current = recordKey;
 
         if (initialData) {
             setKategori(initialData.kategori);
