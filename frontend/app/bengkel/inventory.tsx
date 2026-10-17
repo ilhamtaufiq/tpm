@@ -31,6 +31,7 @@ import {
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock, useSparePartStats, useExportSpareParts, useSparePartStockValue } from '../../hooks/useBengkel';
+import { useDebounce } from '../../hooks/useDebounce';
 import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -57,6 +58,7 @@ export default function InventoryScreen() {
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
     const [search, setSearch] = useState('');
+    const debouncedSearch = useDebounce(search, 350);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedPart, setSelectedPart] = useState<any>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -100,7 +102,7 @@ export default function InventoryScreen() {
         hasNextPage,
         isFetchingNextPage
     } = useSparePartsList({
-        search,
+        search: debouncedSearch,
         sort_by: sortBy,
         sort_order: sortOrder,
         low_stock_only: stockFilter === 'low',

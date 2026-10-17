@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import { bengkelService, SparePart } from '../services/bengkel';
 
 // =============================================
@@ -124,6 +124,9 @@ export const useSparePartsList = (params?: any) => {
             return nextSkip < lastPage.total ? nextSkip : undefined;
         },
         initialPageParam: 0,
+        // Saat kata pencarian berganti, hasil lama tetap tampil sampai hasil baru datang
+        // (tanpa ini daftar berkedip hilang di setiap ketikan).
+        placeholderData: keepPreviousData,
     });
 };
 
