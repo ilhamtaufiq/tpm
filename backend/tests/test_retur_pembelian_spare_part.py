@@ -19,7 +19,7 @@ from app.models.bengkel import (
     SparePart,
     SparePartRevaluation,
 )
-from app.models.keuangan import HutangUsaha, KasBank
+from app.models.keuangan import HutangUsaha, KasBank, PembayaranPiutang, PiutangUsaha
 from app.models.supplier import Supplier
 from app.schemas.bengkel import DetailPembelianCreate, PaymentItem, PembelianSparePartCreate, ReturPembelianCreate, ReturPembelianItem
 from app.services.pembelian_part_service import PembelianPartService
@@ -81,6 +81,10 @@ def _bersihkan(db, parts, pembelians, suppliers=()):
             db.query(DetailReturPembelianSparePart).filter(DetailReturPembelianSparePart.retur_id.in_(retur_ids)).delete(synchronize_session=False)
             db.query(ReturPembelianSparePart).filter(ReturPembelianSparePart.id.in_(retur_ids)).delete(synchronize_session=False)
         db.query(KasBank).filter(or_(KasBank.nomor_referensi == pb.nomor_transaksi, KasBank.nomor_referensi.in_(nomor_retur or [""]))).delete(synchronize_session=False)
+        piutang_ids = [p.id for p in db.query(PiutangUsaha).filter(PiutangUsaha.nomor_referensi.in_(nomor_retur or [""])).all()]
+        if piutang_ids:
+            db.query(PembayaranPiutang).filter(PembayaranPiutang.piutang_id.in_(piutang_ids)).delete(synchronize_session=False)
+            db.query(PiutangUsaha).filter(PiutangUsaha.id.in_(piutang_ids)).delete(synchronize_session=False)
         db.query(HutangUsaha).filter(HutangUsaha.nomor_referensi == pb.nomor_transaksi).delete(synchronize_session=False)
         db.query(SparePartRevaluation).filter(SparePartRevaluation.pembelian_id == pb.id).delete(synchronize_session=False)
         db.query(DetailPembelianSparePart).filter(DetailPembelianSparePart.pembelian_id == pb.id).delete(synchronize_session=False)
@@ -252,5 +256,76 @@ def test_preview_sama_dengan_simpan_dan_tidak_menulis(db):
 
         r = svc.create(pb.id, req, user_id=None)
         assert r.nilai_hutang == pv["nilai_hutang"] and r.nilai_kas == pv["nilai_kas"]
+    finally:
+        _bersihkan(db, [part], [pb], [supplier])
+
+
+def test_pembelian_lunas_retur_jadi_piutang_ke_supplier(db):
+    from app.models.keuangan import PiutangUsaha
+    from app.utils.constants import PiutangSource, PiutangStatus
+
+    supplier = _supplier(db)
+    part = _part(db, 0)
+    pb = _beli(db, supplier, part, 2, "100000", metode=PaymentMethod.TUNAI)
+    try:
+        svc = ReturPembelianService(db)
+        req = ReturPembelianCreate(
+            tanggal=date(2026, 10, 2),
+            detail=[ReturPembelianItem(detail_pembelian_id=pb.detail[0].id, qty=Decimal("1"))],
+            selisih_sebagai="PIUTANG",
+        )
+        r = svc.create(pb.id, req, user_id=None)
+        assert r.nilai_kas == 0 and r.nilai_hutang == 0 and r.nilai_piutang == Decimal("100000")
+
+        db.expire_all()
+        assert db.get(SparePart, part.id).stok == Decimal("1")
+        assert db.query(KasBank).filter(KasBank.nomor_referensi == r.nomor_retur).count() == 0
+        piutang = db.query(PiutangUsaha).filter(PiutangUsaha.nomor_referensi == r.nomor_retur).one()
+        assert piutang.sumber == PiutangSource.LAINNYA
+        assert piutang.nominal_piutang == Decimal("100000") and piutang.sisa_piutang == Decimal("100000")
+        assert piutang.status == PiutangStatus.BELUM_LUNAS
+        assert db.get(PembelianSparePart, pb.id).status_bayar == PaymentStatus.LUNAS
+
+        svc.void(r.id, user_id=None)
+        db.expire_all()
+        assert db.get(PiutangUsaha, piutang.id).status == PiutangStatus.BATAL
+        assert db.get(SparePart, part.id).stok == Decimal("2")
+    finally:
+        _bersihkan(db, [part], [pb], [supplier])
+
+
+def test_kredit_sebagian_bayar_selisih_jadi_piutang_dan_void_ditolak_bila_sudah_dibayar(db):
+    from app.models.keuangan import PiutangUsaha
+
+    supplier = _supplier(db)
+    part = _part(db, 0)
+    pb = _beli(db, supplier, part, 2, "100000", metode=PaymentMethod.SPLIT, bayar="50000")
+    try:
+        svc = ReturPembelianService(db)
+        req = ReturPembelianCreate(
+            tanggal=date(2026, 10, 2),
+            detail=[ReturPembelianItem(detail_pembelian_id=pb.detail[0].id, qty=Decimal("2"))],
+            selisih_sebagai="PIUTANG",
+        )
+        r = svc.create(pb.id, req, user_id=None)
+        # Hutang sisa 150.000 terpotong dulu, selisih 50.000 jadi piutang.
+        assert r.nilai_hutang == Decimal("150000")
+        assert r.nilai_piutang == Decimal("50000") and r.nilai_kas == 0
+        db.expire_all()
+        assert _hutang(db, pb).sisa_hutang == 0
+        piutang = db.query(PiutangUsaha).filter(PiutangUsaha.nomor_referensi == r.nomor_retur).one()
+
+        # Piutang sudah dibayar supplier → retur tidak boleh dibatalkan begitu saja.
+        piutang.total_dibayar = Decimal("10000")
+        piutang.sisa_piutang = Decimal("40000")
+        db.commit()
+        with pytest.raises(HTTPException):
+            svc.void(r.id, user_id=None)
+        db.rollback()
+        piutang = db.query(PiutangUsaha).filter(PiutangUsaha.nomor_referensi == r.nomor_retur).one()
+        piutang.total_dibayar = Decimal("0")
+        piutang.sisa_piutang = Decimal("50000")
+        db.commit()
+        svc.void(r.id, user_id=None)
     finally:
         _bersihkan(db, [part], [pb], [supplier])

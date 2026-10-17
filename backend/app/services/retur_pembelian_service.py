@@ -23,7 +23,7 @@ from app.models.bengkel import (
     ReturPembelianSparePart,
     SparePart,
 )
-from app.models.keuangan import HutangUsaha, KasBank
+from app.models.keuangan import HutangUsaha, KasBank, PiutangUsaha
 from app.schemas.bengkel import ReturPembelianCreate
 from app.services.kas_bank_integration import create_kas_entry
 from app.utils.constants import (
@@ -32,6 +32,8 @@ from app.utils.constants import (
     KasBankSource,
     KasBankType,
     PaymentStatus,
+    PiutangSource,
+    PiutangStatus,
     TRANSACTION_PREFIXES,
 )
 from app.utils.sparepart_stock import is_always_ready_stock
@@ -53,6 +55,29 @@ class ReturPembelianService:
         )
         new_num = int(last.nomor_retur[-4:]) + 1 if last else 1
         return f"{prefix}{date_str}{new_num:04d}"
+
+    def _generate_nomor_piutang(self) -> str:
+        prefix = TRANSACTION_PREFIXES["piutang"]
+        date_str = datetime.now().strftime("%y%m%d")
+        last = (
+            self.db.query(PiutangUsaha)
+            .filter(PiutangUsaha.nomor_piutang.like(f"{prefix}{date_str}%"))
+            .order_by(PiutangUsaha.id.desc())
+            .first()
+        )
+        new_num = int(last.nomor_piutang[-4:]) + 1 if last else 1
+        return f"{prefix}{date_str}{new_num:04d}"
+
+    def _piutang_retur(self, retur: ReturPembelianSparePart) -> Optional[PiutangUsaha]:
+        return (
+            self.db.query(PiutangUsaha)
+            .filter(
+                PiutangUsaha.sumber == PiutangSource.LAINNYA,
+                PiutangUsaha.referensi_id == retur.id,
+                PiutangUsaha.nomor_referensi == retur.nomor_retur,
+            )
+            .first()
+        )
 
     def _get_pembelian(self, pembelian_id: int) -> PembelianSparePart:
         pembelian = self.db.query(PembelianSparePart).filter(PembelianSparePart.id == pembelian_id).first()
@@ -178,7 +203,10 @@ class ReturPembelianService:
             and hutang.sisa_hutang > 0
         )
         nilai_hutang = min(total, Decimal(str(hutang.sisa_hutang))) if hutang_terbuka else Decimal("0")
-        nilai_kas = total - nilai_hutang
+        # Sisa setelah memotong hutang: dicairkan ke kas, atau jadi piutang ke supplier.
+        selisih = total - nilai_hutang
+        nilai_kas = selisih if data.selisih_sebagai == "KAS" else Decimal("0")
+        nilai_piutang = selisih if data.selisih_sebagai == "PIUTANG" else Decimal("0")
 
         return {
             "lines": lines,
@@ -186,6 +214,7 @@ class ReturPembelianService:
             "hutang": hutang if hutang_terbuka else None,
             "nilai_hutang": nilai_hutang,
             "nilai_kas": nilai_kas,
+            "nilai_piutang": nilai_piutang,
         }
 
     def preview(self, pembelian_id: int, data: ReturPembelianCreate) -> dict:
@@ -196,6 +225,7 @@ class ReturPembelianService:
             "total_retur": r["total"],
             "nilai_hutang": r["nilai_hutang"],
             "nilai_kas": r["nilai_kas"],
+            "nilai_piutang": r["nilai_piutang"],
             "sisa_hutang_sebelum": Decimal(str(r["hutang"].sisa_hutang)) if r["hutang"] is not None else Decimal("0"),
             "lines": [
                 {"detail_pembelian_id": det.id, "spare_part_nama": part.nama, "qty": qty, "subtotal": subtotal}
@@ -211,6 +241,7 @@ class ReturPembelianService:
         hutang = r["hutang"]
         nilai_hutang = r["nilai_hutang"]
         nilai_kas = r["nilai_kas"]
+        nilai_piutang = r["nilai_piutang"]
 
         if nilai_kas > 0 and data.metode_refund is None:
             raise HTTPException(
@@ -225,6 +256,7 @@ class ReturPembelianService:
             total_retur=total,
             nilai_hutang=nilai_hutang,
             nilai_kas=nilai_kas,
+            nilai_piutang=nilai_piutang,
             metode_refund=data.metode_refund if nilai_kas > 0 else None,
             catatan=data.catatan,
             created_by=user_id,
@@ -267,6 +299,25 @@ class ReturPembelianService:
                 kas_jenis=data.kas_jenis,
                 commit=False,
             )
+
+        if nilai_piutang > 0:
+            supplier = pembelian.supplier
+            self.db.add(PiutangUsaha(
+                nomor_piutang=self._generate_nomor_piutang(),
+                tanggal=data.tanggal,
+                sumber=PiutangSource.LAINNYA,
+                referensi_id=retur.id,
+                nomor_referensi=retur.nomor_retur,
+                nama_debitur=supplier.nama if supplier else "Supplier",
+                telepon_debitur=supplier.telepon if supplier else None,
+                alamat_debitur=supplier.alamat if supplier else None,
+                nominal_piutang=nilai_piutang,
+                total_dibayar=Decimal("0"),
+                sisa_piutang=nilai_piutang,
+                status=PiutangStatus.BELUM_LUNAS,
+                catatan=f"Piutang ke supplier dari retur pembelian {pembelian.nomor_transaksi} ({retur.nomor_retur})",
+                created_by=user_id,
+            ))
 
         self.db.commit()
         self.db.refresh(retur)
@@ -322,6 +373,17 @@ class ReturPembelianService:
                 allow_negative=True,
                 commit=False,
             )
+
+        if retur.nilai_piutang > 0:
+            piutang = self._piutang_retur(retur)
+            if piutang is not None:
+                if Decimal(str(piutang.total_dibayar or 0)) > 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Piutang ke supplier {piutang.nomor_piutang} sudah dibayar. Batalkan pembayarannya dulu.",
+                    )
+                piutang.status = PiutangStatus.BATAL
+                piutang.sisa_piutang = Decimal("0")
 
         retur.dibatalkan = True
         self.db.commit()

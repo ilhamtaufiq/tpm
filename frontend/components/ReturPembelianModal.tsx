@@ -18,6 +18,7 @@ interface ReturPembelianModalProps {
 }
 
 const METODE_REFUND = ['TUNAI', 'TRANSFER'] as const;
+type SelisihSebagai = 'KAS' | 'PIUTANG';
 
 /**
  * Retur barang pembelian ke supplier. Qty per baris dibatasi sisa yang belum
@@ -31,6 +32,7 @@ export function ReturPembelianModal({ visible, pembelian, onClose, onSuccess }: 
 
     const [qtyInput, setQtyInput] = useState<Record<number, string>>({});
     const [metodeRefund, setMetodeRefund] = useState<(typeof METODE_REFUND)[number]>('TUNAI');
+    const [selisihSebagai, setSelisihSebagai] = useState<SelisihSebagai>('KAS');
     const [catatan, setCatatan] = useState('');
     const [error, setError] = useState('');
 
@@ -38,6 +40,7 @@ export function ReturPembelianModal({ visible, pembelian, onClose, onSuccess }: 
         if (visible) {
             setQtyInput({});
             setMetodeRefund('TUNAI');
+            setSelisihSebagai('KAS');
             setCatatan('');
             setError('');
         }
@@ -66,7 +69,10 @@ export function ReturPembelianModal({ visible, pembelian, onClose, onSuccess }: 
     );
 
     const tanggal = useMemo(() => format(new Date(), 'yyyy-MM-dd'), [visible]);
-    const requestBody = useMemo(() => ({ tanggal, detail: items }), [tanggal, items]);
+    const requestBody = useMemo(
+        () => ({ tanggal, detail: items, selisih_sebagai: selisihSebagai }),
+        [tanggal, items, selisihSebagai]
+    );
 
     const preview = useReturPembelianPreview(pembelian?.id, requestBody, items.length > 0);
     const previewError = preview.error ? getErrorMessage(preview.error, 'Pratinjau retur gagal') : '';
@@ -77,6 +83,8 @@ export function ReturPembelianModal({ visible, pembelian, onClose, onSuccess }: 
     });
 
     const nilaiKas = Number(preview.data?.nilai_kas || 0);
+    const nilaiPiutang = Number(preview.data?.nilai_piutang || 0);
+    const adaSelisih = nilaiKas + nilaiPiutang > 0;
     const bisaSimpan = items.length > 0 && !!preview.data && !previewError && !adaBarisMelebihiSisa && !createMutation.isPending;
 
     const handleSave = async () => {
@@ -159,12 +167,35 @@ export function ReturPembelianModal({ visible, pembelian, onClose, onSuccess }: 
                                             <Typography className="text-textGray text-sm">Mengurangi hutang</Typography>
                                             <Typography className="text-textMain text-sm">{formatCurrency(preview.data.nilai_hutang)}</Typography>
                                         </View>
-                                        <View className="flex-row justify-between">
+                                        <View className="flex-row justify-between mb-1">
                                             <Typography className="text-textGray text-sm">Dikembalikan supplier ke kas</Typography>
                                             <Typography className="text-textMain text-sm">{formatCurrency(preview.data.nilai_kas)}</Typography>
                                         </View>
+                                        <View className="flex-row justify-between">
+                                            <Typography className="text-textGray text-sm">Jadi piutang ke supplier</Typography>
+                                            <Typography className="text-textMain text-sm">{formatCurrency(preview.data.nilai_piutang)}</Typography>
+                                        </View>
                                     </View>
                                 ) : null}
+                            </View>
+                        )}
+
+                        {adaSelisih && (
+                            <View className="mt-4">
+                                <Typography variant="caption" className="text-textGray font-medium mb-2">Selisih setelah hutang dipotong</Typography>
+                                <View className="flex-row space-x-2">
+                                    {(['KAS', 'PIUTANG'] as const).map((opsi) => (
+                                        <Pressable
+                                            key={opsi}
+                                            onPress={() => setSelisihSebagai(opsi)}
+                                            className={`flex-1 px-4 py-3 rounded-xl border ${selisihSebagai === opsi ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
+                                        >
+                                            <Typography weight="bold" className={`${selisihSebagai === opsi ? 'text-white' : 'text-textMain'} text-xs text-center`}>
+                                                {opsi === 'KAS' ? 'Langsung ke kas/bank' : 'Jadikan piutang supplier'}
+                                            </Typography>
+                                        </Pressable>
+                                    ))}
+                                </View>
                             </View>
                         )}
 

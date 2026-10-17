@@ -343,7 +343,7 @@ export default function PurchaseIndexScreen() {
                                             <View>
                                                 <Typography weight="bold" className="text-sm text-textMain">{r.nomor_retur}</Typography>
                                                 <Typography variant="caption" className="text-textGray">
-                                                    {format(new Date(r.tanggal), 'dd MMM yyyy', { locale: localeID })} · Hutang {formatCurrency(r.nilai_hutang)} · Kas {formatCurrency(r.nilai_kas)}{r.metode_refund ? ` (${r.metode_refund})` : ''}
+                                                    {format(new Date(r.tanggal), 'dd MMM yyyy', { locale: localeID })} · Hutang {formatCurrency(r.nilai_hutang)} · Kas {formatCurrency(r.nilai_kas)}{r.metode_refund ? ` (${r.metode_refund})` : ''}{Number(r.nilai_piutang) > 0 ? ` · Piutang ${formatCurrency(r.nilai_piutang)}` : ''}
                                                 </Typography>
                                             </View>
                                             {r.dibatalkan ? (
