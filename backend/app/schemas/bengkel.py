@@ -491,3 +491,65 @@ class PengeluaranListResponse(BaseModel):
     page: int
     size: int
     pages: int
+
+
+class ReturPembelianItem(BaseModel):
+    """Satu baris retur: qty dari baris pembelian tertentu."""
+
+    detail_pembelian_id: int
+    qty: Decimal = Field(..., gt=0)
+
+
+class ReturPembelianCreate(BaseModel):
+    """Retur barang pembelian ke supplier."""
+
+    tanggal: TanggalTransaksi
+    detail: List[ReturPembelianItem] = Field(..., min_length=1)
+    metode_refund: Optional[PaymentMethod] = None
+    kas_jenis: Optional[KasBankJenis] = None
+    catatan: Optional[str] = Field(None, max_length=500)
+
+
+class DetailReturPembelianResponse(BaseModel):
+    id: int
+    detail_pembelian_id: int
+    spare_part_id: int
+    spare_part_nama: Optional[str] = None
+    qty: Decimal
+    harga_satuan: Decimal
+    subtotal: Decimal
+
+    model_config = {"from_attributes": True}
+
+
+class ReturPembelianBarisPreview(BaseModel):
+    detail_pembelian_id: int
+    spare_part_nama: str
+    qty: Decimal
+    subtotal: Decimal
+
+
+class ReturPembelianPreviewResponse(BaseModel):
+    """Pratinjau pembagian retur sebelum disimpan."""
+
+    total_retur: Decimal
+    nilai_hutang: Decimal
+    nilai_kas: Decimal
+    sisa_hutang_sebelum: Decimal
+    lines: List[ReturPembelianBarisPreview] = []
+
+
+class ReturPembelianResponse(BaseModel):
+    id: int
+    nomor_retur: str
+    pembelian_id: int
+    tanggal: date
+    total_retur: Decimal
+    nilai_hutang: Decimal
+    nilai_kas: Decimal
+    metode_refund: Optional[PaymentMethod] = None
+    catatan: Optional[str] = None
+    dibatalkan: bool
+    detail: List[DetailReturPembelianResponse] = []
+
+    model_config = {"from_attributes": True}

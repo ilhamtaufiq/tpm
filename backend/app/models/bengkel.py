@@ -147,6 +147,61 @@ class DetailPembelianSparePart(Base):
     spare_part: Mapped["SparePart"] = relationship(back_populates="detail_pembelian")
 
 
+class ReturPembelianSparePart(Base, TimestampMixin):
+    """Retur barang pembelian spare part ke supplier.
+
+    Stok berkurang sesuai qty, nilai retur mengurangi hutang pembelian dulu
+    (nilai_hutang), sisanya dikembalikan supplier ke kas (nilai_kas).
+    """
+
+    __tablename__ = "retur_pembelian_spare_parts"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    nomor_retur: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+    pembelian_id: Mapped[int] = mapped_column(
+        ForeignKey("pembelian_spare_parts.id"), index=True
+    )
+    tanggal: Mapped[date] = mapped_column(Date, index=True)
+    total_retur: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    nilai_hutang: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    nilai_kas: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    metode_refund: Mapped[Optional[PaymentMethod]] = mapped_column(
+        SQLEnum(PaymentMethod), nullable=True
+    )
+    catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    dibatalkan: Mapped[bool] = mapped_column(default=False)
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+
+    detail: Mapped[List["DetailReturPembelianSparePart"]] = relationship(
+        back_populates="retur", cascade="all, delete-orphan"
+    )
+
+
+class DetailReturPembelianSparePart(Base):
+    """Baris retur, menunjuk baris pembelian asalnya."""
+
+    __tablename__ = "detail_retur_pembelian_spare_parts"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    retur_id: Mapped[int] = mapped_column(
+        ForeignKey("retur_pembelian_spare_parts.id", ondelete="CASCADE"), index=True
+    )
+    detail_pembelian_id: Mapped[int] = mapped_column(
+        ForeignKey("detail_pembelian_spare_parts.id"), index=True
+    )
+    spare_part_id: Mapped[int] = mapped_column(ForeignKey("spare_parts.id"))
+    qty: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    harga_satuan: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+
+    retur: Mapped["ReturPembelianSparePart"] = relationship(back_populates="detail")
+    spare_part: Mapped["SparePart"] = relationship(foreign_keys=[spare_part_id])
+
+    @property
+    def spare_part_nama(self) -> Optional[str]:
+        return self.spare_part.nama if self.spare_part else None
+
+
 class TransaksiPenjualanBengkel(Base, TimestampMixin):
     """Workshop sales transaction model."""
 

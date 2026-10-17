@@ -120,6 +120,15 @@ class PembelianPartService:
 
         return {sp.id: sp for sp in spare_parts}
 
+    def _tolak_jika_ada_retur(self, pembelian: PembelianSparePart) -> None:
+        from app.services.retur_pembelian_service import ReturPembelianService
+
+        if ReturPembelianService(self.db).ada_retur_aktif(pembelian.id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Pembelian sudah punya retur. Batalkan retur dulu sebelum mengubah atau menghapus pembelian.",
+            )
+
     def _attach_payment_info(self, pembelian: PembelianSparePart) -> PembelianSparePart:
         kas_entries = (
             self.db.query(KasBank)
@@ -353,6 +362,7 @@ class PembelianPartService:
         user_id: Optional[int] = None,
     ) -> PembelianSparePart:
         pembelian = self.get_by_id(pembelian_id)
+        self._tolak_jika_ada_retur(pembelian)
         self._validate_supplier(data.supplier_id)
         spare_parts_map = self._validate_spare_parts(data.detail)
 
@@ -552,6 +562,7 @@ class PembelianPartService:
         Note: Only allows deletion of recent unpaid purchases.
         """
         pembelian = self.get_by_id(pembelian_id)
+        self._tolak_jika_ada_retur(pembelian)
 
         # Only allow deletion of unpaid purchases
         if pembelian.status_bayar == PaymentStatus.LUNAS:

@@ -431,6 +431,7 @@ TRANSACTION_PREFIXES = {
     "mobil": "MBL",
     "jasa_angkut": "JAS",
     "pembelian": "PBL",
+    "retur_pembelian": "RPB",
     "pengeluaran": "PGL",
     "piutang": "PTG",
     "hutang": "HTG",

@@ -322,3 +322,51 @@ export const useCreatePengeluaran = () => {
         },
     });
 };
+
+// =============================================
+// RETUR PEMBELIAN SPARE PART
+// =============================================
+export const useReturPembelianList = (pembelianId?: number | null) => {
+    return useQuery<any[]>({
+        queryKey: ['retur_pembelian', pembelianId],
+        queryFn: () => bengkelService.getReturPembelian(pembelianId as number),
+        enabled: !!pembelianId,
+    });
+};
+
+export const useReturPembelianPreview = (pembelianId: number | null | undefined, data: any, enabled: boolean) => {
+    return useQuery<any>({
+        queryKey: ['retur_pembelian_preview', pembelianId, data],
+        queryFn: () => bengkelService.previewReturPembelian(pembelianId as number, data),
+        enabled: !!pembelianId && enabled,
+        staleTime: 0,
+    });
+};
+
+const invalidateSetelahRetur = (queryClient: ReturnType<typeof useQueryClient>) => {
+    queryClient.invalidateQueries({ queryKey: ['retur_pembelian'] });
+    queryClient.invalidateQueries({ queryKey: ['pembelian_parts'] });
+    queryClient.invalidateQueries({ queryKey: ['spare_parts'] });
+    queryClient.invalidateQueries({ queryKey: ['hutang_list'] });
+    queryClient.invalidateQueries({ queryKey: ['hutang_summary'] });
+    queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+    queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+    queryClient.invalidateQueries({ queryKey: ['laba_rugi_report'] });
+};
+
+export const useCreateReturPembelian = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ pembelianId, data }: { pembelianId: number; data: any }) =>
+            bengkelService.createReturPembelian(pembelianId, data),
+        onSuccess: () => invalidateSetelahRetur(queryClient),
+    });
+};
+
+export const useBatalReturPembelian = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (returId: number) => bengkelService.batalReturPembelian(returId),
+        onSuccess: () => invalidateSetelahRetur(queryClient),
+    });
+};
