@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional, List
+from typing import Literal, Optional, List
 
 from pydantic import BaseModel, Field
 from app.schemas.tanggal import TanggalTransaksi, OptionalTanggalTransaksi
@@ -501,10 +501,16 @@ class ReturPembelianItem(BaseModel):
 
 
 class ReturPembelianCreate(BaseModel):
-    """Retur barang pembelian ke supplier."""
+    """Retur barang pembelian ke supplier.
+
+    Nilai yang tidak memotong hutang (seluruh nilai pada pembelian lunas, sisa
+    setelah hutang pada pembelian belum lunas) dicairkan ke kas, atau dicatat
+    sebagai piutang ke supplier.
+    """
 
     tanggal: TanggalTransaksi
     detail: List[ReturPembelianItem] = Field(..., min_length=1)
+    selisih_sebagai: Literal["KAS", "PIUTANG"] = "KAS"
     metode_refund: Optional[PaymentMethod] = None
     kas_jenis: Optional[KasBankJenis] = None
     catatan: Optional[str] = Field(None, max_length=500)
@@ -535,6 +541,7 @@ class ReturPembelianPreviewResponse(BaseModel):
     total_retur: Decimal
     nilai_hutang: Decimal
     nilai_kas: Decimal
+    nilai_piutang: Decimal
     sisa_hutang_sebelum: Decimal
     lines: List[ReturPembelianBarisPreview] = []
 
@@ -547,6 +554,7 @@ class ReturPembelianResponse(BaseModel):
     total_retur: Decimal
     nilai_hutang: Decimal
     nilai_kas: Decimal
+    nilai_piutang: Decimal = Decimal("0")
     metode_refund: Optional[PaymentMethod] = None
     catatan: Optional[str] = None
     dibatalkan: bool

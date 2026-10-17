@@ -165,6 +165,7 @@ class ReturPembelianSparePart(Base, TimestampMixin):
     total_retur: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     nilai_hutang: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     nilai_kas: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    nilai_piutang: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     metode_refund: Mapped[Optional[PaymentMethod]] = mapped_column(
         SQLEnum(PaymentMethod), nullable=True
     )
