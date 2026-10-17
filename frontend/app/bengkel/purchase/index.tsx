@@ -7,7 +7,8 @@ import {
     StatusBar,
     RefreshControl as RNRefreshControl,
     ActivityIndicator,
-    Modal
+    Modal,
+    Alert
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
@@ -25,13 +26,16 @@ import {
     Clock,
     X,
     Calendar,
-    User
+    User,
+    Undo2
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
-import { usePembelianPartsList } from '../../../hooks/useBengkel';
+import { usePembelianPartsList, useReturPembelianList, useBatalReturPembelian } from '../../../hooks/useBengkel';
 import { formatCurrency } from '../../../utils/format';
+import { getErrorMessage } from '../../../utils/error';
+import { ReturPembelianModal } from '../../../components/ReturPembelianModal';
 import { getCustomTabBarBottomPadding } from '../../../components/ui/CustomTabBar';
 
 export default function PurchaseIndexScreen() {
@@ -41,6 +45,42 @@ export default function PurchaseIndexScreen() {
     const [refreshing, setRefreshing] = useState(false);
 
     const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
+    const [returTarget, setReturTarget] = useState<any>(null);
+    const { data: returList = [] } = useReturPembelianList(selectedPurchase?.id);
+    const batalReturMutation = useBatalReturPembelian();
+
+    // Qty yang masih bisa diretur di pembelian yang sedang dibuka.
+    const adaSisaRetur = useMemo(() => {
+        const terpakai: Record<number, number> = {};
+        for (const r of returList) {
+            if (r.dibatalkan) continue;
+            for (const d of r.detail || []) {
+                terpakai[d.detail_pembelian_id] = (terpakai[d.detail_pembelian_id] || 0) + Number(d.qty || 0);
+            }
+        }
+        return (selectedPurchase?.detail || []).some((d: any) => Number(d.qty) - (terpakai[d.id] || 0) > 0);
+    }, [returList, selectedPurchase]);
+
+    const handleBatalRetur = (retur: any) => {
+        Alert.alert(
+            'Batalkan retur?',
+            `${retur.nomor_retur} akan dibatalkan. Stok, hutang, dan kas dikembalikan seperti sebelum retur.`,
+            [
+                { text: 'Tidak', style: 'cancel' },
+                {
+                    text: 'Batalkan retur',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await batalReturMutation.mutateAsync(retur.id);
+                        } catch (err) {
+                            Alert.alert('Gagal', getErrorMessage(err, 'Gagal membatalkan retur'));
+                        }
+                    },
+                },
+            ]
+        );
+    };
 
     // Fetch purchases
     const { data: purchasesData, isLoading, refetch } = usePembelianPartsList({
@@ -286,6 +326,41 @@ export default function PurchaseIndexScreen() {
                                 </View>
                             ))}
 
+                            {/* Retur ke supplier */}
+                            <View className="mt-6">
+                                <View className="flex-row items-center justify-between mb-3 px-1">
+                                    <Typography weight="bold" className="text-primary text-xs uppercase tracking-widest">Retur ({returList.filter((r: any) => !r.dibatalkan).length})</Typography>
+                                    {adaSisaRetur && (
+                                        <Pressable onPress={() => setReturTarget(selectedPurchase)} className="flex-row items-center px-3 py-2 bg-amber-50 rounded-xl">
+                                            <Undo2 size={16} color="#B45309" />
+                                            <Typography weight="bold" className="text-amber-700 text-xs ml-2">Retur Barang</Typography>
+                                        </Pressable>
+                                    )}
+                                </View>
+                                {returList.map((r: any) => (
+                                    <View key={r.id} className="p-4 bg-surface rounded-2xl mb-2">
+                                        <View className="flex-row justify-between items-center">
+                                            <View>
+                                                <Typography weight="bold" className="text-sm text-textMain">{r.nomor_retur}</Typography>
+                                                <Typography variant="caption" className="text-textGray">
+                                                    {format(new Date(r.tanggal), 'dd MMM yyyy', { locale: localeID })} · Hutang {formatCurrency(r.nilai_hutang)} · Kas {formatCurrency(r.nilai_kas)}{r.metode_refund ? ` (${r.metode_refund})` : ''}
+                                                </Typography>
+                                            </View>
+                                            {r.dibatalkan ? (
+                                                <Badge label="DIBATALKAN" variant="error" />
+                                            ) : (
+                                                <Pressable onPress={() => handleBatalRetur(r)} hitSlop={8}>
+                                                    <Typography weight="bold" className="text-secondary text-xs">Batalkan</Typography>
+                                                </Pressable>
+                                            )}
+                                        </View>
+                                        <Typography variant="caption" className="text-textGray mt-1">
+                                            {formatCurrency(r.total_retur)} · {(r.detail || []).map((d: any) => `${d.spare_part_nama || 'Part'} x${d.qty}`).join(', ')}
+                                        </Typography>
+                                    </View>
+                                ))}
+                            </View>
+
                             {/* Footer Info */}
                             {selectedPurchase?.catatan && (
                                 <View className="mt-4 p-4 bg-amber-50/30 border border-amber-100/50 rounded-2xl">
@@ -306,6 +381,12 @@ export default function PurchaseIndexScreen() {
                         </BoundedSheetScrollView>
                 </BottomSheetContainer>
             </Modal>
+            <ReturPembelianModal
+                visible={!!returTarget}
+                pembelian={returTarget}
+                onClose={() => setReturTarget(null)}
+                onSuccess={() => setReturTarget(null)}
+            />
         </View>
     );
 }

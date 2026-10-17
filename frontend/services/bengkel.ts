@@ -249,6 +249,27 @@ export const bengkelService = {
         return response.data;
     },
 
+    // Retur Pembelian Spare Part
+    getReturPembelian: async (pembelianId: number) => {
+        const response = await api.get(`/pembelian-parts/${pembelianId}/retur`);
+        return response.data;
+    },
+
+    previewReturPembelian: async (pembelianId: number, data: any) => {
+        const response = await api.post(`/pembelian-parts/${pembelianId}/retur/preview`, data);
+        return response.data;
+    },
+
+    createReturPembelian: async (pembelianId: number, data: any) => {
+        const response = await api.post(`/pembelian-parts/${pembelianId}/retur`, data);
+        return response.data;
+    },
+
+    batalReturPembelian: async (returId: number) => {
+        const response = await api.post(`/pembelian-parts/retur/${returId}/batal`);
+        return response.data;
+    },
+
     // Pengeluaran Methods
     getPengeluaran: async (params?: any) => {
         const response = await api.get('/pengeluaran', { params });

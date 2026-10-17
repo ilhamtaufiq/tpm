@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from datetime import date
 
 from fastapi import APIRouter, Query, status
@@ -9,8 +9,12 @@ from app.schemas.bengkel import (
     PembelianSparePartResponse,
     PembelianSparePartList,
     RevaluationList,
+    ReturPembelianCreate,
+    ReturPembelianPreviewResponse,
+    ReturPembelianResponse,
 )
 from app.services.pembelian_part_service import PembelianPartService
+from app.services.retur_pembelian_service import ReturPembelianService
 from app.utils.constants import PaymentStatus, PaymentMethod
 
 
@@ -122,6 +126,48 @@ def update_payment(
     """Mark purchase as paid."""
     service = PembelianPartService(db)
     return service.update_payment(pembelian_id, metode_bayar, tanggal_bayar)
+
+
+@router.get("/{pembelian_id}/retur", response_model=List[ReturPembelianResponse])
+def list_retur_pembelian(
+    pembelian_id: int,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Daftar retur untuk satu pembelian (termasuk yang dibatalkan)."""
+    return ReturPembelianService(db).list_for_pembelian(pembelian_id)
+
+
+@router.post("/{pembelian_id}/retur/preview", response_model=ReturPembelianPreviewResponse)
+def preview_retur_pembelian(
+    pembelian_id: int,
+    data: ReturPembelianCreate,
+    db: DBSession,
+    current_user: UnitManagerUser,
+):
+    """Pratinjau retur: berapa masuk ke hutang dan berapa dikembalikan supplier ke kas."""
+    return ReturPembelianService(db).preview(pembelian_id, data)
+
+
+@router.post("/{pembelian_id}/retur", response_model=ReturPembelianResponse, status_code=status.HTTP_201_CREATED)
+def create_retur_pembelian(
+    pembelian_id: int,
+    data: ReturPembelianCreate,
+    db: DBSession,
+    current_user: UnitManagerUser,
+):
+    """Retur barang pembelian ke supplier: stok berkurang, hutang/kas menyesuaikan."""
+    return ReturPembelianService(db).create(pembelian_id, data, current_user.id)
+
+
+@router.post("/retur/{retur_id}/batal", response_model=ReturPembelianResponse)
+def batal_retur_pembelian(
+    retur_id: int,
+    db: DBSession,
+    current_user: UnitManagerUser,
+):
+    """Batalkan retur: stok, hutang, dan kas dikembalikan seperti sebelum retur."""
+    return ReturPembelianService(db).void(retur_id, current_user.id)
 
 
 @router.delete("/{pembelian_id}")
