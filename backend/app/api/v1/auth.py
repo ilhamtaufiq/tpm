@@ -387,26 +387,39 @@ def impersonate_user(
     return service.impersonate_user(current_user.id, user_id)
 
 
+@router.get("/users/{user_id}/delete-check")
+def check_delete_user(
+    user_id: int,
+    db: DBSession,
+    current_user: AdminUser,
+):
+    """Apakah user boleh dihapus permanen, dan catatan apa yang masih menunjuk ke user ini."""
+    return AuthService(db).cek_hapus_user(user_id)
+
+
 @router.delete("/users/{user_id}")
 def delete_user(
     user_id: int,
     db: DBSession,
     current_user: AdminUser,
+    permanent: bool = False,
 ):
     """
-    Delete (deactivate) user by ID.
-
+    Nonaktifkan user (default). Dengan `permanent=true`, hapus permanen;
+    ditolak (409) jika user masih punya transaksi, kas, atau piutang.
     Requires admin privileges.
     """
     if user_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete yourself",
+            detail="Tidak bisa menghapus akun sendiri.",
         )
 
     service = AuthService(db)
-    service.delete_user(user_id)
-    return {"message": "User deactivated successfully"}
+    service.delete_user(user_id, permanent=permanent)
+    if permanent:
+        return {"message": "User dihapus permanen", "permanent": True}
+    return {"message": "User dinonaktifkan", "permanent": False}
 
 
 @router.post("/forgot-password")

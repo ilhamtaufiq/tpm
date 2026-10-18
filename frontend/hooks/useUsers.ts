@@ -16,6 +16,15 @@ export const useUser = (id: number) => {
     });
 };
 
+export const useDeleteCheck = (id?: number | null) => {
+    return useQuery({
+        queryKey: ['user-delete-check', id],
+        queryFn: () => authService.checkDeleteUser(id as number),
+        enabled: !!id,
+        staleTime: 0,
+    });
+};
+
 export const useCreateUser = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -34,6 +43,7 @@ export const useUpdateUser = () => {
         onSuccess: (_, { id }) => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             queryClient.invalidateQueries({ queryKey: ['user', id] });
+            queryClient.invalidateQueries({ queryKey: ['user-delete-check', id] });
         },
     });
 };
@@ -41,9 +51,12 @@ export const useUpdateUser = () => {
 export const useDeleteUser = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (id: number) => authService.deleteUser(id),
-        onSuccess: () => {
+        mutationFn: ({ id, permanent }: { id: number; permanent: boolean }) =>
+            authService.deleteUser(id, permanent),
+        onSuccess: (_, { id }) => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
+            queryClient.invalidateQueries({ queryKey: ['user', id] });
+            queryClient.invalidateQueries({ queryKey: ['user-delete-check', id] });
         },
     });
 };

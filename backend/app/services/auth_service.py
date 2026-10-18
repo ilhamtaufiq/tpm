@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from datetime import datetime, timedelta
 from typing import Optional
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
@@ -390,6 +391,10 @@ class AuthService:
 
         update_data = user_data.model_dump(exclude_unset=True)
 
+        turun_dari_admin = "role" in update_data and update_data["role"] != UserRole.ADMIN
+        if update_data.get("is_active") is False or turun_dari_admin:
+            self._pastikan_bukan_admin_terakhir(user)
+
         # Hash password if provided
         if "password" in update_data:
             update_data["hashed_password"] = hash_password(update_data.pop("password"))
@@ -480,8 +485,65 @@ class AuthService:
         self.db.refresh(user)
         return user
 
-    def delete_user(self, user_id: int) -> bool:
-        """Delete a user (soft delete by deactivating)."""
+    def referensi_user(self, user_id: int) -> list[dict]:
+        """Tabel yang masih menunjuk user ini lewat foreign key, beserta jumlah barisnya.
+
+        Dipakai untuk memutuskan apakah user boleh dihapus permanen. Jejak OTP
+        (`login_otps`) tidak dihitung karena ikut dihapus bersama user.
+        """
+        from app.database.base import Base
+
+        hasil = []
+        for table in Base.metadata.sorted_tables:
+            if table.name in ("users", "login_otps"):
+                continue
+            for fk in table.foreign_keys:
+                if fk.column.table.name != "users":
+                    continue
+                jumlah = self.db.execute(
+                    select(func.count()).select_from(table).where(table.c[fk.parent.name] == user_id)
+                ).scalar() or 0
+                if jumlah:
+                    hasil.append({"tabel": table.name, "kolom": fk.parent.name, "jumlah": int(jumlah)})
+        return hasil
+
+    def _pastikan_bukan_admin_terakhir(self, user: User) -> None:
+        if user.role != UserRole.ADMIN or not user.is_active:
+            return
+        admin_aktif_lain = (
+            self.db.query(User)
+            .filter(User.role == UserRole.ADMIN, User.is_active.is_(True), User.id != user.id)
+            .count()
+        )
+        if admin_aktif_lain == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tidak bisa menonaktifkan atau menghapus admin aktif terakhir.",
+            )
+
+    def cek_hapus_user(self, user_id: int) -> dict:
+        """Ringkasan untuk layar user: apakah boleh dihapus permanen dan kenapa tidak."""
+        user = self.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        referensi = self.referensi_user(user.id)
+        total = sum(r["jumlah"] for r in referensi)
+        admin_aktif_lain = (
+            self.db.query(User)
+            .filter(User.role == UserRole.ADMIN, User.is_active.is_(True), User.id != user.id)
+            .count()
+        )
+        return {
+            "user_id": user.id,
+            "is_active": user.is_active,
+            "is_last_admin": user.role == UserRole.ADMIN and user.is_active and admin_aktif_lain == 0,
+            "total_referensi": total,
+            "referensi": referensi,
+            "bisa_hapus_permanen": total == 0,
+        }
+
+    def delete_user(self, user_id: int, permanent: bool = False) -> bool:
+        """Nonaktifkan user (default), atau hapus permanen bila tidak punya catatan apa pun."""
         user = self.get_user_by_id(user_id)
 
         if not user:
@@ -490,9 +552,27 @@ class AuthService:
                 detail="User not found",
             )
 
-        user.is_active = False
-        self.db.commit()
+        self._pastikan_bukan_admin_terakhir(user)
 
+        if not permanent:
+            user.is_active = False
+            self.db.commit()
+            return True
+
+        referensi = self.referensi_user(user.id)
+        total = sum(r["jumlah"] for r in referensi)
+        if total:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"User {user.username} masih punya {total} catatan transaksi, kas, atau piutang. "
+                    "Hapus permanen tidak bisa dilakukan; nonaktifkan saja."
+                ),
+            )
+
+        self.db.query(LoginOtp).filter(LoginOtp.user_id == user.id).delete(synchronize_session=False)
+        self.db.delete(user)
+        self.db.commit()
         return True
 
     def change_password(
