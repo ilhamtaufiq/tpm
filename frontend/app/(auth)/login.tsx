@@ -97,10 +97,18 @@ export default function LoginScreen() {
             if (__DEV__) {
                 console.error('Login error:', error.response?.data || error.message);
             }
-            appAlert(
-                'Gagal Masuk',
-                getSafeErrorMessage(error, 'Username atau password salah')
-            );
+            if (error.response?.status === 503) {
+                // Login benar, tapi kode OTP tidak bisa dikirim (biasanya SMTP belum aktif).
+                appAlert(
+                    'Kode OTP Tidak Terkirim',
+                    getSafeErrorMessage(error, 'Server email bermasalah. Hubungi admin.')
+                );
+            } else {
+                appAlert(
+                    'Gagal Masuk',
+                    getSafeErrorMessage(error, 'Username atau password salah')
+                );
+            }
         } finally {
             setLoading(false);
         }

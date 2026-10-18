@@ -9,6 +9,27 @@ export interface SMTPSettings {
     sender_name: string;
 }
 
+export type SMTPErrorCode =
+    | 'OK'
+    | 'NOT_CONFIGURED'
+    | 'AUTH_FAILED'
+    | 'CONNECTION_FAILED'
+    | 'TLS_FAILED'
+    | 'SEND_FAILED';
+
+export interface SMTPTestResult {
+    success: boolean;
+    code: SMTPErrorCode;
+    message: string;
+}
+
+export interface SMTPStatus {
+    ok: boolean | null;
+    code: SMTPErrorCode | null;
+    message: string | null;
+    checked_at: string | null;
+}
+
 export interface PrintSettings {
     company_name: string;
     company_address: string;
@@ -35,8 +56,12 @@ export const settingsService = {
         const response = await api.put('/settings', data);
         return response.data;
     },
-    testSMTP: async (config: SMTPSettings) => {
+    testSMTP: async (config: SMTPSettings): Promise<SMTPTestResult> => {
         const response = await api.post('/settings/test-smtp', config);
+        return response.data;
+    },
+    getSmtpStatus: async (): Promise<SMTPStatus> => {
+        const response = await api.get('/settings/smtp-status');
         return response.data;
     }
 };

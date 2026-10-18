@@ -214,8 +214,17 @@ class AuthService:
 
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Gagal mengirim kode OTP ke email Anda. Hubungi admin.",
+            detail=self._pesan_gagal_otp(),
         )
+
+    def _pesan_gagal_otp(self) -> str:
+        """Pesan 503 yang menjelaskan penyebab dari status SMTP terakhir."""
+        from app.utils.email import get_smtp_status
+
+        terakhir = get_smtp_status(self.db)
+        if terakhir and not terakhir.get("ok") and terakhir.get("message"):
+            return f"Kode OTP tidak terkirim. {terakhir['message']} Hubungi admin."
+        return "Kode OTP tidak terkirim: server email tidak merespons. Hubungi admin."
 
     def verify_otp(self, user_id: int, otp_code: str) -> LoginResponse:
         """Verify OTP and return token if valid."""

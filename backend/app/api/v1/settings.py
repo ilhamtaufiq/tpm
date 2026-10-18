@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, status
 from app.api.deps import DBSession, CurrentUser
 from app.models.system_setting import SystemSetting
 from app.schemas.settings import SystemSettingResponse, SettingsUpdate, SMTPSetting
+from app.utils.email import catat_status, get_smtp_config, get_smtp_status, send_email_detail
 
 router = APIRouter(prefix="/settings", tags=["System Settings"])
 
@@ -91,43 +92,31 @@ def update_settings(data: SettingsUpdate, db: DBSession, current_user: CurrentUs
     db.commit()
     return {"message": "Pengaturan berhasil diperbarui"}
 
+@router.get("/smtp-status")
+def get_smtp_status_endpoint(db: DBSession, current_user: CurrentUser):
+    """Hasil pengiriman email terakhir, untuk banner di halaman SMTP (admin)."""
+    from app.utils.constants import UserRole
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Hanya Administrator yang dapat melihat status SMTP")
+    return get_smtp_status(db) or {"ok": None, "code": None, "message": None, "checked_at": None}
+
+
 @router.post("/test-smtp")
-def test_smtp(config: SMTPSetting, current_user: CurrentUser):
-    """Send a test email to verify SMTP configuration."""
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = f"{config.sender_name} <{config.username}>"
-        msg['To'] = current_user.email
-        msg['Subject'] = "Test Koneksi SMTP TPM"
-        
-        body = f"Halo {current_user.full_name}!\n\nIni adalah email percobaan untuk memverifikasi pengaturan SMTP Anda di sistem TPM.\nJika Anda menerima email ini, berarti konfigurasi SMTP sudah benar."
-        msg.attach(MIMEText(body, 'plain'))
-        
-        # Connect and send
-        try:
-            server = smtplib.SMTP(config.server, config.port, timeout=10)
-            if config.use_tls:
-                server.starttls()
-            
-            server.login(config.username, config.password)
-            server.send_message(msg)
-            server.quit()
-        except smtplib.SMTPAuthenticationError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Gagal Autentikasi: Username atau Password/App Password salah."
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Koneksi Error: {str(e)}"
-            )
-        
-        return {"success": True, "message": f"Email percobaan berhasil dikirim ke {current_user.email}"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Gagal memproses pengiriman email: {str(e)}"
-        )
+def test_smtp(config: SMTPSetting, db: DBSession, current_user: CurrentUser):
+    """Kirim email percobaan ke admin yang login, memakai konfigurasi dari form."""
+    from app.utils.constants import UserRole
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Hanya Administrator yang dapat menguji SMTP")
+
+    hasil = send_email_detail(
+        db,
+        current_user.email,
+        "Test Koneksi SMTP TPM",
+        f"Halo {current_user.full_name}!\n\nIni adalah email percobaan untuk memverifikasi pengaturan SMTP Anda di sistem TPM.\nJika Anda menerima email ini, berarti konfigurasi SMTP sudah benar.",
+        from_name=config.sender_name,
+        config=config.model_dump(),
+    )
+    # Tes atas konfigurasi yang sudah tersimpan dicatat sebagai status (banner di halaman SMTP).
+    if get_smtp_config(db) == config.model_dump():
+        catat_status(hasil)
+    return {"success": hasil["ok"], "code": hasil["code"], "message": hasil["message"]}
