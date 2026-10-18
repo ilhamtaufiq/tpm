@@ -12,6 +12,8 @@ router = APIRouter(prefix="/settings", tags=["System Settings"])
 
 @router.get("", response_model=SystemSettingResponse)
 def get_settings(db: DBSession, current_user: CurrentUser):
+    from app.utils.constants import UserRole
+
     """Retrieve global system settings."""
     # Check if user is admin (optional, depending on requirements)
     from app.utils.constants import UserRole
@@ -47,7 +49,8 @@ def get_settings(db: DBSession, current_user: CurrentUser):
     if smtp_setting and smtp_setting.value:
         try:
             val = json.loads(smtp_setting.value)
-            if isinstance(val, dict):
+            # Konfigurasi SMTP berisi password: hanya admin yang boleh membacanya.
+            if isinstance(val, dict) and current_user.role == UserRole.ADMIN:
                 resp["smtp"] = val
         except:
             pass
