@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Query, status, File, UploadFile
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, ManagerUser, MobilUnitUser
 from app.schemas.mobil import (
     MobilCreate,
     MobilUpdate,
@@ -83,7 +83,7 @@ def get_available_cars(
 @router.get("/summary")
 def get_inventory_summary(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: MobilUnitUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
 ):
@@ -165,7 +165,7 @@ def add_biaya(
     mobil_id: int,
     data: MobilBiayaCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: MobilUnitUser,
 ):
     """Add additional cost to car."""
     service = MobilService(db)
@@ -202,7 +202,7 @@ def add_part_service(
     mobil_id: int,
     data: MobilPartServiceCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: MobilUnitUser,
 ):
     """Add part/service cost to car."""
     service = MobilService(db)

@@ -118,6 +118,21 @@ def get_unit_scope_for_role(role: UserRole) -> KasBankSource | None:
     return None
 
 
+def require_roles(*allowed: UserRole):
+    """Dependency yang hanya mengizinkan role tertentu (ADMIN selalu termasuk)."""
+    allowed_set = set(allowed) | {UserRole.ADMIN}
+
+    def _dependency(current_user: Annotated[User, Depends(get_current_user)]) -> User:
+        if current_user.role not in allowed_set:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Role Anda tidak punya akses ke fitur ini.",
+            )
+        return current_user
+
+    return _dependency
+
+
 # Type aliases for cleaner dependency injection
 DBSession = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
@@ -125,3 +140,7 @@ ActiveUser = Annotated[User, Depends(get_current_active_user)]
 AdminUser = Annotated[User, Depends(require_admin)]
 ManagerUser = Annotated[User, Depends(require_manager_or_admin)]
 UnitManagerUser = Annotated[User, Depends(require_unit_manager_or_admin)]
+# Role unit: fitur yang memang dibuka untuk satu unit (lihat invarian hak akses).
+BengkelPaymentUser = Annotated[User, Depends(require_roles(UserRole.MANAGER, UserRole.BENGKEL))]
+MobilUnitUser = Annotated[User, Depends(require_roles(UserRole.MANAGER, UserRole.MOBIL))]
+JasaAngkutUnitUser = Annotated[User, Depends(require_roles(UserRole.MANAGER, UserRole.JASA_ANGKUT))]

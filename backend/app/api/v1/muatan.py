@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, ManagerUser, JasaAngkutUnitUser
 from app.schemas.jasa_angkut import (
     MuatanCreate,
     MuatanUpdate,
@@ -61,7 +61,7 @@ def list_muatan(
 @router.get("/summary")
 def get_summary(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: JasaAngkutUnitUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
     search: Optional[str] = None,
@@ -126,7 +126,7 @@ def update_muatan(
     muatan_id: int,
     data: MuatanUpdate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: JasaAngkutUnitUser,
 ):
     """Update transport load."""
     service = MuatanService(db)
@@ -190,7 +190,7 @@ def delete_muatan(
 def void_muatan(
     muatan_id: int,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: JasaAngkutUnitUser,
 ):
     """Void/Cancel transport load and reverse finance."""
     service = MuatanService(db)
