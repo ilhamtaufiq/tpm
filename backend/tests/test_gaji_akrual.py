@@ -102,7 +102,8 @@ def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     _absen(db, kar, SENIN, AttendanceStatus.HADIR)
     _absen(db, kar, SELASA, AttendanceStatus.HADIR)
     _absen(db, kar, RABU, AttendanceStatus.SETENGAH_HARI)
-    hutang_sebelum = hutang_gaji_asof(db, SABTU)
+    # Dibaca per hari ini: tanggal bayar slip = date.today(), jadi tidak boleh terpotong ke SABTU.
+    hutang_sebelum = hutang_gaji_asof(db, date.today())
 
     svc = SlipGajiService(db)
     slip = svc.create(SlipGajiCreate(karyawan_id=kar.id, periode_minggu=42, periode_tahun=2026))
@@ -118,7 +119,7 @@ def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     )
     svc.process_payment(slip.id, SlipGajiUpdate(metode_bayar=PaymentMethod.TUNAI), user_id=None)
 
-    assert hutang_gaji_asof(db, SABTU) == hutang_sebelum - Decimal("250000")
+    assert hutang_gaji_asof(db, date.today()) == hutang_sebelum - Decimal("250000")
     # Beban gaji periode slip sudah diakui di absensi: tidak dihitung lagi saat cair.
     ringkasan = svc.get_summary_by_date_range(SENIN, SABTU)
     assert ringkasan["total_gaji_pokok"] == 0.0

@@ -17,6 +17,15 @@ export interface User {
     updated_at: string;
 }
 
+export interface DeleteCheck {
+    user_id: number;
+    is_active: boolean;
+    is_last_admin: boolean;
+    total_referensi: number;
+    referensi: { tabel: string; kolom: string; jumlah: number }[];
+    bisa_hapus_permanen: boolean;
+}
+
 export interface LoginResponse {
     access_token?: string;
     token_type?: string;
@@ -187,8 +196,13 @@ export const authService = {
         return response.data;
     },
 
-    deleteUser: async (id: number) => {
-        const response = await api.delete(`/auth/users/${id}`);
+    deleteUser: async (id: number, permanent: boolean = false) => {
+        const response = await api.delete(`/auth/users/${id}`, { params: { permanent } });
+        return response.data;
+    },
+
+    checkDeleteUser: async (id: number): Promise<DeleteCheck> => {
+        const response = await api.get(`/auth/users/${id}/delete-check`);
         return response.data;
     },
 

@@ -333,8 +333,9 @@ export const jasaAngkutService = {
         return response.data;
     },
 
+    // Backend membaca kategori/deskripsi/jumlah sebagai query parameter (bukan body).
     addMuatanCost: async (muatanId: number, data: any) => {
-        const response = await api.post(`/muatan/${muatanId}/costs`, data);
+        const response = await api.post(`/muatan/${muatanId}/biaya`, null, { params: data });
         return response.data;
     },
 };

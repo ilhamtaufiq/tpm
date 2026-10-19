@@ -463,6 +463,9 @@ class SlipGajiService:
                 slip.calculate_totals()
 
                 self.db.add(slip)
+                # Flush agar penomoran slip berikutnya di batch ini melihat slip ini;
+                # tanpa ini semua slip dalam satu batch mendapat nomor yang sama.
+                self.db.flush()
                 created += 1
 
             self.db.commit()
@@ -541,6 +544,9 @@ class SlipGajiService:
             slip.calculate_totals()
 
             self.db.add(slip)
+            # Flush agar penomoran slip berikutnya di batch ini melihat slip ini;
+            # tanpa ini semua slip dalam satu batch mendapat nomor yang sama.
+            self.db.flush()
             created += 1
 
         self.db.commit()

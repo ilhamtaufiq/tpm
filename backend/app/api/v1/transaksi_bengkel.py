@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser, UnitManagerUser
+from app.api.deps import DBSession, CurrentUser, ManagerUser, UnitManagerUser, BengkelPaymentUser
 from app.schemas.bengkel import (
     TransaksiBengkelCreate,
     TransaksiBengkelResponse,
@@ -115,7 +115,7 @@ def update_payment(
     transaksi_id: int,
     data: PaymentUpdate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: BengkelPaymentUser,
 ):
     """Add payment to transaction."""
     service = TransaksiBengkelService(db)

@@ -5,7 +5,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Query, status
 from pydantic import BaseModel, Field
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, ManagerUser, MobilUnitUser
 from app.schemas.mobil import (
     TransaksiMobilCreate,
     TransaksiMobilResponse,
@@ -71,7 +71,7 @@ router = APIRouter(prefix="/penjualan-mobil", tags=["Penjualan Mobil"])
 def create_transaksi(
     data: TransaksiMobilCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: MobilUnitUser,
 ):
     """Create a new car sales transaction."""
     service = PenjualanMobilService(db)
@@ -114,7 +114,7 @@ def list_transaksi(
 @router.get("/summary")
 def get_summary(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: MobilUnitUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
     search: Optional[str] = None,
@@ -204,7 +204,7 @@ def update_payment(
     transaksi_id: int,
     data: SplitPaymentRequest,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: MobilUnitUser,
 ):
     """Process payment for transaction (supports split payments)."""
     service = PenjualanMobilService(db)
