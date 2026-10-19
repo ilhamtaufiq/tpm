@@ -530,7 +530,7 @@ class PembelianPartService:
                 metode_bayar=metode_bayar,
                 referensi_id=None,
                 nomor_referensi=hutang.nomor_hutang,
-                keterangan=f"Pelunasan hutang {hutang.nomor_hutang} (Pembelian Part: {pembelian.nomor_transaksi})",
+                keterangan=f"Pelunasan hutang {hutang.nomor_hutang} (Pembelian Part: {pembelian.nomor_transaksi}) ({metode_bayar.upper()})",
                 user_id=user_id,
                 allow_negative=True,
             )
@@ -546,7 +546,7 @@ class PembelianPartService:
                 metode_bayar=metode_bayar,
                 referensi_id=pembelian.id,
                 nomor_referensi=pembelian.nomor_transaksi,
-                keterangan=f"Pelunasan pembelian spare part - {pembelian.nomor_transaksi}",
+                keterangan=f"Pelunasan pembelian spare part - {pembelian.nomor_transaksi} ({metode_bayar.upper()})",
                 user_id=user_id,
                 allow_negative=True,
             )

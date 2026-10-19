@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional, List
+from typing import Literal, Optional, List
 
 from pydantic import BaseModel, Field
 from app.schemas.tanggal import TanggalTransaksi, OptionalTanggalTransaksi
@@ -30,6 +30,12 @@ class PaymentDetail(BaseModel):
     nominal: Decimal = Field(..., gt=0)
     kas_jenis: Optional[KasBankJenis] = None
     catatan: Optional[str] = None
+
+
+class PaymentDetailHutang(PaymentDetail):
+    """Detail pembayaran hutang: hanya TUNAI atau TRANSFER (sesuai pilihan PaymentModal)."""
+
+    metode: Literal[PaymentMethod.TUNAI, PaymentMethod.TRANSFER]
 
 
 # ============================================
@@ -247,7 +253,7 @@ class PembayaranHutangCreate(BaseModel):
     hutang_id: int
     tanggal: TanggalTransaksi
     nominal: Decimal = Field(..., gt=0)
-    metode_bayar: PaymentMethod = PaymentMethod.TUNAI
+    metode_bayar: Literal[PaymentMethod.TUNAI, PaymentMethod.TRANSFER] = PaymentMethod.TUNAI
     catatan: Optional[str] = None
 
 
@@ -256,7 +262,7 @@ class PembayaranHutangSplit(BaseModel):
 
     hutang_id: int
     tanggal: TanggalTransaksi
-    payments: List[PaymentDetail]
+    payments: List[PaymentDetailHutang]
     catatan: Optional[str] = None
 
 
