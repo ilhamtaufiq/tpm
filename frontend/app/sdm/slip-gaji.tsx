@@ -87,6 +87,8 @@ export default function SlipGajiScreen() {
     const [refreshing, setRefreshing] = useState(false);
 
     // Period state - Date Range
+    // Minggu berjalan belum selesai (Sabtu belum lewat) → slip belum bisa dibuat untuknya.
+    // Default ke minggu terakhir yang sudah selesai, supaya pending yang harus dibuat tampil.
     const getInitialRange = () => {
         const d = new Date();
         const day = d.getDay() || 7;
@@ -94,6 +96,10 @@ export default function SlipGajiScreen() {
         monday.setDate(d.getDate() - day + 1);
         const saturday = new Date(monday);
         saturday.setDate(monday.getDate() + 5);
+        if (getTodayString(saturday) >= getTodayString(d)) {
+            monday.setDate(monday.getDate() - 7);
+            saturday.setDate(saturday.getDate() - 7);
+        }
         return {
             start: getTodayString(monday),
             end: getTodayString(saturday)
