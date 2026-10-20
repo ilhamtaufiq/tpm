@@ -334,7 +334,20 @@ export interface RiwayatPerbaikan {
   oleh: string | null;
 }
 
+export type TingkatTemuan = 'ok' | 'info' | 'peringatan' | 'kritis';
+
+export interface TemuanKesehatan {
+  tingkat: TingkatTemuan;
+  pesan: string;
+}
+
+export interface KesehatanData {
+  checks: TemuanKesehatan[];
+  rekomendasi: TemuanKesehatan[];
+}
+
 export const perbaikanService = {
+  kesehatan: () => get<KesehatanData>('/perbaikan-data/kesehatan'),
   piutangTanpaKas: () => get<PiutangTanpaKas[]>('/perbaikan-data/piutang-tanpa-kas'),
   riwayat: (limit = 100) => get<RiwayatPerbaikan[]>('/perbaikan-data/riwayat', { limit }),
   catatKasPiutang: (id: number, metode: 'TUNAI' | 'TRANSFER', kasJenis: string) =>

@@ -63,15 +63,15 @@ def db():
     session.close()
 
 
-def _piutang_manual(db, nomor=NOMOR_PIUTANG):
+def _piutang_manual(db, nomor=NOMOR_PIUTANG, nominal=Decimal("1000000"), tanggal=None):
     p = PiutangUsaha(
         nomor_piutang=nomor,
-        tanggal=get_jakarta_date(),
+        tanggal=tanggal or get_jakarta_date(),
         sumber=PiutangSource.LAINNYA,
         nama_debitur="Uji Perbaikan",
-        nominal_piutang=Decimal("1000000"),
+        nominal_piutang=nominal,
         total_dibayar=Decimal("0"),
-        sisa_piutang=Decimal("1000000"),
+        sisa_piutang=nominal,
         status=PiutangStatus.BELUM_LUNAS,
         is_internal=False,
     )
@@ -182,3 +182,34 @@ def test_riwayat_mencatat_setiap_perbaikan(db):
     assert catatan[0]["jenis"] == "PIUTANG_CATAT_KAS"
     assert catatan[0]["sesudah"]["kas_jenis"] == KasBankJenis.KAS_UNIT_MOBIL.value
     assert catatan[0]["sesudah"]["nominal"] == 1000000.0
+
+
+def test_gagal_dicatat_ke_riwayat_dengan_pesan_jelas(db):
+    p = _piutang_manual(db)
+    svc = PerbaikanDataService(db)
+    svc.catat_kas_piutang(p.id, PaymentMethod.TUNAI, None, user_id=None)
+    with pytest.raises(HTTPException) as salah:
+        svc.catat_kas_piutang(p.id, PaymentMethod.TUNAI, None, user_id=None)
+    assert salah.value.status_code == 409
+    assert "tidak perlu dicatat lagi" in salah.value.detail
+    gagal = [x for x in svc.riwayat() if x["jenis"] == "GAGAL_PIUTANG_CATAT_KAS"]
+    assert gagal and "tidak perlu dicatat lagi" in gagal[0]["ringkasan"]
+
+
+def test_saldo_kurang_menyarankan_akun_lain(db):
+    p = _piutang_manual(db, nominal=Decimal("999999999"))
+    svc = PerbaikanDataService(db)
+    with pytest.raises(HTTPException) as salah:
+        svc.catat_kas_piutang(p.id, PaymentMethod.TUNAI, KasBankJenis.KAS_UNIT_JASA_ANGKUT, user_id=None)
+    assert salah.value.status_code == 400
+    assert "Pilih akun lain" in salah.value.detail
+    assert db.query(KasBank).filter(KasBank.nomor_referensi == NOMOR_PIUTANG).count() == 0
+
+
+def test_kesehatan_menandai_piutang_lama_tanpa_kas(db):
+    lama = get_jakarta_date() - timedelta(days=60)
+    _piutang_manual(db, tanggal=lama)
+    hasil = PerbaikanDataService(db).kesehatan()
+    pesan = [r["pesan"] for r in hasil["rekomendasi"] if r["tingkat"] == "peringatan"]
+    assert any(NOMOR_PIUTANG in x and "sudah 60 hari tanpa kas" in x for x in pesan)
+    assert any(c["tingkat"] == "peringatan" for c in hasil["checks"])

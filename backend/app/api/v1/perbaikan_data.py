@@ -52,6 +52,11 @@ def ubah_tanggal(data: UbahTanggalRequest, db: DBSession, current_user: ManagerU
     return PerbaikanDataService(db).ubah_tanggal(data.nomor_referensi, data.tanggal_lama, data.tanggal_baru, current_user.id)
 
 
+@router.get("/kesehatan")
+def kesehatan(db: DBSession, current_user: ManagerUser):
+    return PerbaikanDataService(db).kesehatan()
+
+
 @router.get("/riwayat")
 def list_riwayat(db: DBSession, current_user: ManagerUser, limit: int = Query(100, ge=1, le=500)):
     return PerbaikanDataService(db).riwayat(limit)
