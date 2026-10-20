@@ -28,7 +28,11 @@ def db():
 
     session = SessionLocal()
     # Saldo awal supaya pencairan kas tidak ditolak karena saldo tidak mencukupi.
-    for jenis, metode in [(KasBankJenis.KAS_UTAMA, PaymentMethod.TUNAI), (KasBankJenis.BANK_UTAMA, PaymentMethod.TRANSFER)]:
+    for jenis, metode in [
+        (KasBankJenis.KAS_UTAMA, PaymentMethod.TUNAI),
+        (KasBankJenis.KAS_UNIT_BENGKEL, PaymentMethod.TUNAI),
+        (KasBankJenis.BANK_UTAMA, PaymentMethod.TRANSFER),
+    ]:
         create_kas_entry(
             db=session,
             tanggal=get_jakarta_date(),
@@ -76,7 +80,7 @@ def test_piutang_manual_tanpa_kas_bisa_dicatat_kasnya(db):
     svc = PerbaikanDataService(db)
     assert any(x["id"] == p.id for x in svc.piutang_tanpa_kas())
 
-    svc.catat_kas_piutang(p.id, PaymentMethod.TRANSFER, user_id=None)
+    svc.catat_kas_piutang(p.id, PaymentMethod.TRANSFER, None, user_id=None)
 
     kas = db.query(KasBank).filter(KasBank.nomor_referensi == NOMOR_PIUTANG).all()
     assert len(kas) == 1
@@ -84,8 +88,27 @@ def test_piutang_manual_tanpa_kas_bisa_dicatat_kasnya(db):
     assert kas[0].jenis == KasBankJenis.BANK_UTAMA
     assert not any(x["id"] == p.id for x in svc.piutang_tanpa_kas())
     with pytest.raises(HTTPException) as salah:
-        svc.catat_kas_piutang(p.id, PaymentMethod.TUNAI, user_id=None)
+        svc.catat_kas_piutang(p.id, PaymentMethod.TUNAI, None, user_id=None)
     assert salah.value.status_code == 409
+
+
+def test_tunai_bisa_dipilih_ke_laci_unit(db):
+    p = _piutang_manual(db)
+    svc = PerbaikanDataService(db)
+    svc.catat_kas_piutang(p.id, PaymentMethod.TUNAI, KasBankJenis.KAS_UNIT_BENGKEL, user_id=None)
+    kas = db.query(KasBank).filter(KasBank.nomor_referensi == NOMOR_PIUTANG).one()
+    assert kas.jenis == KasBankJenis.KAS_UNIT_BENGKEL
+
+
+def test_akun_tidak_sesuai_metode_ditolak(db):
+    p = _piutang_manual(db)
+    svc = PerbaikanDataService(db)
+    with pytest.raises(HTTPException) as tunai_ke_bank:
+        svc.catat_kas_piutang(p.id, PaymentMethod.TUNAI, KasBankJenis.BANK_UTAMA, user_id=None)
+    with pytest.raises(HTTPException) as transfer_ke_kas:
+        svc.catat_kas_piutang(p.id, PaymentMethod.TRANSFER, KasBankJenis.KAS_UTAMA, user_id=None)
+    assert tunai_ke_bank.value.status_code == 400
+    assert transfer_ke_kas.value.status_code == 400
 
 
 def test_piutang_manual_tanpa_kas_bisa_dibatalkan(db):
@@ -98,7 +121,7 @@ def test_piutang_manual_tanpa_kas_bisa_dibatalkan(db):
 
 def test_piutang_dengan_kas_tidak_bisa_dibatalkan(db):
     p = _piutang_manual(db)
-    PerbaikanDataService(db).catat_kas_piutang(p.id, PaymentMethod.TUNAI, user_id=None)
+    PerbaikanDataService(db).catat_kas_piutang(p.id, PaymentMethod.TUNAI, None, user_id=None)
     with pytest.raises(HTTPException) as salah:
         PerbaikanDataService(db).batalkan_piutang(p.id)
     assert salah.value.status_code == 409

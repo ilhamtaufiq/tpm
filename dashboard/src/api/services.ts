@@ -325,8 +325,10 @@ export interface TanggalMundur {
 
 export const perbaikanService = {
   piutangTanpaKas: () => get<PiutangTanpaKas[]>('/perbaikan-data/piutang-tanpa-kas'),
-  catatKasPiutang: (id: number, metode: 'TUNAI' | 'TRANSFER') =>
-    client.post(`/perbaikan-data/piutang/${id}/catat-kas`, { metode }).then((r) => r.data),
+  catatKasPiutang: (id: number, metode: 'TUNAI' | 'TRANSFER', kasJenis: string) =>
+    client
+      .post(`/perbaikan-data/piutang/${id}/catat-kas`, { metode, kas_jenis: kasJenis })
+      .then((r) => r.data),
   batalkanPiutang: (id: number) =>
     client.post(`/perbaikan-data/piutang/${id}/batalkan`).then((r) => r.data),
   tanggalMundur: (selisihHari = 1) =>

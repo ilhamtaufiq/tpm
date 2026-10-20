@@ -13,10 +13,20 @@ const errMsg = (e: unknown, fallback: string) => {
 
 const TANGGAL_VALID = /^\d{4}-\d{2}-\d{2}$/;
 
+// Pilihan akun untuk pencairan: tunai ke kas utama atau laci unit, transfer ke bank utama.
+const AKUN_PENCAIRAN = [
+  { value: 'TUNAI:KAS_UTAMA', label: 'Tunai · Kas Utama' },
+  { value: 'TUNAI:KAS_UNIT_BENGKEL', label: 'Tunai · Kas Unit Bengkel' },
+  { value: 'TUNAI:KAS_UNIT_JASA_ANGKUT', label: 'Tunai · Kas Unit Jasa Angkut' },
+  { value: 'TUNAI:KAS_UNIT_MOBIL', label: 'Tunai · Kas Unit Jual Beli Mobil' },
+  { value: 'TRANSFER:BANK_UTAMA', label: 'Transfer · Bank Utama' },
+] as const;
+
 export default function PerbaikanData() {
   const [piutang, setPiutang] = useState<PiutangTanpaKas[] | null>(null);
   const [mundur, setMundur] = useState<TanggalMundur[] | null>(null);
   const [tanggalInput, setTanggalInput] = useState<Record<string, string>>({});
+  const [akunPiutang, setAkunPiutang] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
 
@@ -84,24 +94,35 @@ export default function PerbaikanData() {
                   </div>
                   {p.catatan && <div className="text-xs text-slate-400">{p.catatan}</div>}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {(['TUNAI', 'TRANSFER'] as const).map((metode) => (
-                    <button
-                      key={metode}
-                      disabled={busy !== null}
-                      onClick={() =>
-                        jalankan(
-                          `${p.id}-${metode}`,
-                          `Catat kas keluar ${metode} untuk ${p.nomor_piutang}?`,
-                          () => perbaikanService.catatKasPiutang(p.id, metode),
-                          `Kas keluar ${metode} untuk ${p.nomor_piutang} sudah dicatat.`,
-                        )
-                      }
-                      className="rounded-lg bg-[#0B1F3A] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-                    >
-                      Catat kas {metode}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={akunPiutang[p.id] ?? AKUN_PENCAIRAN[0].value}
+                    onChange={(e) => setAkunPiutang((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                    className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                  >
+                    {AKUN_PENCAIRAN.map((a) => (
+                      <option key={a.value} value={a.value}>
+                        {a.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    disabled={busy !== null}
+                    onClick={() => {
+                      const pilihan = akunPiutang[p.id] ?? AKUN_PENCAIRAN[0].value;
+                      const [metode, kasJenis] = pilihan.split(':') as ['TUNAI' | 'TRANSFER', string];
+                      const label = AKUN_PENCAIRAN.find((a) => a.value === pilihan)?.label ?? kasJenis;
+                      jalankan(
+                        `${p.id}-catat`,
+                        `Catat kas keluar (${label}) untuk ${p.nomor_piutang}?`,
+                        () => perbaikanService.catatKasPiutang(p.id, metode, kasJenis),
+                        `Kas keluar (${label}) untuk ${p.nomor_piutang} sudah dicatat.`,
+                      );
+                    }}
+                    className="rounded-lg bg-[#0B1F3A] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                  >
+                    Catat kas
+                  </button>
                   <button
                     disabled={busy !== null}
                     onClick={() =>
