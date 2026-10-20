@@ -31,7 +31,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { KasBankTransaction, KasBankAllBalances, KasBankJenis } from '../../services/keuangan';
 import { User } from '../../services/auth';
-import { formatCurrency, formatNumber, parseNumber, getTodayString } from '../../utils/format';
+import { formatCurrency, formatNumber, parseNumber, getTodayString, tanggalLokal } from '../../utils/format';
 import { useKasBankList, useKasBankBalances, useTransfer, useCreateTransaction } from '../../hooks/useKeuangan';
 import { useUserList } from '../../hooks/useUsers';
 import { SkeletonCard } from '../../components/ui/Skeleton';
@@ -328,7 +328,7 @@ export default function MutasiKasScreen() {
                                     {item.keterangan}
                                 </Typography>
                                 <Typography variant="caption" className="text-textGray mt-0.5">
-                                    {new Date(item.tanggal).toLocaleDateString('id-ID')} • {JENIS_LABEL[item.jenis]}
+                                    {tanggalLokal(item.tanggal).toLocaleDateString('id-ID')} • {JENIS_LABEL[item.jenis]}
                                 </Typography>
                             </View>
                             <View className="items-end">
@@ -601,7 +601,7 @@ export default function MutasiKasScreen() {
                                     <View className="flex-row items-center">
                                         <Calendar size={12} color="#9CA3AF" />
                                         <Typography className="text-textGray text-[10px] ml-1.5 font-bold uppercase tracking-widest">
-                                            {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            {tanggalLokal(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </Typography>
                                     </View>
                                     <Typography weight="bold" className={isIncome ? "text-emerald-600 text-sm" : "text-rose-600 text-sm"}>

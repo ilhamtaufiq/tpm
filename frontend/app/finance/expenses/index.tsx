@@ -35,7 +35,7 @@ import { usePengeluaranList, useCreatePengeluaran, usePengeluaranSummary } from 
 import { Header } from '../../../components/ui/Header';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../../services/offlineQueue';
-import { formatNumber, parseNumber, formatCurrency, formatDate } from '../../../utils/format';
+import { formatNumber, parseNumber, formatCurrency, formatDate, tanggalLokal } from '../../../utils/format';
 import { AKUN, akunUntukUnit, metodeDariAkun } from '../../../utils/expenseAkun';
 import { ArmadaSelector } from '../../../components/ui/ArmadaSelector';
 import { MobilSelector } from '../../../components/ui/MobilSelector';
@@ -107,7 +107,7 @@ export default function ExpensesScreen() {
     const filteredExpenses = useMemo(() => {
         if (period === 'all') return expenses;
         return expenses.filter((item: any) => {
-            const d = new Date(item.tanggal);
+            const d = tanggalLokal(item.tanggal);
             if (isNaN(d.getTime())) return false;
             if (period === 'daily') return d.toDateString() === refDate.toDateString();
             if (period === 'monthly') return d.getFullYear() === refDate.getFullYear() && d.getMonth() === refDate.getMonth();

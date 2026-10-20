@@ -33,7 +33,7 @@ import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { usePembelianPartsList, useReturPembelianList, useBatalReturPembelian } from '../../../hooks/useBengkel';
-import { formatCurrency } from '../../../utils/format';
+import { formatCurrency, tanggalLokal } from '../../../utils/format';
 import { getErrorMessage } from '../../../utils/error';
 import { ReturPembelianModal } from '../../../components/ReturPembelianModal';
 import { getCustomTabBarBottomPadding } from '../../../components/ui/CustomTabBar';
@@ -187,7 +187,7 @@ export default function PurchaseIndexScreen() {
                                         </View>
                                     </View>
                                     <Typography variant="caption" className="text-textGray mt-0.5" numberOfLines={1}>
-                                        {format(new Date(item.tanggal), 'dd MMMM yyyy', { locale: localeID })} • {item.nomor_transaksi}
+                                        {format(tanggalLokal(item.tanggal), 'dd MMMM yyyy', { locale: localeID })} • {item.nomor_transaksi}
                                     </Typography>
                                 </View>
                             </View>
@@ -285,7 +285,7 @@ export default function PurchaseIndexScreen() {
                                         <View className="ml-3">
                                             <Typography variant="caption" className="text-textGray font-bold uppercase tracking-widest text-[9px]">Tanggal & Faktur</Typography>
                                             <Typography weight="bold" className="text-textMain">
-                                                {selectedPurchase?.tanggal ? format(new Date(selectedPurchase.tanggal), 'dd MMMM yyyy', { locale: localeID }) : '-'}
+                                                {selectedPurchase?.tanggal ? format(tanggalLokal(selectedPurchase.tanggal), 'dd MMMM yyyy', { locale: localeID }) : '-'}
                                                 {selectedPurchase?.nomor_faktur ? ` • ${selectedPurchase.nomor_faktur}` : ''}
                                             </Typography>
                                         </View>
@@ -343,7 +343,7 @@ export default function PurchaseIndexScreen() {
                                             <View>
                                                 <Typography weight="bold" className="text-sm text-textMain">{r.nomor_retur}</Typography>
                                                 <Typography variant="caption" className="text-textGray">
-                                                    {format(new Date(r.tanggal), 'dd MMM yyyy', { locale: localeID })} · Hutang {formatCurrency(r.nilai_hutang)} · Kas {formatCurrency(r.nilai_kas)}{r.metode_refund ? ` (${r.metode_refund})` : ''}{Number(r.nilai_piutang) > 0 ? ` · Piutang ${formatCurrency(r.nilai_piutang)}` : ''}
+                                                    {format(tanggalLokal(r.tanggal), 'dd MMM yyyy', { locale: localeID })} · Hutang {formatCurrency(r.nilai_hutang)} · Kas {formatCurrency(r.nilai_kas)}{r.metode_refund ? ` (${r.metode_refund})` : ''}{Number(r.nilai_piutang) > 0 ? ` · Piutang ${formatCurrency(r.nilai_piutang)}` : ''}
                                                 </Typography>
                                             </View>
                                             {r.dibatalkan ? (

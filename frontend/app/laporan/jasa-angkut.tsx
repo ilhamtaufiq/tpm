@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { jasaAngkutService } from '../../services/jasaAngkut';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatCurrency, formatDate, tanggalLokal } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useActiveArmada } from '../../hooks/useJasaAngkut';
@@ -584,7 +584,7 @@ export default function JasaAngkutReportScreen() {
                                 <View className="flex-row justify-between mb-2">
                                     <View>
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Tanggal</Typography>
-                                        <Typography weight="bold">{format(new Date(selectedTrip.tanggal), 'dd MMM yyyy', { locale: localeID })}</Typography>
+                                        <Typography weight="bold">{format(tanggalLokal(selectedTrip.tanggal), 'dd MMM yyyy', { locale: localeID })}</Typography>
                                     </View>
                                     <View className="items-end">
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">No. Transaksi</Typography>

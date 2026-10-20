@@ -116,7 +116,17 @@ export const formatDateTime = (dateString: string): string => {
     }
 };
 
-const NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+// Tanggal saja (YYYY-MM-DD) dari server dibaca sebagai tanggal kalender lokal, bukan UTC midnight.
+// new Date('2026-10-19') jatuh di 19 Okt 00.00 UTC, yang di perangkat zona barat tampil 18 Okt.
+export const tanggalLokal = (value: string | Date | null | undefined): Date => {
+    if (value instanceof Date) return value;
+    if (!value) return new Date(NaN);
+    const tanggalSaja = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (tanggalSaja) return new Date(Number(tanggalSaja[1]), Number(tanggalSaja[2]) - 1, Number(tanggalSaja[3]));
+    return new Date(value);
+};
+
+const NAMA_BULAN =['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
 export const formatDate = (dateString: string): string => {
     if (!dateString) return '-';
