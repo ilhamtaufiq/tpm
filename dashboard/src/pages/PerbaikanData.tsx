@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CalendarClock, CheckCircle2, Loader2, Wallet, Wrench } from 'lucide-react';
+import { CalendarClock, CheckCircle2, History, Loader2, Wallet, Wrench } from 'lucide-react';
 import { perbaikanService } from '../api/services';
-import type { PiutangTanpaKas, TanggalMundur } from '../api/services';
+import type { PiutangTanpaKas, RiwayatPerbaikan, TanggalMundur } from '../api/services';
 import { formatCurrencyDisplay, formatDate } from '../utils/format';
 import { Badge, Card, Empty, Loading, PageHeader } from '../components/ui';
 
@@ -12,6 +12,18 @@ const errMsg = (e: unknown, fallback: string) => {
 };
 
 const TANGGAL_VALID = /^\d{4}-\d{2}-\d{2}$/;
+
+const JENIS_LABEL: Record<string, string> = {
+  PIUTANG_CATAT_KAS: 'Catat kas piutang',
+  PIUTANG_BATAL: 'Batalkan piutang',
+  TANGGAL_UBAH: 'Ubah tanggal',
+};
+
+// Waktu dari server sudah WIB tanpa zona; tampilkan komponennya apa adanya.
+const waktuWib = (iso: string) => {
+  const [tanggal, jam = ''] = iso.split('T');
+  return `${formatDate(tanggal)} ${jam.slice(0, 8)} WIB`;
+};
 
 // Pilihan akun untuk pencairan: tunai ke kas utama atau laci unit, transfer ke bank utama.
 const AKUN_PENCAIRAN = [
@@ -25,6 +37,7 @@ const AKUN_PENCAIRAN = [
 export default function PerbaikanData() {
   const [piutang, setPiutang] = useState<PiutangTanpaKas[] | null>(null);
   const [mundur, setMundur] = useState<TanggalMundur[] | null>(null);
+  const [riwayat, setRiwayat] = useState<RiwayatPerbaikan[] | null>(null);
   const [tanggalInput, setTanggalInput] = useState<Record<string, string>>({});
   const [akunPiutang, setAkunPiutang] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -32,9 +45,14 @@ export default function PerbaikanData() {
 
   const muat = useCallback(async () => {
     try {
-      const [p, m] = await Promise.all([perbaikanService.piutangTanpaKas(), perbaikanService.tanggalMundur(1)]);
+      const [p, m, r] = await Promise.all([
+        perbaikanService.piutangTanpaKas(),
+        perbaikanService.tanggalMundur(1),
+        perbaikanService.riwayat(),
+      ]);
       setPiutang(p);
       setMundur(m);
+      setRiwayat(r);
     } catch (e) {
       setNotice({ tone: 'bad', text: errMsg(e, 'Gagal memuat data perbaikan') });
     }
@@ -203,6 +221,33 @@ export default function PerbaikanData() {
                 </li>
               );
             })}
+          </ul>
+        )}
+      </Card>
+
+      <div className="h-5" />
+
+      <Card title="Riwayat perbaikan" sub="Semua aksi perbaikan, termasuk siapa yang melakukannya dan nilai sebelum serta sesudah." icon={History}>
+        {riwayat === null ? (
+          <Loading />
+        ) : riwayat.length === 0 ? (
+          <Empty text="Belum ada perbaikan yang dicatat." icon={CheckCircle2} />
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {riwayat.map((r) => (
+              <li key={r.id} className="py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone="info">{JENIS_LABEL[r.jenis] ?? r.jenis}</Badge>
+                  <span className="font-semibold text-slate-900">{r.nomor_referensi}</span>
+                  <span className="text-xs text-slate-500">{waktuWib(r.waktu)} · {r.oleh ?? 'tidak diketahui'}</span>
+                </div>
+                <div className="mt-1 text-xs text-slate-600">{r.ringkasan}</div>
+                <div className="mt-1 grid grid-cols-1 gap-x-6 text-[11px] text-slate-400 sm:grid-cols-2">
+                  <span>Sebelum: {r.sebelum ? JSON.stringify(r.sebelum) : '-'}</span>
+                  <span>Sesudah: {r.sesudah ? JSON.stringify(r.sesudah) : '-'}</span>
+                </div>
+              </li>
+            ))}
           </ul>
         )}
       </Card>

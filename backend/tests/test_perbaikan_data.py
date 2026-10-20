@@ -12,6 +12,7 @@ from fastapi import HTTPException
 
 from app.database import SessionLocal
 from app.models.keuangan import KasBank, PiutangUsaha
+from app.models.perbaikan_data_log import PerbaikanDataLog
 from app.services.kas_bank_service import KasBankService
 from app.services.perbaikan_data_service import PerbaikanDataService
 from app.utils.constants import KasBankJenis, KasBankSource, KasBankType, PaymentMethod, PiutangSource, PiutangStatus
@@ -31,6 +32,7 @@ def db():
     for jenis, metode in [
         (KasBankJenis.KAS_UTAMA, PaymentMethod.TUNAI),
         (KasBankJenis.KAS_UNIT_BENGKEL, PaymentMethod.TUNAI),
+        (KasBankJenis.KAS_UNIT_MOBIL, PaymentMethod.TUNAI),
         (KasBankJenis.BANK_UTAMA, PaymentMethod.TRANSFER),
     ]:
         create_kas_entry(
@@ -52,6 +54,9 @@ def db():
         KasBank.nomor_referensi.in_([NOMOR_PIUTANG, NOMOR_KAS_MUNDUR, NOMOR_SALDO])
     ).delete(synchronize_session=False)
     session.query(PiutangUsaha).filter(PiutangUsaha.nomor_piutang == NOMOR_PIUTANG).delete(synchronize_session=False)
+    session.query(PerbaikanDataLog).filter(
+        PerbaikanDataLog.nomor_referensi.in_([NOMOR_PIUTANG, NOMOR_KAS_MUNDUR])
+    ).delete(synchronize_session=False)
     session.commit()
     # Saldo tiap baris kas dihitung ulang setelah baris uji dihapus.
     KasBankService(session).rebuild_balances()
@@ -113,7 +118,7 @@ def test_akun_tidak_sesuai_metode_ditolak(db):
 
 def test_piutang_manual_tanpa_kas_bisa_dibatalkan(db):
     p = _piutang_manual(db)
-    hasil = PerbaikanDataService(db).batalkan_piutang(p.id)
+    hasil = PerbaikanDataService(db).batalkan_piutang(p.id, None)
     db.refresh(p)
     assert hasil["status"] == PiutangStatus.BATAL.value
     assert p.status == PiutangStatus.BATAL and p.sisa_piutang == 0
@@ -123,7 +128,7 @@ def test_piutang_dengan_kas_tidak_bisa_dibatalkan(db):
     p = _piutang_manual(db)
     PerbaikanDataService(db).catat_kas_piutang(p.id, PaymentMethod.TUNAI, None, user_id=None)
     with pytest.raises(HTTPException) as salah:
-        PerbaikanDataService(db).batalkan_piutang(p.id)
+        PerbaikanDataService(db).batalkan_piutang(p.id, None)
     assert salah.value.status_code == 409
 
 
@@ -155,7 +160,7 @@ def test_tanggal_mundur_terdeteksi_dan_bisa_dipindah(db):
     assert kandidat[0]["tanggal_lama"] == kemarin.isoformat()
     assert kandidat[0]["tanggal_seharusnya"] == hari_ini.isoformat()
 
-    hasil = svc.ubah_tanggal(NOMOR_KAS_MUNDUR, kemarin, hari_ini)
+    hasil = svc.ubah_tanggal(NOMOR_KAS_MUNDUR, kemarin, hari_ini, None)
     assert hasil["baris_kas"] == 1
     db.refresh(kas)
     assert kas.tanggal == hari_ini
@@ -164,5 +169,16 @@ def test_tanggal_mundur_terdeteksi_dan_bisa_dipindah(db):
 
 def test_ubah_tanggal_menolak_tanggal_masa_depan(db):
     with pytest.raises(HTTPException) as salah:
-        PerbaikanDataService(db).ubah_tanggal(NOMOR_KAS_MUNDUR, get_jakarta_date(), get_jakarta_date() + timedelta(days=3))
+        PerbaikanDataService(db).ubah_tanggal(NOMOR_KAS_MUNDUR, get_jakarta_date(), get_jakarta_date() + timedelta(days=3), None)
     assert salah.value.status_code == 400
+
+
+def test_riwayat_mencatat_setiap_perbaikan(db):
+    p = _piutang_manual(db)
+    svc = PerbaikanDataService(db)
+    svc.catat_kas_piutang(p.id, PaymentMethod.TUNAI, KasBankJenis.KAS_UNIT_MOBIL, user_id=None)
+    catatan = [x for x in svc.riwayat() if x["nomor_referensi"] == NOMOR_PIUTANG]
+    assert len(catatan) == 1
+    assert catatan[0]["jenis"] == "PIUTANG_CATAT_KAS"
+    assert catatan[0]["sesudah"]["kas_jenis"] == KasBankJenis.KAS_UNIT_MOBIL.value
+    assert catatan[0]["sesudah"]["nominal"] == 1000000.0

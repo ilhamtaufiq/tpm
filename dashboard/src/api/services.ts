@@ -323,8 +323,20 @@ export interface TanggalMundur {
   induk: 'PIUTANG' | 'HUTANG' | 'TRANSAKSI_BENGKEL' | null;
 }
 
+export interface RiwayatPerbaikan {
+  id: number;
+  waktu: string;
+  jenis: 'PIUTANG_CATAT_KAS' | 'PIUTANG_BATAL' | 'TANGGAL_UBAH' | string;
+  nomor_referensi: string;
+  ringkasan: string;
+  sebelum: Record<string, unknown> | null;
+  sesudah: Record<string, unknown> | null;
+  oleh: string | null;
+}
+
 export const perbaikanService = {
   piutangTanpaKas: () => get<PiutangTanpaKas[]>('/perbaikan-data/piutang-tanpa-kas'),
+  riwayat: (limit = 100) => get<RiwayatPerbaikan[]>('/perbaikan-data/riwayat', { limit }),
   catatKasPiutang: (id: number, metode: 'TUNAI' | 'TRANSFER', kasJenis: string) =>
     client
       .post(`/perbaikan-data/piutang/${id}/catat-kas`, { metode, kas_jenis: kasJenis })

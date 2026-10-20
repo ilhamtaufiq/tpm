@@ -35,7 +35,7 @@ def catat_kas_piutang(piutang_id: int, data: CatatKasPiutangRequest, db: DBSessi
 
 @router.post("/piutang/{piutang_id}/batalkan")
 def batalkan_piutang(piutang_id: int, db: DBSession, current_user: ManagerUser):
-    return PerbaikanDataService(db).batalkan_piutang(piutang_id)
+    return PerbaikanDataService(db).batalkan_piutang(piutang_id, current_user.id)
 
 
 @router.get("/tanggal-mundur")
@@ -49,4 +49,9 @@ def list_tanggal_mundur(
 
 @router.post("/tanggal")
 def ubah_tanggal(data: UbahTanggalRequest, db: DBSession, current_user: ManagerUser):
-    return PerbaikanDataService(db).ubah_tanggal(data.nomor_referensi, data.tanggal_lama, data.tanggal_baru)
+    return PerbaikanDataService(db).ubah_tanggal(data.nomor_referensi, data.tanggal_lama, data.tanggal_baru, current_user.id)
+
+
+@router.get("/riwayat")
+def list_riwayat(db: DBSession, current_user: ManagerUser, limit: int = Query(100, ge=1, le=500)):
+    return PerbaikanDataService(db).riwayat(limit)

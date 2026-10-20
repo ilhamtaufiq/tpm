@@ -8,6 +8,7 @@ Dua kelompok temuan:
   (dibuat_pada - tanggal = selisih hari). Perbaikan: pindahkan tanggal baris kas
   dan induknya (piutang, hutang, transaksi bengkel) lalu hitung ulang saldo.
 """
+import json
 from typing import Any, Dict, List, Optional
 
 from fastapi import HTTPException, status
@@ -15,6 +16,8 @@ from sqlalchemy import func, or_
 
 from app.models.bengkel import TransaksiPenjualanBengkel
 from app.models.keuangan import HutangUsaha, KasBank, PiutangUsaha
+from app.models.perbaikan_data_log import PerbaikanDataLog
+from app.models.user import User
 from app.services.kas_bank_integration import create_kas_entry, get_kas_jenis
 from app.services.kas_bank_service import KasBankService
 from app.utils.constants import (
@@ -40,6 +43,48 @@ AKUN_TRANSFER = {KasBankJenis.BANK_UTAMA}
 class PerbaikanDataService:
     def __init__(self, db):
         self.db = db
+
+    def _catat_riwayat(
+        self,
+        jenis: str,
+        nomor: str,
+        ringkasan: str,
+        sebelum: Dict[str, Any],
+        sesudah: Dict[str, Any],
+        user_id: Optional[int],
+    ) -> None:
+        self.db.add(
+            PerbaikanDataLog(
+                jenis=jenis,
+                nomor_referensi=nomor,
+                ringkasan=ringkasan[:255],
+                sebelum=json.dumps(sebelum, ensure_ascii=False),
+                sesudah=json.dumps(sesudah, ensure_ascii=False),
+                user_id=user_id,
+            )
+        )
+
+    def riwayat(self, limit: int = 100) -> List[Dict[str, Any]]:
+        rows = (
+            self.db.query(PerbaikanDataLog, User.username)
+            .outerjoin(User, User.id == PerbaikanDataLog.user_id)
+            .order_by(PerbaikanDataLog.created_at.desc(), PerbaikanDataLog.id.desc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "id": log.id,
+                "waktu": log.created_at.isoformat(),
+                "jenis": log.jenis,
+                "nomor_referensi": log.nomor_referensi,
+                "ringkasan": log.ringkasan,
+                "sebelum": json.loads(log.sebelum) if log.sebelum else None,
+                "sesudah": json.loads(log.sesudah) if log.sesudah else None,
+                "oleh": username,
+            }
+            for log, username in rows
+        ]
 
     # ------------------------------------------------------------------
     # Piutang manual tanpa kas
@@ -125,6 +170,15 @@ class PerbaikanDataService:
             kas_jenis=kas_jenis,
             commit=True,
         )
+        self._catat_riwayat(
+            "PIUTANG_CATAT_KAS",
+            p.nomor_piutang,
+            f"Kas keluar {kas_jenis.value} ({metode.value}) untuk piutang {p.nama_debitur}",
+            {"kas": None, "nominal_piutang": float(p.nominal_piutang)},
+            {"kas_jenis": kas_jenis.value, "metode": metode.value, "nominal": float(p.nominal_piutang), "tanggal": p.tanggal.isoformat()},
+            user_id,
+        )
+        self.db.commit()
         return {
             "id": p.id,
             "nomor_piutang": p.nomor_piutang,
@@ -132,11 +186,20 @@ class PerbaikanDataService:
             "kas_jenis": kas_jenis.value,
         }
 
-    def batalkan_piutang(self, piutang_id: int) -> Dict[str, Any]:
+    def batalkan_piutang(self, piutang_id: int, user_id: Optional[int]) -> Dict[str, Any]:
         p = self._ambil_piutang_manual_tanpa_kas(piutang_id)
+        status_sebelum = p.status.value
         p.status = PiutangStatus.BATAL
         p.sisa_piutang = 0
         p.catatan = f"{p.catatan or ''} [Dibatalkan lewat Perbaikan Data: tidak ada uang keluar]".strip()
+        self._catat_riwayat(
+            "PIUTANG_BATAL",
+            p.nomor_piutang,
+            f"Piutang {p.nama_debitur} dibatalkan (tidak ada uang keluar)",
+            {"status": status_sebelum, "sisa_piutang": float(p.nominal_piutang)},
+            {"status": PiutangStatus.BATAL.value, "sisa_piutang": 0},
+            user_id,
+        )
         self.db.commit()
         return {"id": p.id, "nomor_piutang": p.nomor_piutang, "status": PiutangStatus.BATAL.value}
 
@@ -190,7 +253,7 @@ class PerbaikanDataService:
             return "TRANSAKSI_BENGKEL"
         return None
 
-    def ubah_tanggal(self, nomor_referensi: str, tanggal_lama, tanggal_baru) -> Dict[str, Any]:
+    def ubah_tanggal(self, nomor_referensi: str, tanggal_lama, tanggal_baru, user_id: Optional[int]) -> Dict[str, Any]:
         pesan = pesan_tanggal_masa_depan(tanggal_baru)
         if pesan:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=pesan)
@@ -232,6 +295,14 @@ class PerbaikanDataService:
         for row in induk:
             row.tanggal = tanggal_baru
 
+        self._catat_riwayat(
+            "TANGGAL_UBAH",
+            nomor_referensi,
+            f"Tanggal {nomor_referensi} dipindah dari {tanggal_lama.isoformat()} ke {tanggal_baru.isoformat()}",
+            {"tanggal": tanggal_lama.isoformat(), "baris_kas": len(kas), "dokumen_induk": len(induk)},
+            {"tanggal": tanggal_baru.isoformat()},
+            user_id,
+        )
         self.db.flush()
         KasBankService(self.db).rebuild_balances()
         self.db.commit()
