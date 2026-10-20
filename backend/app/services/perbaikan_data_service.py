@@ -15,9 +15,10 @@ from sqlalchemy import func, or_
 
 from app.models.bengkel import TransaksiPenjualanBengkel
 from app.models.keuangan import HutangUsaha, KasBank, PiutangUsaha
-from app.services.kas_bank_integration import create_kas_entry
+from app.services.kas_bank_integration import create_kas_entry, get_kas_jenis
 from app.services.kas_bank_service import KasBankService
 from app.utils.constants import (
+    KasBankJenis,
     KasBankSource,
     KasBankType,
     PaymentMethod,
@@ -25,6 +26,15 @@ from app.utils.constants import (
     PiutangStatus,
 )
 from app.utils.helpers import pesan_tanggal_masa_depan
+
+# Akun yang boleh dipilih untuk pencairan tunai: kas utama dan laci tiap unit.
+AKUN_TUNAI = {
+    KasBankJenis.KAS_UTAMA,
+    KasBankJenis.KAS_UNIT_BENGKEL,
+    KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+    KasBankJenis.KAS_UNIT_MOBIL,
+}
+AKUN_TRANSFER = {KasBankJenis.BANK_UTAMA}
 
 
 class PerbaikanDataService:
@@ -85,8 +95,22 @@ class PerbaikanDataService:
             )
         return p
 
-    def catat_kas_piutang(self, piutang_id: int, metode: PaymentMethod, user_id: Optional[int]) -> Dict[str, Any]:
+    def catat_kas_piutang(
+        self,
+        piutang_id: int,
+        metode: PaymentMethod,
+        kas_jenis: Optional[KasBankJenis],
+        user_id: Optional[int],
+    ) -> Dict[str, Any]:
         p = self._ambil_piutang_manual_tanpa_kas(piutang_id)
+        akun_valid = AKUN_TUNAI if metode == PaymentMethod.TUNAI else AKUN_TRANSFER
+        if kas_jenis is None:
+            kas_jenis = get_kas_jenis(metode, p.unit)
+        if kas_jenis not in akun_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Akun {kas_jenis.value} tidak sesuai metode {metode.value}",
+            )
         create_kas_entry(
             db=self.db,
             tanggal=p.tanggal,
@@ -98,9 +122,15 @@ class PerbaikanDataService:
             nomor_referensi=p.nomor_piutang,
             keterangan=f"[Perbaikan] Pemberian piutang kepada {p.nama_debitur} ({metode.value})",
             user_id=user_id,
+            kas_jenis=kas_jenis,
             commit=True,
         )
-        return {"id": p.id, "nomor_piutang": p.nomor_piutang, "metode": metode.value}
+        return {
+            "id": p.id,
+            "nomor_piutang": p.nomor_piutang,
+            "metode": metode.value,
+            "kas_jenis": kas_jenis.value,
+        }
 
     def batalkan_piutang(self, piutang_id: int) -> Dict[str, Any]:
         p = self._ambil_piutang_manual_tanpa_kas(piutang_id)

@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Literal
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -7,13 +7,14 @@ from pydantic import BaseModel
 from app.api.deps import DBSession, ManagerUser
 from app.schemas.tanggal import TanggalTransaksi
 from app.services.perbaikan_data_service import PerbaikanDataService
-from app.utils.constants import PaymentMethod
+from app.utils.constants import KasBankJenis, PaymentMethod
 
 router = APIRouter(prefix="/perbaikan-data", tags=["Perbaikan Data"])
 
 
 class CatatKasPiutangRequest(BaseModel):
     metode: Literal[PaymentMethod.TUNAI, PaymentMethod.TRANSFER]
+    kas_jenis: Optional[KasBankJenis] = None
 
 
 class UbahTanggalRequest(BaseModel):
@@ -29,7 +30,7 @@ def list_piutang_tanpa_kas(db: DBSession, current_user: ManagerUser):
 
 @router.post("/piutang/{piutang_id}/catat-kas")
 def catat_kas_piutang(piutang_id: int, data: CatatKasPiutangRequest, db: DBSession, current_user: ManagerUser):
-    return PerbaikanDataService(db).catat_kas_piutang(piutang_id, data.metode, current_user.id)
+    return PerbaikanDataService(db).catat_kas_piutang(piutang_id, data.metode, data.kas_jenis, current_user.id)
 
 
 @router.post("/piutang/{piutang_id}/batalkan")

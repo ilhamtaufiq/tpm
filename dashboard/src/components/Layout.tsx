@@ -16,6 +16,7 @@ import {
   Truck,
   Users,
   Wallet,
+  Wrench,
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -41,6 +42,7 @@ const NAV: NavItem[] = [
   { to: '/mobil', label: 'Mobil', icon: Car, group: 'Operasional' },
   { to: '/angkut', label: 'Angkut', icon: Truck, group: 'Operasional' },
   { to: '/sdm', label: 'SDM', icon: Users, group: 'Operasional' },
+  { to: '/perbaikan', label: 'Perbaikan Data', icon: Wrench, group: 'Sistem' },
   { to: '/monitor', label: 'System Monitor', icon: Activity, group: 'Sistem' },
   { to: '/pengaturan', label: 'Pengaturan', icon: SettingsIcon, group: 'Sistem' },
 ];

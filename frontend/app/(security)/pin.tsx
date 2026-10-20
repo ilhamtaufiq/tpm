@@ -31,7 +31,7 @@ export default function PinScreen() {
     const SAFE_REDIRECTS = [
         '/', '/(tabs)/home', '/(tabs)/history', '/(tabs)/finance', '/(tabs)/profile',
         '/bengkel', '/mobil', '/jasa-angkut', '/finance', '/laporan', '/master-data',
-        '/sdm', '/settings', '/monitor',
+        '/sdm', '/settings',
     ];
     const safeRedirect = normalizedRedirect && (
         SAFE_REDIRECTS.includes(normalizedRedirect) ||
