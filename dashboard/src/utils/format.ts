@@ -14,7 +14,9 @@ export const formatCurrencyDisplay = (amount: unknown): string => {
 
 export const formatDate = (dateString: string): string => {
   if (!dateString) return '-';
-  const date = new Date(dateString);
+  // Date-only dari server dibaca sebagai tanggal kalender lokal; new Date() akan anggap UTC dan geser sehari di zona barat.
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString);
+  const date = dateOnly ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3])) : new Date(dateString);
   if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 };

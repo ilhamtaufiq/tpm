@@ -304,6 +304,37 @@ export const dataImportService = {
   commit: (file: File) => postMultipart<ImportResult>('/data-import/commit', file),
 };
 
+export interface PiutangTanpaKas {
+  id: number;
+  nomor_piutang: string;
+  tanggal: string;
+  nama_debitur: string;
+  nominal_piutang: number;
+  catatan: string | null;
+}
+
+export interface TanggalMundur {
+  nomor_referensi: string;
+  tanggal_lama: string;
+  tanggal_seharusnya: string;
+  jumlah_baris: number;
+  total: number;
+  keterangan: string | null;
+  induk: 'PIUTANG' | 'HUTANG' | 'TRANSAKSI_BENGKEL' | null;
+}
+
+export const perbaikanService = {
+  piutangTanpaKas: () => get<PiutangTanpaKas[]>('/perbaikan-data/piutang-tanpa-kas'),
+  catatKasPiutang: (id: number, metode: 'TUNAI' | 'TRANSFER') =>
+    client.post(`/perbaikan-data/piutang/${id}/catat-kas`, { metode }).then((r) => r.data),
+  batalkanPiutang: (id: number) =>
+    client.post(`/perbaikan-data/piutang/${id}/batalkan`).then((r) => r.data),
+  tanggalMundur: (selisihHari = 1) =>
+    get<TanggalMundur[]>('/perbaikan-data/tanggal-mundur', { selisih_hari: selisihHari }),
+  ubahTanggal: (payload: { nomor_referensi: string; tanggal_lama: string; tanggal_baru: string }) =>
+    client.post('/perbaikan-data/tanggal', payload).then((r) => r.data),
+};
+
 export const systemService = {
   resetDatabase: () =>
     client.post<{
