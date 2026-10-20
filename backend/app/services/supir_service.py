@@ -1,4 +1,5 @@
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 
@@ -31,7 +32,7 @@ class SupirService:
 
     def _generate_kode(self) -> str:
         """Generate unique driver code."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = "SPR"  # Supir
         date_str = today.strftime("%y%m")
 

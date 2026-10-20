@@ -1,4 +1,5 @@
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 
@@ -36,7 +37,7 @@ class HutangService:
 
     def _generate_nomor_hutang(self) -> str:
         """Generate unique payable number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["hutang"]
         date_str = today.strftime("%y%m%d")
 

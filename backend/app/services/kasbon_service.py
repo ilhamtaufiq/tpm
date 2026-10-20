@@ -1,4 +1,6 @@
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 
@@ -30,7 +32,7 @@ class KasbonService:
 
     def _generate_nomor_kasbon(self) -> str:
         """Generate unique kasbon number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["kasbon"]
         date_str = today.strftime("%y%m%d")
 
@@ -51,7 +53,7 @@ class KasbonService:
     
     def _generate_nomor_piutang(self) -> str:
         """Generate unique piutang number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["piutang"]
         date_str = today.strftime("%y%m%d")
 
@@ -320,7 +322,7 @@ class KasbonService:
                 detail=f"Total pembayaran ({total_payment}) tidak sesuai dengan nominal kasbon ({kasbon.nominal})",
             )
 
-        today = date.today()
+        today = get_jakarta_date()
         kasbon.status = PaymentStatus.LUNAS
         kasbon.tanggal_lunas = today
         if notes:
@@ -382,7 +384,7 @@ class KasbonService:
             )
 
         kasbon.status = PaymentStatus.LUNAS
-        kasbon.tanggal_lunas = tanggal_lunas or date.today()
+        kasbon.tanggal_lunas = tanggal_lunas or get_jakarta_date()
 
         # Update related piutang
         piutang = (
@@ -582,7 +584,7 @@ class KasbonService:
         )
 
         remaining_amount = amount
-        today = date.today()
+        today = get_jakarta_date()
 
         for kasbon in kasbons:
             if remaining_amount <= 0:

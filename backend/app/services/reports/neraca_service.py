@@ -1,4 +1,5 @@
 from datetime import date
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Dict, Any, Optional
 from sqlalchemy import func, or_, and_, case
@@ -1068,7 +1069,7 @@ class NeracaService(BaseReportService):
         created = 0
         try:
             kasbon_entries = self.db.query(PiutangUsaha).filter(
-                PiutangUsaha.tanggal <= date.today(),
+                PiutangUsaha.tanggal <= get_jakarta_date(),
                 PiutangUsaha.status != PiutangStatus.BATAL,
                 PiutangUsaha.is_internal != True,
             ).all()

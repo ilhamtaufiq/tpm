@@ -59,6 +59,8 @@ HARI_INI_UJI = date(2026, 10, 30)  # setelah periode tes; slip hanya untuk perio
 @pytest.fixture
 def ctx(monkeypatch):
     monkeypatch.setattr("app.services.slip_gaji_service.get_jakarta_date", lambda: HARI_INI_UJI)
+    # Validator tanggal masa depan memakai helpers; "hari ini" harus sama di semua jalur.
+    monkeypatch.setattr("app.utils.helpers.get_jakarta_date", lambda: HARI_INI_UJI)
     db = SessionLocal()
     _bersihkan(db)
     kar = Karyawan(
@@ -102,8 +104,8 @@ def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     _absen(db, kar, SENIN, AttendanceStatus.HADIR)
     _absen(db, kar, SELASA, AttendanceStatus.HADIR)
     _absen(db, kar, RABU, AttendanceStatus.SETENGAH_HARI)
-    # Dibaca per hari ini: tanggal bayar slip = date.today(), jadi tidak boleh terpotong ke SABTU.
-    hutang_sebelum = hutang_gaji_asof(db, date.today())
+    # Dibaca per hari ini (HARI_INI_UJI): tanggal bayar slip ikut hari ini, jadi tidak boleh terpotong ke SABTU.
+    hutang_sebelum = hutang_gaji_asof(db, HARI_INI_UJI)
 
     svc = SlipGajiService(db)
     slip = svc.create(SlipGajiCreate(karyawan_id=kar.id, periode_minggu=42, periode_tahun=2026))
@@ -113,13 +115,13 @@ def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     # Kas harus cukup untuk pencairan (guard saldo KELUAR).
     jenis = _resolve_kas_jenis(None, PaymentMethod.TUNAI, KasBankSource.GAJI)
     create_kas_entry(
-        db=db, tanggal=date.today(), tipe=KasBankType.MASUK, nominal=Decimal("1000000"),
+        db=db, tanggal=HARI_INI_UJI, tipe=KasBankType.MASUK, nominal=Decimal("1000000"),
         sumber=KasBankSource.MODAL, metode_bayar=PaymentMethod.TUNAI, referensi_id=None,
         nomor_referensi=None, keterangan=SEED_KET, kas_jenis=jenis, commit=True,
     )
     svc.process_payment(slip.id, SlipGajiUpdate(metode_bayar=PaymentMethod.TUNAI), user_id=None)
 
-    assert hutang_gaji_asof(db, date.today()) == hutang_sebelum - Decimal("250000")
+    assert hutang_gaji_asof(db, HARI_INI_UJI) == hutang_sebelum - Decimal("250000")
     # Beban gaji periode slip sudah diakui di absensi: tidak dihitung lagi saat cair.
     ringkasan = svc.get_summary_by_date_range(SENIN, SABTU)
     assert ringkasan["total_gaji_pokok"] == 0.0

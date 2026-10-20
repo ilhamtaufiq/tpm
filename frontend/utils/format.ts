@@ -116,9 +116,17 @@ export const formatDateTime = (dateString: string): string => {
     }
 };
 
+const NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
 export const formatDate = (dateString: string): string => {
     if (!dateString) return '-';
     try {
+        // Tanggal saja (YYYY-MM-DD) diformat dari komponennya, supaya zona perangkat tidak menggeser harinya.
+        const tanggalSaja = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString);
+        if (tanggalSaja) {
+            const [, y, m, d] = tanggalSaja;
+            return `${d} ${NAMA_BULAN[Number(m) - 1]} ${y}`;
+        }
         const date = new Date(dateString);
         if (isNaN(date.getTime())) return '-';
         return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -127,7 +135,13 @@ export const formatDate = (dateString: string): string => {
     }
 };
 
-export const getTodayString = (d: Date = new Date()): string => {
+// Tanggal "hari ini" mengikuti WIB (UTC+7) seperti server, bukan zona perangkat.
+// Dengan `d` eksplisit, komponen tanggal lokal dipakai apa adanya.
+export const getTodayString = (d?: Date): string => {
+    if (!d) {
+        const wib = new Date(Date.now() + 7 * 60 * 60 * 1000);
+        return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, '0')}-${String(wib.getUTCDate()).padStart(2, '0')}`;
+    }
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');

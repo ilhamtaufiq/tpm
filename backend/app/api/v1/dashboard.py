@@ -1,4 +1,5 @@
 from datetime import date
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Optional
 
@@ -103,7 +104,7 @@ def get_dashboard_summary(
     """Get comprehensive dashboard summary."""
     # Default to current month if no dates provided
     if not tanggal_dari and not tanggal_sampai:
-        today = date.today()
+        today = get_jakarta_date()
         tanggal_dari = date(today.year, today.month, 1)
         tanggal_sampai = today
     # ── Cache check (30-second TTL) ───────────────────────────────────

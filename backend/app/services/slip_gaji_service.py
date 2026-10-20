@@ -45,7 +45,7 @@ def get_week_dates(tahun: int, minggu: int) -> tuple[date, date]:
 def get_current_week(tanggal: date = None) -> tuple[int, int]:
     """Get week number and year for a date."""
     if tanggal is None:
-        tanggal = date.today()
+        tanggal = get_jakarta_date()
     iso_cal = tanggal.isocalendar()
     return iso_cal[1], iso_cal[0]  # week, year
 
@@ -724,7 +724,7 @@ class SlipGajiService:
         else:
             slip.metode_bayar = data.metode_bayar
             
-        slip.tanggal_bayar = date.today()
+        slip.tanggal_bayar = get_jakarta_date()
         slip.status = PaymentStatus.LUNAS
         slip.catatan = data.catatan
 
@@ -746,7 +746,7 @@ class SlipGajiService:
                 p_metode = p.get("metode")
                 create_kas_entry(
                     db=self.db,
-                    tanggal=date.today(),
+                    tanggal=get_jakarta_date(),
                     tipe=KasBankType.KELUAR,
                     nominal=p_nominal,
                     sumber=KasBankSource.GAJI,
@@ -759,7 +759,7 @@ class SlipGajiService:
         else:
             create_kas_entry(
                 db=self.db,
-                tanggal=date.today(),
+                tanggal=get_jakarta_date(),
                 tipe=KasBankType.KELUAR,
                 nominal=slip.gaji_bersih,
                 sumber=KasBankSource.GAJI,
@@ -804,7 +804,7 @@ class SlipGajiService:
         karyawan_nama = slip.karyawan.nama if slip.karyawan else "Unknown"
         create_kas_entry(
             db=self.db,
-            tanggal=date.today(),
+            tanggal=get_jakarta_date(),
             tipe=KasBankType.MASUK,
             nominal=slip.gaji_bersih,
             sumber=KasBankSource.GAJI,

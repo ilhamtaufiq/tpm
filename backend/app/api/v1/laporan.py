@@ -1,4 +1,5 @@
 from datetime import date
+from app.utils.helpers import get_jakarta_date
 from typing import Optional
 from fastapi import APIRouter
 from app.api.deps import DBSession, ManagerUser
@@ -18,7 +19,7 @@ def get_laba_rugi(
 ):
     """Laporan Laba Rugi (Profit and Loss Statement)"""
     if not tanggal_dari and not tanggal_sampai:
-        today = date.today()
+        today = get_jakarta_date()
         tanggal_dari = date(today.year, today.month, 1)
         tanggal_sampai = today
     
@@ -34,7 +35,7 @@ def get_perubahan_modal(
 ):
     """Laporan Perubahan Modal (Capital Change Report)"""
     if not tanggal_dari and not tanggal_sampai:
-        today = date.today()
+        today = get_jakarta_date()
         tanggal_dari = date(today.year, today.month, 1)
         tanggal_sampai = today
     
@@ -49,7 +50,7 @@ def get_neraca(
 ):
     """Laporan Neraca (Balance Sheet)"""
     if not as_of_date:
-        as_of_date = date.today()
+        as_of_date = get_jakarta_date()
     
     service = NeracaService(db)
     return service.get_report(as_of_date)
@@ -76,7 +77,7 @@ def validate_reports(
     Checks consistency of Laba Bersih, Kas, and Hutang across reports.
     """
     if not tanggal_dari and not tanggal_sampai:
-        today = date.today()
+        today = get_jakarta_date()
         tanggal_dari = date(today.year, today.month, 1)
         tanggal_sampai = today
     

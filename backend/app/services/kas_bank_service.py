@@ -1,4 +1,6 @@
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 from calendar import monthrange
@@ -27,7 +29,7 @@ class KasBankService:
 
     def _generate_nomor_transaksi(self) -> str:
         """Generate unique transaction number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["kas_bank"]
         date_str = today.strftime("%y%m%d")
 
@@ -338,7 +340,7 @@ class KasBankService:
         balance = self._get_current_balance(jenis, as_of)
 
         # Get month totals based on as_of or today
-        target_date = as_of or date.today()
+        target_date = as_of or get_jakarta_date()
         month_start = date(target_date.year, target_date.month, 1)
 
         month_query = self.db.query(KasBank).filter(

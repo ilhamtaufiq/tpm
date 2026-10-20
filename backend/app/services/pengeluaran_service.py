@@ -1,4 +1,6 @@
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 
@@ -40,7 +42,7 @@ class PengeluaranService:
 
     def _generate_nomor_transaksi(self) -> str:
         """Generate unique expense transaction number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["pengeluaran"]
         date_str = today.strftime("%y%m%d")
 
@@ -287,7 +289,7 @@ class PengeluaranService:
         """Get expense summary statistics."""
         # Default to current month if no dates provided
         if not tanggal_dari and not tanggal_sampai:
-            today = date.today()
+            today = get_jakarta_date()
             tanggal_dari = date(today.year, today.month, 1)
             tanggal_sampai = today
 

@@ -1,5 +1,6 @@
 """Penarikan dana investor saat mobil belum terjual (pengembalian modal saja)."""
 from datetime import date
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -179,7 +180,7 @@ class InvestorWithdrawalService:
                 detail=f"Total rincian pembayaran ({total_input}) tidak sesuai dengan total penarikan ({total_nominal})",
             )
 
-        tanggal_penarikan = tanggal or date.today()
+        tanggal_penarikan = tanggal or get_jakarta_date()
         nama = mobil.nama_investor or "-"
         dibuat: List[InvestorWithdrawal] = []
 
@@ -286,7 +287,7 @@ class InvestorWithdrawalService:
         if entry:
             create_kas_entry(
                 db=self.db,
-                tanggal=date.today(),
+                tanggal=get_jakarta_date(),
                 tipe=KasBankType.MASUK,
                 nominal=entry.nominal,
                 sumber=entry.sumber,

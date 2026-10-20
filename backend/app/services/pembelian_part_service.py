@@ -1,4 +1,6 @@
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 import secrets
 from typing import Optional, Dict, Any, List
@@ -37,7 +39,7 @@ class PembelianPartService:
 
     def _generate_nomor_transaksi(self) -> str:
         """Generate unique purchase transaction number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["pembelian"]
         date_str = today.strftime("%y%m%d")
 
@@ -58,7 +60,7 @@ class PembelianPartService:
 
     def _generate_nomor_hutang(self) -> str:
         """Generate unique hutang transaction number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["hutang"]
         date_str = today.strftime("%y%m%d")
 
@@ -502,7 +504,7 @@ class PembelianPartService:
         # Update purchase status
         pembelian.status_bayar = PaymentStatus.LUNAS
         pembelian.metode_bayar = metode_bayar
-        pembelian.tanggal_bayar = tanggal_bayar or date.today()
+        pembelian.tanggal_bayar = tanggal_bayar or get_jakarta_date()
 
         # Check if there's a linked Hutang record
         hutang = (

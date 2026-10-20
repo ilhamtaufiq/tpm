@@ -1,4 +1,6 @@
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 import secrets
 from typing import Optional, Dict, Any, List
@@ -46,7 +48,7 @@ class PenjualanMobilService:
 
     def _generate_nomor_transaksi(self) -> str:
         """Generate unique transaction number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["mobil"]
         date_str = today.strftime("%y%m%d")
 
@@ -67,7 +69,7 @@ class PenjualanMobilService:
 
     def _generate_nomor_piutang(self) -> str:
         """Generate unique receivable number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["piutang"]
         date_str = today.strftime("%y%m%d")
 
@@ -88,7 +90,7 @@ class PenjualanMobilService:
 
     def _generate_nomor_transaksi_bengkel(self) -> str:
         """Generate unique workshop transaction number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["bengkel"]
         date_str = today.strftime("%y%m%d")
 
@@ -547,7 +549,7 @@ class PenjualanMobilService:
                 continue
             self._settle_unit_financial_obligations(
                 mobil,
-                mobil.tanggal_terjual or date.today(),
+                mobil.tanggal_terjual or get_jakarta_date(),
                 "AUTO-RECONCILE",
                 PaymentMethod.INTERNAL,
                 [],
@@ -816,7 +818,7 @@ class PenjualanMobilService:
             if transaksi.status_bayar == PaymentStatus.LUNAS:
                 piutang.status = PiutangStatus.LUNAS
                 piutang.sisa_piutang = Decimal("0")
-                piutang.tanggal_lunas = date.today()
+                piutang.tanggal_lunas = get_jakarta_date()
             else:
                 piutang.status = PiutangStatus.SEBAGIAN
             # Invarian: Σ PembayaranPiutang == total_dibayar. Kas ditulis di bawah;
@@ -825,7 +827,7 @@ class PenjualanMobilService:
                 if nominal > 0:
                     self.db.add(PembayaranPiutang(
                         piutang_id=piutang.id,
-                        tanggal=date.today(),
+                        tanggal=get_jakarta_date(),
                         nominal=nominal,
                         metode_bayar=metode,
                         catatan=f"Pembayaran cicilan {transaksi.nomor_transaksi}",
@@ -842,7 +844,7 @@ class PenjualanMobilService:
                 # Ensure internal obligations are settled if they weren't already
                 self._settle_unit_financial_obligations(
                     mobil, 
-                    date.today(), 
+                    get_jakarta_date(), 
                     transaksi.nomor_transaksi, 
                     transaksi.metode_bayar, 
                     [], 
@@ -851,7 +853,7 @@ class PenjualanMobilService:
                 
                 if mobil.status == CarStatus.BOOKING:
                     mobil.status = CarStatus.TERJUAL
-                    mobil.tanggal_terjual = date.today()
+                    mobil.tanggal_terjual = get_jakarta_date()
 
         self.db.flush()
 
@@ -860,7 +862,7 @@ class PenjualanMobilService:
             if nominal > 0:
                 create_kas_entry(
                     db=self.db,
-                    tanggal=date.today(),
+                    tanggal=get_jakarta_date(),
                     tipe=KasBankType.MASUK,
                     nominal=nominal,
                     sumber=KasBankSource.JUAL_BELI_MOBIL,
@@ -881,7 +883,7 @@ class PenjualanMobilService:
 
     def _generate_nomor_hutang(self) -> str:
         """Generate unique payable number for refund DP liabilities."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["hutang"]
         date_str = today.strftime("%y%m%d")
 
@@ -931,7 +933,7 @@ class PenjualanMobilService:
         for metode, kas_jenis, nominal in entries:
             create_kas_entry(
                 db=self.db,
-                tanggal=date.today(),
+                tanggal=get_jakarta_date(),
                 tipe=KasBankType.KELUAR,
                 nominal=nominal,
                 sumber=KasBankSource.JUAL_BELI_MOBIL,
@@ -1090,7 +1092,7 @@ class PenjualanMobilService:
         if refund > 0 and refund_mode == "HUTANG":
             refund_hutang = HutangUsaha(
                 nomor_hutang=self._generate_nomor_hutang(),
-                tanggal=date.today(),
+                tanggal=get_jakarta_date(),
                 sumber=HutangSource.UANG_MUKA_PENJUALAN,
                 unit=KasBankSource.JUAL_BELI_MOBIL,
                 referensi_id=transaksi.id,
@@ -1151,7 +1153,7 @@ class PenjualanMobilService:
                 jenis = refund_kas["kas_jenis"]
             create_kas_entry(
                 db=self.db,
-                tanggal=date.today(),
+                tanggal=get_jakarta_date(),
                 tipe=reverse_type,
                 nominal=entry.nominal,
                 sumber=entry.sumber,
@@ -1220,7 +1222,7 @@ class PenjualanMobilService:
         for entry in payout_entries:
             create_kas_entry(
                 db=self.db,
-                tanggal=date.today(),
+                tanggal=get_jakarta_date(),
                 tipe=KasBankType.MASUK,
                 nominal=entry.nominal,
                 sumber=entry.sumber,
@@ -1339,7 +1341,7 @@ class PenjualanMobilService:
                 ensure_hutang_sumber_enum(self.db)
                 self.db.add(HutangUsaha(
                     nomor_hutang=self._generate_nomor_hutang(),
-                    tanggal=date.today(),
+                    tanggal=get_jakarta_date(),
                     sumber=HutangSource.UANG_MUKA_PENJUALAN,
                     unit=KasBankSource.JUAL_BELI_MOBIL,
                     referensi_id=transaksi.id,
@@ -1861,7 +1863,7 @@ class PenjualanMobilService:
                 detail=f"Total rincian pembayaran ({total_payout_input}) tidak sesuai dengan total pencairan ({total_nominal})",
             )
 
-        tanggal_pencairan = tanggal or date.today()
+        tanggal_pencairan = tanggal or get_jakarta_date()
 
         # Update transaction status
         new_total_disbursed = current_disbursed + total_nominal
