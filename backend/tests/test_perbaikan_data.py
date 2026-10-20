@@ -4,7 +4,7 @@ Piutang manual (LAINNYA, tanpa referensi) yang tidak punya kas bisa dicatatkan k
 keluarnya atau dibatalkan. Baris kas yang tanggalnya lebih awal dari tanggal input
 bisa dipindahkan ke tanggal yang benar, dan saldo dihitung ulang.
 """
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -213,3 +213,86 @@ def test_kesehatan_menandai_piutang_lama_tanpa_kas(db):
     pesan = [r["pesan"] for r in hasil["rekomendasi"] if r["tingkat"] == "peringatan"]
     assert any(NOMOR_PIUTANG in x and "sudah 60 hari tanpa kas" in x for x in pesan)
     assert any(c["tingkat"] == "peringatan" for c in hasil["checks"])
+
+
+def test_ubah_tanggal_ikut_memindahkan_induk_piutang(db):
+    from app.services.kas_bank_integration import create_kas_entry
+
+    hari_ini = get_jakarta_date()
+    kemarin = hari_ini - timedelta(days=1)
+    p = _piutang_manual(db, tanggal=kemarin)
+    kas = create_kas_entry(
+        db=db,
+        tanggal=kemarin,
+        tipe=KasBankType.KELUAR,
+        nominal=Decimal("1000000"),
+        sumber=KasBankSource.PIUTANG,
+        metode_bayar=PaymentMethod.TUNAI,
+        referensi_id=p.id,
+        nomor_referensi=NOMOR_PIUTANG,
+        keterangan="Uji induk piutang",
+        kas_jenis=KasBankJenis.KAS_UTAMA,
+        commit=True,
+    )
+    kas.created_at = datetime(hari_ini.year, hari_ini.month, hari_ini.day, 9, 0, 0)
+    db.commit()
+
+    hasil = PerbaikanDataService(db).ubah_tanggal(NOMOR_PIUTANG, kemarin, hari_ini, None)
+    db.refresh(p)
+    db.refresh(kas)
+    assert hasil["dokumen_induk"] == 1
+    assert p.tanggal == hari_ini
+    assert kas.tanggal == hari_ini
+
+
+def test_ubah_tanggal_tanpa_kas_pada_tanggal_itu_dicatat_gagal(db):
+    svc = PerbaikanDataService(db)
+    with pytest.raises(HTTPException) as salah:
+        svc.ubah_tanggal(NOMOR_KAS_MUNDUR, date(2000, 1, 1), get_jakarta_date(), None)
+    assert salah.value.status_code == 404
+    assert "Muat ulang halaman" in salah.value.detail
+    gagal = [x for x in svc.riwayat() if x["jenis"] == "GAGAL_TANGGAL_UBAH"]
+    assert gagal and gagal[0]["nomor_referensi"] == NOMOR_KAS_MUNDUR
+
+
+def test_ubah_tanggal_tercatat_di_riwayat_dengan_nilai_sebelum_dan_sesudah(db):
+    from app.services.kas_bank_integration import create_kas_entry
+
+    hari_ini = get_jakarta_date()
+    kemarin = hari_ini - timedelta(days=1)
+    kas = create_kas_entry(
+        db=db,
+        tanggal=kemarin,
+        tipe=KasBankType.MASUK,
+        nominal=Decimal("50000"),
+        sumber=KasBankSource.BENGKEL,
+        metode_bayar=PaymentMethod.TUNAI,
+        referensi_id=None,
+        nomor_referensi=NOMOR_KAS_MUNDUR,
+        keterangan="Uji riwayat tanggal",
+        kas_jenis=KasBankJenis.KAS_UTAMA,
+        commit=True,
+    )
+    kas.created_at = datetime(hari_ini.year, hari_ini.month, hari_ini.day, 9, 0, 0)
+    db.commit()
+
+    svc = PerbaikanDataService(db)
+    svc.ubah_tanggal(NOMOR_KAS_MUNDUR, kemarin, hari_ini, None)
+    catatan = [x for x in svc.riwayat() if x["jenis"] == "TANGGAL_UBAH" and x["nomor_referensi"] == NOMOR_KAS_MUNDUR]
+    assert catatan
+    assert catatan[0]["sebelum"]["tanggal"] == kemarin.isoformat()
+    assert catatan[0]["sesudah"]["tanggal"] == hari_ini.isoformat()
+
+
+def test_schema_permintaan_ubah_tanggal_menolak_masa_depan():
+    from pydantic import ValidationError
+
+    from app.api.v1.perbaikan_data import UbahTanggalRequest
+
+    hari_ini = get_jakarta_date()
+    with pytest.raises(ValidationError):
+        UbahTanggalRequest(
+            nomor_referensi=NOMOR_KAS_MUNDUR,
+            tanggal_lama=hari_ini,
+            tanggal_baru=hari_ini + timedelta(days=2),
+        )
