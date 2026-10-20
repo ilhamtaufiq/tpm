@@ -145,11 +145,19 @@ export const formatDate = (dateString: string): string => {
     }
 };
 
+// Selisih jam server dan perangkat (ms). Diisi dari /system/server-time.
+let selisihJamServerMs = 0;
+
+export const setJamServer = (epochMsServer: number, rttMs: number) => {
+    // Jam server dianggap tiba di tengah perjalanan permintaan.
+    selisihJamServerMs = epochMsServer + rttMs / 2 - Date.now();
+};
+
 // Tanggal "hari ini" mengikuti WIB (UTC+7) seperti server, bukan zona perangkat.
 // Dengan `d` eksplisit, komponen tanggal lokal dipakai apa adanya.
 export const getTodayString = (d?: Date): string => {
     if (!d) {
-        const wib = new Date(Date.now() + 7 * 60 * 60 * 1000);
+        const wib = new Date(Date.now() + selisihJamServerMs + 7 * 60 * 60 * 1000);
         return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, '0')}-${String(wib.getUTCDate()).padStart(2, '0')}`;
     }
     const year = d.getFullYear();

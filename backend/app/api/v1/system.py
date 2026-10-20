@@ -1,4 +1,6 @@
-"""System maintenance endpoints (Admin only) — reset database & data import gate."""
+"""System endpoints: jam server (publik) dan maintenance (Admin only)."""
+import time
+
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import inspect, text
 
@@ -8,6 +10,7 @@ from app.database.base import Base
 from app.models.user import LoginOtp
 from app.utils.security import hash_password
 from app.utils.constants import HIDDEN_USERNAMES, UserRole
+from app.utils.helpers import get_jakarta_date, get_jakarta_now
 
 router = APIRouter(prefix="/system", tags=["System"])
 
@@ -19,6 +22,17 @@ ADMIN_FULL_NAME = "Administrator TPM"
 
 # Tabel yang tidak di-TRUNCATE
 PRESERVE_TABLES = {"alembic_version"}
+
+
+@router.get("/server-time")
+def server_time():
+    """Jam server untuk menyelaraskan tanggal bisnis (WIB) dengan perangkat yang jamnya meleset."""
+    return {
+        "tanggal": get_jakarta_date().isoformat(),
+        "waktu": get_jakarta_now().isoformat(),
+        "epoch_ms": int(time.time() * 1000),
+        "zona": "Asia/Jakarta",
+    }
 
 
 @router.post("/reset-database")

@@ -48,6 +48,7 @@ import { useRealtimeSync } from '../services/realtime';
 import { usePushNotifications } from '../services/pushNotifications';
 import { ReceiptHtmlCaptureHost } from '../components/print/ReceiptHtmlCaptureHost';
 import { preloadHtml2CanvasScript } from '../utils/html2canvasBundle';
+import { syncJamServer } from '../services/serverTime';
 // Build produksi: console.log/info/debug tetap diserialisasi & dikirim lewat bridge
 // di Hermes Android (119+ panggilan, sebagian di jalur render/request). warn/error dipertahankan.
 if (!__DEV__) {
@@ -126,6 +127,16 @@ const LAG_INTERVAL_MS = 1000;
 const LAG_THRESHOLD_MS = 1000;
 const LAG_LOG_GAP_MS = 10000;
 const LAG_BACKGROUND_GAP_MS = 10000;
+const SYNC_JAM_SERVER_MS = 10 * 60 * 1000;
+
+function useSinkronJamServer() {
+    useEffect(() => {
+        syncJamServer();
+        const timer = setInterval(syncJamServer, SYNC_JAM_SERVER_MS);
+        return () => clearInterval(timer);
+    }, []);
+}
+
 function useJSLagMonitor() {
     useEffect(() => {
         let expectedAt = Date.now() + LAG_INTERVAL_MS;
@@ -189,6 +200,7 @@ function RootLayoutContent() {
     const [isReady, setIsReady] = useState(false);
     // Monitor event loop lag global (log ke server monitoring).
     useJSLagMonitor();
+    useSinkronJamServer();
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
     const hasHydrated = useAuthStore(state => state.hasHydrated);
     // Selector per field: destructure store utuh = root (seluruh Stack) render ulang
