@@ -18,6 +18,7 @@ from app.models.jasa_angkut import ArmadaJasaAngkut, MuatanJasaAngkut, Supir
 from app.models.keuangan import KasBank, PiutangUsaha
 from app.schemas.jasa_angkut import MuatanCreate, MuatanUpdate
 from app.services.kas_bank_integration import create_kas_entry
+from app.services.kas_bank_service import KasBankService
 from app.services.muatan_service import MuatanService
 from app.utils.constants import (
     KasBankJenis,
@@ -123,6 +124,10 @@ def test_update_dan_void_muatan_tidak_menimpa_kas_lain():
             sisa = db.get(MuatanJasaAngkut, muatan_id)
             if sisa is not None and sisa.status_bayar != PaymentStatus.BATAL:
                 MuatanService(db).void_muatan(muatan_id)
+        # Kas "asing" yang dibuat test ini dibersihkan, supaya saldo DB tidak bocor ke test lain.
+        db.query(KasBank).filter(KasBank.nomor_referensi == "PTG-TEST-COLLIDE").delete(synchronize_session=False)
+        db.commit()
+        KasBankService(db).rebuild_balances()
         db.close()
 
 
@@ -187,4 +192,8 @@ def test_edit_muatan_yang_lunas_via_piutang_tidak_mencatat_kas_ganda():
             sisa = db.get(MuatanJasaAngkut, muatan_id)
             if sisa is not None and sisa.status_bayar != PaymentStatus.BATAL:
                 MuatanService(db).void_muatan(muatan_id)
+        # Kas "asing" yang dibuat test ini dibersihkan, supaya saldo DB tidak bocor ke test lain.
+        db.query(KasBank).filter(KasBank.nomor_referensi == "PTG-TEST-COLLIDE").delete(synchronize_session=False)
+        db.commit()
+        KasBankService(db).rebuild_balances()
         db.close()
