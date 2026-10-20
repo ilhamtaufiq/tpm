@@ -19,14 +19,16 @@ from app.schemas.keuangan import AssetCreate, AssetPaymentItem
 from app.services.asset_service import AssetService
 from app.services.reports.modal_service import ModalService
 from app.utils.constants import KasBankJenis, KasBankSource, PaymentMethod
+from app.utils.helpers import get_jakarta_date
 
 TOL = 1.0
 
 
 def _laba_dan_backdate(db):
     ms = ModalService(db)
-    anchor = ms._saldo_awal_date() or date.today()
-    akhir = max(date.today(), anchor)
+    # "Hari ini" pakai WIB, sama dengan layanan aset (invarian 29). date.today() ikut zona mesin.
+    anchor = ms._saldo_awal_date() or get_jakarta_date()
+    akhir = max(get_jakarta_date(), anchor)
     r = ms.get_report(anchor, akhir)
     return (
         r["penambahan"]["penyesuaian_backdate_non_impor"],
@@ -43,7 +45,7 @@ def test_pembelian_aset_kas_hutang_setoran_dan_hapus():
         if KasBank.get_current_balance(db, KasBankJenis.BANK_UTAMA) < Decimal("2000000"):
             pytest.skip("saldo BANK_UTAMA belum cukup (DB tanpa saldo awal)")
         back0, nonkas0, modal0 = _laba_dan_backdate(db)
-        hari = date.today()
+        hari = get_jakarta_date()
 
         kas = svc.create(AssetCreate(
             tanggal_beli=hari, nama="UJI Mesin Las", harga_beli=Decimal("5000000"),
