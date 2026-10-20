@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal, Optional, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from app.schemas.tanggal import TanggalTransaksi, OptionalTanggalTransaksi
 
 from app.utils.constants import (
@@ -59,6 +59,13 @@ class PiutangCreate(BaseModel):
     metode_pembayaran: Optional[PaymentMethod] = None
     payments: Optional[List[PaymentDetail]] = None
     catatan: Optional[str] = None
+
+    @model_validator(mode="after")
+    def wajib_metode_atau_payments(self):
+        # Piutang tanpa kas keluar tidak punya lawan di kas dan masuk Modal di Neraca.
+        if not self.payments and self.metode_pembayaran is None:
+            raise ValueError("Pilih metode pencairan TUNAI atau TRANSFER")
+        return self
 
 
 class PiutangUpdate(BaseModel):

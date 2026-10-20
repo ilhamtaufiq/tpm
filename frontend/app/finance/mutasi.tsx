@@ -498,6 +498,15 @@ export default function MutasiKasScreen() {
         <View className="flex-1 bg-background">
             <Header
                 title="Mutasi Kas"
+                showBackButton
+                onBackButtonPress={() => {
+                    if (router.canGoBack()) {
+                        router.back();
+                        return;
+                    }
+                    const homeRoute = role === 'BENGKEL' ? '/bengkel' : role === 'JASA_ANGKUT' ? '/jasa-angkut' : role === 'MOBIL' ? '/mobil' : '/finance';
+                    router.replace(homeRoute);
+                }}
                 rightElement={
                     <Pressable
                         onPress={onRefresh}
