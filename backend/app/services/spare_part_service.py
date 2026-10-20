@@ -4,6 +4,7 @@ import uuid
 import io
 import openpyxl
 from datetime import datetime
+from app.utils.helpers import get_jakarta_now
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Dict, Any, List
 
@@ -49,7 +50,7 @@ class SparePartService:
                      to avoid duplicate kodes when newly added records aren't yet 
                      visible via DB queries).
         """
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = "SPR"
         date_str = today.strftime("%y%m")
         full_prefix = f"{prefix}{date_str}"  # e.g. "SPR2604" = 7 chars
@@ -933,7 +934,7 @@ class SparePartService:
             self.db.flush()
 
             # Step 2: Pre-generate kodes for items that need one.
-            date_str = datetime.now().strftime("%y%m")
+            date_str = get_jakarta_now().strftime("%y%m")
             kodes_needed = sum(1 for p in parsed_rows if not p.get("kode"))
             pre_generated_kodes = [f"SPR{date_str}{(i + 1):04d}" for i in range(kodes_needed)]
             kode_idx = 0

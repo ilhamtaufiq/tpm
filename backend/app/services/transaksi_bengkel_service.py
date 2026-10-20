@@ -1,4 +1,5 @@
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
 from decimal import Decimal
 import secrets
 from typing import Optional, Dict, Any, List
@@ -187,7 +188,7 @@ class TransaksiBengkelService:
 
     def _generate_nomor_transaksi(self) -> str:
         """Generate unique transaction number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["bengkel"]
         date_str = today.strftime("%y%m%d")
 
@@ -208,7 +209,7 @@ class TransaksiBengkelService:
 
     def _generate_nomor_piutang(self) -> str:
         """Generate unique receivable number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["piutang"]
         date_str = today.strftime("%y%m%d")
 
@@ -229,7 +230,7 @@ class TransaksiBengkelService:
 
     def _generate_nomor_hutang(self) -> str:
         """Generate unique payable number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["hutang"]
         date_str = today.strftime("%y%m%d")
 
@@ -316,7 +317,7 @@ class TransaksiBengkelService:
             piutang.total_dibayar = piutang.nominal_piutang
             piutang.sisa_piutang = Decimal("0")
             if not piutang.tanggal_lunas:
-                piutang.tanggal_lunas = date.today()
+                piutang.tanggal_lunas = get_jakarta_date()
             if suffix and suffix not in (piutang.catatan or ""):
                 piutang.catatan = (piutang.catatan or "") + suffix
 
@@ -1167,7 +1168,7 @@ class TransaksiBengkelService:
             # Update status based on payment completion
             if existing_piutang.sisa_piutang <= 0:
                 existing_piutang.status = PiutangStatus.LUNAS
-                existing_piutang.tanggal_lunas = date.today()
+                existing_piutang.tanggal_lunas = get_jakarta_date()
             elif existing_piutang.total_dibayar > 0:
                 existing_piutang.status = PiutangStatus.SEBAGIAN
             else:
@@ -1744,7 +1745,7 @@ class TransaksiBengkelService:
             piutang.sisa_piutang = max(sisa, Decimal("0"))
             if sisa <= 0:
                 piutang.status = PiutangStatus.LUNAS
-                piutang.tanggal_lunas = date.today()
+                piutang.tanggal_lunas = get_jakarta_date()
             else:
                 piutang.status = PiutangStatus.SEBAGIAN
 
@@ -1774,7 +1775,7 @@ class TransaksiBengkelService:
                     rec_amount = min(p.jumlah, remaining_to_record)
                     create_kas_entry(
                         db=self.db,
-                        tanggal=date.today(),
+                        tanggal=get_jakarta_date(),
                         tipe=KasBankType.MASUK,
                         nominal=rec_amount,
                         sumber=KasBankSource.BENGKEL,
@@ -1790,7 +1791,7 @@ class TransaksiBengkelService:
             else:
                 create_kas_entry(
                     db=self.db,
-                    tanggal=date.today(),
+                    tanggal=get_jakarta_date(),
                     tipe=KasBankType.MASUK,
                     nominal=kas_to_record,
                     sumber=KasBankSource.BENGKEL,
@@ -1807,7 +1808,7 @@ class TransaksiBengkelService:
                 for nominal_rec, metode_rec in recorded:
                     self.db.add(PembayaranPiutang(
                         piutang_id=piutang.id,
-                        tanggal=date.today(),
+                        tanggal=get_jakarta_date(),
                         nominal=nominal_rec,
                         metode_bayar=metode_rec,
                         catatan=f"Pelunasan bengkel {transaksi.nomor_transaksi}",

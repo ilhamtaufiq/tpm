@@ -116,9 +116,27 @@ export const formatDateTime = (dateString: string): string => {
     }
 };
 
+// Tanggal saja (YYYY-MM-DD) dari server dibaca sebagai tanggal kalender lokal, bukan UTC midnight.
+// new Date('2026-10-19') jatuh di 19 Okt 00.00 UTC, yang di perangkat zona barat tampil 18 Okt.
+export const tanggalLokal = (value: string | Date | null | undefined): Date => {
+    if (value instanceof Date) return value;
+    if (!value) return new Date(NaN);
+    const tanggalSaja = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (tanggalSaja) return new Date(Number(tanggalSaja[1]), Number(tanggalSaja[2]) - 1, Number(tanggalSaja[3]));
+    return new Date(value);
+};
+
+const NAMA_BULAN =['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
 export const formatDate = (dateString: string): string => {
     if (!dateString) return '-';
     try {
+        // Tanggal saja (YYYY-MM-DD) diformat dari komponennya, supaya zona perangkat tidak menggeser harinya.
+        const tanggalSaja = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString);
+        if (tanggalSaja) {
+            const [, y, m, d] = tanggalSaja;
+            return `${d} ${NAMA_BULAN[Number(m) - 1]} ${y}`;
+        }
         const date = new Date(dateString);
         if (isNaN(date.getTime())) return '-';
         return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -127,7 +145,24 @@ export const formatDate = (dateString: string): string => {
     }
 };
 
-export const getTodayString = (d: Date = new Date()): string => {
+// Selisih jam server dan perangkat (ms). Diisi dari /system/server-time.
+let selisihJamServerMs = 0;
+
+export const setJamServer = (epochMsServer: number, rttMs: number) => {
+    // Jam server dianggap tiba di tengah perjalanan permintaan.
+    selisihJamServerMs = epochMsServer + rttMs / 2 - Date.now();
+};
+
+// Waktu sekarang menurut jam server (sudah dikoreksi selisihnya).
+export const serverNow = (): Date => new Date(Date.now() + selisihJamServerMs);
+
+// Tanggal "hari ini" mengikuti WIB (UTC+7) seperti server, bukan zona perangkat.
+// Dengan `d` eksplisit, komponen tanggal lokal dipakai apa adanya.
+export const getTodayString = (d?: Date): string => {
+    if (!d) {
+        const wib = new Date(Date.now() + selisihJamServerMs + 7 * 60 * 60 * 1000);
+        return `${wib.getUTCFullYear()}-${String(wib.getUTCMonth() + 1).padStart(2, '0')}-${String(wib.getUTCDate()).padStart(2, '0')}`;
+    }
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');

@@ -1,6 +1,8 @@
 from app.services.kas_bank_integration import create_kas_entry
 from app.utils.constants import KasBankType, KasBankSource, KasBankJenis, TRANSACTION_PREFIXES
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 
@@ -47,7 +49,7 @@ class MuatanService:
 
     def _generate_nomor_transaksi(self) -> str:
         """Generate unique transaction number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["jasa_angkut"]
         date_str = today.strftime("%y%m%d")
 
@@ -67,7 +69,7 @@ class MuatanService:
 
     def _generate_nomor_piutang(self) -> str:
         """Generate unique receivable number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = "AR" # AR-YYMMDD-XXXX
         date_str = today.strftime("%y%m%d")
         
@@ -906,7 +908,7 @@ class MuatanService:
             )
 
         muatan.status_bayar = PaymentStatus.LUNAS
-        muatan.tanggal_bayar = tanggal_bayar or date.today()
+        muatan.tanggal_bayar = tanggal_bayar or get_jakarta_date()
 
         # Update linked Piutang if exists
         piutang = (
@@ -1176,7 +1178,7 @@ class MuatanService:
         reverse_type = KasBankType.KELUAR if entry.tipe == KasBankType.MASUK else KasBankType.MASUK
         create_kas_entry(
             db=self.db,
-            tanggal=date.today(),
+            tanggal=get_jakarta_date(),
             tipe=reverse_type,
             nominal=entry.nominal,
             sumber=entry.sumber,

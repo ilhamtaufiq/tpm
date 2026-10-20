@@ -52,7 +52,7 @@ import { FILE_URL } from '../../utils/api';
 import { useKasBankBalances, useUnitWalletHistory, useCreateTransaction, useTransfer, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 
 import { useCreatePengeluaran } from '../../hooks/useBengkel';
-import { formatCurrency, formatNumber, parseNumber, formatDate, getTodayString } from '../../utils/format';
+import { formatCurrency, formatNumber, parseNumber, formatDate, getTodayString, tanggalLokal } from '../../utils/format';
 import { Platform, Modal, TouchableOpacity, Share } from 'react-native';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
@@ -793,7 +793,7 @@ export default function MobilInventoryScreen() {
                                         </View>
                                         <View className="flex-1">
                                             <Typography weight="bold" className="text-textMain text-sm">{item.keterangan || item.sumber}</Typography>
-                                            <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                            <Typography variant="caption" className="text-textGray mt-0.5">{format(tanggalLokal(item.tanggal), 'dd MMM yyyy')}</Typography>
                                         </View>
                                         <View className="items-end">
                                             <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'
@@ -1453,7 +1453,7 @@ export default function MobilInventoryScreen() {
                                                 </View>
                                                 <View className="flex-1">
                                                     <Typography weight="bold" className="text-textMain text-sm">{item.keterangan || item.sumber}</Typography>
-                                                    <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                                    <Typography variant="caption" className="text-textGray mt-0.5">{format(tanggalLokal(item.tanggal), 'dd MMM yyyy')}</Typography>
                                                 </View>
                                                 <View className="items-end">
                                                     <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -1633,7 +1633,7 @@ export default function MobilInventoryScreen() {
                                                 </View>
                                                 <View className="flex-1">
                                                     <Typography weight="bold" className="text-textMain text-base">{item.keterangan || item.sumber}</Typography>
-                                                    <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                                    <Typography variant="caption" className="text-textGray mt-0.5">{format(tanggalLokal(item.tanggal), 'dd MMM yyyy')}</Typography>
                                                 </View>
                                                 <View className="items-end">
                                                     <Typography weight="bold" className={`text-base ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>

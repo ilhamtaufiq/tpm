@@ -58,7 +58,7 @@ import { id as localeID } from 'date-fns/locale';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
 import { buildBengkelPrintData } from '../../utils/buildPrintReceiptData';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
-import { formatCurrency, formatNumber, formatQty, parseNumber, getTodayString } from '../../utils/format';
+import { formatCurrency, formatNumber, formatQty, parseNumber, getTodayString, tanggalLokal } from '../../utils/format';
 import {
     buildSoldMobilIdSet,
     formatBengkelWorkStatusLabel,
@@ -1556,7 +1556,7 @@ export default function BengkelScreen() {
                                         </View>
                                         <View className="flex-1">
                                             <Typography weight="bold" className="text-textMain text-sm">{item.keterangan || item.sumber}</Typography>
-                                            <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                            <Typography variant="caption" className="text-textGray mt-0.5">{format(tanggalLokal(item.tanggal), 'dd MMM yyyy')}</Typography>
                                         </View>
                                         <View className="items-end">
                                             <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'
@@ -2264,7 +2264,7 @@ export default function BengkelScreen() {
                                         </View>
                                         <View className="flex-1">
                                             <Typography weight="bold" className="text-textMain text-base">{item.keterangan || item.sumber}</Typography>
-                                            <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'EEEE, dd MMMM yyyy', { locale: localeID })}</Typography>
+                                            <Typography variant="caption" className="text-textGray mt-0.5">{format(tanggalLokal(item.tanggal), 'EEEE, dd MMMM yyyy', { locale: localeID })}</Typography>
                                             <View className="flex-row mt-2">
                                                 <Badge label={item.metode_pembayaran || 'TUNAI'} variant="neutral" />
                                                 <View className="w-2" />

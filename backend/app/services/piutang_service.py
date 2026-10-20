@@ -1,4 +1,6 @@
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 
@@ -38,7 +40,7 @@ class PiutangService:
 
     def _generate_nomor_piutang(self) -> str:
         """Generate unique receivable number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["piutang"]
         date_str = today.strftime("%y%m%d")
 
@@ -121,7 +123,7 @@ class PiutangService:
                 karyawan_id = piutang.referensi_id
                 
                 # Generate unique kasbon number
-                today_kb = datetime.now()
+                today_kb = get_jakarta_now()
                 prefix_kb = TRANSACTION_PREFIXES["kasbon"]
                 date_str_kb = today_kb.strftime("%y%m%d")
                 
@@ -344,7 +346,7 @@ class PiutangService:
         # Overdue filter
         if overdue_only:
             query = query.filter(
-                PiutangUsaha.tanggal_jatuh_tempo < date.today(),
+                PiutangUsaha.tanggal_jatuh_tempo < get_jakarta_date(),
                 PiutangUsaha.status != PiutangStatus.LUNAS,
             )
 
@@ -676,7 +678,7 @@ class PiutangService:
             PiutangUsaha.total_dibayar <= 0,
         ).count()
         overdue_count = query.filter(
-            PiutangUsaha.tanggal_jatuh_tempo < date.today(),
+            PiutangUsaha.tanggal_jatuh_tempo < get_jakarta_date(),
             PiutangUsaha.status != PiutangStatus.LUNAS,
         ).count()
         if tanggal_sampai:
@@ -736,7 +738,7 @@ class PiutangService:
         return (
             self.db.query(PiutangUsaha)
             .filter(
-                PiutangUsaha.tanggal_jatuh_tempo < date.today(),
+                PiutangUsaha.tanggal_jatuh_tempo < get_jakarta_date(),
                 PiutangUsaha.status != PiutangStatus.LUNAS,
             )
             .order_by(PiutangUsaha.tanggal_jatuh_tempo.asc())

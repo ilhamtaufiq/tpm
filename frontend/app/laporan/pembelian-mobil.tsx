@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { mobilService } from '../../services/mobil';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, tanggalLokal } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -203,7 +203,7 @@ export default function PembelianMobilReportScreen() {
                     ${mobils.map(item => `
                         <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 8px;">
-                                ${format(new Date(item.tanggal_masuk), 'dd/MM/yy', { locale: localeID })}
+                                ${format(tanggalLokal(item.tanggal_masuk), 'dd/MM/yy', { locale: localeID })}
                             </td>
                             <td style="padding: 8px;">
                                 <span style="font-weight: bold;">${escapeHtml(item.merek)} ${escapeHtml(item.model)}</span><br/>
@@ -322,7 +322,7 @@ export default function PembelianMobilReportScreen() {
                                     <View className="flex-row justify-between items-end mt-2 pt-2 border-t border-transparent">
                                         <View>
                                             <Typography variant="caption" className="text-textGray">
-                                                Tgl Masuk: {format(new Date(item.tanggal_masuk), 'dd MMM yyyy', { locale: localeID })}
+                                                Tgl Masuk: {format(tanggalLokal(item.tanggal_masuk), 'dd MMM yyyy', { locale: localeID })}
                                             </Typography>
                                             <Typography variant="caption" className="text-textGray">
                                                 By: {item.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${item.nama_investor}`}
@@ -393,7 +393,7 @@ export default function PembelianMobilReportScreen() {
                                 <View className="flex-row justify-between mb-2">
                                     <View>
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Tanggal Masuk</Typography>
-                                        <Typography weight="bold">{format(new Date(selectedMobil.tanggal_masuk), 'dd MMM yyyy', { locale: localeID })}</Typography>
+                                        <Typography weight="bold">{format(tanggalLokal(selectedMobil.tanggal_masuk), 'dd MMM yyyy', { locale: localeID })}</Typography>
                                     </View>
                                     <View className="items-end">
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Kepemilikan</Typography>
@@ -420,7 +420,7 @@ export default function PembelianMobilReportScreen() {
                                                     {item.keterangan}
                                                 </Typography>
                                                 <Typography variant="caption" className="text-textGray">
-                                                    {format(new Date(item.tanggal), 'dd MMM yyyy', { locale: localeID })}
+                                                    {format(tanggalLokal(item.tanggal), 'dd MMM yyyy', { locale: localeID })}
                                                 </Typography>
                                             </View>
                                             <Typography weight="bold" className="text-text text-sm">

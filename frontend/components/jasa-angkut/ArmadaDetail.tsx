@@ -11,7 +11,7 @@ import { BoundedSheetPanel, BoundedSheetScrollView } from '../ui/BottomSheetCont
 import { useArmadaDetail } from '../../hooks/useJasaAngkut';
 import { useVoidTransaksiBengkel } from '../../hooks/useBengkel';
 import { useUIStore } from '../../store/useUIStore';
-import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString } from '../../utils/format';
+import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString, tanggalLokal } from '../../utils/format';
 import { getErrorMessage } from '../../utils/error';
 import { isBengkelTransactionLocked, isBengkelTransactionVoided } from '../../utils/bengkelTransaction';
 import { AlertDialog } from '../ui/AlertDialog';
@@ -546,7 +546,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                         );
 
                                         const allExpenses = [...workshopItems, ...generalItems, ...tripItems].sort((a, b) =>
-                                            new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
+                                            tanggalLokal(b.tanggal).getTime() - tanggalLokal(a.tanggal).getTime()
                                         );
 
                                         if (allExpenses.length === 0) {

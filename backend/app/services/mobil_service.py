@@ -4,6 +4,8 @@ import secrets
 import shutil
 import uuid
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 
@@ -44,7 +46,7 @@ class MobilService:
 
     def _generate_kode(self) -> str:
         """Generate unique car code."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["mobil"]
         date_str = today.strftime("%y%m")
 
@@ -65,7 +67,7 @@ class MobilService:
 
     def _generate_nomor_hutang(self) -> str:
         """Generate unique hutang transaction number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["hutang"]
         date_str = today.strftime("%y%m%d")
 
@@ -87,7 +89,7 @@ class MobilService:
 
     def _generate_pengeluaran_nomor(self) -> str:
         """Generate unique expense transaction number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["pengeluaran"]
         date_str = today.strftime("%y%m%d")
 
@@ -564,7 +566,7 @@ class MobilService:
         if hutang.sisa_hutang <= 0:
             hutang.sisa_hutang = Decimal("0")
             hutang.status = HutangStatus.LUNAS
-            hutang.tanggal_lunas = hutang.tanggal_lunas or date.today()
+            hutang.tanggal_lunas = hutang.tanggal_lunas or get_jakarta_date()
         elif hutang.total_dibayar > 0:
             hutang.status = HutangStatus.SEBAGIAN
         else:

@@ -13,7 +13,8 @@ from app.database import SessionLocal
 from app.models.keuangan import HutangUsaha, KasBank, PembayaranHutang
 from app.schemas.keuangan import HutangCreate, PembayaranHutangCreate, PembayaranHutangSplit
 from app.services.hutang_service import HutangService
-from app.utils.constants import HutangSource, PaymentMethod
+from app.services.kas_bank_integration import create_kas_entry
+from app.utils.constants import HutangSource, KasBankJenis, KasBankSource, KasBankType, PaymentMethod
 
 
 @pytest.mark.parametrize("metode", [PaymentMethod.KREDIT, PaymentMethod.SPLIT, PaymentMethod.INTERNAL])
@@ -35,6 +36,21 @@ def test_keterangan_kas_pembayaran_hutang_memuat_metode():
     kas_ids = []
     pembayaran_ids = []
     try:
+        # Saldo awal supaya pembayaran tidak ditolak karena saldo tidak mencukupi.
+        for metode, jenis in [(PaymentMethod.TUNAI, KasBankJenis.KAS_UTAMA), (PaymentMethod.TRANSFER, KasBankJenis.BANK_BCA)]:
+            seed = create_kas_entry(
+                db=db,
+                tanggal=date.today(),
+                tipe=KasBankType.MASUK,
+                nominal=Decimal("100000"),
+                sumber=KasBankSource.HUTANG,
+                metode_bayar=metode,
+                referensi_id=None,
+                nomor_referensi="SALDO-TEST-HUTANG-METODE",
+                keterangan="Saldo awal test keterangan hutang",
+                kas_jenis=jenis,
+            )
+            kas_ids.append(seed.id)
         hutang = HutangService(db).create(
             HutangCreate(
                 tanggal=date.today(),
@@ -63,7 +79,7 @@ def test_keterangan_kas_pembayaran_hutang_memuat_metode():
             .order_by(KasBank.id)
             .all()
         )
-        kas_ids = [k.id for k in kas]
+        kas_ids += [k.id for k in kas]
         keterangan = [k.keterangan for k in kas]
         assert len(kas) == 2
         assert keterangan[0].endswith("(TUNAI)")

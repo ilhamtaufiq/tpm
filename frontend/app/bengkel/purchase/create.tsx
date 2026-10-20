@@ -30,7 +30,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../../services/offlineQueue';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { useCreatePembelianParts, useSparePartsList, useUpdatePembelianParts } from '../../../hooks/useBengkel';
-import { formatNumber, parseNumber, formatCurrency, getTodayString } from '../../../utils/format';
+import { formatNumber, parseNumber, formatCurrency, getTodayString, tanggalLokal } from '../../../utils/format';
 import { findSparePartByBarcode } from '../../../utils/barcodeScan';
 import { bengkelService } from '../../../services/bengkel';
 import { useDebounce } from '../../../hooks';
@@ -133,8 +133,8 @@ export default function PurchaseScreen() {
                     nama: detail.supplier_nama,
                 });
                 setNomorFaktur(detail.nomor_faktur && detail.nomor_faktur !== '-' ? detail.nomor_faktur : '');
-                setTanggal(detail.tanggal ? new Date(detail.tanggal) : new Date());
-                setTanggalText(detail.tanggal ? formatLocalDate(new Date(detail.tanggal)) : formatLocalDate(new Date()));
+                setTanggal(detail.tanggal ? tanggalLokal(detail.tanggal) : new Date());
+                setTanggalText(detail.tanggal ? formatLocalDate(tanggalLokal(detail.tanggal)) : formatLocalDate(new Date()));
                 setCatatan(detail.catatan || '');
                 setItems((detail.detail || []).map((item: any) => ({
                     id: item.id || Date.now() + Math.random(),

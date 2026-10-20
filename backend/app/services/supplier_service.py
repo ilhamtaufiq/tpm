@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.utils.helpers import get_jakarta_now
 from typing import Optional, Dict, Any
 
 from sqlalchemy import func, or_
@@ -18,7 +19,7 @@ class SupplierService:
 
     def _generate_kode(self) -> str:
         """Generate unique supplier code."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = "SUP"
         date_str = today.strftime("%y%m")
 

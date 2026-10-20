@@ -1,4 +1,5 @@
 from datetime import date
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Optional, List, TYPE_CHECKING
 
@@ -101,7 +102,7 @@ class PiutangUsaha(Base, TimestampMixin):
     def is_overdue(self) -> bool:
         """Check if piutang is overdue."""
         if self.tanggal_jatuh_tempo and self.status != PiutangStatus.LUNAS:
-            return date.today() > self.tanggal_jatuh_tempo
+            return get_jakarta_date() > self.tanggal_jatuh_tempo
         return False
 
     def process_payment(self, amount: Decimal) -> None:
@@ -112,7 +113,7 @@ class PiutangUsaha(Base, TimestampMixin):
         if self.sisa_piutang <= 0:
             self.sisa_piutang = Decimal("0")
             self.status = PiutangStatus.LUNAS
-            self.tanggal_lunas = date.today()
+            self.tanggal_lunas = get_jakarta_date()
         elif self.total_dibayar > 0:
             self.status = PiutangStatus.SEBAGIAN
 
@@ -219,7 +220,7 @@ class HutangUsaha(Base, TimestampMixin):
         if self.sisa_hutang <= 0:
             self.sisa_hutang = Decimal("0")
             self.status = HutangStatus.LUNAS
-            self.tanggal_lunas = date.today()
+            self.tanggal_lunas = get_jakarta_date()
         elif self.total_dibayar > 0:
             self.status = HutangStatus.SEBAGIAN
 

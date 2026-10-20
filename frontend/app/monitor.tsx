@@ -20,6 +20,7 @@ import { useMonitorStore } from '../store/useMonitorStore';
 import { format } from 'date-fns';
 import { useUIStore } from '../store/useUIStore';
 import api from '../utils/api';
+import { PerbaikanDataPanel } from '../components/PerbaikanDataPanel';
 
 const StatusBadge = ({ status }: { status?: number }) => {
     if (!status) return <View className="w-2 h-2 rounded-full bg-gray-400" />;
@@ -42,7 +43,7 @@ export default function MonitorScreen() {
 
     const themeColors = useUIStore((s) => s.themeColors);
     const [renderLogs, setRenderLogs] = useState(true);
-    const [activeSection, setActiveSection] = useState<'network' | 'logs' | 'database'>('logs');
+    const [activeSection, setActiveSection] = useState<'network' | 'logs' | 'database' | 'perbaikan'>('logs');
     const [logFilter, setLogFilter] = useState<'ALL' | 'LAG' | 'BUG' | 'ERROR'>('ALL');
 
     // Polling server stats
@@ -128,10 +129,18 @@ export default function MonitorScreen() {
                     >
                         <Typography weight="bold" className={`text-xs ${activeSection === 'database' ? 'text-white' : 'text-white/40'}`}>DATABASE</Typography>
                     </Pressable>
+                    <Pressable
+                        onPress={() => setActiveSection('perbaikan')}
+                        className={`px-4 py-2 rounded-full ml-2 ${activeSection === 'perbaikan' ? 'bg-emerald-600' : 'bg-surface/5'}`}
+                    >
+                        <Typography weight="bold" className={`text-xs ${activeSection === 'perbaikan' ? 'text-white' : 'text-white/40'}`}>PERBAIKAN</Typography>
+                    </Pressable>
                 </View>
 
                 <ScrollView className="flex-1 px-6 pt-6" showsVerticalScrollIndicator={false}>
-                    {activeSection === 'logs' ? (
+                    {activeSection === 'perbaikan' ? (
+                        <PerbaikanDataPanel />
+                    ) : activeSection === 'logs' ? (
                         <>
                             {/* Summary Badges */}
                             <View className="flex-row flex-wrap -mx-2 mb-4">

@@ -16,6 +16,8 @@ import io
 import re
 import uuid
 from datetime import date, datetime
+from app.utils.helpers import get_jakarta_now
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -336,7 +338,7 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
             "kode": "KRY-001",
             "nama": "Andi Mekanik",
             "jabatan": "Mekanik",
-            "tanggal_bergabung": date.today().isoformat(),
+            "tanggal_bergabung": get_jakarta_date().isoformat(),
             "gaji_pokok": 3000000,
             "tunjangan": 500000,
             "status": "AKTIF",
@@ -345,7 +347,7 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
             "kode": "KRY-002",
             "nama": "Siti Admin",
             "jabatan": "Admin",
-            "tanggal_bergabung": date.today().isoformat(),
+            "tanggal_bergabung": get_jakarta_date().isoformat(),
             "gaji_pokok": 2500000,
             "tunjangan": 300000,
             "status": "AKTIF",
@@ -353,31 +355,31 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
     ],
     "kas_opening": [
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "jenis_kas": "KAS_UTAMA",
             "nominal": 10000000,
             "keterangan": "Saldo awal kas utama",
         },
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "jenis_kas": "BANK_UTAMA",
             "nominal": 50000000,
             "keterangan": "Saldo awal bank utama (BCA)",
         },
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "jenis_kas": "KAS_UNIT_BENGKEL",
             "nominal": 2000000,
             "keterangan": "Saldo awal laci bengkel",
         },
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "jenis_kas": "KAS_UNIT_JASA_ANGKUT",
             "nominal": 1500000,
             "keterangan": "Saldo awal kas unit jasa angkut",
         },
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "jenis_kas": "KAS_UNIT_MOBIL",
             "nominal": 3000000,
             "keterangan": "Saldo awal kas unit jual-beli mobil",
@@ -385,21 +387,21 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
     ],
     "asset": [
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "nama": "Laptop Asus",
             "harga_beli": 8000000,
             "kategori": "ELECTRONIC",
             "catatan": "Aset kantor",
         },
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "nama": "Meja Kantor",
             "harga_beli": 1500000,
             "kategori": "LAINNYA",
             "catatan": "Perlengkapan kantor",
         },
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "nama": "Kompresor Angin",
             "harga_beli": 5000000,
             "kategori": "PERALATAN",
@@ -408,21 +410,21 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
     ],
     "hutang_opening": [
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "nama_kreditur": "Supplier X",
             "nominal": 1500000,
             "unit": "BENGKEL",
             "catatan": "Sisa hutang pembelian part",
         },
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "nama_kreditur": "Dealer Mobil Y",
             "nominal": 50000000,
             "unit": "JUAL_BELI_MOBIL",
             "catatan": "Sisa hutang pembelian mobil",
         },
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "nama_kreditur": "Investor Pak Z",
             "nominal": 10000000,
             "unit": "JUAL_BELI_MOBIL",
@@ -431,28 +433,28 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
     ],
     "piutang_opening": [
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "nama_debitur": "Pelanggan Y",
             "nominal": 750000,
             "unit": "BENGKEL",
             "catatan": "Sisa piutang servis",
         },
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "nama_debitur": "Perusahaan Angkut A",
             "nominal": 5000000,
             "unit": "JASA_ANGKUT",
             "catatan": "Sisa piutang jasa angkut",
         },
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "nama_debitur": "Pak Pembeli Mobil",
             "nominal": 20000000,
             "unit": "JUAL_BELI_MOBIL",
             "catatan": "Sisa piutang jual-beli mobil",
         },
         {
-            "tanggal": date.today().isoformat(),
+            "tanggal": get_jakarta_date().isoformat(),
             "nama_debitur": "Karyawan Kasbon",
             "nominal": 500000,
             "unit": "KASBON",
@@ -468,14 +470,14 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
             "kode": "SPR-DRV-01",
             "nama": "Joko Supir",
             "telepon": "0822222222",
-            "tanggal_bergabung": date.today().isoformat(),
+            "tanggal_bergabung": get_jakarta_date().isoformat(),
             "is_active": "ya",
         },
         {
             "kode": "SPR-DRV-02",
             "nama": "Bambang",
             "telepon": "0833333333",
-            "tanggal_bergabung": date.today().isoformat(),
+            "tanggal_bergabung": get_jakarta_date().isoformat(),
             "nopol_kendaraan": "F 5678 YY",
             "is_active": "ya",
         },
@@ -490,7 +492,7 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
             "nomor_plat": "F 9999 AA",
             "harga_beli": 120000000,
             "harga_jual": 135000000,
-            "tanggal_masuk": date.today().isoformat(),
+            "tanggal_masuk": get_jakarta_date().isoformat(),
             "status": "TERSEDIA",
             "tipe_kepemilikan": "TPM",
         },
@@ -503,7 +505,7 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
             "nomor_plat": "F 8888 BB",
             "harga_beli": 110000000,
             "harga_jual": 125000000,
-            "tanggal_masuk": date.today().isoformat(),
+            "tanggal_masuk": get_jakarta_date().isoformat(),
             "status": "TERSEDIA",
             "tipe_kepemilikan": "INVESTOR",
             "nama_investor": "Pak Z",
@@ -518,7 +520,7 @@ EXAMPLE_ROWS: Dict[str, List[Dict[str, Any]]] = {
             "nomor_plat": "F 7777 CC",
             "harga_beli": 140000000,
             "harga_jual": 155000000,
-            "tanggal_masuk": date.today().isoformat(),
+            "tanggal_masuk": get_jakarta_date().isoformat(),
             "status": "TERSEDIA",
             "tipe_kepemilikan": "TPM",
             "biaya pengeluaran/ operasional": 500000,
@@ -693,7 +695,7 @@ class DataImportService:
     @staticmethod
     def _date(v: Any, default: Optional[date] = None) -> date:
         if v is None or str(v).strip() == "":
-            return default or date.today()
+            return default or get_jakarta_date()
         if isinstance(v, datetime):
             return v.date()
         if isinstance(v, date):
@@ -708,7 +710,7 @@ class DataImportService:
         return str(v).strip().lower() in ("1", "true", "ya", "yes", "y", "aktif", "v")
 
     def _next_kode(self, prefix: str, model, field: str = "kode") -> str:
-        date_str = datetime.now().strftime("%y%m")
+        date_str = get_jakarta_now().strftime("%y%m")
         like = f"{prefix}{date_str}%"
         col = getattr(model, field)
         last = (
@@ -726,7 +728,7 @@ class DataImportService:
         return f"{prefix}{date_str}{n:04d}"
 
     def _gen_nomor(self, prefix_key: str, model, field: str) -> str:
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES[prefix_key]
         date_str = today.strftime("%y%m%d")
         col = getattr(model, field)
@@ -933,7 +935,7 @@ class DataImportService:
                 self._dec(row.get("harga"), "0")
             elif sheet == "karyawan":
                 self._dec(row.get("gaji_pokok"), "0")
-                self._date(row.get("tanggal_bergabung"), date.today())
+                self._date(row.get("tanggal_bergabung"), get_jakarta_date())
                 st = self._cell(row.get("status")) or "AKTIF"
                 if st.upper().replace(" ", "_") not in {e.value for e in EmployeeStatus}:
                     return f"Baris {r}: status karyawan tidak valid ({st})"
@@ -946,7 +948,7 @@ class DataImportService:
                 if nom <= 0:
                     return f"Baris {r}: nominal harus > 0"
             elif sheet == "asset":
-                self._date(row.get("tanggal"), date.today())
+                self._date(row.get("tanggal"), get_jakarta_date())
                 nom = self._dec(row.get("harga_beli"))
                 if nom <= 0:
                     return f"Baris {r}: nominal harus > 0"
@@ -976,14 +978,14 @@ class DataImportService:
                 if not self._cell(row.get("nopol")):
                     return f"Baris {r}: nopol wajib"
             elif sheet == "supir":
-                self._date(row.get("tanggal_bergabung"), date.today())
+                self._date(row.get("tanggal_bergabung"), get_jakarta_date())
             elif sheet == "mobil":
                 self._int(row.get("tahun"), 0)
                 self._dec(row.get("harga_beli"))
                 st = (self._cell(row.get("status")) or "TERSEDIA").upper()
                 if st not in {e.value for e in CarStatus}:
                     return f"Baris {r}: status mobil tidak valid ({st})"
-                self._date(row.get("tanggal_masuk"), date.today())
+                self._date(row.get("tanggal_masuk"), get_jakarta_date())
         except Exception as e:
             return f"Baris {r}: {e}"
         return None
@@ -1198,7 +1200,7 @@ class DataImportService:
                 res["updated" if existing else "created"] += 1
                 continue
             try:
-                tgl = self._date(row.get("tanggal_bergabung"), date.today())
+                tgl = self._date(row.get("tanggal_bergabung"), get_jakarta_date())
                 gaji = self._dec(row.get("gaji_pokok"), "0")
                 tunj = self._dec(row.get("tunjangan"), "0")
                 st = (self._cell(row.get("status")) or "AKTIF").upper().replace(" ", "_")
@@ -1298,7 +1300,7 @@ class DataImportService:
                 res["errors"].append(err)
                 continue
             try:
-                tgl = self._date(row.get("tanggal"), date.today())
+                tgl = self._date(row.get("tanggal"), get_jakarta_date())
                 nama = self._cell(row["nama"])
                 hb = self._dec(row.get("harga_beli"))
                 kat_s = (self._cell(row.get("kategori")) or "LAINNYA").upper().replace(" ", "_")
@@ -1326,7 +1328,7 @@ class DataImportService:
             else:
                 if not kode:
                     # Cari kode unik yang belum ada di database
-                    date_str = datetime.now().strftime("%y%m")
+                    date_str = get_jakarta_now().strftime("%y%m")
                     like = f"AST{date_str}%"
                     last = (
                         self.db.query(Aset)
@@ -1554,7 +1556,7 @@ class DataImportService:
                 res["updated" if existing else "created"] += 1
                 continue
             try:
-                tgl = self._date(row.get("tanggal_bergabung"), date.today())
+                tgl = self._date(row.get("tanggal_bergabung"), get_jakarta_date())
             except Exception as e:
                 res["errors"].append(f"Baris {row['_row']}: {e}")
                 continue
@@ -1606,11 +1608,11 @@ class DataImportService:
                 plat = self._cell(row["nomor_plat"])
                 merek = self._cell(row["merek"])
                 model = self._cell(row["model"])
-                tahun = self._int(row.get("tahun"), date.today().year)
+                tahun = self._int(row.get("tahun"), get_jakarta_date().year)
                 warna = self._cell(row.get("warna")) or "-"
                 hb = self._dec(row.get("harga_beli"))
                 hj = self._dec(row.get("harga_jual"), "0") if row.get("harga_jual") not in (None, "") else None
-                tgl = self._date(row.get("tanggal_masuk"), date.today())
+                tgl = self._date(row.get("tanggal_masuk"), get_jakarta_date())
                 st = CarStatus((self._cell(row.get("status")) or "TERSEDIA").upper())
                 own = OwnershipType((self._cell(row.get("tipe_kepemilikan")) or "TPM").upper())
                 kode = self._cell(row.get("kode"))

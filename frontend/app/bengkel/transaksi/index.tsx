@@ -16,7 +16,7 @@ import { useDebounce } from '../../../hooks';
 import { useJasaList } from '../../../hooks/useJasaServis';
 import { useActiveArmada } from '../../../hooks/useJasaAngkut';
 import { useMobilList } from '../../../hooks/useMobil';
-import { formatCurrency, formatNumber, parseNumber } from '../../../utils/format';
+import { formatCurrency, formatNumber, parseNumber, tanggalLokal } from '../../../utils/format';
 import { isBengkelTransactionLocked, isBengkelTransactionVoided } from '../../../utils/bengkelTransaction';
 import { getCustomTabBarHeight } from '../../../components/ui/CustomTabBar';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../../utils/printReceipt';
@@ -522,7 +522,7 @@ export default function BengkelTransaksiScreen() {
         for (const item of existingTransactions) {
             try {
                 map.set(Number(item.id), item.tanggal
-                    ? new Date(item.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+                    ? tanggalLokal(item.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
                     : '-');
             } catch {
                 map.set(Number(item.id), '-');

@@ -6,6 +6,7 @@ import { Badge } from '../ui/Badge';
 import { Supir } from '../../services/jasaAngkut';
 import { Phone, FileText } from 'lucide-react-native';
 
+import { tanggalLokal } from '../../utils/format';
 interface DriverCardProps {
     supir: Supir;
     onPress?: () => void;
@@ -41,7 +42,7 @@ export const DriverCard = ({ supir, onPress }: DriverCardProps) => {
                                 label={supir.is_active ? 'Aktif' : 'Non-Aktif'}
                             />
                             <Typography variant="caption" className="text-textGray ml-3">
-                                Bergabung: {new Date(supir.tanggal_bergabung).toLocaleDateString('id-ID')}
+                                Bergabung: {tanggalLokal(supir.tanggal_bergabung).toLocaleDateString('id-ID')}
                             </Typography>
                         </View>
                     </View>

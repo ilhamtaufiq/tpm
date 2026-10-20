@@ -9,6 +9,8 @@ Efek satu retur (nilai R = qty x harga_satuan baris pembelian):
 - Pembatalan (void) membalik ketiganya; kas dibalik dengan entri [VOID].
 """
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import List, Optional
 
@@ -46,7 +48,7 @@ class ReturPembelianService:
     # ------------------------------------------------------------------ helpers
     def _generate_nomor(self) -> str:
         prefix = TRANSACTION_PREFIXES["retur_pembelian"]
-        date_str = datetime.now().strftime("%y%m%d")
+        date_str = get_jakarta_now().strftime("%y%m%d")
         last = (
             self.db.query(ReturPembelianSparePart)
             .filter(ReturPembelianSparePart.nomor_retur.like(f"{prefix}{date_str}%"))
@@ -58,7 +60,7 @@ class ReturPembelianService:
 
     def _generate_nomor_piutang(self) -> str:
         prefix = TRANSACTION_PREFIXES["piutang"]
-        date_str = datetime.now().strftime("%y%m%d")
+        date_str = get_jakarta_now().strftime("%y%m%d")
         last = (
             self.db.query(PiutangUsaha)
             .filter(PiutangUsaha.nomor_piutang.like(f"{prefix}{date_str}%"))
@@ -360,7 +362,7 @@ class ReturPembelianService:
             )
             create_kas_entry(
                 db=self.db,
-                tanggal=date.today(),
+                tanggal=get_jakarta_date(),
                 tipe=KasBankType.KELUAR,
                 nominal=retur.nilai_kas,
                 sumber=KasBankSource.PEMBELIAN_PART,

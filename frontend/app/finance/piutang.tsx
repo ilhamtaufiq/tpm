@@ -286,7 +286,7 @@ export default function PiutangUsahaScreen() {
     const [createPayments, setCreatePayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
         { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }
     ]);
-    const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER' | undefined>(undefined);
+    const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER'>('TUNAI');
 
     const handleOpenDetail = (piutang: Piutang) => {
         setSelectedPiutang(piutang);
@@ -317,7 +317,7 @@ export default function PiutangUsahaScreen() {
         setCreateName('');
         setCreateAmount('');
         setCreateNote('');
-        setCreateMethod(undefined);
+        setCreateMethod('TUNAI');
         setCreateDate('');
 
         if (Platform.OS === 'web') {
@@ -433,7 +433,7 @@ export default function PiutangUsahaScreen() {
 
             <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-3">
-                    <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest">Metode Pencairan (Opsional)</Typography>
+                    <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest">Metode Pencairan</Typography>
                     <Pressable
                         onPress={() => setIsCreateSplitPayment(!isCreateSplitPayment)}
                         className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-background border-transparent'}`}
@@ -446,12 +446,6 @@ export default function PiutangUsahaScreen() {
 
                 {!isCreateSplitPayment ? (
                     <View className="flex-row space-x-2 gap-2">
-                        <Pressable
-                            onPress={() => setCreateMethod(undefined)}
-                            className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-background' : 'border-transparent bg-surface/50'}`}
-                        >
-                            <Typography className={!createMethod ? 'text-text font-bold' : 'text-textGray'} variant="caption">Tidak Ada</Typography>
-                        </Pressable>
                         {['TUNAI', 'TRANSFER'].map((m) => (
                             <Pressable
                                 key={m}

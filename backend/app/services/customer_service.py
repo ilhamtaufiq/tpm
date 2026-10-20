@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.utils.helpers import get_jakarta_now
 from decimal import Decimal
 from typing import Optional, Dict, Any
 
@@ -32,7 +33,7 @@ class CustomerService:
 
     def _generate_kode(self) -> str:
         """Generate unique customer code."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = "CUS"
         date_str = today.strftime("%y%m")
 

@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { mobilService } from '../../services/mobil';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, tanggalLokal } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -198,7 +198,7 @@ export default function PenjualanMobilReportScreen() {
                     ${transaksis.map(item => `
                         <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 8px;">
-                                ${format(new Date(item.tanggal), 'dd/MM/yy', { locale: localeID })}<br/>
+                                ${format(tanggalLokal(item.tanggal), 'dd/MM/yy', { locale: localeID })}<br/>
                                 <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_transaksi)}</span>
                             </td>
                             <td style="padding: 8px;">
@@ -321,7 +321,7 @@ export default function PenjualanMobilReportScreen() {
                                         </View>
                                     </View>
                                     <Typography variant="caption" className="text-textGray mt-0.5">
-                                        {format(new Date(item.tanggal), 'dd MMMM yyyy', { locale: localeID })} • {item.nomor_transaksi}
+                                        {format(tanggalLokal(item.tanggal), 'dd MMMM yyyy', { locale: localeID })} • {item.nomor_transaksi}
                                     </Typography>
                                 </View>
                             </View>
@@ -403,7 +403,7 @@ export default function PenjualanMobilReportScreen() {
                                 <View className="flex-row justify-between">
                                     <View>
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Tanggal Jual</Typography>
-                                        <Typography weight="bold">{format(new Date(selectedTransaction.tanggal), 'dd MMM yyyy', { locale: localeID })}</Typography>
+                                        <Typography weight="bold">{format(tanggalLokal(selectedTransaction.tanggal), 'dd MMM yyyy', { locale: localeID })}</Typography>
                                     </View>
                                     <View className="items-end">
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">No. Transaksi</Typography>

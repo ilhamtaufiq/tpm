@@ -12,6 +12,7 @@ import React from 'react';
 import { useUIStore } from '../../store/useUIStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getFileUrl } from '../../utils/image';
+import { useResponsive } from '../../hooks/useResponsive';
 
 export default function HomeScreen() {
     const insets = useSafeAreaInsets();
@@ -21,6 +22,7 @@ export default function HomeScreen() {
     const user = useAuthStore(state => state.user);
 
     const router = useRouter();
+    const { isDesktop } = useResponsive();
 
     useFocusEffect(
         React.useCallback(() => {
@@ -70,7 +72,7 @@ export default function HomeScreen() {
                     showsVerticalScrollIndicator={false}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={themeColors.primary} />}
                 >
-                    <View className="w-full max-w-[480px]">
+                    <View className="w-full" style={{ maxWidth: isDesktop ? 1200 : 480 }}>
                         <WalletSection />
                         <ServiceGrid />
                         <TransactionList />

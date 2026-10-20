@@ -12,6 +12,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { getFileUrl } from '../../utils/image';
 import { AlertDialog } from './AlertDialog';
 import { ModalThemeView } from './ModalThemeView';
+import { JamServerInfo } from './JamServerInfo';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -166,6 +167,7 @@ export const Header = ({
                                     {title}
                                 </Typography>
                             )}
+                            <JamServerInfo />
                         </View>
                     </View>
 

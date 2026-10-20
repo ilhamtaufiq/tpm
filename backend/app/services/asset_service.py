@@ -1,4 +1,5 @@
 from datetime import date
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import List, Optional
 
@@ -33,7 +34,7 @@ class AssetService:
     def _generate_kode(self) -> str:
         """Generate unique asset code AST-YYYYMM-XXXX."""
         prefix = TRANSACTION_PREFIXES.get("aset", "AST")
-        today = date.today()
+        today = get_jakarta_date()
         date_str = today.strftime("%Y%m")
         
         # Get last asset with the same date prefix
@@ -237,7 +238,7 @@ class AssetService:
                 for kb in kas_rows:
                     create_kas_entry(
                         db=self.db,
-                        tanggal=date.today(),
+                        tanggal=get_jakarta_date(),
                         tipe=KasBankType.MASUK if kb.tipe == KasBankType.KELUAR else KasBankType.KELUAR,
                         nominal=kb.nominal,
                         sumber=KasBankSource.ASET,

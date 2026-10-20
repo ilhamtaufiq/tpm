@@ -1,4 +1,6 @@
 from datetime import datetime, date
+from app.utils.helpers import get_jakarta_now
+from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 
@@ -24,7 +26,7 @@ class KaryawanService:
 
     def _generate_kode(self) -> str:
         """Generate unique employee code."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["karyawan"]
         date_str = today.strftime("%y%m")
 
@@ -214,7 +216,7 @@ class KaryawanService:
 
         # If resigning, set exit date
         if status == EmployeeStatus.RESIGN:
-            karyawan.tanggal_keluar = date.today()
+            karyawan.tanggal_keluar = get_jakarta_date()
 
         karyawan.status = status
         self.db.commit()
@@ -262,7 +264,7 @@ class KaryawanService:
         )
 
         # Current month attendance
-        today = date.today()
+        today = get_jakarta_date()
         month_start = date(today.year, today.month, 1)
 
         absensi_query = self.db.query(Absensi).filter(

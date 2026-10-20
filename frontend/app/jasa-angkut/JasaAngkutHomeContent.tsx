@@ -40,7 +40,7 @@ import { useRouter, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, isValid, parse } from 'date-fns';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { formatCurrency, formatDate, getTodayString } from '../../utils/format';
+import { formatCurrency, formatDate, getTodayString, tanggalLokal } from '../../utils/format';
 import { Muatan, jasaAngkutService } from '../../services/jasaAngkut';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import {
@@ -734,7 +734,7 @@ export default function JasaAngkutScreen() {
                                         </View>
                                         <View className="flex-1">
                                             <Typography weight="bold" className="text-textMain text-sm">{item.keterangan || item.sumber}</Typography>
-                                            <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                            <Typography variant="caption" className="text-textGray mt-0.5">{format(tanggalLokal(item.tanggal), 'dd MMM yyyy')}</Typography>
                                         </View>
                                         <View className="items-end">
                                             <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'
@@ -1968,7 +1968,7 @@ export default function JasaAngkutScreen() {
                                             </View>
                                             <View className="flex-1">
                                                 <Typography weight="bold" className="text-textMain text-sm">{item.keterangan || item.sumber}</Typography>
-                                                <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                                <Typography variant="caption" className="text-textGray mt-0.5">{format(tanggalLokal(item.tanggal), 'dd MMM yyyy')}</Typography>
                                             </View>
                                             <View className="items-end">
                                                 <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -2048,7 +2048,7 @@ export default function JasaAngkutScreen() {
                                             </View>
                                             <View className="flex-1">
                                                 <Typography weight="bold" className="text-textMain text-base">{item.keterangan || item.sumber}</Typography>
-                                                <Typography variant="caption" className="text-textGray mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                                <Typography variant="caption" className="text-textGray mt-0.5">{format(tanggalLokal(item.tanggal), 'dd MMM yyyy')}</Typography>
                                             </View>
                                             <View className="items-end">
                                                 <Typography weight="bold" className={`text-base ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>

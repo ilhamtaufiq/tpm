@@ -18,6 +18,7 @@ from app.services.kas_bank_integration import create_kas_entry
 from app.realtime import publish_realtime_event
 from app.utils.constants import KasBankType, KasBankSource, PaymentMethod, TRANSACTION_PREFIXES, ExpenseCategory, MuatanStatus
 from datetime import date, datetime
+from app.utils.helpers import get_jakarta_now
 
 class ArmadaService:
     """Service for armada management."""
@@ -38,7 +39,7 @@ class ArmadaService:
 
     def _generate_pengeluaran_nomor(self) -> str:
         """Generate unique expense transaction number."""
-        today = datetime.now()
+        today = get_jakarta_now()
         prefix = TRANSACTION_PREFIXES["pengeluaran"]
         date_str = today.strftime("%y%m%d")
 
