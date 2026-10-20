@@ -153,6 +153,9 @@ export const setJamServer = (epochMsServer: number, rttMs: number) => {
     selisihJamServerMs = epochMsServer + rttMs / 2 - Date.now();
 };
 
+// Waktu sekarang menurut jam server (sudah dikoreksi selisihnya).
+export const serverNow = (): Date => new Date(Date.now() + selisihJamServerMs);
+
 // Tanggal "hari ini" mengikuti WIB (UTC+7) seperti server, bukan zona perangkat.
 // Dengan `d` eksplisit, komponen tanggal lokal dipakai apa adanya.
 export const getTodayString = (d?: Date): string => {
