@@ -34,6 +34,17 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
+class PiutangFolder(Base, TimestampMixin):
+    """Folder pengelompokan piutang (mis. satu folder per debitur)."""
+
+    __tablename__ = "piutang_folder"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    nama: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+
+
 class PiutangUsaha(Base, TimestampMixin):
     """Accounts receivable model."""
 
@@ -60,6 +71,11 @@ class PiutangUsaha(Base, TimestampMixin):
         index=True,
     )
     nama_debitur: Mapped[str] = mapped_column(String(100))  # Name of debtor
+    folder_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("piutang_folder.id"),
+        nullable=True,
+        index=True,
+    )
     telepon_debitur: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     alamat_debitur: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 

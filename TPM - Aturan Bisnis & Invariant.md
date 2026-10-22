@@ -74,3 +74,5 @@ tags: [tpm, aturan, finansial, dev-guidelines]
 ⬅️ [[CLAUDE|Kembali ke Hub]]
 
 31. **Pembatalan transaksi bengkel wajib alasan.** `DELETE /transaksi-bengkel/{id}?alasan=` menolak alasan kurang dari 5 karakter. Alasan disimpan di `transaksi_penjualan_bengkel.alasan_batal` dan ditampilkan di detail transaksi yang dibatalkan. Pembatalan otomatis dari penjualan mobil atau hapus unit mengisi alasan sistem.
+
+32. **Folder piutang (`piutang_folder`).** Piutang bisa dikelompokkan per folder (mis. per debitur). Pembayaran folder dialokasikan ke struk paling tua dulu (status BELUM_LUNAS/SEBAGIAN/LUNAS). Tiap bagian dicatat sebagai pembayaran piutang biasa (`PembayaranPiutang` + kas), jadi rincian dan kas tetap konsisten. Nominal tidak boleh melebihi sisa folder. Folder hanya bisa dihapus bila kosong. Alokasi dicatat berurutan: jika gagal di tengah, bagian yang sudah tercatat tidak dibatalkan otomatis.
