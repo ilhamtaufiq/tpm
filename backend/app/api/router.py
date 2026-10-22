@@ -33,7 +33,8 @@ from app.api.v1 import (
     backup,
     trash,
     perbaikan_data,
-    nama_grup,
+    piutang_folder,
+    hutang_folder,
     laporan,
     realtime,
     master_data,
@@ -77,7 +78,8 @@ api_router.include_router(user_cash.router)
 api_router.include_router(backup.router)
 api_router.include_router(trash.router, prefix="/trash", tags=["Trash"])
 api_router.include_router(perbaikan_data.router)
-api_router.include_router(nama_grup.router)
+api_router.include_router(piutang_folder.router)
+api_router.include_router(hutang_folder.router)
 api_router.include_router(master_data.router)
 api_router.include_router(data_import.router)
 api_router.include_router(system.router)

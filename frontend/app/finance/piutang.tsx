@@ -845,6 +845,14 @@ export default function PiutangUsahaScreen() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                 ListHeaderComponent={
                     <View className="mb-6">
+                        {/* Folder Piutang: di dalam daftar, bukan di header */}
+                        <Pressable
+                            onPress={() => router.push('/finance/piutang-folder')}
+                            className="bg-surface p-4 rounded-[24px] border border-transparent shadow-sm mb-4 flex-row justify-between items-center"
+                        >
+                            <Typography weight="bold" className="text-textMain text-sm">Folder Piutang</Typography>
+                            <Typography className="text-primary text-xs font-bold">Buka</Typography>
+                        </Pressable>
                         {/* Receivables Insight Card (White Bento Style) */}
                         <View className="bg-surface p-6 rounded-[32px] border border-transparent shadow-sm mb-6">
                             <View className="flex-row justify-between items-center mb-6">
