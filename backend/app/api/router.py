@@ -34,6 +34,7 @@ from app.api.v1 import (
     trash,
     perbaikan_data,
     piutang_folder,
+    hutang_folder,
     laporan,
     realtime,
     master_data,
@@ -78,6 +79,7 @@ api_router.include_router(backup.router)
 api_router.include_router(trash.router, prefix="/trash", tags=["Trash"])
 api_router.include_router(perbaikan_data.router)
 api_router.include_router(piutang_folder.router)
+api_router.include_router(hutang_folder.router)
 api_router.include_router(master_data.router)
 api_router.include_router(data_import.router)
 api_router.include_router(system.router)

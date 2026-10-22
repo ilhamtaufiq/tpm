@@ -724,14 +724,6 @@ export default function PiutangUsahaScreen() {
                 subtitle={unitLabel ? `Daftar piutang unit ${unitLabel}` : 'Pantau Penagihan & Jatuh Tempo'}
                 showBackButton
                 onBackButtonPress={handleGoBack}
-                rightElement={
-                    <Pressable
-                        onPress={() => router.push('/finance/piutang-folder')}
-                        className="px-3 h-11 bg-background rounded-2xl items-center justify-center border border-transparent shadow-sm active:opacity-75"
-                    >
-                        <Typography weight="bold" className="text-primary text-xs">Folder</Typography>
-                    </Pressable>
-                }
             />
 
             {/* Filter & Search Navigator Overlay */}
@@ -853,6 +845,14 @@ export default function PiutangUsahaScreen() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                 ListHeaderComponent={
                     <View className="mb-6">
+                        {/* Folder Piutang: di dalam daftar, bukan di header */}
+                        <Pressable
+                            onPress={() => router.push('/finance/piutang-folder')}
+                            className="bg-surface p-4 rounded-[24px] border border-transparent shadow-sm mb-4 flex-row justify-between items-center"
+                        >
+                            <Typography weight="bold" className="text-textMain text-sm">Folder Piutang</Typography>
+                            <Typography className="text-primary text-xs font-bold">Buka</Typography>
+                        </Pressable>
                         {/* Receivables Insight Card (White Bento Style) */}
                         <View className="bg-surface p-6 rounded-[32px] border border-transparent shadow-sm mb-6">
                             <View className="flex-row justify-between items-center mb-6">

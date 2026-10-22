@@ -166,6 +166,17 @@ class PembayaranPiutang(Base, TimestampMixin):
         return f"<PembayaranPiutang(id={self.id}, piutang_id={self.piutang_id}, nominal={self.nominal})>"
 
 
+class HutangFolder(Base, TimestampMixin):
+    """Folder pengelompokan hutang (mis. satu folder per kreditur)."""
+
+    __tablename__ = "hutang_folder"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    nama: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+
+
 class HutangUsaha(Base, TimestampMixin):
     """Accounts payable model."""
 
@@ -192,6 +203,11 @@ class HutangUsaha(Base, TimestampMixin):
         index=True,
     )
     nama_kreditur: Mapped[str] = mapped_column(String(100))
+    folder_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("hutang_folder.id"),
+        nullable=True,
+        index=True,
+    )
     telepon_kreditur: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     alamat_kreditur: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 

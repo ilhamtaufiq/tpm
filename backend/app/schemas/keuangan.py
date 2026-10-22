@@ -189,6 +189,7 @@ class HutangResponse(BaseModel):
     tanggal_lunas: Optional[date] = None
     status: HutangStatus
     catatan: Optional[str] = None
+    folder_id: Optional[int] = None
     pembayaran: List["PembayaranHutangResponse"] = []
     created_at: datetime
 
