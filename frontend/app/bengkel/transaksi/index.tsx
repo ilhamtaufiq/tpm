@@ -1477,7 +1477,7 @@ export default function BengkelTransaksiScreen() {
                             <Typography weight="bold" className="text-textMain text-sm mb-2">- Total part</Typography>
                             {billPartList.map(row => (
                                 <View key={`review-part-${row.item.id}`} className="flex-row justify-between items-center pl-4 mb-1">
-                                    <Typography className="text-textGray text-sm flex-1" numberOfLines={1}>{row.item.nama}</Typography>
+                                    <Typography className="text-textGray text-sm flex-1" numberOfLines={1}>{row.qty}x {row.item.nama}</Typography>
                                     <Typography className="text-textMain text-sm ml-2">{formatCurrency(Number(row.item.harga_jual || 0) * row.qty)}</Typography>
                                 </View>
                             ))}
@@ -1493,7 +1493,7 @@ export default function BengkelTransaksiScreen() {
                             <Typography weight="bold" className="text-textMain text-sm mb-2">- Total service</Typography>
                             {billServiceList.map((row, index) => (
                                 <View key={`review-service-${row.item.id}-${index}`} className="flex-row justify-between items-center pl-4 mb-1">
-                                    <Typography className="text-textGray text-sm flex-1" numberOfLines={1}>{row.item.nama}</Typography>
+                                    <Typography className="text-textGray text-sm flex-1" numberOfLines={1}>{row.qty}x {row.item.nama}</Typography>
                                     <Typography className="text-textMain text-sm ml-2">{formatCurrency(Number(row.item.harga || 0) * row.qty)}</Typography>
                                 </View>
                             ))}

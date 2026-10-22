@@ -131,7 +131,7 @@ export default function HutangUsahaScreen() {
     const [createName, setCreateName] = useState('');
     const [createAmount, setCreateAmount] = useState('');
     const [createSource, setCreateSource] = useState('LAINNYA');
-    const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER' | undefined>(undefined);
+    const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER'>('TUNAI');
     const [createDate, setCreateDate] = useState('');
     const [createNote, setCreateNote] = useState('');
     const [isCreateSplitPayment, setIsCreateSplitPayment] = useState(false);
@@ -285,7 +285,7 @@ export default function HutangUsahaScreen() {
         setCreateAmount('');
         setCreateDate('');
         setCreateSource('LAINNYA');
-        setCreateMethod(undefined);
+        setCreateMethod('TUNAI');
         setIsCreateSplitPayment(false);
         setCreatePayments([{ id: Date.now() + Math.random(), metode: 'TUNAI', nominal: '', catatan: '' }]);
         setCreateNote('');
@@ -359,7 +359,7 @@ export default function HutangUsahaScreen() {
             setCreateName('');
             setCreateAmount('');
             setCreateNote('');
-            setCreateMethod(undefined);
+            setCreateMethod('TUNAI');
             setIsCreateSplitPayment(false);
             setCreatePayments([{ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]);
 
@@ -437,7 +437,7 @@ export default function HutangUsahaScreen() {
 
             <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-3">
-                    <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest">Metode Penerimaan (Opsional)</Typography>
+                    <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest">Metode Penerimaan</Typography>
                     <Pressable
                         onPress={() => setIsCreateSplitPayment(!isCreateSplitPayment)}
                         className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-background border-transparent'}`}
@@ -450,12 +450,6 @@ export default function HutangUsahaScreen() {
 
                 {!isCreateSplitPayment ? (
                     <View className="flex-row space-x-2 gap-2">
-                        <Pressable
-                            onPress={() => setCreateMethod(undefined)}
-                            className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-background' : 'border-transparent bg-surface/50'}`}
-                        >
-                            <Typography className={!createMethod ? 'text-text font-bold' : 'text-textGray'} variant="caption">Tidak Ada</Typography>
-                        </Pressable>
                         {['TUNAI', 'TRANSFER'].map((m) => (
                             <Pressable
                                 key={m}
