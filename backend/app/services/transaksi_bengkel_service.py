@@ -1695,6 +1695,14 @@ class TransaksiBengkelService:
                 # payments list is source of truth for amount paid NOW
                 effective_payment = total_from_payments
 
+        # Pembayaran Rp0 tidak boleh menandai LUNAS (tagihan Rp0 juga tidak otomatis lunas).
+        # Diskon saja tetap diizinkan.
+        if effective_payment <= 0 and not (diskon is not None and diskon > 0):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Isi jumlah pembayaran lebih dari 0",
+            )
+
         # Cap book payment at remaining invoice (after discount). Excess is kembalian
         # and must NOT enter kas — same rule as create() LUNAS path. Uncapped kas
         # after diskon inflates modal_aktual and shows as selisih ≈ total diskon.
@@ -1708,11 +1716,15 @@ class TransaksiBengkelService:
         sisa = (transaksi.grand_total or Decimal("0")) - total_bayar
         kembalian = max(Decimal("0"), effective_payment - book_payment)
 
-        if sisa <= 0:
+        if sisa <= 0 and total_bayar > 0:
             transaksi.status_bayar = PaymentStatus.LUNAS
             transaksi.kembalian = kembalian
             total_bayar = transaksi.grand_total or Decimal("0")
             sisa = Decimal("0")
+        elif total_bayar <= 0:
+            # Belum ada uang masuk sama sekali: tetap BELUM_LUNAS, bukan CICILAN/LUNAS.
+            transaksi.status_bayar = PaymentStatus.BELUM_LUNAS
+            transaksi.kembalian = Decimal("0")
         else:
             transaksi.status_bayar = PaymentStatus.CICILAN
             transaksi.kembalian = Decimal("0")

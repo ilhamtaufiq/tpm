@@ -89,6 +89,9 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
     const isLunas = useMemo(() => {
         if (isInternalMobil) return false;
         if (isInternalja) return true;
+        // Tagihan Rp0 (tiket kosong) tidak otomatis lunas: harus ada pembayaran atau diskon.
+        if (sisaTagihan <= 0 && !(diskonAmt > 0)) return false;
+        if (sisaTagihan <= 0 && parseNumber(paymentAmount) <= 0 && paymentMode !== 'SPLIT') return false;
         if (paymentMode === 'SPLIT') return splitTotal >= sisaTagihan;
         return parseNumber(paymentAmount) >= sisaTagihan;
     }, [paymentMode, paymentAmount, splitTotal, sisaTagihan, isInternalja, isInternalMobil]);
@@ -118,6 +121,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
             totalBayarBaru = tunaiAmt + trfAmt;
         } else {
             const amt = parseNumber(paymentAmount);
+            if (amt <= 0 && !(diskonAmt > 0)) return;
             paymentItems.push({
                 metode: paymentMode as 'TUNAI' | 'TRANSFER',
                 jumlah: amt,
