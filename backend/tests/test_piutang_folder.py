@@ -94,3 +94,22 @@ def test_pindahkan_piutang_ke_folder_dan_keluar(db):
     PiutangFolderService(db).pindahkan(struk.id, None)
     db.refresh(struk)
     assert struk.folder_id is None
+
+
+def test_piutang_baru_bisa_langsung_masuk_folder(db):
+    from app.schemas.keuangan import PiutangCreate
+    from app.services.piutang_service import PiutangService
+    from app.utils.constants import PiutangSource as PS
+
+    folder = PiutangFolderService(db).buat(NAMA_FOLDER, None, None)
+    p = PiutangService(db).create(PiutangCreate(
+        tanggal=get_jakarta_date(), sumber=PS.LAINNYA, nama_debitur="Uji Baru",
+        nominal_piutang=Decimal("100000"), metode_pembayaran=PaymentMethod.TUNAI,
+        folder_id=folder.id,
+    ), None)
+    detail = PiutangFolderService(db).detail(folder.id)
+    assert [x["id"] for x in detail["piutang"]] == [p.id]
+    db.query(PembayaranPiutang).filter(PembayaranPiutang.piutang_id == p.id).delete(synchronize_session=False)
+    db.query(KasBank).filter(KasBank.nomor_referensi == p.nomor_piutang).delete(synchronize_session=False)
+    db.query(PiutangUsaha).filter(PiutangUsaha.id == p.id).delete(synchronize_session=False)
+    db.commit()

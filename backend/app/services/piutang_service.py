@@ -93,9 +93,14 @@ class PiutangService:
             # to maintain report integrity for "Piutang Lainnya".
             final_sumber = PiutangSource.LAINNYA
 
+        if data.folder_id is not None:
+            from app.models.keuangan import PiutangFolder
+            if self.db.get(PiutangFolder, data.folder_id) is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder piutang tidak ditemukan")
         piutang = PiutangUsaha(
             nomor_piutang=nomor_piutang,
             tanggal=data.tanggal,
+            folder_id=data.folder_id,
             sumber=final_sumber,
             unit=unit_source,
             referensi_id=data.referensi_id,

@@ -79,3 +79,21 @@ def test_folder_hutang_berisi_tidak_bisa_dihapus(db):
     with pytest.raises(HTTPException) as salah:
         HutangFolderService(db).hapus(folder.id)
     assert salah.value.status_code == 400
+
+
+def test_hutang_baru_bisa_langsung_masuk_folder(db):
+    from app.schemas.keuangan import HutangCreate
+    from app.services.hutang_service import HutangService
+
+    folder = HutangFolderService(db).buat(NAMA_FOLDER, None, None)
+    h = HutangService(db).create(HutangCreate(
+        tanggal=get_jakarta_date(), sumber=HutangSource.LAINNYA, nama_kreditur="Uji Baru Hutang",
+        nominal_hutang=Decimal("100000"), metode_pembayaran=PaymentMethod.TUNAI, folder_id=folder.id,
+    ), None)
+    detail = HutangFolderService(db).detail(folder.id)
+    assert [x["id"] for x in detail["hutang"]] == [h.id]
+    nomor = h.nomor_hutang
+    db.query(PembayaranHutang).filter(PembayaranHutang.hutang_id == h.id).delete(synchronize_session=False)
+    db.query(KasBank).filter(KasBank.nomor_referensi == nomor).delete(synchronize_session=False)
+    db.query(HutangUsaha).filter(HutangUsaha.id == h.id).delete(synchronize_session=False)
+    db.commit()

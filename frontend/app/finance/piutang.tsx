@@ -23,7 +23,8 @@ import {
 import { useRouter, router, useLocalSearchParams } from 'expo-router';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { piutangFolderService } from '../../services/piutangFolder';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { keuanganService, Piutang, PiutangSummary, PiutangStatus, PembayaranPiutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
@@ -137,6 +138,11 @@ export default function PiutangUsahaScreen() {
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePiutangSummary({ unit: unitFilter as any });
     const paymentMutation = useProcessPaymentSplit();
     const queryClient = useQueryClient();
+    const [createFolderId, setCreateFolderId] = useState<number | null>(null);
+    const folderList = useQuery({
+        queryKey: ['piutang-folder', 'daftar'],
+        queryFn: () => piutangFolderService.daftar(),
+    });
     const createMutation = useCreatePiutang();
 
     const createSheetRef = useRef<any>(null);
@@ -319,6 +325,7 @@ export default function PiutangUsahaScreen() {
         setCreateAmount('');
         setCreateNote('');
         setCreateMethod('TUNAI');
+        setCreateFolderId(null);
         setCreateDate('');
 
         if (Platform.OS === 'web') {
@@ -357,6 +364,7 @@ export default function PiutangUsahaScreen() {
                 nominal_piutang: parseNumber(createAmount),
                 catatan: createNote,
                 unit: unitFilter,
+                folder_id: createFolderId ?? undefined,
             };
 
             if (isCreateSplitPayment && validatedPayments.length > 0) {
@@ -430,6 +438,28 @@ export default function PiutangUsahaScreen() {
                         ? `Piutang manual dicatat sebagai Piutang Lainnya unit ${unitLabel} dan dicairkan melalui keuangan unit tersebut.`
                         : 'Piutang manual dari menu Finance dicatat sebagai Piutang Lainnya dan dicairkan melalui Kas Utama untuk tunai atau Bank Utama untuk transfer.'}
                 </Typography>
+            </View>
+
+            {/* Pilih folder piutang (opsional): struk baru langsung masuk ke folder ini */}
+            <View className="mb-6">
+                <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest mb-3">Folder Piutang</Typography>
+                <View className="flex-row flex-wrap gap-2">
+                    <Pressable
+                        onPress={() => setCreateFolderId(null)}
+                        className={`px-4 py-2.5 rounded-2xl border ${createFolderId === null ? 'border-primary bg-primary/5' : 'border-transparent bg-surface/50'}`}
+                    >
+                        <Typography className={createFolderId === null ? 'text-primary font-bold' : 'text-textGray'} variant="caption">Tanpa folder</Typography>
+                    </Pressable>
+                    {(folderList.data ?? []).map((f) => (
+                        <Pressable
+                            key={f.id}
+                            onPress={() => setCreateFolderId(f.id)}
+                            className={`px-4 py-2.5 rounded-2xl border ${createFolderId === f.id ? 'border-primary bg-primary/5' : 'border-transparent bg-surface/50'}`}
+                        >
+                            <Typography className={createFolderId === f.id ? 'text-primary font-bold' : 'text-textGray'} variant="caption">{f.nama}</Typography>
+                        </Pressable>
+                    ))}
+                </View>
             </View>
 
             <View className="mb-6">
