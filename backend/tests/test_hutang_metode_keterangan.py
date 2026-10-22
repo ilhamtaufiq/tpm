@@ -57,6 +57,7 @@ def test_keterangan_kas_pembayaran_hutang_memuat_metode():
                 sumber=HutangSource.LAINNYA,
                 nama_kreditur="Kreditur Test Metode",
                 nominal_hutang=Decimal("200000"),
+                metode_pembayaran=PaymentMethod.TUNAI,
             ),
         )
         hutang_id = hutang.id
@@ -81,9 +82,10 @@ def test_keterangan_kas_pembayaran_hutang_memuat_metode():
         )
         kas_ids += [k.id for k in kas]
         keterangan = [k.keterangan for k in kas]
-        assert len(kas) == 2
-        assert keterangan[0].endswith("(TUNAI)")
-        assert keterangan[1].endswith("(TRANSFER)")
+        # Penerimaan awal (metode di form) + dua pembayaran split.
+        assert len(kas) == 3
+        assert keterangan[1].endswith("(TUNAI)")
+        assert keterangan[2].endswith("(TRANSFER)")
     finally:
         db.rollback()
         if kas_ids:
@@ -94,3 +96,13 @@ def test_keterangan_kas_pembayaran_hutang_memuat_metode():
             db.query(HutangUsaha).filter(HutangUsaha.id == hutang_id).delete(synchronize_session=False)
         db.commit()
         db.close()
+
+
+def test_hutang_wajib_metode_atau_payments():
+    from app.schemas.keuangan import HutangCreate as HC
+
+    with pytest.raises(ValidationError):
+        HC(tanggal=date.today(), sumber=HutangSource.LAINNYA, nama_kreditur="Uji", nominal_hutang=Decimal("1000"))
+    with pytest.raises(ValidationError):
+        HC(tanggal=date.today(), sumber=HutangSource.LAINNYA, nama_kreditur="Uji", nominal_hutang=Decimal("1000"),
+           metode_pembayaran=PaymentMethod.KREDIT)
