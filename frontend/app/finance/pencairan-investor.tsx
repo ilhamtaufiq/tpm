@@ -26,7 +26,8 @@ import {
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency, formatDate, formatDateTime, formatNumber, parseNumber } from '../../utils/format';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -65,7 +66,7 @@ export default function PencairanInvestorScreen() {
     const [printing, setPrinting] = useState(false);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-    const paymentSheetRef = useRef<BottomSheet>(null);
+    const paymentSheetRef = useRef<any>(null);
     const paymentSnapPoints = useMemo(() => ['70%', '85%'], []);
 
     // Form states

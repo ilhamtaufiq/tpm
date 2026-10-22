@@ -49,7 +49,7 @@ def test_void_bengkel_tidak_menghapus_kas_pembayaran_piutang_lain():
         )
         asing_id = asing.id
 
-        assert service.void_transaction(transaksi.id)
+        assert service.void_transaction(transaksi.id, "Uji pembatalan transaksi bengkel")
         db.expire_all()
 
         assert db.get(KasBank, asing_id) is not None, "kas pembayaran piutang lain ikut terhapus"
@@ -63,4 +63,28 @@ def test_void_bengkel_tidak_menghapus_kas_pembayaran_piutang_lain():
         if asing_id is not None:
             db.query(KasBank).filter(KasBank.id == asing_id).delete(synchronize_session=False)
             db.commit()
+        db.close()
+
+
+def test_void_menyimpan_alasan_batal():
+    db = SessionLocal()
+    try:
+        service = TransaksiBengkelService(db)
+        transaksi = service.create(
+            TransaksiBengkelCreate(
+                tanggal=date.today(),
+                kategori="umum",
+                detail_parts=[],
+                detail_services=[DetailServiceCreate(nama_jasa="Jasa Uji Alasan", harga=Decimal("50000"), qty=1)],
+                status_pengerjaan=WorkshopStatus.SELESAI,
+                metode_bayar=PaymentMethod.TUNAI,
+                jumlah_bayar=Decimal("50000"),
+            ),
+            user_id=None,
+        )
+        assert service.void_transaction(transaksi.id, "Salah input pelanggan")
+        db.expire_all()
+        assert db.get(type(transaksi), transaksi.id).alasan_batal == "Salah input pelanggan"
+    finally:
+        db.rollback()
         db.close()

@@ -323,8 +323,33 @@ export interface TanggalMundur {
   induk: 'PIUTANG' | 'HUTANG' | 'TRANSAKSI_BENGKEL' | null;
 }
 
+export interface RiwayatPerbaikan {
+  id: number;
+  waktu: string;
+  jenis: 'PIUTANG_CATAT_KAS' | 'PIUTANG_BATAL' | 'TANGGAL_UBAH' | string;
+  nomor_referensi: string;
+  ringkasan: string;
+  sebelum: Record<string, unknown> | null;
+  sesudah: Record<string, unknown> | null;
+  oleh: string | null;
+}
+
+export type TingkatTemuan = 'ok' | 'info' | 'peringatan' | 'kritis';
+
+export interface TemuanKesehatan {
+  tingkat: TingkatTemuan;
+  pesan: string;
+}
+
+export interface KesehatanData {
+  checks: TemuanKesehatan[];
+  rekomendasi: TemuanKesehatan[];
+}
+
 export const perbaikanService = {
+  kesehatan: () => get<KesehatanData>('/perbaikan-data/kesehatan'),
   piutangTanpaKas: () => get<PiutangTanpaKas[]>('/perbaikan-data/piutang-tanpa-kas'),
+  riwayat: (limit = 100) => get<RiwayatPerbaikan[]>('/perbaikan-data/riwayat', { limit }),
   catatKasPiutang: (id: number, metode: 'TUNAI' | 'TRANSFER', kasJenis: string) =>
     client
       .post(`/perbaikan-data/piutang/${id}/catat-kas`, { metode, kas_jenis: kasJenis })

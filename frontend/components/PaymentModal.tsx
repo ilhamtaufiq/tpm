@@ -8,7 +8,8 @@ import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Plus, Trash2, X, Banknote, CreditCard, Wallet, CircleDollarSign, Building2, Store, ArrowUpRight } from 'lucide-react-native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../components/ui/BottomSheetWithBack';
 import { formatCurrency, formatNumber, parseNumber, getTodayString } from '../utils/format';
 import { useProcessPaymentSplit, useProcessHutangPaymentSplit } from '../hooks/useKeuangan';
 import { getErrorMessage } from '../utils/error';
@@ -115,7 +116,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         return (unit || kas_jenis) ? ['TUNAI_PUSAT', 'TUNAI_UNIT', 'TRANSFER'] : ['TUNAI_PUSAT', 'TRANSFER'];
     }, [allowedMethods, unit, kas_jenis]);
 
-    const sheetRef = useRef<BottomSheet>(null);
+    const sheetRef = useRef<any>(null);
     const snapPoints = useMemo(() => ['75%', '90%'], []);
 
     const piutangMutation = useProcessPaymentSplit();

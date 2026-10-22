@@ -46,7 +46,8 @@ import {
     CreditCard
 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { PaymentModal } from '../../components/PaymentModal';
 import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
 import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment, useVoidTransaksiBengkel, useCreatePengeluaran } from '../../hooks/useBengkel';
@@ -72,6 +73,7 @@ import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
+import { AlasanBatalDialog } from '../../components/ui/AlasanBatalDialog';
 import { getErrorMessage } from '../../utils/error';
 import { FILE_URL } from '../../utils/api';
 import {
@@ -197,7 +199,7 @@ export default function BengkelScreen() {
     });
     const [isDateModalVisible, setIsDateModalVisible] = useState(false);
     const [tempDateRange, setTempDateRange] = useState({ ...dateRange });
-    const dateSheetRef = useRef<BottomSheet>(null);
+    const dateSheetRef = useRef<any>(null);
     const dateSnapPoints = useMemo(() => ['50%', '70%'], []);
 
     // Phase paint: shell first → data after interactions → sheets last
@@ -626,13 +628,13 @@ export default function BengkelScreen() {
         router.push(menu.route as any);
     }, [bengkelMenus]);
 
-    const bottomSheetRef = useRef<BottomSheet>(null);
+    const bottomSheetRef = useRef<any>(null);
     const snapPoints = useMemo(() => ['75%', '90%'], []);
 
-    const walletSheetRef = useRef<BottomSheet>(null);
+    const walletSheetRef = useRef<any>(null);
     const walletSnapPoints = useMemo(() => ['85%', '95%'], []);
 
-    const queueSheetRef = useRef<BottomSheet>(null);
+    const queueSheetRef = useRef<any>(null);
     const queueSnapPoints = useMemo(() => ['78%', '92%'], []);
 
     const handlePresentModalPress = (type: 'form' | 'detail' | 'edit', item?: any) => {
@@ -697,38 +699,38 @@ export default function BengkelScreen() {
         }
     };
 
-    const handleVoidOrder = async (item: any) => {
-        setDialogConfig({
-            visible: true,
-            title: 'Batalkan Order',
-            message: `Yakin ingin membatalkan order ${item.nomor_plat}? Transaksi akan dihapus permanen dan stok sparepart akan dikembalikan.`,
-            variant: 'error',
-            type: 'confirm',
-            onConfirm: async () => {
-                try {
-                    setDialogConfig(prev => ({ ...prev, loading: true }));
-                    await voidMutation.mutateAsync(item.id);
-                    setDialogConfig({
-                        visible: true,
-                        title: 'Sukses',
-                        message: 'Order berhasil dibatalkan',
-                        variant: 'success',
-                        type: 'alert',
-                        loading: false
-                    });
-                    handleClosePress();
-                } catch (err: any) {
-                    setDialogConfig({
-                        visible: true,
-                        title: 'Gagal',
-                        message: getErrorMessage(err, 'Gagal membatalkan order'),
-                        variant: 'error',
-                        type: 'alert',
-                        loading: false
-                    });
-                }
-            }
-        });
+    const [voidAlasanTarget, setVoidAlasanTarget] = useState<any | null>(null);
+
+    const handleVoidOrder = (item: any) => {
+        setVoidAlasanTarget(item);
+    };
+
+    const submitVoidOrder = async (alasan: string) => {
+        const item = voidAlasanTarget;
+        if (!item) return;
+        try {
+            await voidMutation.mutateAsync({ id: item.id, alasan });
+            setVoidAlasanTarget(null);
+            setDialogConfig({
+                visible: true,
+                title: 'Sukses',
+                message: 'Order berhasil dibatalkan',
+                variant: 'success',
+                type: 'alert',
+                loading: false
+            });
+            handleClosePress();
+        } catch (err: any) {
+            setVoidAlasanTarget(null);
+            setDialogConfig({
+                visible: true,
+                title: 'Gagal',
+                message: getErrorMessage(err, 'Gagal membatalkan order'),
+                variant: 'error',
+                type: 'alert',
+                loading: false
+            });
+        }
     };
 
     const handleApplyDate = () => {
@@ -2159,7 +2161,7 @@ export default function BengkelScreen() {
 
             {/* Date Selection Modal (Hybrid) */}
             {Platform.OS === 'web' ? (
-                <Modal visible={isDateModalVisible} transparent animationType="fade">
+                <Modal onRequestClose={() => setIsDateModalVisible(false)} visible={isDateModalVisible} transparent animationType="fade">
                     <View className="flex-1 bg-black/50 justify-center items-center p-6">
                         <View className="bg-surface rounded-3xl w-full max-w-md p-8 shadow-2xl">
                             <View className="flex-row justify-between items-center mb-6">
@@ -2284,6 +2286,14 @@ export default function BengkelScreen() {
                     </View>
                 </View>
             </Modal>
+            <AlasanBatalDialog
+                visible={!!voidAlasanTarget}
+                title="Batalkan Order"
+                message={`Order ${voidAlasanTarget?.nomor_plat ?? ''} akan dibatalkan dan stok sparepart dikembalikan. Isi alasan pembatalan.`}
+                loading={voidMutation.isPending}
+                onClose={() => setVoidAlasanTarget(null)}
+                onSubmit={submitVoidOrder}
+            />
             <AlertDialogComponent
                 visible={dialogConfig.visible}
                 title={dialogConfig.title}

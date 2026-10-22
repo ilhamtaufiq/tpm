@@ -25,7 +25,8 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
@@ -91,7 +92,7 @@ export default function SupplierScreen() {
         type: 'alert'
     });
 
-    const bottomSheetRef = useRef<BottomSheet>(null);
+    const bottomSheetRef = useRef<any>(null);
     const snapPoints = useMemo(() => ['85%', '90%'], []);
 
     const handleGoBack = () => {

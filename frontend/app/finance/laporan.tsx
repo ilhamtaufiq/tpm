@@ -22,7 +22,8 @@ import {
     Info,
     X
 } from 'lucide-react-native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { Input } from '../../components/ui/Input';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { keuanganService } from '../../services/keuangan';
@@ -75,8 +76,8 @@ export default function LaporanKeuanganScreen() {
     const [tempDateRange, setTempDateRange] = useState({ ...dateRange });
 
     // Sheet refs
-    const setupSheetRef = useRef<BottomSheet>(null);
-    const dateSheetRef = useRef<BottomSheet>(null);
+    const setupSheetRef = useRef<any>(null);
+    const dateSheetRef = useRef<any>(null);
     const setupSnapPoints = useMemo(() => ['75%', '90%'], []);
     const dateSnapPoints = useMemo(() => ['50%', '70%'], []);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -705,7 +706,7 @@ export default function LaporanKeuanganScreen() {
             {Platform.OS === 'web' ? (
                 <>
                     {/* Setup Modal */}
-                    <Modal visible={isSetupModalVisible} transparent animationType="fade">
+                    <Modal onRequestClose={() => setIsSetupModalVisible(false)} visible={isSetupModalVisible} transparent animationType="fade">
                         <View style={styles.modalOverlay}>
                             <Pressable className="absolute inset-0" onPress={() => setIsSetupModalVisible(false)} />
                             <View className="bg-surface" style={styles.webModalContent}>
@@ -728,7 +729,7 @@ export default function LaporanKeuanganScreen() {
                     </Modal>
 
                     {/* Date Modal */}
-                    <Modal visible={isDateModalVisible} transparent animationType="fade">
+                    <Modal onRequestClose={() => setIsDateModalVisible(false)} visible={isDateModalVisible} transparent animationType="fade">
                         <View style={styles.modalOverlay}>
                             <Pressable className="absolute inset-0" onPress={() => setIsDateModalVisible(false)} />
                             <View className="bg-surface" style={styles.webModalContent}>

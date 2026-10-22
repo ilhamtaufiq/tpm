@@ -39,6 +39,7 @@ from app.models.keuangan import (
 )
 from app.models.system_setting import SystemSetting
 from app.models.monitoring import ClientLog
+from app.models.perbaikan_data_log import PerbaikanDataLog
 
 
 __all__ = [

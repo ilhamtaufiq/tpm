@@ -38,7 +38,8 @@ import {
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
-import BottomSheet, { BottomSheetView, BottomSheetModal, BottomSheetModalProvider, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetView, BottomSheetModal, BottomSheetModalProvider, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { MobilForm } from '../../components/MobilForm';
 import { MobilDetail } from '../../components/MobilDetail';
 import { MobilSalesForm } from '../../components/MobilSalesForm';
@@ -135,23 +136,13 @@ const MobilListCard = React.memo(function MobilListCard({ item, handlers }: { it
                         )}
                     </View>
 
-                    <View className="absolute bottom-2 left-2 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20">
-                        <Typography variant="caption" weight="bold" className="text-white text-[9px]">
-                            {item.nomor_plat}
-                        </Typography>
-                    </View>
-                    <View className="absolute bottom-2 right-2 bg-surface/90 backdrop-blur-md px-2 py-1 rounded-lg">
-                        <Typography variant="caption" weight="bold" className="text-primary text-[9px]">
-                            {item.tahun}
-                        </Typography>
-                    </View>
                 </View>
 
                 {/* Detail Section (60%) */}
                 <View style={{ flex: 0.6 }} className="flex-col justify-between py-1 pr-1">
                     <View>
                         <View className="flex-row justify-between items-start mb-1 gap-2">
-                            <Typography variant="h3" weight="bold" className="text-sm text-textMain leading-tight flex-shrink" numberOfLines={2}>
+                            <Typography variant="h3" weight="bold" className={`${Platform.OS === 'android' ? 'text-xs' : 'text-sm'} text-textMain leading-tight flex-shrink`} numberOfLines={2}>
                                 {item.merek} {item.model}
                             </Typography>
                             <View className={`px-2 py-1 rounded-md self-start ${
@@ -169,8 +160,11 @@ const MobilListCard = React.memo(function MobilListCard({ item, handlers }: { it
                             </View>
                         </View>
                         
-                        <Typography variant="h2" weight="bold" className="text-primary text-base mb-2">
+                        <Typography variant="h2" weight="bold" className="text-primary text-base">
                             {formatCurrency(Number(item.harga_jual || 0))}
+                        </Typography>
+                        <Typography variant="caption" weight="bold" className="text-textGray text-[10px] mb-2">
+                            {item.nomor_plat} · {item.tahun}
                         </Typography>
 
                         <View className="flex-row flex-wrap gap-2 mb-2">

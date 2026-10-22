@@ -20,7 +20,8 @@ import {
     Trash2,
 } from 'lucide-react-native';
 import { useRouter, router, useLocalSearchParams } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { keuanganService, Hutang, HutangSummary, HutangStatus, PembayaranHutang } from '../../services/keuangan';
@@ -118,9 +119,9 @@ export default function HutangUsahaScreen() {
     const queryClient = useQueryClient();
     const createMutation = useCreateHutang();
 
-    const detailSheetRef = useRef<BottomSheet>(null);
-    const paymentSheetRef = useRef<BottomSheet>(null);
-    const createSheetRef = useRef<BottomSheet>(null);
+    const detailSheetRef = useRef<any>(null);
+    const paymentSheetRef = useRef<any>(null);
+    const createSheetRef = useRef<any>(null);
 
     const detailSnapPoints = useMemo(() => ['95%'], []);
     const paymentSnapPoints = useMemo(() => ['65%', '85%'], []);
@@ -131,7 +132,7 @@ export default function HutangUsahaScreen() {
     const [createName, setCreateName] = useState('');
     const [createAmount, setCreateAmount] = useState('');
     const [createSource, setCreateSource] = useState('LAINNYA');
-    const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER' | undefined>(undefined);
+    const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER'>('TUNAI');
     const [createDate, setCreateDate] = useState('');
     const [createNote, setCreateNote] = useState('');
     const [isCreateSplitPayment, setIsCreateSplitPayment] = useState(false);
@@ -285,7 +286,7 @@ export default function HutangUsahaScreen() {
         setCreateAmount('');
         setCreateDate('');
         setCreateSource('LAINNYA');
-        setCreateMethod(undefined);
+        setCreateMethod('TUNAI');
         setIsCreateSplitPayment(false);
         setCreatePayments([{ id: Date.now() + Math.random(), metode: 'TUNAI', nominal: '', catatan: '' }]);
         setCreateNote('');
@@ -359,7 +360,7 @@ export default function HutangUsahaScreen() {
             setCreateName('');
             setCreateAmount('');
             setCreateNote('');
-            setCreateMethod(undefined);
+            setCreateMethod('TUNAI');
             setIsCreateSplitPayment(false);
             setCreatePayments([{ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]);
 
@@ -437,7 +438,7 @@ export default function HutangUsahaScreen() {
 
             <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-3">
-                    <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest">Metode Penerimaan (Opsional)</Typography>
+                    <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest">Metode Penerimaan</Typography>
                     <Pressable
                         onPress={() => setIsCreateSplitPayment(!isCreateSplitPayment)}
                         className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-background border-transparent'}`}
@@ -450,12 +451,6 @@ export default function HutangUsahaScreen() {
 
                 {!isCreateSplitPayment ? (
                     <View className="flex-row space-x-2 gap-2">
-                        <Pressable
-                            onPress={() => setCreateMethod(undefined)}
-                            className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-background' : 'border-transparent bg-surface/50'}`}
-                        >
-                            <Typography className={!createMethod ? 'text-text font-bold' : 'text-textGray'} variant="caption">Tidak Ada</Typography>
-                        </Pressable>
                         {['TUNAI', 'TRANSFER'].map((m) => (
                             <Pressable
                                 key={m}
@@ -857,7 +852,7 @@ export default function HutangUsahaScreen() {
             {/* Detail & Create Modals - Platform Specific */}
             {Platform.OS === 'web' ? (
                 <>
-                    <Modal visible={detailVisible} transparent animationType="slide">
+                    <Modal onRequestClose={() => setDetailVisible(false)} visible={detailVisible} transparent animationType="slide">
                         <View className="flex-1 justify-end bg-black/50">
                             <Pressable className="absolute inset-0" onPress={() => { setDetailVisible(false); setIsSheetOpen(false); }} />
                             <View className="bg-surface" style={styles.sheetContent}>
@@ -873,7 +868,7 @@ export default function HutangUsahaScreen() {
                             </View>
                         </View>
                     </Modal>
-                    <Modal visible={createVisible} transparent animationType="slide">
+                    <Modal onRequestClose={() => setCreateVisible(false)} visible={createVisible} transparent animationType="slide">
                         <View className="flex-1 justify-end bg-black/50">
                             <Pressable className="absolute inset-0" onPress={() => { setCreateVisible(false); setIsSheetOpen(false); }} />
                             <View className="bg-surface" style={styles.sheetContent}>

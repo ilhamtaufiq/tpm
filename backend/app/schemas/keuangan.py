@@ -98,6 +98,7 @@ class PiutangResponse(BaseModel):
     status: PiutangStatus
     is_overdue: bool = False
     catatan: Optional[str] = None
+    folder_id: Optional[int] = None
     pembayaran: List["PembayaranPiutangResponse"] = []
     created_at: datetime
 
@@ -147,9 +148,16 @@ class HutangCreate(BaseModel):
     alamat_kreditur: Optional[str] = None
     nominal_hutang: Decimal = Field(..., gt=0)
     tanggal_jatuh_tempo: Optional[date] = None
-    metode_pembayaran: Optional[PaymentMethod] = None
-    payments: Optional[List[PaymentDetail]] = None
+    metode_pembayaran: Optional[Literal[PaymentMethod.TUNAI, PaymentMethod.TRANSFER]] = None
+    payments: Optional[List[PaymentDetailHutang]] = None
     catatan: Optional[str] = None
+
+    @model_validator(mode="after")
+    def wajib_metode_atau_payments(self):
+        # Hutang wajib punya metode penerimaan (TUNAI/TRANSFER), sama dengan form di layar.
+        if not self.payments and self.metode_pembayaran is None:
+            raise ValueError("Pilih metode penerimaan TUNAI atau TRANSFER")
+        return self
 
 
 class HutangUpdate(BaseModel):

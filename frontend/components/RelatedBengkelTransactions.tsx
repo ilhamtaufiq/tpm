@@ -10,7 +10,7 @@ import { useUIStore } from '../store/useUIStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { appAlert } from '../utils/appAlert';
 import { getErrorMessage } from '../utils/error';
-import { AlertDialog } from './ui/AlertDialog';
+import { AlasanBatalDialog } from './ui/AlasanBatalDialog';
 import { isBengkelTransactionLocked, isBengkelTransactionVoided } from '../utils/bengkelTransaction';
 
 interface RelatedBengkelTransactionsProps {
@@ -41,10 +41,10 @@ export const RelatedBengkelTransactions = ({ muatan_id, mobil_id, onClose }: Rel
         enabled: !!muatan_id || !!mobil_id
     });
 
-    const handleConfirmVoid = async () => {
+    const handleConfirmVoid = async (alasan: string) => {
         if (!voidDialog.item) return;
         try {
-            await voidMutation.mutateAsync(voidDialog.item.id);
+            await voidMutation.mutateAsync({ id: voidDialog.item.id, alasan });
             queryClient.invalidateQueries({ queryKey: ['mobils'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
             queryClient.invalidateQueries({ queryKey: ['jasa_angkut'] });
@@ -176,17 +176,13 @@ export const RelatedBengkelTransactions = ({ muatan_id, mobil_id, onClose }: Rel
                 })}
             </View>
 
-            <AlertDialog
+            <AlasanBatalDialog
                 visible={voidDialog.visible}
-                type="confirm"
-                variant="error"
                 title="Batalkan Transaksi Bengkel"
-                message={`Apakah Anda yakin ingin membatalkan transaksi ${voidDialog.item?.nomor_transaksi || ''}? Stok sparepart dan jurnal transaksi akan dikembalikan.`}
-                confirmText="Batalkan Transaksi"
-                cancelText="Kembali"
+                message={`Transaksi ${voidDialog.item?.nomor_transaksi || ''} akan dibatalkan dan stok sparepart dikembalikan. Isi alasan pembatalan.`}
                 loading={voidMutation.isPending}
                 onClose={() => setVoidDialog({ visible: false, item: null })}
-                onConfirm={handleConfirmVoid}
+                onSubmit={handleConfirmVoid}
             />
         </View>
     );

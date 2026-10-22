@@ -1,17 +1,48 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CalendarClock, CheckCircle2, Loader2, Wallet, Wrench } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CheckCircle2, History, Loader2, Lightbulb, ShieldCheck, Wallet, Wrench } from 'lucide-react';
 import { perbaikanService } from '../api/services';
-import type { PiutangTanpaKas, TanggalMundur } from '../api/services';
+import type { KesehatanData, PiutangTanpaKas, RiwayatPerbaikan, TanggalMundur, TemuanKesehatan } from '../api/services';
 import { formatCurrencyDisplay, formatDate } from '../utils/format';
 import { Badge, Card, Empty, Loading, PageHeader } from '../components/ui';
 
+// Pesan dari backend dipakai apa adanya. Error tanpa pesan jelas diberi petunjuk sesuai status.
 const errMsg = (e: unknown, fallback: string) => {
-  const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  const response = (e as { response?: { status?: number; data?: { detail?: unknown } } })?.response;
+  const detail = response?.data?.detail;
   if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail) && typeof detail[0]?.msg === 'string') return `Data belum lengkap: ${detail[0].msg}`;
+  if (response?.status === 401) return 'Sesi habis. Masuk lagi lalu coba ulang.';
+  if (response?.status === 403) return 'Akun ini tidak punya akses ke perbaikan data. Minta ADMIN atau MANAGER.';
+  if (response?.status && response.status >= 500) return 'Server sedang bermasalah. Coba lagi sebentar; kalau terus berulang, laporkan ke admin.';
+  if (!response) return 'Tidak bisa terhubung ke server. Periksa koneksi lalu coba lagi.';
   return fallback;
 };
 
+const TINGKAT_UI = {
+  ok: { tone: 'ok' as const, icon: ShieldCheck, label: 'Aman' },
+  info: { tone: 'info' as const, icon: Lightbulb, label: 'Info' },
+  peringatan: { tone: 'warn' as const, icon: AlertTriangle, label: 'Peringatan' },
+  kritis: { tone: 'bad' as const, icon: AlertTriangle, label: 'Kritis' },
+};
+
 const TANGGAL_VALID = /^\d{4}-\d{2}-\d{2}$/;
+
+const JENIS_LABEL: Record<string, string> = {
+  PIUTANG_CATAT_KAS: 'Catat kas piutang',
+  PIUTANG_BATAL: 'Batalkan piutang',
+  TANGGAL_UBAH: 'Ubah tanggal',
+};
+
+const labelJenis = (jenis: string) =>
+  jenis.startsWith('GAGAL_')
+    ? `Gagal · ${JENIS_LABEL[jenis.slice(6)] ?? jenis.slice(6)}`
+    : JENIS_LABEL[jenis] ?? jenis;
+
+// Waktu dari server sudah WIB tanpa zona; tampilkan komponennya apa adanya.
+const waktuWib = (iso: string) => {
+  const [tanggal, jam = ''] = iso.split('T');
+  return `${formatDate(tanggal)} ${jam.slice(0, 8)} WIB`;
+};
 
 // Pilihan akun untuk pencairan: tunai ke kas utama atau laci unit, transfer ke bank utama.
 const AKUN_PENCAIRAN = [
@@ -25,6 +56,8 @@ const AKUN_PENCAIRAN = [
 export default function PerbaikanData() {
   const [piutang, setPiutang] = useState<PiutangTanpaKas[] | null>(null);
   const [mundur, setMundur] = useState<TanggalMundur[] | null>(null);
+  const [riwayat, setRiwayat] = useState<RiwayatPerbaikan[] | null>(null);
+  const [kesehatan, setKesehatan] = useState<KesehatanData | null>(null);
   const [tanggalInput, setTanggalInput] = useState<Record<string, string>>({});
   const [akunPiutang, setAkunPiutang] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -32,9 +65,16 @@ export default function PerbaikanData() {
 
   const muat = useCallback(async () => {
     try {
-      const [p, m] = await Promise.all([perbaikanService.piutangTanpaKas(), perbaikanService.tanggalMundur(1)]);
+      const [p, m, r, k] = await Promise.all([
+        perbaikanService.piutangTanpaKas(),
+        perbaikanService.tanggalMundur(1),
+        perbaikanService.riwayat(),
+        perbaikanService.kesehatan(),
+      ]);
       setPiutang(p);
       setMundur(m);
+      setRiwayat(r);
+      setKesehatan(k);
     } catch (e) {
       setNotice({ tone: 'bad', text: errMsg(e, 'Gagal memuat data perbaikan') });
     }
@@ -75,6 +115,43 @@ export default function PerbaikanData() {
           {notice.text}
         </div>
       )}
+
+      <Card title="Kesehatan data" sub="Pemeriksaan kondisi data dan rekomendasi tindak lanjut." icon={ShieldCheck}>
+        {kesehatan === null ? (
+          <Loading />
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {kesehatan.checks.map((c, i) => (
+                <Badge key={i} tone={TINGKAT_UI[c.tingkat].tone}>
+                  {c.pesan}
+                </Badge>
+              ))}
+            </div>
+            {kesehatan.rekomendasi.length > 0 && (
+              <div>
+                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">Rekomendasi</div>
+                <ul className="space-y-2">
+                  {kesehatan.rekomendasi.map((r: TemuanKesehatan, i) => {
+                    const ui = TINGKAT_UI[r.tingkat];
+                    const Icon = ui.icon;
+                    return (
+                      <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                        <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          <span className="font-semibold">{ui.label}:</span> {r.pesan}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+
+      <div className="h-5" />
 
       <Card title="Piutang manual tanpa kas" sub="Dibuat tanpa metode pencairan, jadi tidak ada uang keluar yang tercatat." icon={Wallet}>
         {piutang === null ? (
@@ -203,6 +280,33 @@ export default function PerbaikanData() {
                 </li>
               );
             })}
+          </ul>
+        )}
+      </Card>
+
+      <div className="h-5" />
+
+      <Card title="Riwayat perbaikan" sub="Semua aksi perbaikan, termasuk siapa yang melakukannya dan nilai sebelum serta sesudah." icon={History}>
+        {riwayat === null ? (
+          <Loading />
+        ) : riwayat.length === 0 ? (
+          <Empty text="Belum ada perbaikan yang dicatat." icon={CheckCircle2} />
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {riwayat.map((r) => (
+              <li key={r.id} className="py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone={r.jenis.startsWith('GAGAL_') ? 'bad' : 'info'}>{labelJenis(r.jenis)}</Badge>
+                  <span className="font-semibold text-slate-900">{r.nomor_referensi}</span>
+                  <span className="text-xs text-slate-500">{waktuWib(r.waktu)} · {r.oleh ?? 'tidak diketahui'}</span>
+                </div>
+                <div className="mt-1 text-xs text-slate-600">{r.ringkasan}</div>
+                <div className="mt-1 grid grid-cols-1 gap-x-6 text-[11px] text-slate-400 sm:grid-cols-2">
+                  <span>Sebelum: {r.sebelum ? JSON.stringify(r.sebelum) : '-'}</span>
+                  <span>Sesudah: {r.sesudah ? JSON.stringify(r.sesudah) : '-'}</span>
+                </div>
+              </li>
+            ))}
           </ul>
         )}
       </Card>

@@ -21,6 +21,7 @@ import { Input } from '../../components/ui/Input';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { Header } from '../../components/ui/Header';
+import { AbsensiPerTanggal } from '../../components/sdm/AbsensiPerTanggal';
 
 const STATUS_META: Record<AttendanceStatus, { label: string; color: string; bg: string; text: string }> = {
     HADIR: { label: 'Hadir', color: '#023C69', bg: 'bg-blue-50', text: 'text-blue-700' },
@@ -45,6 +46,7 @@ export default function AbsensiScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedKaryawan, setSelectedKaryawan] = useState<Karyawan | null>(null);
+    const [modeAbsensi, setModeAbsensi] = useState<'karyawan' | 'tanggal'>('karyawan');
     const [selectedDates, setSelectedDates] = useState<Record<string, any>>({});
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -327,7 +329,27 @@ export default function AbsensiScreen() {
             </Header>
 
             <View className="flex-1 -mt-14 z-10 px-6">
-                {!selectedKaryawan ? (
+                {!selectedKaryawan && (
+                    <View className="flex-row bg-surface rounded-2xl p-1 mb-3 border border-transparent shadow-sm">
+                        {([['karyawan', 'Per Karyawan'], ['tanggal', 'Per Tanggal']] as const).map(([value, label]) => (
+                            <Pressable
+                                key={value}
+                                onPress={() => setModeAbsensi(value)}
+                                className={`flex-1 py-2 rounded-xl items-center ${modeAbsensi === value ? 'bg-primary' : ''}`}
+                            >
+                                <Typography className={`text-xs font-bold ${modeAbsensi === value ? 'text-white' : 'text-textGray'}`}>{label}</Typography>
+                            </Pressable>
+                        ))}
+                    </View>
+                )}
+                {!selectedKaryawan && modeAbsensi === 'tanggal' ? (
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingTop: 10, paddingBottom: 150 }}
+                    >
+                        <AbsensiPerTanggal />
+                    </ScrollView>
+                ) : !selectedKaryawan ? (
                     <FlatList
                         data={filteredKaryawan}
                         renderItem={({ item }) => (

@@ -21,7 +21,8 @@ import {
     Trash,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { Calendar as RNCalendar } from 'react-native-calendars';
 import { useQuery } from '@tanstack/react-query';
 import { SlipGaji, SlipGajiPreviewItem, PaymentStatus, sdmService } from '../../services/sdm';
@@ -231,7 +232,7 @@ export default function SlipGajiScreen() {
         return items;
     }, [slipHistory, searchQuery]);
 
-    const bottomSheetRef = useRef<BottomSheet>(null);
+    const bottomSheetRef = useRef<any>(null);
     const snapPoints = useMemo(() => ['65%', '85%'], []);
 
     const handleGoBack = () => {

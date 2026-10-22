@@ -52,6 +52,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
     const insets = useSafeAreaInsets();
     const [paymentMode, setPaymentMode] = useState<'TUNAI' | 'TRANSFER' | 'SPLIT'>('TUNAI');
     const [paymentAmount, setPaymentAmount] = useState('');
+    const [pesanNol, setPesanNol] = useState(false);
     const [splitTunai, setSplitTunai] = useState('');
     const [splitTransfer, setSplitTransfer] = useState('');
     const [diskonValue, setDiskonValue] = useState('');
@@ -89,6 +90,9 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
     const isLunas = useMemo(() => {
         if (isInternalMobil) return false;
         if (isInternalja) return true;
+        // Tagihan Rp0 (tiket kosong) tidak otomatis lunas: harus ada pembayaran atau diskon.
+        if (sisaTagihan <= 0 && !(diskonAmt > 0)) return false;
+        if (sisaTagihan <= 0 && parseNumber(paymentAmount) <= 0 && paymentMode !== 'SPLIT') return false;
         if (paymentMode === 'SPLIT') return splitTotal >= sisaTagihan;
         return parseNumber(paymentAmount) >= sisaTagihan;
     }, [paymentMode, paymentAmount, splitTotal, sisaTagihan, isInternalja, isInternalMobil]);
@@ -124,6 +128,12 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                 kas_jenis: paymentMode === 'TUNAI' ? 'KAS_UNIT_BENGKEL' : undefined,
             });
             totalBayarBaru = amt;
+        }
+
+        // Pembayaran Rp0 tanpa diskon tidak dikirim; beri tahu kasir alasannya.
+        if (!isInternalja && !isInternalMobil && totalBayarBaru <= 0 && !(diskonAmt > 0)) {
+            setPesanNol(true);
+            return;
         }
 
         await onConfirm({
@@ -408,6 +418,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                                 className="flex-1 text-sm font-bold text-textMain"
                                                 value={paymentAmount}
                                                 onChangeText={(t) => {
+                                                    setPesanNol(false);
                                                     const cleaned = t.replace(/[^0-9]/g, '');
                                                     setPaymentAmount(
                                                         cleaned.replace(
@@ -435,6 +446,12 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                             </Pressable>
                                         </View>
                                     </View>
+                                )}
+
+                                {pesanNol && (
+                                    <Typography className="text-rose-600 text-xs mb-3">
+                                        Isi jumlah pembayaran lebih dari Rp0, atau isi diskon jika tagihan memang dibebaskan.
+                                    </Typography>
                                 )}
 
                                 {/* Kembalian Info */}

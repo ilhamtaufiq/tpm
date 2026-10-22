@@ -14,7 +14,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString, tanggalLokal } from '../../utils/format';
 import { getErrorMessage } from '../../utils/error';
 import { isBengkelTransactionLocked, isBengkelTransactionVoided } from '../../utils/bengkelTransaction';
-import { AlertDialog } from '../ui/AlertDialog';
+import { AlasanBatalDialog } from '../ui/AlasanBatalDialog';
 import {
     Truck,
     Calendar,
@@ -82,10 +82,10 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
 
     const totalSplitAmount = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
 
-    const handleConfirmVoid = async () => {
+    const handleConfirmVoid = async (alasan: string) => {
         if (!voidDialog.item) return;
         try {
-            await voidMutation.mutateAsync(voidDialog.item.id);
+            await voidMutation.mutateAsync({ id: voidDialog.item.id, alasan });
             queryClient.invalidateQueries({ queryKey: ['jasa_angkut'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
             appAlert('Berhasil', 'Transaksi perbaikan bengkel berhasil dibatalkan');
@@ -1176,17 +1176,13 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                 </View>
             </Modal>
 
-            <AlertDialog
+            <AlasanBatalDialog
                 visible={voidDialog.visible}
-                type="confirm"
-                variant="error"
                 title="Batalkan Perbaikan Bengkel"
-                message={`Apakah Anda yakin ingin membatalkan transaksi perbaikan ${voidDialog.item?.nomor_transaksi || ''}? Stok sparepart dan jurnal transaksi akan dikembalikan.`}
-                confirmText="Batalkan Transaksi"
-                cancelText="Kembali"
+                message={`Transaksi perbaikan ${voidDialog.item?.nomor_transaksi || ''} akan dibatalkan dan stok sparepart dikembalikan. Isi alasan pembatalan.`}
                 loading={voidMutation.isPending}
                 onClose={() => setVoidDialog({ visible: false, item: null })}
-                onConfirm={handleConfirmVoid}
+                onSubmit={handleConfirmVoid}
             />
         </ScrollView>
     );

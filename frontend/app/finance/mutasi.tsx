@@ -26,7 +26,8 @@ import {
 } from 'lucide-react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { KasBankTransaction, KasBankAllBalances, KasBankJenis } from '../../services/keuangan';
@@ -176,7 +177,7 @@ export default function MutasiKasScreen() {
         }
     }, [role]);
 
-    const bottomSheetRef = useRef<BottomSheet>(null);
+    const bottomSheetRef = useRef<any>(null);
     const snapPoints = useMemo(() => ['65%', '85%'], []);
     const [actionLoading, setActionLoading] = useState(false);
     const [dialogConfig, setDialogConfig] = useState<{

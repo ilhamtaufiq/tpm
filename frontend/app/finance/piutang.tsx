@@ -21,7 +21,8 @@ import {
     Trash2,
 } from 'lucide-react-native';
 import { useRouter, router, useLocalSearchParams } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { keuanganService, Piutang, PiutangSummary, PiutangStatus, PembayaranPiutang } from '../../services/keuangan';
@@ -138,9 +139,9 @@ export default function PiutangUsahaScreen() {
     const queryClient = useQueryClient();
     const createMutation = useCreatePiutang();
 
-    const createSheetRef = useRef<BottomSheet>(null);
-    const detailSheetRef = useRef<BottomSheet>(null);
-    const paymentSheetRef = useRef<BottomSheet>(null);
+    const createSheetRef = useRef<any>(null);
+    const detailSheetRef = useRef<any>(null);
+    const paymentSheetRef = useRef<any>(null);
 
     const createSnapPoints = useMemo(() => ['75%', '90%'], []);
     const detailSnapPoints = useMemo(() => ['70%', '85%'], []);
@@ -723,6 +724,14 @@ export default function PiutangUsahaScreen() {
                 subtitle={unitLabel ? `Daftar piutang unit ${unitLabel}` : 'Pantau Penagihan & Jatuh Tempo'}
                 showBackButton
                 onBackButtonPress={handleGoBack}
+                rightElement={
+                    <Pressable
+                        onPress={() => router.push('/finance/piutang-folder')}
+                        className="px-3 h-11 bg-background rounded-2xl items-center justify-center border border-transparent shadow-sm active:opacity-75"
+                    >
+                        <Typography weight="bold" className="text-primary text-xs">Folder</Typography>
+                    </Pressable>
+                }
             />
 
             {/* Filter & Search Navigator Overlay */}

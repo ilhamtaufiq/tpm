@@ -306,7 +306,7 @@ export default function NeracaScreen() {
                     </View>
 
                     <View className="mb-4 w-full">
-                        <FinancialRow label="2. Laba Ditahan" value={totalLabaAdj} bold large color="text-violet-700" />
+                        <FinancialRow label="2. Laba Operasional" value={totalLabaAdj} bold large color="text-violet-700" />
                     </View>
 
                     <View className="mb-4 w-full">
@@ -437,7 +437,7 @@ export default function NeracaScreen() {
                     )}
                 </View>
                 <Typography variant="caption" className="text-slate-100/70 text-[10px] mt-3 leading-relaxed">
-                    Aktiva = Kas & Bank + Piutang + Persediaan + Stok Mobil + Aset Tetap. Pasiva = Hutang + Modal (Setoran + Laba Ditahan − Prive). Selisih ≠ 0 = ada transaksi belum tercatat / salah pos.
+                    Aktiva = Kas & Bank + Piutang + Persediaan + Stok Mobil + Aset Tetap. Pasiva = Hutang + Modal (Setoran + Laba Operasional − Prive). Selisih ≠ 0 = ada transaksi belum tercatat / salah pos.
                 </Typography>
             </View>
         );
@@ -584,7 +584,7 @@ export default function NeracaScreen() {
 
             {/* Preview Modal */}
             {showPdfPreview && (
-                <Modal visible={showPdfPreview} animationType="slide">
+                <Modal onRequestClose={() => setShowPdfPreview(false)} visible={showPdfPreview} animationType="slide">
                     <SafeAreaView className="flex-1 bg-surface">
                         <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-surface">
                             <Pressable onPress={() => setShowPdfPreview(false)} className="w-10 h-10 items-center justify-center rounded-full bg-background"><X size={20} color="#1e293b" /></Pressable>

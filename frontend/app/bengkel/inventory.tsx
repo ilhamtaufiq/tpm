@@ -3,7 +3,8 @@ import { View, ScrollView, Pressable, TextInput, StatusBar, RefreshControl as RN
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUIStore } from '../../store/useUIStore';
 import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -75,7 +76,7 @@ export default function InventoryScreen() {
     const [sortOrder, setSortOrder] = useState('asc');
     const [stockFilter, setStockFilter] = useState<StockFilter>('ALL');
     const [sheetIndex, setSheetIndex] = useState(-1);
-    const sortSheetRef = useRef<BottomSheet>(null);
+    const sortSheetRef = useRef<any>(null);
     const insets = useSafeAreaInsets();
     const updateStockMutation = useUpdateSparePartStock();
 

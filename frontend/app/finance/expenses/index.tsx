@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator, Platform, Modal } from 'react-native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../../components/ui/BottomSheetWithBack';
 import { appAlert } from '../../../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUIStore } from '../../../store/useUIStore';
@@ -129,7 +130,7 @@ export default function ExpensesScreen() {
         return formatDateFns(refDate, 'yyyy');
     }, [period, refDate]);
 
-    const sheetRef = useRef<BottomSheet>(null);
+    const sheetRef = useRef<any>(null);
     const snapPoints = useMemo(() => ['95%'], []);
 
     const openForm = () => {

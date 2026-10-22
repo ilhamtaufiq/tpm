@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
+import { AlasanBatalDialog } from '../../components/ui/AlasanBatalDialog';
 import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 import {
     ChevronLeft,
@@ -151,41 +152,40 @@ export default function QueueScreen() {
     const updateStatsMutation = useUpdateTransaksiBengkelStatus();
     const voidTransaksiMutation = useVoidTransaksiBengkel();
 
+    const [voidAlasanTarget, setVoidAlasanTarget] = useState<any | null>(null);
+
     const handleVoidTransaction = (item: any) => {
         if (!item?.id) return;
         setDetailModalOpen(false);
-        setDialogConfig({
-            visible: true,
-            title: 'Batalkan Transaksi?',
-            message: `Transaksi ${item.nomor_transaksi} akan dibatalkan dan stok dikembalikan. Lanjutkan?`,
-            variant: 'warning',
-            type: 'confirm',
-            onConfirm: async () => {
-                try {
-                    setDialogConfig((prev: any) => ({ ...prev, visible: false }));
-                    await voidTransaksiMutation.mutateAsync(item.id);
-                    setSelectedItem(null);
-                    refetch();
-                    refetchSummary();
-                    setDialogConfig({
-                        visible: true,
-                        title: 'Transaksi Dibatalkan',
-                        message: `Transaksi ${item.nomor_transaksi} berhasil dibatalkan.`,
-                        variant: 'success',
-                        type: 'alert'
-                    });
-                } catch (error) {
-                    console.error('Failed to void transaction:', error);
-                    setDialogConfig({
-                        visible: true,
-                        title: 'Gagal',
-                        message: 'Gagal membatalkan transaksi.',
-                        variant: 'error',
-                        type: 'alert'
-                    });
-                }
-            }
-        });
+        setVoidAlasanTarget(item);
+    };
+
+    const submitVoidTransaction = async (alasan: string) => {
+        const item = voidAlasanTarget;
+        if (!item) return;
+        try {
+            await voidTransaksiMutation.mutateAsync({ id: item.id, alasan });
+            setVoidAlasanTarget(null);
+            setSelectedItem(null);
+            refetch();
+            refetchSummary();
+            setDialogConfig({
+                visible: true,
+                title: 'Transaksi Dibatalkan',
+                message: `Transaksi ${item.nomor_transaksi} berhasil dibatalkan.`,
+                variant: 'success',
+                type: 'alert'
+            });
+        } catch (error: any) {
+            setVoidAlasanTarget(null);
+            setDialogConfig({
+                visible: true,
+                title: 'Gagal',
+                message: getErrorMessage(error, 'Gagal membatalkan transaksi.'),
+                variant: 'error',
+                type: 'alert'
+            });
+        }
     };
 
     const onRefresh = useCallback(async () => {
@@ -1103,6 +1103,15 @@ export default function QueueScreen() {
                                     })()}
                                 </Card>
 
+                                {selectedItem.status_pengerjaan === 'BATAL' || selectedItem.status_bayar === 'BATAL' ? (
+                                    <View className="bg-rose-50 border border-rose-100 rounded-2xl p-4 mb-4">
+                                        <Typography weight="bold" className="text-rose-700 text-xs uppercase tracking-widest mb-1">Dibatalkan</Typography>
+                                        <Typography className="text-rose-700 text-sm">
+                                            Alasan: {selectedItem.alasan_batal || 'Tidak tercatat (dibatalkan sebelum alasan wajib)'}
+                                        </Typography>
+                                    </View>
+                                ) : null}
+
                                 {/* Action Buttons */}
                                 <View className="flex-row space-x-3 mb-4">
                                     <Pressable
@@ -1364,6 +1373,14 @@ export default function QueueScreen() {
             </Modal>
 
             {/* Alert Dialog - rendered last for proper z-index */}
+            <AlasanBatalDialog
+                visible={!!voidAlasanTarget}
+                title="Batalkan Transaksi?"
+                message={`Transaksi ${voidAlasanTarget?.nomor_transaksi ?? ''} akan dibatalkan dan stok dikembalikan. Isi alasan pembatalan.`}
+                loading={voidTransaksiMutation.isPending}
+                onClose={() => setVoidAlasanTarget(null)}
+                onSubmit={submitVoidTransaction}
+            />
             <AlertDialogComponent
                 visible={dialogConfig.visible}
                 title={dialogConfig.title}

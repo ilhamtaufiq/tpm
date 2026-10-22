@@ -12,7 +12,8 @@ import {
     X,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import {
     useJasaList,
     useCreateJasa,
@@ -88,7 +89,7 @@ export default function JasaServisScreen() {
     const [isEditing, setIsEditing] = useState(false);
 
     const [sheetVisible, setSheetVisible] = useState(false);
-    const bottomSheetRef = useRef<BottomSheet>(null);
+    const bottomSheetRef = useRef<any>(null);
     const snapPoints = useMemo(() => ['65%', '85%'], []);
 
     const handleGoBack = () => {

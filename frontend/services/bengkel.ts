@@ -111,8 +111,8 @@ export const bengkelService = {
         return response.data;
     },
 
-    voidTransaksi: async (id: number) => {
-        const response = await api.delete(`/transaksi-bengkel/${id}`);
+    voidTransaksi: async (id: number, alasan: string) => {
+        const response = await api.delete(`/transaksi-bengkel/${id}`, { params: { alasan } });
         return response.data;
     },
 
