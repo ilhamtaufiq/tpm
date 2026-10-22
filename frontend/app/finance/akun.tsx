@@ -22,7 +22,8 @@ import {
     History,
     Landmark
 } from 'lucide-react-native';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { keuanganService, KasBankAllBalances, KasBankBalance, KasBankJenis } from '../../services/keuangan';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
@@ -126,7 +127,7 @@ export default function AkunKeuanganScreen() {
     });
 
     // Sheet refs
-    const adjustSheetRef = useRef<BottomSheet>(null);
+    const adjustSheetRef = useRef<any>(null);
     const adjustSnapPoints = useMemo(() => ['75%', '90%'], []);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -479,7 +480,7 @@ export default function AkunKeuanganScreen() {
 
             {/* Adjustment Modal - Platform Specific */}
             {Platform.OS === 'web' ? (
-                <Modal visible={isAdjustModalVisible} transparent animationType="fade">
+                <Modal onRequestClose={() => setIsAdjustModalVisible(false)} visible={isAdjustModalVisible} transparent animationType="fade">
                     <View style={styles.modalOverlay}>
                         <Pressable className="absolute inset-0" onPress={() => setIsAdjustModalVisible(false)} />
                         <View className="bg-surface" style={styles.webModalContent}>

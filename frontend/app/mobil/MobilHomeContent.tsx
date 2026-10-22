@@ -38,7 +38,8 @@ import {
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
-import BottomSheet, { BottomSheetView, BottomSheetModal, BottomSheetModalProvider, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetView, BottomSheetModal, BottomSheetModalProvider, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { MobilForm } from '../../components/MobilForm';
 import { MobilDetail } from '../../components/MobilDetail';
 import { MobilSalesForm } from '../../components/MobilSalesForm';

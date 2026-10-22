@@ -21,7 +21,8 @@ import {
     Trash2,
 } from 'lucide-react-native';
 import { useRouter, router, useLocalSearchParams } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { keuanganService, Piutang, PiutangSummary, PiutangStatus, PembayaranPiutang } from '../../services/keuangan';
@@ -138,9 +139,9 @@ export default function PiutangUsahaScreen() {
     const queryClient = useQueryClient();
     const createMutation = useCreatePiutang();
 
-    const createSheetRef = useRef<BottomSheet>(null);
-    const detailSheetRef = useRef<BottomSheet>(null);
-    const paymentSheetRef = useRef<BottomSheet>(null);
+    const createSheetRef = useRef<any>(null);
+    const detailSheetRef = useRef<any>(null);
+    const paymentSheetRef = useRef<any>(null);
 
     const createSnapPoints = useMemo(() => ['75%', '90%'], []);
     const detailSnapPoints = useMemo(() => ['70%', '85%'], []);

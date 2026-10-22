@@ -20,7 +20,8 @@ import {
     Search,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { sdmService, Kasbon, KasbonSummary, PaymentStatus, Karyawan } from '../../services/sdm';
 import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString } from '../../utils/format';
 import { useAlert } from '../../context/AlertContext';
@@ -95,8 +96,8 @@ export default function KasbonScreen() {
 
     const { showAlert } = useAlert();
 
-    const createSheetRef = useRef<BottomSheet>(null);
-    const detailSheetRef = useRef<BottomSheet>(null);
+    const createSheetRef = useRef<any>(null);
+    const detailSheetRef = useRef<any>(null);
 
     const createSnapPoints = useMemo(() => ['75%', '90%'], []);
     const detailSnapPoints = useMemo(() => ['70%', '85%'], []);

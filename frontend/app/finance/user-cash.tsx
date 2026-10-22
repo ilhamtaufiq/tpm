@@ -25,7 +25,8 @@ import {
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useUserCashList, useAdjustUserCash, useSetUserCash, useUserCashHistory } from '../../hooks/useKeuangan';
@@ -61,7 +62,7 @@ export default function UserCashManagementScreen() {
     
     // Adjustment Form State
     const [form, setForm] = useState<AdjustmentForm | null>(null);
-    const bottomSheetRef = useRef<BottomSheet>(null);
+    const bottomSheetRef = useRef<any>(null);
     const snapPoints = useMemo(() => ['60%', '80%'], []);
 
     // Alert Dialog State

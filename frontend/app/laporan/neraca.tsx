@@ -584,7 +584,7 @@ export default function NeracaScreen() {
 
             {/* Preview Modal */}
             {showPdfPreview && (
-                <Modal visible={showPdfPreview} animationType="slide">
+                <Modal onRequestClose={() => setShowPdfPreview(false)} visible={showPdfPreview} animationType="slide">
                     <SafeAreaView className="flex-1 bg-surface">
                         <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-surface">
                             <Pressable onPress={() => setShowPdfPreview(false)} className="w-10 h-10 items-center justify-center rounded-full bg-background"><X size={20} color="#1e293b" /></Pressable>

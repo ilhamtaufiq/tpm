@@ -2,7 +2,8 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Pressable, TextInput, StatusBar, ActivityIndicator, FlatList, RefreshControl, Platform, Switch, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { format } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import {
@@ -99,7 +100,7 @@ export default function UsersScreen() {
         variant: 'success' | 'error' | 'warning' | 'info'; type?: 'alert' | 'confirm'; onConfirm?: () => void;
     }>({ visible: false, title: '', message: '', variant: 'info', type: 'alert' });
 
-    const sheetRef = useRef<BottomSheet>(null);
+    const sheetRef = useRef<any>(null);
     const snapPoints = useMemo(() => ['72%', '94%'], []);
 
     const { data: userData, isLoading, isError, refetch } = useUserList({ limit: 500 });

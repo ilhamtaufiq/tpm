@@ -46,7 +46,8 @@ import {
     CreditCard
 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheetBase, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { PaymentModal } from '../../components/PaymentModal';
 import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
 import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment, useVoidTransaksiBengkel, useCreatePengeluaran } from '../../hooks/useBengkel';
@@ -198,7 +199,7 @@ export default function BengkelScreen() {
     });
     const [isDateModalVisible, setIsDateModalVisible] = useState(false);
     const [tempDateRange, setTempDateRange] = useState({ ...dateRange });
-    const dateSheetRef = useRef<BottomSheet>(null);
+    const dateSheetRef = useRef<any>(null);
     const dateSnapPoints = useMemo(() => ['50%', '70%'], []);
 
     // Phase paint: shell first → data after interactions → sheets last
@@ -627,13 +628,13 @@ export default function BengkelScreen() {
         router.push(menu.route as any);
     }, [bengkelMenus]);
 
-    const bottomSheetRef = useRef<BottomSheet>(null);
+    const bottomSheetRef = useRef<any>(null);
     const snapPoints = useMemo(() => ['75%', '90%'], []);
 
-    const walletSheetRef = useRef<BottomSheet>(null);
+    const walletSheetRef = useRef<any>(null);
     const walletSnapPoints = useMemo(() => ['85%', '95%'], []);
 
-    const queueSheetRef = useRef<BottomSheet>(null);
+    const queueSheetRef = useRef<any>(null);
     const queueSnapPoints = useMemo(() => ['78%', '92%'], []);
 
     const handlePresentModalPress = (type: 'form' | 'detail' | 'edit', item?: any) => {
@@ -2160,7 +2161,7 @@ export default function BengkelScreen() {
 
             {/* Date Selection Modal (Hybrid) */}
             {Platform.OS === 'web' ? (
-                <Modal visible={isDateModalVisible} transparent animationType="fade">
+                <Modal onRequestClose={() => setIsDateModalVisible(false)} visible={isDateModalVisible} transparent animationType="fade">
                     <View className="flex-1 bg-black/50 justify-center items-center p-6">
                         <View className="bg-surface rounded-3xl w-full max-w-md p-8 shadow-2xl">
                             <View className="flex-row justify-between items-center mb-6">

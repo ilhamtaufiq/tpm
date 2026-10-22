@@ -314,7 +314,7 @@ export default function ArusKasAkunScreen() {
 
             {/* PDF PREVIEW MODAL */}
             {showPdfPreview && (
-                <Modal visible={showPdfPreview} animationType="slide">
+                <Modal onRequestClose={() => setShowPdfPreview(false)} visible={showPdfPreview} animationType="slide">
                     <SafeAreaView className="flex-1 bg-surface">
                         <View className="flex-row items-center justify-between p-4 border-b border-slate-100 bg-surface">
                             <Pressable onPress={() => setShowPdfPreview(false)} className="p-2">
