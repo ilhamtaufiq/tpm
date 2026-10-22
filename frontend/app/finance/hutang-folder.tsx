@@ -32,6 +32,7 @@ export default function HutangFolderScreen() {
     const [namaBaru, setNamaBaru] = useState('');
     const [tanggal, setTanggal] = useState(getTodayString());
     const [nominal, setNominal] = useState('');
+    const [keterangan, setKeterangan] = useState('');
     const [metode, setMetode] = useState<'TUNAI' | 'TRANSFER'>('TUNAI');
     const [dialog, setDialog] = useState<{ visible: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
         visible: false, title: '', message: '', variant: 'info',
@@ -86,10 +87,12 @@ export default function HutangFolderScreen() {
             tanggal,
             metode,
             nominal: parseNumber(nominal),
+            catatan: keterangan.trim() || undefined,
         }),
         onSuccess: async (hasil: any) => {
             const bagian = (hasil?.dibayar ?? []).length;
             setNominal('');
+            setKeterangan('');
             await refreshSemua();
             tampilkan('Pembayaran dicatat', `Dibagi ke ${bagian} struk, dimulai dari yang tertua.`, 'success');
         },
@@ -167,6 +170,7 @@ export default function HutangFolderScreen() {
                             </Pressable>
                         ))}
                     </View>
+                    <Input value={keterangan} onChangeText={setKeterangan} placeholder="Keterangan pelunasan (opsional)" maxLength={255} />
                     <Button title="Bayar folder" onPress={() => bayarMutation.mutate()} disabled={!nominalValid || !tanggalValid || bayarMutation.isPending} loading={bayarMutation.isPending} />
                 </Card>
 

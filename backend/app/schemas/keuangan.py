@@ -45,6 +45,8 @@ class PaymentDetailHutang(PaymentDetail):
 class PiutangCreate(BaseModel):
     """Schema for creating receivable."""
 
+    folder_id: Optional[int] = None
+
     tanggal: TanggalTransaksi
     sumber: PiutangSource
     referensi_id: Optional[int] = None
@@ -136,6 +138,8 @@ class PiutangSummary(BaseModel):
 
 class HutangCreate(BaseModel):
     """Schema for creating payable."""
+
+    folder_id: Optional[int] = None
 
     tanggal: TanggalTransaksi
     sumber: HutangSource
