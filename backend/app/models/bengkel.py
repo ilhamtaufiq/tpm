@@ -268,6 +268,7 @@ class TransaksiPenjualanBengkel(Base, TimestampMixin):
     kembalian: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
 
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    alasan_batal: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_by: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id"),
         nullable=True,

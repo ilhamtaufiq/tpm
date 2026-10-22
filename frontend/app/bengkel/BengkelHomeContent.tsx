@@ -72,6 +72,7 @@ import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
+import { AlasanBatalDialog } from '../../components/ui/AlasanBatalDialog';
 import { getErrorMessage } from '../../utils/error';
 import { FILE_URL } from '../../utils/api';
 import {
@@ -697,38 +698,38 @@ export default function BengkelScreen() {
         }
     };
 
-    const handleVoidOrder = async (item: any) => {
-        setDialogConfig({
-            visible: true,
-            title: 'Batalkan Order',
-            message: `Yakin ingin membatalkan order ${item.nomor_plat}? Transaksi akan dihapus permanen dan stok sparepart akan dikembalikan.`,
-            variant: 'error',
-            type: 'confirm',
-            onConfirm: async () => {
-                try {
-                    setDialogConfig(prev => ({ ...prev, loading: true }));
-                    await voidMutation.mutateAsync(item.id);
-                    setDialogConfig({
-                        visible: true,
-                        title: 'Sukses',
-                        message: 'Order berhasil dibatalkan',
-                        variant: 'success',
-                        type: 'alert',
-                        loading: false
-                    });
-                    handleClosePress();
-                } catch (err: any) {
-                    setDialogConfig({
-                        visible: true,
-                        title: 'Gagal',
-                        message: getErrorMessage(err, 'Gagal membatalkan order'),
-                        variant: 'error',
-                        type: 'alert',
-                        loading: false
-                    });
-                }
-            }
-        });
+    const [voidAlasanTarget, setVoidAlasanTarget] = useState<any | null>(null);
+
+    const handleVoidOrder = (item: any) => {
+        setVoidAlasanTarget(item);
+    };
+
+    const submitVoidOrder = async (alasan: string) => {
+        const item = voidAlasanTarget;
+        if (!item) return;
+        try {
+            await voidMutation.mutateAsync({ id: item.id, alasan });
+            setVoidAlasanTarget(null);
+            setDialogConfig({
+                visible: true,
+                title: 'Sukses',
+                message: 'Order berhasil dibatalkan',
+                variant: 'success',
+                type: 'alert',
+                loading: false
+            });
+            handleClosePress();
+        } catch (err: any) {
+            setVoidAlasanTarget(null);
+            setDialogConfig({
+                visible: true,
+                title: 'Gagal',
+                message: getErrorMessage(err, 'Gagal membatalkan order'),
+                variant: 'error',
+                type: 'alert',
+                loading: false
+            });
+        }
     };
 
     const handleApplyDate = () => {
@@ -2284,6 +2285,14 @@ export default function BengkelScreen() {
                     </View>
                 </View>
             </Modal>
+            <AlasanBatalDialog
+                visible={!!voidAlasanTarget}
+                title="Batalkan Order"
+                message={`Order ${voidAlasanTarget?.nomor_plat ?? ''} akan dibatalkan dan stok sparepart dikembalikan. Isi alasan pembatalan.`}
+                loading={voidMutation.isPending}
+                onClose={() => setVoidAlasanTarget(null)}
+                onSubmit={submitVoidOrder}
+            />
             <AlertDialogComponent
                 visible={dialogConfig.visible}
                 title={dialogConfig.title}

@@ -180,7 +180,7 @@ def test_kasus_1_bengkel_mobil_edit_dan_void_balance(db):
         _assert_financial_reports_balanced(db, "Kasus 1 - Pasca Edit Item Nota Bengkel Mobil")
 
         # C. Test Void Transaksi Bengkel Mobil
-        void_success = service.void_transaction(transaksi.id)
+        void_success = service.void_transaction(transaksi.id, "Uji pembatalan transaksi bengkel")
         assert void_success is True
 
         # Verifikasi laporan keuangan pasca-void
@@ -192,7 +192,7 @@ def test_kasus_1_bengkel_mobil_edit_dan_void_balance(db):
             tx = db.query(TransaksiPenjualanBengkel).filter(TransaksiPenjualanBengkel.id == transaksi.id).first()
             if tx and tx.status_bayar != "BATAL":
                 try:
-                    service.void_transaction(transaksi.id)
+                    service.void_transaction(transaksi.id, "Uji pembatalan transaksi bengkel")
                 except Exception:
                     pass
 
@@ -306,7 +306,7 @@ def test_kasus_2_bengkel_jasa_angkut_edit_dan_void_balance(db):
         _assert_financial_reports_balanced(db, "Kasus 2 - Pasca Edit Item Nota Perbaikan Armada JA")
 
         # C. Test Void Transaksi Perbaikan Armada
-        void_success = service.void_transaction(transaksi.id)
+        void_success = service.void_transaction(transaksi.id, "Uji pembatalan transaksi bengkel")
         assert void_success is True
 
         # Verifikasi laporan keuangan pasca-void
@@ -318,6 +318,6 @@ def test_kasus_2_bengkel_jasa_angkut_edit_dan_void_balance(db):
             tx = db.query(TransaksiPenjualanBengkel).filter(TransaksiPenjualanBengkel.id == transaksi.id).first()
             if tx and tx.status_bayar != "BATAL":
                 try:
-                    service.void_transaction(transaksi.id)
+                    service.void_transaction(transaksi.id, "Uji pembatalan transaksi bengkel")
                 except Exception:
                     pass

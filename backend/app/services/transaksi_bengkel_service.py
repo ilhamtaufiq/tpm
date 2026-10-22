@@ -1884,8 +1884,8 @@ class TransaksiBengkelService:
         self._emit_change(transaksi, "status_updated")
         return transaksi
 
-    def void_transaction(self, transaksi_id: int) -> bool:
-        """Void a transaction and restore stock.
+    def void_transaction(self, transaksi_id: int, alasan: str) -> bool:
+        """Void a transaction and restore stock. Alasan wajib dan disimpan di transaksi.
 
         Note: Should only be used for recent transactions.
         """
@@ -1982,6 +1982,7 @@ class TransaksiBengkelService:
             # 6. VOID Transaction instead of deleting
             transaksi.status_pengerjaan = WorkshopStatus.BATAL
             transaksi.status_bayar = PaymentStatus.BATAL
+            transaksi.alasan_batal = alasan
 
             self.db.commit()
 

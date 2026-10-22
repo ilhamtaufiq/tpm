@@ -72,3 +72,5 @@ tags: [tpm, aturan, finansial, dev-guidelines]
 - Dokumen acuan: [[TPM - Aturan Bisnis & Invariant]] & [[CLAUDE]].
 
 ⬅️ [[CLAUDE|Kembali ke Hub]]
+
+31. **Pembatalan transaksi bengkel wajib alasan.** `DELETE /transaksi-bengkel/{id}?alasan=` menolak alasan kurang dari 5 karakter. Alasan disimpan di `transaksi_penjualan_bengkel.alasan_batal` dan ditampilkan di detail transaksi yang dibatalkan. Pembatalan otomatis dari penjualan mobil atau hapus unit mengisi alasan sistem.

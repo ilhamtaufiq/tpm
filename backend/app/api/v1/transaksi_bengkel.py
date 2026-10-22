@@ -160,8 +160,9 @@ def void_transaksi(
     transaksi_id: int,
     db: DBSession,
     current_user: ManagerUser,
+    alasan: str = Query(..., min_length=5, max_length=255, description="Alasan pembatalan, wajib"),
 ):
-    """Void transaction and restore stock."""
+    """Void transaction and restore stock. Alasan pembatalan wajib dan disimpan di transaksi."""
     service = TransaksiBengkelService(db)
-    service.void_transaction(transaksi_id)
+    service.void_transaction(transaksi_id, alasan.strip())
     return {"message": "Transaksi berhasil dibatalkan"}

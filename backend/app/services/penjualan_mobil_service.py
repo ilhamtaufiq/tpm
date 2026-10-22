@@ -1326,7 +1326,7 @@ class PenjualanMobilService:
         from app.services.transaksi_bengkel_service import TransaksiBengkelService
         bengkel_service = TransaksiBengkelService(self.db)
         for tx in linked_bengkel:
-            bengkel_service.void_transaction(tx.id)
+            bengkel_service.void_transaction(tx.id, "Dibatalkan otomatis: penjualan mobil dibatalkan")
 
         # 2. Refund: langsung membalik kas, atau ditunda sebagai hutang.
         if refund_mode == "LANGSUNG":

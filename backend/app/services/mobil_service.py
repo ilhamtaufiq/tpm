@@ -641,7 +641,7 @@ class MobilService:
             .all()
         )
         for tx in linked_bengkel:
-            bengkel_service.void_transaction(tx.id)
+            bengkel_service.void_transaction(tx.id, f"Dibatalkan otomatis: unit mobil dihapus ({tx.nomor_transaksi})")
 
         mobil.deleted_at = datetime.now()
         self.db.commit()
