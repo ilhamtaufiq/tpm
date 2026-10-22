@@ -724,14 +724,6 @@ export default function PiutangUsahaScreen() {
                 subtitle={unitLabel ? `Daftar piutang unit ${unitLabel}` : 'Pantau Penagihan & Jatuh Tempo'}
                 showBackButton
                 onBackButtonPress={handleGoBack}
-                rightElement={
-                    <Pressable
-                        onPress={() => router.push('/finance/piutang-folder')}
-                        className="px-3 h-11 bg-background rounded-2xl items-center justify-center border border-transparent shadow-sm active:opacity-75"
-                    >
-                        <Typography weight="bold" className="text-primary text-xs">Folder</Typography>
-                    </Pressable>
-                }
             />
 
             {/* Filter & Search Navigator Overlay */}

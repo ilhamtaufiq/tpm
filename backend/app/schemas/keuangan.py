@@ -98,7 +98,6 @@ class PiutangResponse(BaseModel):
     status: PiutangStatus
     is_overdue: bool = False
     catatan: Optional[str] = None
-    folder_id: Optional[int] = None
     pembayaran: List["PembayaranPiutangResponse"] = []
     created_at: datetime
 
