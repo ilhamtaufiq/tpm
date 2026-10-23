@@ -80,7 +80,8 @@ export default function QueueScreen() {
     const [queueSearchQuery, setQueueSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     useEffect(() => {
-        const t = setTimeout(() => setDebouncedSearch(queueSearchQuery.trim()), 350);
+        // Berhenti mengetik ~700 ms dulu baru mencari; tombol cari di keyboard mencari langsung.
+        const t = setTimeout(() => setDebouncedSearch(queueSearchQuery.trim()), 700);
         return () => clearTimeout(t);
     }, [queueSearchQuery]);
     const [queueWorkStatusFilter, setQueueWorkStatusFilter] = useState<'ALL' | 'antre' | 'proses' | 'selesai' | 'batal'>('ALL');
@@ -667,6 +668,8 @@ export default function QueueScreen() {
                     placeholder="Cari plat, customer, nomor transaksi..."
                     placeholderTextColor="#9CA3AF"
                     className="flex-1 ml-3 text-sm font-medium text-textMain"
+                    returnKeyType="search"
+                    onSubmitEditing={() => setDebouncedSearch(queueSearchQuery.trim())}
                     autoCorrect={false}
                     autoCapitalize="none"
                 />

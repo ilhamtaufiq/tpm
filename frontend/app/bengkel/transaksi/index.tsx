@@ -109,8 +109,8 @@ export default function BengkelTransaksiScreen() {
 
     const debouncedPartSearch = useDebounce(partSearch, 300);
     const debouncedServiceSearch = useDebounce(serviceSearch, 300);
-    const debouncedExistingSearch = useDebounce(existingSearch, 300);
-    const debouncedCustomerTransactionSearch = useDebounce(customerTransactionSearch, 300);
+    const debouncedExistingSearch = useDebounce(existingSearch, 600);
+    const debouncedCustomerTransactionSearch = useDebounce(customerTransactionSearch, 600);
     const PART_PAGE_SIZE = 40;
     const todayDate = useMemo(() => formatLocalDate(new Date()), []);
     const editTransactionId = transactionId ? Number(transactionId) : null;

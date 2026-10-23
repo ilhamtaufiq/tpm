@@ -269,7 +269,7 @@ export default function PublicReceiptPage() {
     const handleCopyLink = async () => {
         if (!receipt || !shareUrl) return;
         try {
-            await copyPublicReceiptLink(shareUrl, receipt.transactionNumber);
+            await copyPublicReceiptLink(shareUrl);
             showToast('Link struk disalin');
         } catch {
             showToast('Gagal menyalin link');
