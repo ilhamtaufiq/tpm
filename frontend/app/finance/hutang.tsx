@@ -253,6 +253,15 @@ export default function HutangUsahaScreen() {
 
     const hutangList = filteredList;
 
+    // Ringkasan atas ikut mode: di Per Nama dihitung dari grup yang tampil (sudah difilter pencarian nama).
+    const overview = useMemo(() => {
+        if (tampilan !== 'nama') return localSummary;
+        return {
+            total_sisa: grupList.reduce((jumlah, g) => jumlah + Number(g.total_sisa || 0), 0),
+            jumlah_belum_lunas: grupList.filter((g) => g.belum_lunas > 0).length,
+        };
+    }, [tampilan, grupList, localSummary]);
+
     const filterCounts = useMemo(() => {
         if (!summary) return {} as Record<string, number | undefined>;
         return {
@@ -907,9 +916,9 @@ export default function HutangUsahaScreen() {
                                 <View className="flex-row items-center justify-between">
                                     <View>
                                         <Typography variant="h1" weight="bold" className="text-textMain text-3xl tracking-tighter" numberOfLines={1} adjustsFontSizeToFit>
-                                            {formatCurrency(localSummary?.total_sisa || 0)}
+                                            {formatCurrency(overview?.total_sisa || 0)}
                                         </Typography>
-                                        <Typography className="text-textGray text-xs mt-1">Total Dari {localSummary?.jumlah_belum_lunas || 0} Invoice</Typography>
+                                        <Typography className="text-textGray text-xs mt-1">Total Dari {overview?.jumlah_belum_lunas || 0} {tampilan === 'nama' ? 'Nama' : 'Invoice'}</Typography>
                                     </View>
                                     <View className="bg-rose-50 p-4 rounded-2xl border border-rose-100">
                                         <CircleDollarSign size={24} color="#E11D48" />

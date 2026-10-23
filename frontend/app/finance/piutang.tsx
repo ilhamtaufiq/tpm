@@ -205,6 +205,15 @@ export default function PiutangUsahaScreen() {
         });
         return { total_sisa: totalSisa, jumlah_belum_lunas: countBelumLunas, jumlah_overdue: countOverdue };
     }, [piutangList]);
+    // Ringkasan atas ikut mode: di Per Nama dihitung dari grup yang tampil (sudah difilter pencarian nama).
+    const overview = useMemo(() => {
+        if (tampilan !== 'nama') return localSummary;
+        return {
+            total_sisa: grupList.reduce((jumlah, g) => jumlah + Number(g.total_sisa || 0), 0),
+            jumlah_belum_lunas: grupList.filter((g) => g.belum_lunas > 0).length,
+            jumlah_overdue: 0, // blok Jatuh Tempo disembunyikan di mode Per Nama
+        };
+    }, [tampilan, grupList, localSummary]);
 
     // Angka badge per filter. Sumbernya summary (satu query, unfiltered by status);
     // list tak bisa dipakai karena dibatasi limit + sudah terfilter server-side.
@@ -884,9 +893,9 @@ export default function PiutangUsahaScreen() {
                             <View className="flex-row items-center justify-between">
                                 <View>
                                     <Typography variant="h1" weight="bold" className="text-textMain text-3xl tracking-tighter" numberOfLines={1} adjustsFontSizeToFit>
-                                        {formatCurrency(localSummary?.total_sisa || 0)}
+                                        {formatCurrency(overview?.total_sisa || 0)}
                                     </Typography>
-                                    <Typography className="text-textGray text-xs mt-1">Total Dari {localSummary?.jumlah_belum_lunas || 0} Invoice</Typography>
+                                    <Typography className="text-textGray text-xs mt-1">Total Dari {overview?.jumlah_belum_lunas || 0} {tampilan === 'nama' ? 'Nama' : 'Invoice'}</Typography>
                                 </View>
                                 <View className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
                                     <CircleDollarSign size={24} color={themeColors.primary} />
@@ -901,15 +910,17 @@ export default function PiutangUsahaScreen() {
                                         <View className="w-2 h-2 rounded-full bg-amber-500 mr-1.5" />
                                         <Typography className="text-textGray text-[9px] uppercase font-bold tracking-widest">Belum Lunas</Typography>
                                     </View>
-                                    <Typography weight="bold" className="text-textMain text-sm">{localSummary?.jumlah_belum_lunas || 0} Akun</Typography>
+                                    <Typography weight="bold" className="text-textMain text-sm">{overview?.jumlah_belum_lunas || 0} Akun</Typography>
                                 </View>
+                                {tampilan === 'struk' && (
                                 <View className="flex-1 items-end pl-4 border-l border-transparent">
                                     <View className="flex-row items-center mb-1">
                                         <AlertTriangle size={10} color="#F43F5E" className="mr-1.5" />
                                         <Typography className="text-textGray text-[9px] uppercase font-bold tracking-widest">Jatuh Tempo</Typography>
                                     </View>
-                                    <Typography weight="bold" className="text-rose-600 text-sm">{localSummary?.jumlah_overdue || 0} Akun</Typography>
+                                    <Typography weight="bold" className="text-rose-600 text-sm">{overview?.jumlah_overdue || 0} Akun</Typography>
                                 </View>
+                                )}
                             </View>
                         </View>
 
