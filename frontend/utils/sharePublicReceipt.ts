@@ -2,23 +2,36 @@ import { Platform, Share } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import api, { BASE_URL } from './api';
-import { formatCurrency } from './format';
+import { formatNumber } from './format';
 import { printSettingsService } from './printSettings';
 import {
     buildPublicReceiptUrl,
     buildPublicShortUrl,
+    getPublicApiBase,
     getPublicReceiptBaseUrl,
     PublicReceiptType,
 } from './publicReceiptUrl';
 
 export const PUBLIC_RECEIPT_SHARE_TITLE = 'Struk Tiga Putra Motor';
 
-/** Pesan share: total nominal dan link struk, keduanya tebal. Rincian ada di struk digital. */
-export function buildPublicReceiptShareMessage(shareUrl: string, total?: number | null): string {
-    const baris: string[] = [];
-    if (total != null) baris.push(`Total: *${formatCurrency(total)}*`);
-    baris.push(`*${shareUrl}*`);
+/**
+ * Pesan share: judul, total, dan link ke halaman struk. Chat membuat pratinjau gambar dari link ini
+ * (tag OG di halaman struk), jadi gambar bisa diklik seperti link. Rincian ada di struk digital.
+ */
+export function buildPublicReceiptShareMessage(
+    transactionNumber: string | undefined,
+    linkUrl: string,
+    total?: number | null,
+): string {
+    const baris = [`Struk Transaksi ${(transactionNumber || '').trim() || '-'} - Tiga Putra Motor`];
+    if (total != null) baris.push(`Total : Rp. ${formatNumber(total)}`);
+    baris.push(`Klik link di bawah ini : ${linkUrl}`);
     return baris.join('\n');
+}
+
+/** Link halaman struk di server. Halaman ini memuat tag OG, jadi chat menampilkan gambar struk sebagai pratinjau. */
+export function buildPublicReceiptViewUrl(type: PublicReceiptType, idOrToken: string): string {
+    return `${getPublicApiBase()}/public/receipt/view/${type}/${encodeURIComponent(idOrToken)}`;
 }
 
 /** Ambil total struk dari endpoint publik. Gagal = null, pesan tetap berisi link. */
@@ -403,23 +416,25 @@ async function shareOnNative(
 }
 
 /**
- * Share public receipt: link text + optional struk image (for WhatsApp / system share).
- * Image sources (priority): imageDataUri → imageFileUri → server OG PNG.
+ * Share public receipt: pesan berisi total dan link ke halaman struk. Gambar struk tidak dilampirkan
+ * terpisah, karena pratinjau dari link sudah berfungsi sebagai gambar yang bisa diklik.
  */
 export async function sharePublicReceiptLink(
     options: SharePublicReceiptLinkOptions,
 ): Promise<SharePublicReceiptLinkResult> {
     const title = options.title || PUBLIC_RECEIPT_SHARE_TITLE;
-    const imageUri = await resolveShareImageFileUri(options);
+    const imageUri: string | null = null;
+    const viewUrl = options.receiptType && options.receiptId
+        ? buildPublicReceiptViewUrl(options.receiptType, options.receiptId)
+        : options.shareUrl;
+    // Link pendek meneruskan ke halaman struk dan tetap memberi pratinjau. Kalau gagal, pakai link halaman struk.
+    const shareUrl = options.receiptType && options.receiptId
+        ? (await buildPublicShortUrl(options.receiptType, options.receiptId)) ?? viewUrl
+        : viewUrl;
     const total = options.receiptType && options.receiptId
         ? await fetchPublicReceiptTotal(options.receiptType, options.receiptId)
         : null;
-    // Link pendek agar tidak terlalu panjang. Kalau gagal, pakai link struk biasa.
-    const shortUrl = options.receiptType && options.receiptId
-        ? await buildPublicShortUrl(options.receiptType, options.receiptId, options.shareUrl.replace(/\/receipt\/.*$/, ''))
-        : null;
-    const shareUrl = shortUrl ?? options.shareUrl;
-    const message = buildPublicReceiptShareMessage(shareUrl, total);
+    const message = buildPublicReceiptShareMessage(options.transactionNumber, shareUrl, total);
 
     try {
         if (Platform.OS === 'web') {
@@ -451,7 +466,7 @@ export async function sharePublicReceiptLink(
 export async function copyPublicReceiptLink(
     shareUrl: string,
 ): Promise<void> {
-    const message = buildPublicReceiptShareMessage(shareUrl);
+    const message = shareUrl;
 
     if (Platform.OS === 'web') {
         const ok = await copyTextWeb(message);

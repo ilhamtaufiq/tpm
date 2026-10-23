@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -29,3 +30,18 @@ def ambil_short_link(kode: str, db: Session = Depends(get_db)):
     if link is None:
         raise HTTPException(status_code=404, detail="Link tidak ditemukan")
     return {"tipe": link.tipe, "target": link.target}
+
+
+# Redirect publik: /api/v1/s/{kode} meneruskan ke halaman struk di server (yang memuat tag OG).
+# Crawler chat mengikuti redirect ini, jadi pratinjau gambar tetap muncul dengan link yang pendek.
+VIEW_BASE_URL = "https://tpm.cianjur.space/api/v1/public/receipt/view"
+
+go_router = APIRouter(tags=["Public Short Link"])
+
+
+@go_router.get("/s/{kode}")
+def buka_short_link(kode: str, db: Session = Depends(get_db)):
+    link = ShortLinkService(db).ambil(kode)
+    if link is None:
+        raise HTTPException(status_code=404, detail="Link tidak ditemukan")
+    return RedirectResponse(f"{VIEW_BASE_URL}/{link.tipe}/{link.target}", status_code=302)

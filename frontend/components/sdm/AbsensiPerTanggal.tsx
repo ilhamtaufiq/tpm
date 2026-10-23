@@ -79,12 +79,10 @@ export const AbsensiPerTanggal = () => {
         for (const k of berubah) {
             const status = keStatus(pilihan[k.id]);
             try {
-                await sdmService.bulkClockIn(k.id, [{
-                    date: tanggal,
-                    status,
+                await sdmService.setAbsensiTanggal(k.id, tanggal, status, {
                     jam_masuk: status === 'HADIR' ? '08:00' : undefined,
                     jam_keluar: status === 'HADIR' ? '17:00' : undefined,
-                }]);
+                });
             } catch (e) {
                 gagal.push(`${k.nama}: ${getErrorMessage(e, 'gagal')}`);
             }

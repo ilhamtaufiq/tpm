@@ -373,6 +373,29 @@ export const sdmService = {
         return response.data;
     },
 
+    /**
+     * Simpan absensi satu karyawan untuk satu tanggal. Hanya tanggal itu yang diubah,
+     * hari lain di bulan yang sama tidak disentuh (dipakai mode Per Tanggal).
+     */
+    setAbsensiTanggal: async (
+        karyawanId: number,
+        tanggal: string,
+        status: AttendanceStatus,
+        jam?: { jam_masuk?: string; jam_keluar?: string },
+    ): Promise<Absensi> => {
+        const existing = await sdmService.getAbsensiList({
+            karyawan_id: karyawanId,
+            tanggal_dari: tanggal,
+            tanggal_sampai: tanggal,
+            limit: 1,
+        });
+        const row = existing?.data?.[0];
+        if (row) {
+            return sdmService.updateAbsensi(row.id, { status, ...jam });
+        }
+        return sdmService.createAbsensi({ karyawan_id: karyawanId, tanggal, status, ...jam });
+    },
+
     updateAbsensi: async (id: number, data: Partial<Absensi>): Promise<Absensi> => {
         const response = await api.put(`/absensi/${id}`, data);
         return response.data;
