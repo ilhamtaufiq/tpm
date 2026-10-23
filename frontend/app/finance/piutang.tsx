@@ -24,14 +24,12 @@ import { useRouter, router, useLocalSearchParams } from 'expo-router';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { piutangFolderService } from '../../services/piutangFolder';
+import { namaGrupService, GrupNama } from '../../services/namaGrup';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { keuanganService, Piutang, PiutangSummary, PiutangStatus, PembayaranPiutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { usePiutangList, usePiutangSummary, useProcessPayment, useProcessPaymentSplit, useCreatePiutang } from '../../hooks/useKeuangan';
-import { useMobilList } from '../../hooks/useMobil';
-import { useTransaksiBengkelList } from '../../hooks/useBengkel';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -133,16 +131,21 @@ export default function PiutangUsahaScreen() {
         belum_bayar_only: selectedFilter === 'belum_bayar',
         search: search || undefined,
         unit: unitFilter as any,
+        exclude_internal: true,
     });
-    const { data: mobilData } = useMobilList();
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePiutangSummary({ unit: unitFilter as any });
     const paymentMutation = useProcessPaymentSplit();
     const queryClient = useQueryClient();
-    const [createFolderId, setCreateFolderId] = useState<number | null>(null);
-    const folderList = useQuery({
-        queryKey: ['piutang-folder', 'daftar'],
-        queryFn: () => piutangFolderService.daftar(),
+    const [tampilan, setTampilan] = useState<'struk' | 'nama'>('struk');
+    const grupQuery = useQuery({
+        queryKey: ['piutang-nama', 'grup'],
+        queryFn: () => namaGrupService.piutangGrup(),
+        enabled: tampilan === 'nama',
     });
+    const grupList = useMemo(() => {
+        const kata = search.trim().toLowerCase();
+        return (grupQuery.data ?? []).filter((g) => !kata || g.nama.toLowerCase().includes(kata));
+    }, [grupQuery.data, search]);
     const createMutation = useCreatePiutang();
 
     const createSheetRef = useRef<any>(null);
@@ -155,9 +158,9 @@ export default function PiutangUsahaScreen() {
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([refetchList(), refetchSummary()]);
+        await Promise.all([refetchList(), refetchSummary(), grupQuery.refetch()]);
         setRefreshing(false);
-    }, [refetchList, refetchSummary]);
+    }, [refetchList, refetchSummary, grupQuery.refetch]);
 
     // Alert State
     const [alertState, setAlertState] = useState<{
@@ -185,72 +188,30 @@ export default function PiutangUsahaScreen() {
         setAlertState((prev) => ({ ...prev, visible: false }));
     };
 
-    const piutangListRaw = (listData?.data || []).filter((item: any) => Number(item.nominal_piutang || 0) > 0);
+    // Piutang internal (mis. bengkel menagih unit mobil) disaring backend lewat exclude_internal.
+    const piutangList = useMemo(
+        () => (listData?.data || []).filter((item: any) => Number(item.nominal_piutang || 0) > 0),
+        [listData],
+    );
 
-    // Fetch bengkel data to map BGL numbers to car IDs
-    const { data: bengkelData } = useTransaksiBengkelList({ limit: 1000 });
-
-    // Virtual Elimination Logic: Otomatis sembunyikan piutang internal (Bengkel)
-    // jika unit mobil referensinya sudah terjual.
-    const { filteredList, localSummary } = useMemo(() => {
-        if (!mobilData?.data) return { filteredList: piutangListRaw, localSummary: summary };
-
-        // 1. Get IDs of sold cars
-        const soldCarIds = new Set(
-            mobilData.data
-                .filter((m: any) => m.status?.toUpperCase() === 'TERJUAL')
-                .map((m: any) => String(m.id))
-        );
-
-        // 2. Map sold cars to their Bengkel invoice numbers (BGL...)
-        const soldBengkelInvoices = new Set<string>();
-        if (bengkelData?.data) {
-            bengkelData.data.forEach((b: any) => {
-                const kategori = String(b.kategori || '').toLowerCase();
-                if (kategori === 'jual_beli_mobil' && b.mobil_id && soldCarIds.has(String(b.mobil_id))) {
-                    if (b.nomor_transaksi) soldBengkelInvoices.add(b.nomor_transaksi);
-                }
-            });
-        }
-
+    // Ringkasan dihitung dari daftar yang tampil, supaya sama dengan yang terlihat.
+    const localSummary = useMemo(() => {
         let totalSisa = 0;
         let countBelumLunas = 0;
         let countOverdue = 0;
-
-        const filtered = piutangListRaw.filter(item => {
-            // Note: In Piutang, nama_debitur usually contains 'JB MOBIL', but 'BENGKEL' or 'TPM' is fine too depending on data entry.
-            // Actually, we check if it's an internal transaction by checking if it links to a sold bengkel invoice.
-            // If the item.nomor_referensi matches a BGL order from a sold car, we hide it.
-            if (item.nomor_referensi && soldBengkelInvoices.has(item.nomor_referensi)) {
-                return false; // Sembunyikan otomatis
-            }
-            
-            // Accumulate summary for visible items
+        piutangList.forEach((item) => {
             if (item.status !== 'LUNAS') {
                 totalSisa += Number(item.sisa_piutang || 0);
                 countBelumLunas++;
                 if (item.is_overdue) countOverdue++;
             }
-            
-            return true;
         });
-
-        return { 
-            filteredList: filtered, 
-            localSummary: {
-                total_sisa: totalSisa,
-                jumlah_belum_lunas: countBelumLunas,
-                jumlah_overdue: countOverdue
-            }
-        };
-    }, [piutangListRaw, mobilData, bengkelData, summary]);
-
-    const piutangList = filteredList;
+        return { total_sisa: totalSisa, jumlah_belum_lunas: countBelumLunas, jumlah_overdue: countOverdue };
+    }, [piutangList]);
 
     // Angka badge per filter. Sumbernya summary (satu query, unfiltered by status);
     // list tak bisa dipakai karena dibatasi limit + sudah terfilter server-side.
-    // ponytail: tak memperhitungkan eliminasi virtual JB Mobil terjual — selisih
-    // kecil; kalau perlu presisi, hitung dari fetch list tanpa filter status.
+    // Badge memakai summary server, yang belum mengecualikan piutang internal.
     const filterCounts = useMemo(() => {
         if (!summary) return {} as Record<string, number | undefined>;
         const belumBayar = summary.jumlah_belum_bayar ?? 0;
@@ -325,7 +286,6 @@ export default function PiutangUsahaScreen() {
         setCreateAmount('');
         setCreateNote('');
         setCreateMethod('TUNAI');
-        setCreateFolderId(null);
         setCreateDate('');
 
         if (Platform.OS === 'web') {
@@ -364,7 +324,6 @@ export default function PiutangUsahaScreen() {
                 nominal_piutang: parseNumber(createAmount),
                 catatan: createNote,
                 unit: unitFilter,
-                folder_id: createFolderId ?? undefined,
             };
 
             if (isCreateSplitPayment && validatedPayments.length > 0) {
@@ -440,29 +399,7 @@ export default function PiutangUsahaScreen() {
                 </Typography>
             </View>
 
-            {/* Pilih folder piutang (opsional): struk baru langsung masuk ke folder ini */}
-            <View className="mb-6">
-                <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest mb-3">Folder Piutang</Typography>
-                <View className="flex-row flex-wrap gap-2">
-                    <Pressable
-                        onPress={() => setCreateFolderId(null)}
-                        className={`px-4 py-2.5 rounded-2xl border ${createFolderId === null ? 'border-primary bg-primary/5' : 'border-transparent bg-surface/50'}`}
-                    >
-                        <Typography className={createFolderId === null ? 'text-primary font-bold' : 'text-textGray'} variant="caption">Tanpa folder</Typography>
-                    </Pressable>
-                    {(folderList.data ?? []).map((f) => (
-                        <Pressable
-                            key={f.id}
-                            onPress={() => setCreateFolderId(f.id)}
-                            className={`px-4 py-2.5 rounded-2xl border ${createFolderId === f.id ? 'border-primary bg-primary/5' : 'border-transparent bg-surface/50'}`}
-                        >
-                            <Typography className={createFolderId === f.id ? 'text-primary font-bold' : 'text-textGray'} variant="caption">{f.nama}</Typography>
-                        </Pressable>
-                    ))}
-                </View>
-            </View>
-
-            <View className="mb-6">
+                        <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-3">
                     <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest">Metode Pencairan</Typography>
                     <Pressable
@@ -760,6 +697,7 @@ export default function PiutangUsahaScreen() {
             {!isSheetOpen && (
                 <View className="px-6 mt-4">
                     <View className="bg-surface p-3 rounded-[24px] border border-transparent shadow-sm flex-col">
+                        {tampilan === 'struk' && (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-3 space-x-2 pb-1">
                             {STATUS_FILTERS.map((filter) => {
                                 const isActive = selectedFilter === filter.value;
@@ -788,6 +726,7 @@ export default function PiutangUsahaScreen() {
                                 );
                             })}
                         </ScrollView>
+                        )}
 
                         <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
                             <Search size={16} color={placeholder} />
@@ -805,10 +744,41 @@ export default function PiutangUsahaScreen() {
             )}
 
             {/* Receivables List */}
-            <FlatList
-                data={piutangList}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => {
+            <FlatList<Piutang | GrupNama>
+                data={tampilan === 'nama' ? grupList : piutangList}
+                keyExtractor={(item) => (tampilan === 'nama' ? `grup-${(item as GrupNama).nama}` : (item as Piutang).id.toString())}
+                renderItem={({ item: raw }) => {
+                    if (tampilan === 'nama') {
+                        const grup = raw as GrupNama;
+                        return (
+                            <Pressable
+                                onPress={() => router.push({ pathname: '/finance/piutang-nama', params: { nama: grup.nama } })}
+                                className="bg-surface p-5 rounded-[32px] mb-6 border border-transparent shadow-sm"
+                            >
+                                <View className="flex-row justify-between items-center mb-4">
+                                    <Typography variant="body1" weight="bold" className="text-textMain tracking-tight flex-1 mr-3" numberOfLines={1}>
+                                        {grup.nama}
+                                    </Typography>
+                                    <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">{grup.jumlah_struk} struk</Typography>
+                                </View>
+                                <View className="bg-background p-4 rounded-2xl flex-row justify-between mb-4 border border-gray-100/50">
+                                    <View>
+                                        <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest mb-1">Total</Typography>
+                                        <Typography weight="semibold" className="text-textMain text-sm">{formatCurrency(grup.total_nominal)}</Typography>
+                                    </View>
+                                    <View className="items-end">
+                                        <Typography className="text-rose-600/60 text-[9px] font-bold uppercase tracking-widest mb-1">Sisa Tagihan</Typography>
+                                        <Typography weight="bold" className="text-rose-600 text-sm">{formatCurrency(grup.total_sisa)}</Typography>
+                                    </View>
+                                </View>
+                                <View className="flex-row items-center justify-between pt-2">
+                                    <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">{grup.belum_lunas} belum lunas</Typography>
+                                    <ChevronRight size={16} color="#D1D5DB" />
+                                </View>
+                            </Pressable>
+                        );
+                    }
+                    const item = raw as Piutang;
                     const progressPercent = item.persentase_terbayar;
                     const isOverdue = item.is_overdue;
                     return (
@@ -875,14 +845,18 @@ export default function PiutangUsahaScreen() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                 ListHeaderComponent={
                     <View className="mb-6">
-                        {/* Folder Piutang: di dalam daftar, bukan di header */}
-                        <Pressable
-                            onPress={() => router.push('/finance/piutang-folder')}
-                            className="bg-surface p-4 rounded-[24px] border border-transparent shadow-sm mb-4 flex-row justify-between items-center"
-                        >
-                            <Typography weight="bold" className="text-textMain text-sm">Folder Piutang</Typography>
-                            <Typography className="text-primary text-xs font-bold">Buka</Typography>
-                        </Pressable>
+                        {/* Tampilan per struk atau per nama (folder otomatis dari nama) */}
+                        <View className="flex-row bg-surface p-1 rounded-2xl mb-4 border border-transparent shadow-sm">
+                            {([['struk', 'Per Struk'], ['nama', 'Per Nama']] as const).map(([nilai, label]) => (
+                                <Pressable
+                                    key={nilai}
+                                    onPress={() => setTampilan(nilai)}
+                                    className={`flex-1 py-2.5 rounded-xl items-center ${tampilan === nilai ? 'bg-primary' : ''}`}
+                                >
+                                    <Typography className={`text-xs font-bold ${tampilan === nilai ? 'text-white' : 'text-textGray'}`}>{label}</Typography>
+                                </Pressable>
+                            ))}
+                        </View>
                         {/* Receivables Insight Card (White Bento Style) */}
                         <View className="bg-surface p-6 rounded-[32px] border border-transparent shadow-sm mb-6">
                             <View className="flex-row justify-between items-center mb-6">

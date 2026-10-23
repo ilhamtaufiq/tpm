@@ -45,8 +45,6 @@ class PaymentDetailHutang(PaymentDetail):
 class PiutangCreate(BaseModel):
     """Schema for creating receivable."""
 
-    folder_id: Optional[int] = None
-
     tanggal: TanggalTransaksi
     sumber: PiutangSource
     referensi_id: Optional[int] = None
@@ -100,7 +98,6 @@ class PiutangResponse(BaseModel):
     status: PiutangStatus
     is_overdue: bool = False
     catatan: Optional[str] = None
-    folder_id: Optional[int] = None
     pembayaran: List["PembayaranPiutangResponse"] = []
     created_at: datetime
 
@@ -138,8 +135,6 @@ class PiutangSummary(BaseModel):
 
 class HutangCreate(BaseModel):
     """Schema for creating payable."""
-
-    folder_id: Optional[int] = None
 
     tanggal: TanggalTransaksi
     sumber: HutangSource
@@ -193,7 +188,6 @@ class HutangResponse(BaseModel):
     tanggal_lunas: Optional[date] = None
     status: HutangStatus
     catatan: Optional[str] = None
-    folder_id: Optional[int] = None
     pembayaran: List["PembayaranHutangResponse"] = []
     created_at: datetime
 

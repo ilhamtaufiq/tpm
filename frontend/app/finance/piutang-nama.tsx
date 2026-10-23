@@ -1,0 +1,156 @@
+import React, { useState } from 'react';
+import { View, ScrollView, Pressable, RefreshControl } from 'react-native';
+import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { id as localeID } from 'date-fns/locale';
+import { Header } from '../../components/ui/Header';
+import { Typography } from '../../components/ui/Typography';
+import { Card } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
+import { AlertDialog } from '../../components/ui/AlertDialog';
+import { namaGrupService, StrukNama } from '../../services/namaGrup';
+import { formatCurrency, formatNumber, parseNumber, getTodayString, tanggalLokal } from '../../utils/format';
+import { getErrorMessage } from '../../utils/error';
+
+const STATUS_LABEL: Record<StrukNama['status'], { text: string; cls: string }> = {
+    LUNAS: { text: 'Lunas', cls: 'bg-emerald-50 text-emerald-700' },
+    SEBAGIAN: { text: 'Sebagian', cls: 'bg-amber-50 text-amber-700' },
+    BELUM_LUNAS: { text: 'Belum lunas', cls: 'bg-rose-50 text-rose-700' },
+    BATAL: { text: 'Batal', cls: 'bg-slate-100 text-slate-500' },
+};
+
+const TANGGAL_VALID = /^\d{4}-\d{2}-\d{2}$/;
+
+export default function PiutangNamaScreen() {
+    const { nama } = useLocalSearchParams<{ nama?: string }>();
+    const namaDebitur = nama ?? '';
+    const queryClient = useQueryClient();
+    const [tanggal, setTanggal] = useState(getTodayString());
+    const [nominal, setNominal] = useState('');
+    const [keterangan, setKeterangan] = useState('');
+    const [metode, setMetode] = useState<'TUNAI' | 'TRANSFER'>('TUNAI');
+    const [refreshing, setRefreshing] = useState(false);
+    const [dialog, setDialog] = useState<{ visible: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+        visible: false, title: '', message: '', variant: 'info',
+    });
+
+    const detailQuery = useQuery({
+        queryKey: ['piutang-nama', 'detail', namaDebitur],
+        queryFn: () => namaGrupService.piutangDetail(namaDebitur),
+        enabled: namaDebitur.length > 0,
+    });
+
+    const tampilkan = (title: string, message: string, variant: 'success' | 'error' | 'info' = 'info') =>
+        setDialog({ visible: true, title, message, variant });
+
+    const refreshSemua = async () => {
+        await queryClient.invalidateQueries({ queryKey: ['piutang-nama'] });
+        await queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
+        await queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
+    };
+
+    const bayarMutation = useMutation({
+        mutationFn: () => namaGrupService.piutangBayar(namaDebitur, {
+            tanggal,
+            metode,
+            nominal: parseNumber(nominal),
+            catatan: keterangan.trim() || undefined,
+        }),
+        onSuccess: async (hasil) => {
+            const bagian = hasil?.dibayar?.length ?? 0;
+            setNominal('');
+            setKeterangan('');
+            await refreshSemua();
+            tampilkan('Pembayaran dicatat', `Dibagi ke ${bagian} struk, dimulai dari yang tertua.`, 'success');
+        },
+        onError: async (e) => {
+            await refreshSemua();
+            tampilkan('Gagal', getErrorMessage(e, 'Pembayaran gagal. Cek rincian: bagian yang sudah tercatat tidak dibatalkan otomatis.'), 'error');
+        },
+    });
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await refreshSemua();
+        setRefreshing(false);
+    };
+
+    const detail = detailQuery.data;
+    const nominalValid = parseNumber(nominal) > 0;
+    const tanggalValid = TANGGAL_VALID.test(tanggal);
+
+    return (
+        <View className="flex-1 bg-background">
+            <Stack.Screen options={{ headerShown: false }} />
+            <Header
+                title={namaDebitur || 'Piutang'}
+                subtitle={detail ? `Sisa ${formatCurrency(detail.total_sisa)}` : 'Memuat…'}
+                showBackButton
+                onBackButtonPress={() => router.back()}
+            />
+            <ScrollView
+                className="flex-1 px-6 pt-4"
+                contentContainerStyle={{ paddingBottom: 120 }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            >
+                <Card className="p-4 gap-3 mb-4">
+                    <Typography weight="bold" className="text-textMain text-sm">Bayar piutang {namaDebitur}</Typography>
+                    <Typography className="text-textGray text-xs">
+                        Nominal dibagi ke struk paling tua dulu. Setiap bagian tercatat sebagai pembayaran piutang biasa.
+                    </Typography>
+                    <View className="flex-row gap-2">
+                        <View className="flex-1"><Input value={tanggal} onChangeText={setTanggal} placeholder="YYYY-MM-DD" maxLength={10} /></View>
+                        <View className="flex-1"><Input value={nominal} onChangeText={(t) => setNominal(formatNumber(t))} placeholder="Nominal" keyboardType="numeric" /></View>
+                    </View>
+                    <View className="flex-row gap-2">
+                        {(['TUNAI', 'TRANSFER'] as const).map((m) => (
+                            <Pressable key={m} onPress={() => setMetode(m)} className={`flex-1 py-2 rounded-xl items-center border ${metode === m ? 'bg-primary border-primary' : 'border-transparent bg-surface/50'}`}>
+                                <Typography className={`text-xs font-bold ${metode === m ? 'text-white' : 'text-textGray'}`}>{m}</Typography>
+                            </Pressable>
+                        ))}
+                    </View>
+                    <Input value={keterangan} onChangeText={setKeterangan} placeholder="Keterangan pelunasan (opsional)" maxLength={255} />
+                    <Button
+                        title="Bayar"
+                        onPress={() => bayarMutation.mutate()}
+                        disabled={!nominalValid || !tanggalValid || bayarMutation.isPending}
+                        loading={bayarMutation.isPending}
+                    />
+                </Card>
+
+                <Typography weight="bold" className="text-textGray text-[10px] uppercase tracking-widest mb-2">Rincian struk</Typography>
+                {(detail?.struk ?? []).map((p) => {
+                    const st = STATUS_LABEL[p.status];
+                    return (
+                        <Card key={p.id} className="p-4 mb-3 gap-1">
+                            <View className="flex-row justify-between items-center">
+                                <Typography weight="bold" className="text-textMain text-sm">{p.nomor}</Typography>
+                                <View className={`px-2 py-1 rounded-md ${st.cls}`}>
+                                    <Typography className="text-[10px] font-bold">{st.text}</Typography>
+                                </View>
+                            </View>
+                            <Typography className="text-textGray text-xs">
+                                {format(tanggalLokal(p.tanggal), 'dd MMM yyyy', { locale: localeID })} · {formatCurrency(p.nominal)} · sisa {formatCurrency(p.sisa)}
+                            </Typography>
+                            {(p.pembayaran ?? []).map((x, i) => (
+                                <Typography key={i} className="text-emerald-700 text-[11px]">
+                                    Dibayar {formatCurrency(x.nominal)} pada {format(tanggalLokal(x.tanggal), 'dd MMM yyyy', { locale: localeID })}{x.metode ? ` (${x.metode})` : ''}
+                                </Typography>
+                            ))}
+                        </Card>
+                    );
+                })}
+            </ScrollView>
+            <AlertDialog
+                visible={dialog.visible}
+                title={dialog.title}
+                message={dialog.message}
+                variant={dialog.variant}
+                onClose={() => setDialog((d) => ({ ...d, visible: false }))}
+                onConfirm={() => setDialog((d) => ({ ...d, visible: false }))}
+            />
+        </View>
+    );
+}

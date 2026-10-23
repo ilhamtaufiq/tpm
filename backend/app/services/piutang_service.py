@@ -93,14 +93,9 @@ class PiutangService:
             # to maintain report integrity for "Piutang Lainnya".
             final_sumber = PiutangSource.LAINNYA
 
-        if data.folder_id is not None:
-            from app.models.keuangan import PiutangFolder
-            if self.db.get(PiutangFolder, data.folder_id) is None:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder piutang tidak ditemukan")
         piutang = PiutangUsaha(
             nomor_piutang=nomor_piutang,
             tanggal=data.tanggal,
-            folder_id=data.folder_id,
             sumber=final_sumber,
             unit=unit_source,
             referensi_id=data.referensi_id,
@@ -300,6 +295,7 @@ class PiutangService:
         sort_by: str = "tanggal",
         sort_order: str = "desc",
         unit: Optional[KasBankSource] = None,
+        exclude_internal: bool = False,
     ) -> Dict[str, Any]:
         """Get list of receivables with pagination and filters."""
         query = self.db.query(PiutangUsaha).options(
@@ -308,6 +304,10 @@ class PiutangService:
 
         if unit:
             query = query.filter(PiutangUsaha.unit == unit)
+
+        # Piutang internal (mis. bengkel menagih unit mobil) bukan tagihan ke pihak luar.
+        if exclude_internal:
+            query = query.filter(PiutangUsaha.is_internal == False)  # noqa: E712
 
         # Search filter
         if search:
