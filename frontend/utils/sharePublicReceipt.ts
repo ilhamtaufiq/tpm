@@ -1,22 +1,64 @@
 import { Platform, Share } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { BASE_URL } from './api';
+import api, { BASE_URL } from './api';
+import { formatCurrency } from './format';
 import { printSettingsService } from './printSettings';
 import {
     buildPublicReceiptUrl,
+    buildPublicShortUrl,
     getPublicReceiptBaseUrl,
     PublicReceiptType,
 } from './publicReceiptUrl';
 
 export const PUBLIC_RECEIPT_SHARE_TITLE = 'Struk Tiga Putra Motor';
 
+export type PublicReceiptShareSummary = {
+    total: number;
+    lunas: boolean;
+    items: { description: string; quantity: number; subtotal: number }[];
+};
+
+/** Pesan share: nomor struk, rincian item, total dan status, lalu link di baris terakhir. */
 export function buildPublicReceiptShareMessage(
     transactionNumber: string | undefined,
     shareUrl: string,
+    summary?: PublicReceiptShareSummary | null,
 ): string {
     const label = (transactionNumber || '').trim() || 'transaksi';
-    return `Struk transaksi ${label} — Tiga Putra Motor\n${shareUrl}`;
+    const baris = [`Struk transaksi ${label} — Tiga Putra Motor`];
+    if (summary) {
+        baris.push('');
+        for (const item of summary.items) {
+            baris.push(`• ${item.description} ${item.quantity}x = ${formatCurrency(item.subtotal)}`);
+        }
+        baris.push('');
+        baris.push(`Total: ${formatCurrency(summary.total)} (${summary.lunas ? 'LUNAS' : 'BELUM LUNAS'})`);
+    }
+    baris.push('', `Lihat struk: ${shareUrl}`);
+    return baris.join('\n');
+}
+
+/** Ambil rincian dari endpoint publik struk. Gagal = null, pesan tetap terkirim tanpa rincian. */
+async function fetchPublicReceiptShareSummary(
+    type: PublicReceiptType,
+    idOrToken: string,
+): Promise<PublicReceiptShareSummary | null> {
+    try {
+        const { data } = await api.get(`/public/receipt/${type}/${encodeURIComponent(idOrToken)}`);
+        return {
+            total: Number(data.total ?? 0),
+            lunas: Number(data.remaining ?? 0) <= 0,
+            items: (data.items ?? []).map((item: any) => ({
+                description: String(item.description ?? ''),
+                quantity: Number(item.quantity ?? 1),
+                subtotal: Number(item.subtotal ?? 0),
+            })),
+        };
+    } catch (error) {
+        console.warn('[Share] gagal ambil rincian struk, kirim tanpa rincian:', error);
+        return null;
+    }
 }
 
 export async function resolvePublicReceiptBaseUrl(): Promise<string> {
@@ -289,10 +331,11 @@ async function shareOnWeb(
 
     // 1) Native Web Share (Chrome Android / Safari iOS / some desktop)
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        // Link sudah ada di `message`. Jangan kirim `url` terpisah: beberapa aplikasi
+        // (mis. Telegram, WhatsApp) menambahkannya lagi sehingga link muncul dua kali.
         const basePayload: ShareData = {
             title,
             text: message,
-            url: shareUrl,
         };
 
         if (file) {
@@ -346,42 +389,38 @@ async function shareOnWeb(
 async function shareOnNative(
     message: string,
     title: string,
-    shareUrl: string,
     imageUri: string | null,
 ): Promise<SharePublicReceiptLinkResult> {
-    // Prefer expo-sharing for local image files — reliable on Android WhatsApp/Telegram.
-    // RN Share.share({ url: file:// }) often only sends text on many Android OEMs.
+    // iOS: satu lembar share berisi gambar sebagai lampiran utama, dan pesan (rincian + link).
+    if (imageUri && Platform.OS === 'ios') {
+        try {
+            await Share.share({ message, url: imageUri, title });
+            return 'shared';
+        } catch (error) {
+            if (isShareCancelled(error)) return 'cancelled';
+            console.warn('[Share] Share.share image failed, text fallback:', error);
+        }
+    }
+
+    // Android: expo-sharing hanya membawa file, jadi gambar dikirim sebagai lampiran utama.
+    // Link ada di bagian bawah gambar; rincian teks tidak ikut di jalur ini.
     if (imageUri && (await Sharing.isAvailableAsync())) {
         try {
             await Sharing.shareAsync(imageUri, {
                 mimeType: 'image/png',
-                dialogTitle: `${title}\n${message}`,
+                dialogTitle: title,
                 UTI: 'public.png',
             });
             return 'shared';
         } catch (error) {
             if (isShareCancelled(error)) return 'cancelled';
-            console.warn('[Share] Sharing.shareAsync image failed:', error);
+            console.warn('[Share] Sharing.shareAsync image failed, text fallback:', error);
         }
     }
 
-    // iOS / fallback: system share sheet with caption + optional file URL
+    // Tanpa gambar atau gambar gagal: kirim teks (rincian + link).
     try {
-        if (imageUri && Platform.OS === 'ios') {
-            await Share.share({
-                message,
-                url: imageUri,
-                title,
-            });
-            return 'shared';
-        }
-
-        await Share.share({
-            message,
-            // On Android, `url` as https link is often appended; file:// is unreliable.
-            url: Platform.OS === 'ios' ? shareUrl : undefined,
-            title,
-        });
+        await Share.share({ message, title });
         return 'shared';
     } catch (error) {
         if (isShareCancelled(error)) return 'cancelled';
@@ -396,19 +435,27 @@ async function shareOnNative(
 export async function sharePublicReceiptLink(
     options: SharePublicReceiptLinkOptions,
 ): Promise<SharePublicReceiptLinkResult> {
-    const message = buildPublicReceiptShareMessage(options.transactionNumber, options.shareUrl);
     const title = options.title || PUBLIC_RECEIPT_SHARE_TITLE;
     const imageUri = await resolveShareImageFileUri(options);
+    const summary = options.receiptType && options.receiptId
+        ? await fetchPublicReceiptShareSummary(options.receiptType, options.receiptId)
+        : null;
+    // Link pendek agar tidak terlalu panjang. Kalau gagal, pakai link struk biasa.
+    const shortUrl = options.receiptType && options.receiptId
+        ? await buildPublicShortUrl(options.receiptType, options.receiptId, options.shareUrl.replace(/\/receipt\/.*$/, ''))
+        : null;
+    const shareUrl = shortUrl ?? options.shareUrl;
+    const message = buildPublicReceiptShareMessage(options.transactionNumber, shareUrl, summary);
 
     try {
         if (Platform.OS === 'web') {
-            const result = await shareOnWeb(message, title, options.shareUrl, imageUri);
+            const result = await shareOnWeb(message, title, shareUrl, imageUri);
             if (result === 'shared') options.onShared?.();
             if (result === 'copied') options.onCopied?.();
             return result;
         }
 
-        const result = await shareOnNative(message, title, options.shareUrl, imageUri);
+        const result = await shareOnNative(message, title, imageUri);
         if (result === 'shared') options.onShared?.();
         return result;
     } catch (error) {
@@ -443,7 +490,6 @@ export async function copyPublicReceiptLink(
 
     await Share.share({
         message,
-        url: shareUrl,
         title: PUBLIC_RECEIPT_SHARE_TITLE,
     });
 }

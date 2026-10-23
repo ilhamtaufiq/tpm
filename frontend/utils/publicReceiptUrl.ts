@@ -75,6 +75,21 @@ export function buildPublicReceiptUrl(
     return `${base}/receipt/${type}/${idOrToken}`;
 }
 
+/** Link pendek struk `${base}/s/${kode}`. Null bila gagal, lalu pemanggil memakai link panjang. */
+export async function buildPublicShortUrl(
+    type: PublicReceiptType,
+    idOrToken: string,
+    overrideBaseUrl?: string | null,
+): Promise<string | null> {
+    try {
+        const { data } = await api.post('/public/short-link', { tipe: type, target: idOrToken });
+        return `${getPublicReceiptBaseUrl(overrideBaseUrl)}/s/${data.kode}`;
+    } catch (error) {
+        console.warn('[publicReceiptUrl] gagal membuat link pendek, pakai link panjang:', error);
+        return null;
+    }
+}
+
 export function normalizeQrCodeBaseUrl(value?: string | null): string {
     const trimmed = (value || '').trim();
     if (!trimmed || AUTO_DETECT_BASE_URLS.has(trimmed)) {

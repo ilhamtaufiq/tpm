@@ -342,7 +342,8 @@ function RootLayoutContent() {
         const inAuthGroup = segments[0] === '(auth)';
         const inSecurityGroup = segments[0] === '(security)';
         // Public share/QR receipt pages must work without login (customer-facing)
-        const inPublicReceipt = segments[0] === 'receipt';
+        // /s/{kode} adalah kode pendek ke halaman struk, jadi juga publik.
+        const inPublicReceipt = segments[0] === 'receipt' || segments[0] === 's';
         const inLanding = segments[0] === 'landing';
         // Web lock: allow landing + public receipt so shared struk still opens in browser
         if (
@@ -449,13 +450,14 @@ function RootLayoutContent() {
                         <Stack.Screen name="master-data" options={NO_HEADER} />
                         <Stack.Screen name="mobil" options={NO_HEADER} />
                         <Stack.Screen name="receipt" options={NO_HEADER} />
+                        <Stack.Screen name="s" options={NO_HEADER} />
                         <Stack.Screen name="sdm" options={NO_HEADER} />
                         <Stack.Screen name="settings" options={NO_HEADER} />
                         <Stack.Screen name="monitor" options={NO_HEADER} />
                         <Stack.Screen name="+not-found" options={NOT_FOUND_OPTIONS} />
                     </Stack>
                                     {/* Global Custom Bottom Navigation */}
-                    {isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'BENGKEL') && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && segments[0] !== 'receipt' && (
+                    {isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'BENGKEL') && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && segments[0] !== 'receipt' && segments[0] !== 's' && (
                         <CustomTabBar />
                     )}
                 </BottomSheetModalProvider>

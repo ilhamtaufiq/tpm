@@ -1,6 +1,7 @@
 from app.models.user import User, LoginOtp
 from app.models.supplier import Supplier
 from app.models.customer import Customer
+from app.models.short_link import ShortLink
 from app.models.bengkel import (
     SparePart,
     PembelianSparePart,
