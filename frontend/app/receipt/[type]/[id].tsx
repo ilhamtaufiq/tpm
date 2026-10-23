@@ -17,7 +17,6 @@ import {
     ArrowLeft,
     Image as ImageIcon,
     Printer,
-    Link2,
     ShieldCheck,
     RefreshCw,
 } from 'lucide-react-native';
@@ -35,7 +34,6 @@ import { getErrorMessage } from '../../../utils/error';
 import { PublicReceiptType } from '../../../utils/publicReceiptUrl';
 import {
     buildPublicReceiptShareUrl,
-    copyPublicReceiptLink,
     sharePublicReceiptLink,
     writeReceiptImageDataUriToCache,
 } from '../../../utils/sharePublicReceipt';
@@ -266,16 +264,6 @@ export default function PublicReceiptPage() {
         }
     };
 
-    const handleCopyLink = async () => {
-        if (!receipt || !shareUrl) return;
-        try {
-            await copyPublicReceiptLink(shareUrl);
-            showToast('Link struk disalin');
-        } catch {
-            showToast('Gagal menyalin link');
-        }
-    };
-
     const handleShareAsImage = async () => {
         if (!receipt) return;
         try {
@@ -344,13 +332,7 @@ export default function PublicReceiptPage() {
     return (
         <SafeAreaView className="flex-1 bg-slate-50" edges={['top', 'bottom']}>
             <View className="px-4 pt-3 pb-2 flex-row items-center justify-between">
-                <Pressable
-                    onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-                    className="w-10 h-10 rounded-full bg-surface border border-gray-100 items-center justify-center"
-                >
-                    <ArrowLeft size={20} color="#023C69" />
-                </Pressable>
-                <View className="items-center flex-1 mx-3">
+                <View className="items-center flex-1">
                     <Typography weight="bold" className="text-primary text-sm tracking-tight">
                         Struk Publik
                     </Typography>
@@ -358,12 +340,6 @@ export default function PublicReceiptPage() {
                         {receipt.transactionNumber}
                     </Typography>
                 </View>
-                <Pressable
-                    onPress={handleCopyLink}
-                    className="w-10 h-10 rounded-full bg-surface border border-gray-100 items-center justify-center"
-                >
-                    <Link2 size={18} color="#023C69" />
-                </Pressable>
             </View>
 
             <ScrollView
