@@ -38,3 +38,17 @@ def test_tipe_dan_target_tidak_valid_ditolak(db):
         ShortLinkService(db).buat_atau_ambil("piutang", f"{PREFIX}x")
     with pytest.raises(ValueError):
         ShortLinkService(db).buat_atau_ambil("bengkel", f"{PREFIX}tidak/valid")
+
+
+def test_redirect_kode_pendek_ke_halaman_struk(db):
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    target = f"{PREFIX}hvi_redirect1"
+    kode = ShortLinkService(db).buat_atau_ambil("bengkel", target).kode
+    client = TestClient(app)
+    respon = client.get(f"/api/v1/s/{kode}", follow_redirects=False)
+    assert respon.status_code == 302
+    assert respon.headers["location"].endswith(f"/public/receipt/view/bengkel/{target}")
+    assert client.get("/api/v1/s/zzzzzzz", follow_redirects=False).status_code == 404

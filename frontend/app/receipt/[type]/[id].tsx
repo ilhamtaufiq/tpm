@@ -373,10 +373,11 @@ export default function PublicReceiptPage() {
                         <View style={{ gap: 10 }}>
                             {Platform.OS === 'web' ? (
                                 <Button
+                                    variant="outline"
                                     title="Cetak Struk"
                                     onPress={handlePrint}
                                     loading={actionLoading === 'print'}
-                                    icon={<Printer size={18} color="white" />}
+                                    icon={<Printer size={18} color="#023C69" />}
                                     className="h-12 rounded-2xl"
                                 />
                             ) : null}
@@ -403,12 +404,12 @@ export default function PublicReceiptPage() {
                                 </View>
                             </View>
                             <Button
-                                variant="secondary"
+                                variant="outline"
                                 title="Bagikan (Gambar + Link)"
                                 onPress={handleShareLink}
                                 loading={actionLoading === 'share'}
-                                icon={<Share2 size={18} color="white" />}
-                                className="h-12 rounded-2xl bg-[#00ADEF]"
+                                icon={<Share2 size={18} color="#023C69" />}
+                                className="h-12 rounded-2xl"
                             />
                         </View>
                     </View>
