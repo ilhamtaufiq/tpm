@@ -122,7 +122,6 @@ export default function HutangUsahaScreen() {
     const grupQuery = useQuery({
         queryKey: ['hutang-nama', 'grup'],
         queryFn: () => namaGrupService.hutangGrup(),
-        enabled: tampilan === 'nama',
     });
     const grupList = useMemo(() => {
         const kata = search.trim().toLowerCase();
@@ -407,6 +406,15 @@ export default function HutangUsahaScreen() {
         // Handled by PaymentModal
     };
 
+    // Nama yang sudah punya hutang: dipilih dari sini supaya masuk ke grup yang sama.
+    const namaSaran = useMemo(() => {
+        const kata = createName.trim().toLowerCase();
+        return (grupQuery.data ?? [])
+            .map((g) => g.nama)
+            .filter((n) => n.toLowerCase().includes(kata) && n.toLowerCase() !== kata)
+            .slice(0, 8);
+    }, [grupQuery.data, createName]);
+
     const renderCreateContent = () => (
         <View className="p-8">
             <Typography variant="h2" weight="bold" className="mb-6 tracking-tighter">Buat Hutang Baru</Typography>
@@ -417,6 +425,16 @@ export default function HutangUsahaScreen() {
                 value={createName}
                 onChangeText={setCreateName}
             />
+
+            {namaSaran.length > 0 && (
+                <View className="flex-row flex-wrap gap-2 mb-6 -mt-2">
+                    {namaSaran.map((nama) => (
+                        <Pressable key={nama} onPress={() => setCreateName(nama)} className="px-3 py-2 rounded-2xl border border-transparent bg-surface/50">
+                            <Typography variant="caption" className="text-textGray">{nama}</Typography>
+                        </Pressable>
+                    ))}
+                </View>
+            )}
 
             <Input
                 label="Nominal (Rp)"

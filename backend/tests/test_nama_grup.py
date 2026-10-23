@@ -86,6 +86,15 @@ def test_bayar_per_nama_melunasi_struk_tertua(db):
     assert [s["status"] for s in detail["struk"]] == ["LUNAS", "LUNAS", "LUNAS", "BELUM_LUNAS", "BELUM_LUNAS"]
 
 
+def test_bayar_per_nama_bisa_pilih_struk(db):
+    _lima_piutang(db)
+    struk = NamaGrupService(db).piutang_detail(NAMA)["struk"]
+    NamaGrupService(db).piutang_bayar(NAMA, get_jakarta_date(), PaymentMethod.TUNAI, Decimal("50000"),
+                                      KasBankJenis.KAS_UTAMA, None, None, struk_id=struk[2]["id"])
+    detail = NamaGrupService(db).piutang_detail(NAMA)
+    assert [s["status"] for s in detail["struk"]] == ["BELUM_LUNAS", "BELUM_LUNAS", "SEBAGIAN", "BELUM_LUNAS", "BELUM_LUNAS"]
+
+
 def test_bayar_per_nama_melebihi_sisa_ditolak(db):
     _lima_piutang(db)
     with pytest.raises(HTTPException) as salah:

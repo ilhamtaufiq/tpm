@@ -31,6 +31,7 @@ export interface BayarNamaPayload {
     metode: 'TUNAI' | 'TRANSFER';
     nominal: number;
     catatan?: string;
+    struk_id?: number; // kosong = otomatis dari struk tertua
 }
 
 export interface HasilBayarNama {
