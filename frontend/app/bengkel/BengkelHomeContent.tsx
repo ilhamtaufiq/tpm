@@ -1988,9 +1988,9 @@ export default function BengkelScreen() {
                         <View className="flex-row flex-wrap">
                             {[
                                 { key: 'ALL', label: 'Semua', count: stats.total, active: 'bg-slate-900 border-slate-900', inactive: 'bg-surface border-gray-200 text-gray-600' },
-                                { key: 'LUNAS', label: 'Lunas', count: stats.lunas, active: 'bg-emerald-600 border-emerald-600', inactive: 'bg-emerald-50 border-emerald-100 text-emerald-700' },
-                                { key: 'PARTIAL', label: 'Belum Lunas', count: stats.partial, active: 'bg-blue-600 border-blue-600', inactive: 'bg-blue-50 border-blue-100 text-blue-700' },
+                                            { key: 'PARTIAL', label: 'Belum Lunas', count: stats.partial, active: 'bg-blue-600 border-blue-600', inactive: 'bg-blue-50 border-blue-100 text-blue-700' },
                                 { key: 'UNPAID', label: 'Belum Bayar', count: stats.unpaid, active: 'bg-amber-600 border-amber-600', inactive: 'bg-amber-50 border-amber-100 text-amber-700' },
+                    { key: 'LUNAS', label: 'Lunas', count: stats.lunas, active: 'bg-emerald-600 border-emerald-600', inactive: 'bg-emerald-50 border-emerald-100 text-emerald-700' },
                                 { key: 'BATAL', label: 'Dibatalkan', count: stats.batal, active: 'bg-rose-600 border-rose-600', inactive: 'bg-rose-50 border-rose-100 text-rose-700' },
                             ].map((item) => {
                                 const active = paymentFilter === item.key;
