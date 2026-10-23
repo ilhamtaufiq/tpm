@@ -318,6 +318,7 @@ export const keuanganService = {
         unit?: KasBankSource;
         sort_by?: string;
         sort_order?: 'asc' | 'desc';
+        exclude_internal?: boolean;
     }): Promise<PiutangListResponse> => {
         const response = await api.get('/piutang', { params });
         return response.data;

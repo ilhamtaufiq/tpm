@@ -56,6 +56,7 @@ def list_piutang(
     unit: Optional[KasBankSource] = None,
     sort_by: str = "tanggal",
     sort_order: str = "desc",
+    exclude_internal: bool = False,
 ):
     """Get list of receivables with pagination and filters."""
     service = PiutangService(db)
@@ -75,6 +76,7 @@ def list_piutang(
         sort_by=sort_by,
         sort_order=sort_order,
         unit=role_unit_scope or unit,
+        exclude_internal=exclude_internal,
     )
 
 

@@ -23,7 +23,7 @@ import { useRouter, router, useLocalSearchParams } from 'expo-router';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { hutangFolderService } from '../../services/hutangFolder';
+import { namaGrupService, GrupNama } from '../../services/namaGrup';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { keuanganService, Hutang, HutangSummary, HutangStatus, PembayaranHutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
@@ -118,11 +118,16 @@ export default function HutangUsahaScreen() {
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = useHutangSummary({ unit: unitFilter as any });
     const paymentMutation = useProcessHutangPaymentSplit();
     const queryClient = useQueryClient();
-    const [createFolderId, setCreateFolderId] = useState<number | null>(null);
-    const folderList = useQuery({
-        queryKey: ['hutang-folder', 'daftar'],
-        queryFn: () => hutangFolderService.daftar(),
+    const [tampilan, setTampilan] = useState<'struk' | 'nama'>('struk');
+    const grupQuery = useQuery({
+        queryKey: ['hutang-nama', 'grup'],
+        queryFn: () => namaGrupService.hutangGrup(),
+        enabled: tampilan === 'nama',
     });
+    const grupList = useMemo(() => {
+        const kata = search.trim().toLowerCase();
+        return (grupQuery.data ?? []).filter((g) => !kata || g.nama.toLowerCase().includes(kata));
+    }, [grupQuery.data, search]);
     const createMutation = useCreateHutang();
 
     const detailSheetRef = useRef<any>(null);
@@ -148,9 +153,9 @@ export default function HutangUsahaScreen() {
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([refetchList(), refetchSummary()]);
+        await Promise.all([refetchList(), refetchSummary(), grupQuery.refetch()]);
         setRefreshing(false);
-    }, [refetchList, refetchSummary]);
+    }, [refetchList, refetchSummary, grupQuery.refetch]);
 
     // Alert State
     const [alertState, setAlertState] = useState<{
@@ -293,7 +298,6 @@ export default function HutangUsahaScreen() {
         setCreateDate('');
         setCreateSource('LAINNYA');
         setCreateMethod('TUNAI');
-        setCreateFolderId(null);
         setIsCreateSplitPayment(false);
         setCreatePayments([{ id: Date.now() + Math.random(), metode: 'TUNAI', nominal: '', catatan: '' }]);
         setCreateNote('');
@@ -333,7 +337,6 @@ export default function HutangUsahaScreen() {
                 nominal_hutang: parseNumber(createAmount),
                 catatan: createNote,
                 unit: unitFilter,
-                folder_id: createFolderId ?? undefined,
             };
 
             if (isCreateSplitPayment && validatedPayments.length > 0) {
@@ -444,29 +447,7 @@ export default function HutangUsahaScreen() {
                 </View>
             </View>
 
-            {/* Pilih folder hutang (opsional): struk baru langsung masuk ke folder ini */}
-            <View className="mb-6">
-                <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest mb-3">Folder Hutang</Typography>
-                <View className="flex-row flex-wrap gap-2">
-                    <Pressable
-                        onPress={() => setCreateFolderId(null)}
-                        className={`px-4 py-2.5 rounded-2xl border ${createFolderId === null ? 'border-primary bg-primary/5' : 'border-transparent bg-surface/50'}`}
-                    >
-                        <Typography className={createFolderId === null ? 'text-primary font-bold' : 'text-textGray'} variant="caption">Tanpa folder</Typography>
-                    </Pressable>
-                    {(folderList.data ?? []).map((f) => (
-                        <Pressable
-                            key={f.id}
-                            onPress={() => setCreateFolderId(f.id)}
-                            className={`px-4 py-2.5 rounded-2xl border ${createFolderId === f.id ? 'border-primary bg-primary/5' : 'border-transparent bg-surface/50'}`}
-                        >
-                            <Typography className={createFolderId === f.id ? 'text-primary font-bold' : 'text-textGray'} variant="caption">{f.nama}</Typography>
-                        </Pressable>
-                    ))}
-                </View>
-            </View>
-
-            <View className="mb-6">
+                        <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-3">
                     <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest">Metode Penerimaan</Typography>
                     <Pressable
@@ -761,6 +742,7 @@ export default function HutangUsahaScreen() {
             {!isSheetOpen && (
                 <View className="px-6 mt-4">
                     <View className="bg-surface p-3 rounded-[24px] border border-transparent shadow-sm flex-col">
+                        {tampilan === 'struk' && (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-3 space-x-2 pb-1">
                             {STATUS_FILTERS.map((filter) => {
                                 const isActive = selectedFilter === filter.value;
@@ -789,6 +771,7 @@ export default function HutangUsahaScreen() {
                                 );
                             })}
                         </ScrollView>
+                        )}
 
                         <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
                             <Search size={16} color={placeholder} />
@@ -811,11 +794,43 @@ export default function HutangUsahaScreen() {
                     <ActivityIndicator size="large" color="#E11D48" />
                 </View>
             ) : (
-                <FlatList
-                    data={hutangList}
-                    keyExtractor={(item) => item.id.toString()}
+                <FlatList<Hutang | GrupNama>
+                    data={tampilan === 'nama' ? grupList : hutangList}
+                    keyExtractor={(item) => (tampilan === 'nama' ? `grup-${(item as GrupNama).nama}` : (item as Hutang).id.toString())}
                     contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
-                    renderItem={({ item }) => (
+                    renderItem={({ item: raw }) => {
+                        if (tampilan === 'nama') {
+                            const grup = raw as GrupNama;
+                            return (
+                                <Pressable
+                                    onPress={() => router.push({ pathname: '/finance/hutang-nama', params: { nama: grup.nama } })}
+                                    className="bg-surface p-5 rounded-[32px] mb-6 border border-transparent shadow-sm"
+                                >
+                                    <View className="flex-row justify-between items-center mb-4">
+                                        <Typography variant="body1" weight="bold" className="text-textMain tracking-tight flex-1 mr-3" numberOfLines={1}>
+                                            {grup.nama}
+                                        </Typography>
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">{grup.jumlah_struk} struk</Typography>
+                                    </View>
+                                    <View className="bg-background p-4 rounded-2xl flex-row justify-between mb-4 border border-gray-100/50">
+                                        <View>
+                                            <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest mb-1">Total</Typography>
+                                            <Typography weight="semibold" className="text-textMain text-sm">{formatCurrency(grup.total_nominal)}</Typography>
+                                        </View>
+                                        <View className="items-end">
+                                            <Typography className="text-rose-600/60 text-[9px] font-bold uppercase tracking-widest mb-1">Sisa Tagihan</Typography>
+                                            <Typography weight="bold" className="text-rose-600 text-sm">{formatCurrency(grup.total_sisa)}</Typography>
+                                        </View>
+                                    </View>
+                                    <View className="flex-row items-center justify-between pt-2">
+                                        <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">{grup.belum_lunas} belum lunas</Typography>
+                                        <ChevronRight size={16} color="#D1D5DB" />
+                                    </View>
+                                </Pressable>
+                            );
+                        }
+                        const item = raw as Hutang;
+                        return (
                         <Pressable
                             onPress={() => handleOpenDetail(item)}
                             className="bg-surface p-5 rounded-[32px] mb-6 border border-transparent shadow-sm"
@@ -846,17 +861,22 @@ export default function HutangUsahaScreen() {
                                 </View>
                             </View>
                         </Pressable>
-                    )}
+                        );
+                    }}
                     ListHeaderComponent={
                         <View className="mb-6">
-                            {/* Folder Hutang: di dalam daftar, bukan di header */}
-                            <Pressable
-                                onPress={() => router.push('/finance/hutang-folder')}
-                                className="bg-surface p-4 rounded-[24px] border border-transparent shadow-sm mb-4 flex-row justify-between items-center"
-                            >
-                                <Typography weight="bold" className="text-textMain text-sm">Folder Hutang</Typography>
-                                <Typography className="text-primary text-xs font-bold">Buka</Typography>
-                            </Pressable>
+                            {/* Tampilan per struk atau per nama (folder otomatis dari nama) */}
+                            <View className="flex-row bg-surface p-1 rounded-2xl mb-4 border border-transparent shadow-sm">
+                                {([['struk', 'Per Struk'], ['nama', 'Per Nama']] as const).map(([nilai, label]) => (
+                                    <Pressable
+                                        key={nilai}
+                                        onPress={() => setTampilan(nilai)}
+                                        className={`flex-1 py-2.5 rounded-xl items-center ${tampilan === nilai ? 'bg-primary' : ''}`}
+                                    >
+                                        <Typography className={`text-xs font-bold ${tampilan === nilai ? 'text-white' : 'text-textGray'}`}>{label}</Typography>
+                                    </Pressable>
+                                ))}
+                            </View>
                             {/* Summary Card (White Bento Style) */}
                             <View className="bg-surface p-6 rounded-[32px] border border-transparent shadow-sm mb-6">
                                 <View className="flex-row justify-between items-center mb-6">

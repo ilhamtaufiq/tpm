@@ -77,14 +77,9 @@ class HutangService:
              elif data.sumber == HutangSource.UANG_MUKA_PENJUALAN:
                  unit_source = KasBankSource.JUAL_BELI_MOBIL
 
-        if data.folder_id is not None:
-            from app.models.keuangan import HutangFolder
-            if self.db.get(HutangFolder, data.folder_id) is None:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder hutang tidak ditemukan")
         hutang = HutangUsaha(
             nomor_hutang=nomor_hutang,
             tanggal=data.tanggal,
-            folder_id=data.folder_id,
             sumber=data.sumber,
             referensi_id=data.referensi_id,
             nomor_referensi=data.nomor_referensi,
