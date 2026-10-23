@@ -7,6 +7,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 
+from app.models.bengkel import TransaksiPenjualanBengkel
 from app.models.customer import Customer, CustomerVehicle
 from app.models.keuangan import PiutangUsaha
 from app.schemas.master import CustomerCreate, CustomerUpdate
@@ -192,6 +193,8 @@ class CustomerService:
     def update(self, customer_id: int, data: CustomerUpdate) -> Customer:
         """Update customer."""
         customer = self.get_by_id(customer_id)
+        nama_lama = customer.nama
+        plat_lama = [v.plat_nomor for v in sorted(customer.vehicles, key=lambda v: v.id)]
 
         update_data = data.model_dump(exclude_unset=True)
 
@@ -214,11 +217,38 @@ class CustomerService:
                 )
                 self.db.add(vehicle)
 
+        plat_baru = [v["plat_nomor"] for v in vehicles_data] if vehicles_data is not None else plat_lama
+        self._sinkron_riwayat(customer, nama_lama, plat_lama, plat_baru)
+
         self.db.commit()
         self.db.refresh(customer)
         self._emit_change("updated", customer)
 
         return customer
+
+    def _sinkron_riwayat(self, customer: Customer, nama_lama: str, plat_lama: list[str], plat_baru: list[str]) -> None:
+        """Salin nama dan nopol terbaru ke riwayat transaksi bengkel dan piutang milik customer ini.
+
+        Transaksi dan piutang menyimpan salinan nama/plat saat dibuat. Pasangan plat lama-baru
+        dicocokkan per urutan, hanya bila jumlah kendaraan sama dan plat itu memang berubah.
+        """
+        if customer.nama != nama_lama:
+            self.db.query(TransaksiPenjualanBengkel).filter(
+                TransaksiPenjualanBengkel.customer_id == customer.id
+            ).update({TransaksiPenjualanBengkel.nama_customer: customer.nama}, synchronize_session=False)
+            self.db.query(PiutangUsaha).filter(
+                PiutangUsaha.customer_id == customer.id
+            ).update({PiutangUsaha.nama_debitur: customer.nama}, synchronize_session=False)
+
+        if len(plat_lama) != len(plat_baru):
+            return
+        for lama, baru in zip(plat_lama, plat_baru):
+            if lama == baru or lama in plat_baru or baru in plat_lama:
+                continue
+            self.db.query(TransaksiPenjualanBengkel).filter(
+                TransaksiPenjualanBengkel.customer_id == customer.id,
+                TransaksiPenjualanBengkel.nomor_plat == lama,
+            ).update({TransaksiPenjualanBengkel.nomor_plat: baru}, synchronize_session=False)
 
     def delete(self, customer_id: int) -> bool:
         """Soft delete customer."""

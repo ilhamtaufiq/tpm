@@ -37,14 +37,13 @@ import { PaymentModal } from '../../components/PaymentModal';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
-type PiutangFilter = PiutangStatus | 'all' | 'overdue' | 'sebagian' | 'belum_bayar';
+type PiutangFilter = PiutangStatus | 'all' | 'sebagian' | 'belum_bayar';
 
 // Belum Lunas = sudah ada uang masuk tapi sisa masih ada (status SEBAGIAN).
 // Belum Bayar = belum ada uang masuk sama sekali (total_dibayar 0).
 const STATUS_FILTERS: { label: string; value: PiutangFilter }[] = [
     { label: 'Belum Lunas', value: 'sebagian' },
     { label: 'Belum Bayar', value: 'belum_bayar' },
-    { label: 'Jatuh Tempo', value: 'overdue' },
     { label: 'Semua', value: 'all' },
     { label: 'Lunas', value: 'LUNAS' },
 ];
@@ -126,7 +125,6 @@ export default function PiutangUsahaScreen() {
     const { data: listData, isLoading: isLoadingList, refetch: refetchList } = usePiutangList({
         limit: 50,
         status: selectedFilter === 'LUNAS' ? 'LUNAS' : undefined,
-        overdue_only: selectedFilter === 'overdue',
         sebagian_only: selectedFilter === 'sebagian',
         belum_bayar_only: selectedFilter === 'belum_bayar',
         search: search || undefined,
@@ -218,7 +216,6 @@ export default function PiutangUsahaScreen() {
         return {
             belum_bayar: belumBayar,
             sebagian,
-            overdue: summary.jumlah_overdue,
             LUNAS: summary.jumlah_lunas,
             lunas: summary.jumlah_lunas,
             // overdue himpunan bagian dari belum_bayar+sebagian — jangan dijumlah.

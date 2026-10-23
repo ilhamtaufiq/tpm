@@ -313,6 +313,12 @@ export default function CustomerScreen() {
 
                     <Typography className="text-textGray text-xs">{item.kota || 'Tidak ada lokasi'}</Typography>
 
+                    {item.vehicles && item.vehicles.length > 0 && (
+                        <Typography weight="bold" className="text-primary text-xs mt-1" numberOfLines={1}>
+                            {item.vehicles.map((v) => v.plat_nomor).join(' · ')}
+                        </Typography>
+                    )}
+
                     {item.telepon && (
                         <View className="flex-row items-center mt-2 pt-2 border-t border-transparent">
                             <Phone size={12} color="#9CA3AF" />
