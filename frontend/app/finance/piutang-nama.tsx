@@ -31,6 +31,7 @@ export default function PiutangNamaScreen() {
     const [nominal, setNominal] = useState('');
     const [keterangan, setKeterangan] = useState('');
     const [metode, setMetode] = useState<'TUNAI' | 'TRANSFER'>('TUNAI');
+    const [strukId, setStrukId] = useState<number | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [dialog, setDialog] = useState<{ visible: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
         visible: false, title: '', message: '', variant: 'info',
@@ -56,12 +57,14 @@ export default function PiutangNamaScreen() {
             tanggal,
             metode,
             nominal: parseNumber(nominal),
+            struk_id: strukId ?? undefined,
             catatan: keterangan.trim() || undefined,
         }),
         onSuccess: async (hasil) => {
             const bagian = hasil?.dibayar?.length ?? 0;
             setNominal('');
             setKeterangan('');
+            setStrukId(null);
             await refreshSemua();
             tampilkan('Pembayaran dicatat', `Dibagi ke ${bagian} struk, dimulai dari yang tertua.`, 'success');
         },
@@ -78,6 +81,8 @@ export default function PiutangNamaScreen() {
     };
 
     const detail = detailQuery.data;
+    const strukTerpilih = detail?.struk.find((s) => s.id === strukId);
+    const melebihiStruk = !!strukTerpilih && parseNumber(nominal) > strukTerpilih.sisa;
     const nominalValid = parseNumber(nominal) > 0;
     const tanggalValid = TANGGAL_VALID.test(tanggal);
 
@@ -100,6 +105,22 @@ export default function PiutangNamaScreen() {
                     <Typography className="text-textGray text-xs">
                         Nominal dibagi ke struk paling tua dulu. Setiap bagian tercatat sebagai pembayaran piutang biasa.
                     </Typography>
+                    <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">Bayar ke</Typography>
+                    <View className="flex-row flex-wrap gap-2">
+                        <Pressable onPress={() => setStrukId(null)} className={`px-3 py-2 rounded-2xl border ${strukId === null ? 'border-primary bg-primary/5' : 'border-transparent bg-surface/50'}`}>
+                            <Typography className={`text-xs ${strukId === null ? 'text-primary font-bold' : 'text-textGray'}`}>Otomatis (tertua dulu)</Typography>
+                        </Pressable>
+                        {(detail?.struk ?? []).filter((s) => s.status !== 'LUNAS' && s.sisa > 0).map((s) => (
+                            <Pressable key={s.id} onPress={() => setStrukId(s.id)} className={`px-3 py-2 rounded-2xl border ${strukId === s.id ? 'border-primary bg-primary/5' : 'border-transparent bg-surface/50'}`}>
+                                <Typography className={`text-xs ${strukId === s.id ? 'text-primary font-bold' : 'text-textGray'}`}>{s.nomor} · sisa {formatCurrency(s.sisa)}</Typography>
+                            </Pressable>
+                        ))}
+                    </View>
+                    {strukTerpilih && (
+                        <Typography className={`text-xs ${melebihiStruk ? 'text-rose-600' : 'text-textGray'}`}>
+                            {melebihiStruk ? `Melebihi sisa ${strukTerpilih.nomor} (${formatCurrency(strukTerpilih.sisa)}).` : `Nominal hanya masuk ke ${strukTerpilih.nomor}.`}
+                        </Typography>
+                    )}
                     <View className="flex-row gap-2">
                         <View className="flex-1"><Input value={tanggal} onChangeText={setTanggal} placeholder="YYYY-MM-DD" maxLength={10} /></View>
                         <View className="flex-1"><Input value={nominal} onChangeText={(t) => setNominal(formatNumber(t))} placeholder="Nominal" keyboardType="numeric" /></View>
@@ -115,7 +136,7 @@ export default function PiutangNamaScreen() {
                     <Button
                         title="Bayar"
                         onPress={() => bayarMutation.mutate()}
-                        disabled={!nominalValid || !tanggalValid || bayarMutation.isPending}
+                        disabled={!nominalValid || !tanggalValid || melebihiStruk || bayarMutation.isPending}
                         loading={bayarMutation.isPending}
                     />
                 </Card>

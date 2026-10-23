@@ -86,8 +86,11 @@ class NamaGrupService:
         }
 
     def piutang_bayar(self, nama: str, tanggal: date, metode: PaymentMethod, nominal: Decimal,
-                      kas_jenis: Optional[KasBankJenis], catatan: Optional[str], user_id: Optional[int]) -> Dict[str, Any]:
-        tersedia = [p for p in self._piutang_nama(nama).all() if p.status != PiutangStatus.LUNAS and (p.sisa_piutang or 0) > 0]
+                      kas_jenis: Optional[KasBankJenis], catatan: Optional[str], user_id: Optional[int],
+                      struk_id: Optional[int] = None) -> Dict[str, Any]:
+        # struk_id: bayar ke satu struk saja; kosong = otomatis dari yang tertua.
+        tersedia = [p for p in self._piutang_nama(nama).all()
+                    if p.status != PiutangStatus.LUNAS and (p.sisa_piutang or 0) > 0 and (struk_id is None or p.id == struk_id)]
         total = sum((p.sisa_piutang for p in tersedia), Decimal(0))
         if not tersedia:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Tidak ada piutang belum lunas atas nama {nama}")
@@ -162,8 +165,11 @@ class NamaGrupService:
         }
 
     def hutang_bayar(self, nama: str, tanggal: date, metode: PaymentMethod, nominal: Decimal,
-                     kas_jenis: Optional[KasBankJenis], catatan: Optional[str], user_id: Optional[int]) -> Dict[str, Any]:
-        tersedia = [h for h in self._hutang_nama(nama).all() if h.status != HutangStatus.LUNAS and (h.sisa_hutang or 0) > 0]
+                     kas_jenis: Optional[KasBankJenis], catatan: Optional[str], user_id: Optional[int],
+                     struk_id: Optional[int] = None) -> Dict[str, Any]:
+        # struk_id: bayar ke satu struk saja; kosong = otomatis dari yang tertua.
+        tersedia = [h for h in self._hutang_nama(nama).all()
+                    if h.status != HutangStatus.LUNAS and (h.sisa_hutang or 0) > 0 and (struk_id is None or h.id == struk_id)]
         total = sum((h.sisa_hutang for h in tersedia), Decimal(0))
         if not tersedia:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Tidak ada hutang belum lunas atas nama {nama}")

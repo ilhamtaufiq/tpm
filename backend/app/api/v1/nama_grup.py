@@ -20,6 +20,7 @@ class BayarNamaRequest(BaseModel):
     nominal: Decimal = Field(..., gt=0)
     kas_jenis: Optional[KasBankJenis] = None
     catatan: Optional[str] = None
+    struk_id: Optional[int] = None  # kosong = otomatis dari yang tertua
 
 
 @router.get("/piutang")
@@ -34,7 +35,7 @@ def detail_piutang(db: DBSession, current_user: UnitManagerUser, nama: str = Que
 
 @router.post("/piutang/bayar", status_code=201)
 def bayar_piutang(data: BayarNamaRequest, db: DBSession, current_user: UnitManagerUser):
-    return NamaGrupService(db).piutang_bayar(data.nama, data.tanggal, data.metode, data.nominal, data.kas_jenis, data.catatan, current_user.id)
+    return NamaGrupService(db).piutang_bayar(data.nama, data.tanggal, data.metode, data.nominal, data.kas_jenis, data.catatan, current_user.id, data.struk_id)
 
 
 @router.get("/hutang")
@@ -49,4 +50,4 @@ def detail_hutang(db: DBSession, current_user: UnitManagerUser, nama: str = Quer
 
 @router.post("/hutang/bayar", status_code=201)
 def bayar_hutang(data: BayarNamaRequest, db: DBSession, current_user: UnitManagerUser):
-    return NamaGrupService(db).hutang_bayar(data.nama, data.tanggal, data.metode, data.nominal, data.kas_jenis, data.catatan, current_user.id)
+    return NamaGrupService(db).hutang_bayar(data.nama, data.tanggal, data.metode, data.nominal, data.kas_jenis, data.catatan, current_user.id, data.struk_id)
