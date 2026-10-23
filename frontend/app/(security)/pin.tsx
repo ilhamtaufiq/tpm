@@ -37,7 +37,8 @@ export default function PinScreen() {
         SAFE_REDIRECTS.includes(normalizedRedirect) ||
         SAFE_REDIRECTS.some(route => route !== '/' && normalizedRedirect.startsWith(route + '/')) ||
         normalizedRedirect.startsWith('/settings/') ||
-        normalizedRedirect.startsWith('/receipt/')
+        normalizedRedirect.startsWith('/receipt/') ||
+        normalizedRedirect.startsWith('/s/')
     ) ? normalizedRedirect : '/(tabs)/home';
 
     const [pin, setPin] = useState('');

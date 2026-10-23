@@ -20,6 +20,7 @@ from app.models.bengkel import TransaksiPenjualanBengkel
 from app.models.jasa_angkut import MuatanJasaAngkut
 from app.models.mobil import Mobil, TransaksiPenjualanMobil
 from app.models.system_setting import SystemSetting
+from app.services.short_link_service import ShortLinkService
 
 router = APIRouter(prefix="/public/receipt", tags=["Public Receipt"])
 
@@ -346,8 +347,10 @@ def get_font_path(bold=False):
 
 def generate_receipt_image(data: Dict[str, Any], public_url: Optional[str] = None) -> io.BytesIO:
     """Generate a thermal-style OG / WhatsApp share image for the receipt"""
-    # Create canvas (1200x630)
-    width, height = 1200, 630
+    # Create canvas (1200x630, lebih tinggi bila item banyak agar ringkasan dan link tidak bertumpuk)
+    width = 1200
+    jumlah_item = len(data.get("items", []))
+    height = max(630, 366 + min(jumlah_item, 4) * 60 + (30 if jumlah_item > 4 else 0) + 300)
     
     # Receipt-like background (off-white)
     img = Image.new('RGB', (width, height), color='#f3f4f6')
@@ -466,7 +469,7 @@ def generate_receipt_image(data: Dict[str, Any], public_url: Optional[str] = Non
         draw.text((width/2, y), f"... and {len(items)-4} more items ...", font=sub_header_font, fill="gray", anchor="mm")
         y += 30
 
-    y = height - 180 # Pin summary to bottom-ish
+    y += 10
     for x in range(paper_x + 20, paper_x + paper_width - 20, 10):
         draw.line([x, y, x + 5, y], fill="black", width=1)
     y += 20
@@ -522,7 +525,12 @@ async def get_receipt_image(
         # API is usually /api/v1 — public SPA lives on same host without /api
         if origin.endswith("/api/v1") or origin.endswith("/api"):
             origin = origin.rsplit("/api", 1)[0]
-        public_url = f"{origin}/receipt/{receipt_type}/{transaction_id}"
+        # Link pendek di bawah gambar, supaya URL tidak terlalu panjang.
+        try:
+            kode = ShortLinkService(db).buat_atau_ambil(receipt_type, transaction_id).kode
+            public_url = f"{origin}/s/{kode}"
+        except ValueError:
+            public_url = f"{origin}/receipt/{receipt_type}/{transaction_id}"
             
         img_buf = generate_receipt_image(data, public_url=public_url)
         return Response(content=img_buf.getvalue(), media_type="image/png")
