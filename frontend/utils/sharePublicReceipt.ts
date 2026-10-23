@@ -13,50 +13,24 @@ import {
 
 export const PUBLIC_RECEIPT_SHARE_TITLE = 'Struk Tiga Putra Motor';
 
-export type PublicReceiptShareSummary = {
-    total: number;
-    lunas: boolean;
-    items: { description: string; quantity: number; subtotal: number }[];
-};
-
-/** Pesan share: nomor struk, rincian item, total dan status, lalu link di baris terakhir. */
-export function buildPublicReceiptShareMessage(
-    transactionNumber: string | undefined,
-    shareUrl: string,
-    summary?: PublicReceiptShareSummary | null,
-): string {
-    const label = (transactionNumber || '').trim() || 'transaksi';
-    const baris = [`Struk transaksi ${label} — Tiga Putra Motor`];
-    if (summary) {
-        baris.push('');
-        for (const item of summary.items) {
-            baris.push(`• ${item.description} ${item.quantity}x = ${formatCurrency(item.subtotal)}`);
-        }
-        baris.push('');
-        baris.push(`Total: ${formatCurrency(summary.total)} (${summary.lunas ? 'LUNAS' : 'BELUM LUNAS'})`);
-    }
-    baris.push('', `Lihat struk: ${shareUrl}`);
+/** Pesan share: total nominal dan link struk, keduanya tebal. Rincian ada di struk digital. */
+export function buildPublicReceiptShareMessage(shareUrl: string, total?: number | null): string {
+    const baris: string[] = [];
+    if (total != null) baris.push(`Total: *${formatCurrency(total)}*`);
+    baris.push(`*${shareUrl}*`);
     return baris.join('\n');
 }
 
-/** Ambil rincian dari endpoint publik struk. Gagal = null, pesan tetap terkirim tanpa rincian. */
-async function fetchPublicReceiptShareSummary(
+/** Ambil total struk dari endpoint publik. Gagal = null, pesan tetap berisi link. */
+async function fetchPublicReceiptTotal(
     type: PublicReceiptType,
     idOrToken: string,
-): Promise<PublicReceiptShareSummary | null> {
+): Promise<number | null> {
     try {
         const { data } = await api.get(`/public/receipt/${type}/${encodeURIComponent(idOrToken)}`);
-        return {
-            total: Number(data.total ?? 0),
-            lunas: Number(data.remaining ?? 0) <= 0,
-            items: (data.items ?? []).map((item: any) => ({
-                description: String(item.description ?? ''),
-                quantity: Number(item.quantity ?? 1),
-                subtotal: Number(item.subtotal ?? 0),
-            })),
-        };
+        return Number(data.total ?? 0);
     } catch (error) {
-        console.warn('[Share] gagal ambil rincian struk, kirim tanpa rincian:', error);
+        console.warn('[Share] gagal ambil total struk, kirim tanpa total:', error);
         return null;
     }
 }
@@ -437,15 +411,15 @@ export async function sharePublicReceiptLink(
 ): Promise<SharePublicReceiptLinkResult> {
     const title = options.title || PUBLIC_RECEIPT_SHARE_TITLE;
     const imageUri = await resolveShareImageFileUri(options);
-    const summary = options.receiptType && options.receiptId
-        ? await fetchPublicReceiptShareSummary(options.receiptType, options.receiptId)
+    const total = options.receiptType && options.receiptId
+        ? await fetchPublicReceiptTotal(options.receiptType, options.receiptId)
         : null;
     // Link pendek agar tidak terlalu panjang. Kalau gagal, pakai link struk biasa.
     const shortUrl = options.receiptType && options.receiptId
         ? await buildPublicShortUrl(options.receiptType, options.receiptId, options.shareUrl.replace(/\/receipt\/.*$/, ''))
         : null;
     const shareUrl = shortUrl ?? options.shareUrl;
-    const message = buildPublicReceiptShareMessage(options.transactionNumber, shareUrl, summary);
+    const message = buildPublicReceiptShareMessage(shareUrl, total);
 
     try {
         if (Platform.OS === 'web') {
@@ -476,9 +450,8 @@ export async function sharePublicReceiptLink(
 
 export async function copyPublicReceiptLink(
     shareUrl: string,
-    transactionNumber?: string,
 ): Promise<void> {
-    const message = buildPublicReceiptShareMessage(transactionNumber, shareUrl);
+    const message = buildPublicReceiptShareMessage(shareUrl);
 
     if (Platform.OS === 'web') {
         const ok = await copyTextWeb(message);

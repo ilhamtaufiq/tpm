@@ -216,6 +216,12 @@ export default function BengkelScreen() {
     const [queueWorkStatusFilter, setQueueWorkStatusFilter] = React.useState<'ALL' | 'antre' | 'proses' | 'selesai'>('ALL');
     const [queueSearchOpen, setQueueSearchOpen] = React.useState(false);
     const [queueSearchQuery, setQueueSearchQuery] = React.useState('');
+    // Pencarian baru dijalankan setelah berhenti mengetik ~700 ms, atau langsung saat tombol cari ditekan.
+    const [queueSearchDebounced, setQueueSearchDebounced] = React.useState('');
+    React.useEffect(() => {
+        const t = setTimeout(() => setQueueSearchDebounced(queueSearchQuery.trim()), 700);
+        return () => clearTimeout(t);
+    }, [queueSearchQuery]);
     const [printSettings, setPrintSettings] = React.useState<PrintSettings | null>(null);
     const [printing, setPrinting] = React.useState(false);
     const [dialogConfig, setDialogConfig] = React.useState<{
@@ -362,7 +368,7 @@ export default function BengkelScreen() {
             const matchesPayment = queuePaymentFilter === 'ALL' || getQueuePaymentStatus(item) === queuePaymentFilter;
             const workStatus = String(item.status_pengerjaan || 'antre').toLowerCase();
             const matchesWorkStatus = queueWorkStatusFilter === 'ALL' || workStatus === queueWorkStatusFilter;
-            const q = queueSearchQuery.trim().toLowerCase();
+            const q = queueSearchDebounced.toLowerCase();
             const matchesSearch = !q || [
                 item.nomor_transaksi,
                 item.nomor_plat,
@@ -372,7 +378,7 @@ export default function BengkelScreen() {
             ].some((value) => String(value || '').toLowerCase().includes(q));
             return matchesPayment && matchesWorkStatus && matchesSearch;
         });
-    }, [getQueuePaymentStatus, queuePaymentFilter, queueSearchQuery, queueWorkStatusFilter, todayQueue]);
+    }, [getQueuePaymentStatus, queuePaymentFilter, queueSearchDebounced, queueWorkStatusFilter, todayQueue]);
     const filteredQueue = todayQueue;
 
     // Calculate counters for UI Pills (using values from summary API if available, else local)
@@ -1174,6 +1180,7 @@ export default function BengkelScreen() {
                         autoCorrect={false}
                         autoCapitalize="none"
                         returnKeyType="search"
+                        onSubmitEditing={() => setQueueSearchDebounced(queueSearchQuery.trim())}
                     />
                     {queueSearchQuery.length > 0 && (
                         <Pressable onPress={() => setQueueSearchQuery('')} className="w-7 h-7 items-center justify-center">
