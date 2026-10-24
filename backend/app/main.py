@@ -73,6 +73,10 @@ def create_app() -> FastAPI:
     # Include API router
     app.include_router(api_router)
 
+    # Link pendek struk di root (/s/{kode}), bukan di bawah /api
+    from app.api.v1 import short_link
+    app.include_router(short_link.go_router)
+
     # Monitoring Endpoints
     from app.middleware.logging import metrics
     from fastapi.responses import HTMLResponse

@@ -48,7 +48,9 @@ def test_redirect_kode_pendek_ke_halaman_struk(db):
     target = f"{PREFIX}hvi_redirect1"
     kode = ShortLinkService(db).buat_atau_ambil("bengkel", target).kode
     client = TestClient(app)
-    respon = client.get(f"/api/v1/s/{kode}", follow_redirects=False)
-    assert respon.status_code == 302
-    assert respon.headers["location"].endswith(f"/public/receipt/view/bengkel/{target}")
-    assert client.get("/api/v1/s/zzzzzzz", follow_redirects=False).status_code == 404
+    respon = client.get(f"/s/{kode}")
+    assert respon.status_code == 200
+    assert 'property="og:image"' in respon.text
+    assert 'property="og:title"' in respon.text
+    assert f"/public/receipt/view/bengkel/{target}" in respon.text
+    assert client.get("/s/zzzzzzz", follow_redirects=False).status_code == 404

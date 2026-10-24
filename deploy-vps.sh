@@ -256,6 +256,10 @@ cat > "$APACHE_CONF" <<EOL
 
     ProxyPass /api http://127.0.0.1:8000/api
     ProxyPassReverse /api http://127.0.0.1:8000/api
+
+    # Link pendek struk: halamannya dilayani backend (tag OG untuk pratinjau chat)
+    ProxyPass /s/ http://127.0.0.1:8000/s/
+    ProxyPassReverse /s/ http://127.0.0.1:8000/s/
     
     # Proxy Docs (Optional)
     ProxyPass /docs http://127.0.0.1:8000/docs
