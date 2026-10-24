@@ -92,6 +92,5 @@ api_router.include_router(realtime.router)
 from fastapi import FastAPI
 api_router.include_router(public_receipt.router, prefix="", tags=["Public Receipt"])
 api_router.include_router(short_link.router)
-api_router.include_router(short_link.go_router)
 api_router.include_router(public_gallery.router, prefix="", tags=["Public Gallery"])
 

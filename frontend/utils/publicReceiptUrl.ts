@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import api, { BASE_URL } from './api';
+import api, { BASE_URL, FILE_URL } from './api';
 
 export type PublicReceiptType = 'bengkel' | 'jasa_angkut' | 'mobil';
 
@@ -66,6 +66,11 @@ export function getPublicReceiptBaseUrl(override?: string | null): string {
     return PRODUCTION_FALLBACK;
 }
 
+/** Origin server tanpa /api, mis. https://host. Dipakai untuk link pendek /s/{kode}. */
+export function getPublicOrigin(): string {
+    return FILE_URL.startsWith('http') ? FILE_URL : getPublicReceiptBaseUrl();
+}
+
 /** Basis API publik, mis. https://host/api/v1. Link yang dibaca crawler chat harus memakai host ini. */
 export function getPublicApiBase(): string {
     return BASE_URL.startsWith('http') ? BASE_URL : `${getPublicReceiptBaseUrl()}/api/v1`;
@@ -87,7 +92,7 @@ export async function buildPublicShortUrl(
 ): Promise<string | null> {
     try {
         const { data } = await api.post('/public/short-link', { tipe: type, target: idOrToken });
-        return `${getPublicApiBase()}/s/${data.kode}`;
+        return `${getPublicOrigin()}/s/${data.kode}`;
     } catch (error) {
         console.warn('[publicReceiptUrl] gagal membuat link pendek, pakai link panjang:', error);
         return null;
