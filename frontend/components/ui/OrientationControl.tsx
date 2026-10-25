@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
-import { Smartphone, MonitorSmartphone, RotateCw } from 'lucide-react-native';
+import Smartphone from 'lucide-react-native/dist/esm/icons/smartphone.js';
+import MonitorSmartphone from 'lucide-react-native/dist/esm/icons/monitor-smartphone.js';
+import RotateCw from 'lucide-react-native/dist/esm/icons/rotate-cw.js';
 import { Typography } from './Typography';
 import { type OrientationLockMode } from '../../store/useUIStore';
 import { useOrientationLock } from '../../hooks/useOrientationLock';

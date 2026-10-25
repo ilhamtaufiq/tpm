@@ -6,7 +6,11 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../utils/api';
-import { Lock, Eye, EyeOff, Save, CheckCircle } from 'lucide-react-native';
+import Lock from 'lucide-react-native/dist/esm/icons/lock.js';
+import Eye from 'lucide-react-native/dist/esm/icons/eye.js';
+import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off.js';
+import Save from 'lucide-react-native/dist/esm/icons/save.js';
+import CheckCircle from 'lucide-react-native/dist/esm/icons/circle-check-big.js';
 import { StatusBar } from 'expo-status-bar';
 import { useUIStore } from '../../store/useUIStore';
 

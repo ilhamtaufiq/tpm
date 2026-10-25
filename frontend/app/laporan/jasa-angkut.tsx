@@ -4,15 +4,34 @@ import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshCont
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
-import {
-    ChevronLeft, Truck, TrendingUp, User,
-    ArrowRight, Wallet, MapPin, X, Fuel,
-    Receipt, Utensils, ParkingSquare, MoreHorizontal,
-    Percent, Users
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Fuel from 'lucide-react-native/dist/esm/icons/fuel.js';
+import Receipt from 'lucide-react-native/dist/esm/icons/receipt.js';
+import Utensils from 'lucide-react-native/dist/esm/icons/utensils.js';
+import ParkingSquare from 'lucide-react-native/dist/esm/icons/square-parking.js';
+import MoreHorizontal from 'lucide-react-native/dist/esm/icons/ellipsis.js';
+import Percent from 'lucide-react-native/dist/esm/icons/percent.js';
+import Users from 'lucide-react-native/dist/esm/icons/users.js';
 import { useRouter } from 'expo-router';
-import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { addDays } from 'date-fns/addDays';
+import { subDays } from 'date-fns/subDays';
+import { addMonths } from 'date-fns/addMonths';
+import { subMonths } from 'date-fns/subMonths';
+import { addYears } from 'date-fns/addYears';
+import { subYears } from 'date-fns/subYears';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { endOfMonth } from 'date-fns/endOfMonth';
+import { startOfYear } from 'date-fns/startOfYear';
+import { endOfYear } from 'date-fns/endOfYear';
+import { id as localeID } from 'date-fns/locale/id';
 import { jasaAngkutService } from '../../services/jasaAngkut';
 import { formatCurrency, formatDate, tanggalLokal } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';

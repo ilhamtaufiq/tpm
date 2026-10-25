@@ -7,34 +7,32 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import {
-    ChevronLeft,
-    Search,
-    Plus,
-    Car,
-    Filter,
-    Info,
-    Calendar,
-    GaugeCircle,
-    CircleDollarSign,
-    Calculator,
-    TrendingUp,
-    TrendingDown,
-    Trash2,
-    X,
-    Wallet,
-    ArrowUpRight,
-    ArrowUpCircle,
-    ArrowDownCircle,
-    Clock,
-    Share2,
-    RefreshCw,
-    Settings,
-    Banknote,
-    Receipt,
-    CreditCard,
-    Landmark
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import Filter from 'lucide-react-native/dist/esm/icons/funnel.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import GaugeCircle from 'lucide-react-native/dist/esm/icons/circle-gauge.js';
+import CircleDollarSign from 'lucide-react-native/dist/esm/icons/circle-dollar-sign.js';
+import Calculator from 'lucide-react-native/dist/esm/icons/calculator.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import TrendingDown from 'lucide-react-native/dist/esm/icons/trending-down.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import ArrowUpRight from 'lucide-react-native/dist/esm/icons/arrow-up-right.js';
+import ArrowUpCircle from 'lucide-react-native/dist/esm/icons/circle-arrow-up.js';
+import ArrowDownCircle from 'lucide-react-native/dist/esm/icons/circle-arrow-down.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import Share2 from 'lucide-react-native/dist/esm/icons/share-2.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import Settings from 'lucide-react-native/dist/esm/icons/settings.js';
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote.js';
+import Receipt from 'lucide-react-native/dist/esm/icons/receipt.js';
+import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card.js';
+import Landmark from 'lucide-react-native/dist/esm/icons/landmark.js';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
@@ -47,7 +45,10 @@ import { MobilCostForm } from '../../components/MobilCostForm';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import { format, subMonths, isValid, parse } from 'date-fns';
+import { format } from 'date-fns/format';
+import { subMonths } from 'date-fns/subMonths';
+import { isValid } from 'date-fns/isValid';
+import { parse } from 'date-fns/parse';
 import { useMobilList, useDeleteMobil, usePenjualanSummary, useInventorySummary } from '../../hooks/useMobil';
 import { FILE_URL } from '../../utils/api';
 import { useKasBankBalances, useUnitWalletHistory, useCreateTransaction, useTransfer, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';

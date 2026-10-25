@@ -1,5 +1,7 @@
-import { format, startOfMonth, startOfYear } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { startOfYear } from 'date-fns/startOfYear';
+import { id as localeID } from 'date-fns/locale/id';
 import { formatCurrency } from './format';
 import { NeracaReport, LabaRugiReport, CapitalReport } from '../types/reports';
 

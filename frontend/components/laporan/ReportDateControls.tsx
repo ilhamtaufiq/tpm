@@ -1,6 +1,10 @@
 import React from 'react';
 import { View, Pressable, TextInput } from 'react-native';
-import { ChevronLeft, ChevronRight, Calendar, Search, X } from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
 import { Typography } from '../ui/Typography';
 import { REPORT_FILTER_LABELS, ReportFilterType } from './types';
 import { useUIStore } from '../../store/useUIStore';

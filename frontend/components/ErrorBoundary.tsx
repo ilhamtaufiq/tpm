@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { AlertCircle, Repeat } from 'lucide-react-native';
+import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
+import Repeat from 'lucide-react-native/dist/esm/icons/repeat.js';
 import { useMonitorStore } from '../store/useMonitorStore';
 import { useUIStore } from '../store/useUIStore';
 

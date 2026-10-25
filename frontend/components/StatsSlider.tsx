@@ -7,7 +7,11 @@ import { useInventorySummary, usePenjualanSummary } from '../hooks/useMobil';
 import { useDashboardSummary } from '../hooks/useKeuangan';
 import { formatCurrency } from '../utils/format';
 import { useUIStore } from '../store/useUIStore';
-import { AlertCircle, Wrench, Truck, CarFront, Wallet } from 'lucide-react-native';
+import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import CarFront from 'lucide-react-native/dist/esm/icons/car-front.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
 
 export const StatsSlider = () => {
     const { width } = useWindowDimensions();

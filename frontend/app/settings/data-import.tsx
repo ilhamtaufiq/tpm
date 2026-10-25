@@ -9,12 +9,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
-import {
-    FileSpreadsheet,
-    CheckCircle2,
-    AlertTriangle,
-    Info,
-} from 'lucide-react-native';
+import FileSpreadsheet from 'lucide-react-native/dist/esm/icons/file-spreadsheet.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';

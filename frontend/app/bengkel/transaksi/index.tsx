@@ -3,7 +3,26 @@ import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Share, Statu
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Barcode as BarcodeIcon, Calendar, Car, Check, CheckCircle2, ChevronLeft, ClipboardList, Info, Package, Percent, Plus, Printer, Search, Share2, Truck, User, Wallet, Wrench, X } from 'lucide-react-native';
+import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
+import BarcodeIcon from 'lucide-react-native/dist/esm/icons/barcode.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import Check from 'lucide-react-native/dist/esm/icons/check.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import Percent from 'lucide-react-native/dist/esm/icons/percent.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Share2 from 'lucide-react-native/dist/esm/icons/share-2.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
 
 import { Typography } from '../../../components/ui/Typography';
 import { Button } from '../../../components/ui/Button';

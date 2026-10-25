@@ -3,13 +3,28 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Platform, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useNavigation } from 'expo-router';
-import {
-    ArrowUpRight, ArrowDownLeft, Wallet,
-    X, AlertTriangle, Building, Printer, Scale, CheckCircle,
-} from 'lucide-react-native';
+import ArrowUpRight from 'lucide-react-native/dist/esm/icons/arrow-up-right.js';
+import ArrowDownLeft from 'lucide-react-native/dist/esm/icons/arrow-down-left.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import Building from 'lucide-react-native/dist/esm/icons/building.js';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import Scale from 'lucide-react-native/dist/esm/icons/scale.js';
+import CheckCircle from 'lucide-react-native/dist/esm/icons/circle-check-big.js';
 import { WebView } from 'react-native-webview';
-import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { addDays } from 'date-fns/addDays';
+import { subDays } from 'date-fns/subDays';
+import { addMonths } from 'date-fns/addMonths';
+import { subMonths } from 'date-fns/subMonths';
+import { addYears } from 'date-fns/addYears';
+import { subYears } from 'date-fns/subYears';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { endOfMonth } from 'date-fns/endOfMonth';
+import { startOfYear } from 'date-fns/startOfYear';
+import { endOfYear } from 'date-fns/endOfYear';
+import { id as localeID } from 'date-fns/locale/id';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 

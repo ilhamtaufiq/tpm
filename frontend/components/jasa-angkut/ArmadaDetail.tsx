@@ -15,28 +15,26 @@ import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString, 
 import { getErrorMessage } from '../../utils/error';
 import { isBengkelTransactionLocked, isBengkelTransactionVoided } from '../../utils/bengkelTransaction';
 import { AlasanBatalDialog } from '../ui/AlasanBatalDialog';
-import {
-    Truck,
-    Calendar,
-    ArrowUpRight,
-    MapPin,
-    Clock,
-    CreditCard,
-    Wrench,
-    TrendingUp,
-    TrendingDown,
-    Activity,
-    ChevronRight,
-    Search,
-    Plus,
-    DollarSign,
-    X as CloseIcon,
-    Trash2,
-    PlusCircle,
-    GaugeCircle,
-    Ban,
-    Edit3
-} from 'lucide-react-native';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import ArrowUpRight from 'lucide-react-native/dist/esm/icons/arrow-up-right.js';
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import TrendingDown from 'lucide-react-native/dist/esm/icons/trending-down.js';
+import Activity from 'lucide-react-native/dist/esm/icons/activity.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import DollarSign from 'lucide-react-native/dist/esm/icons/dollar-sign.js';
+import CloseIcon from 'lucide-react-native/dist/esm/icons/x.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import PlusCircle from 'lucide-react-native/dist/esm/icons/circle-plus.js';
+import GaugeCircle from 'lucide-react-native/dist/esm/icons/circle-gauge.js';
+import Ban from 'lucide-react-native/dist/esm/icons/ban.js';
+import Edit3 from 'lucide-react-native/dist/esm/icons/pen-line.js';
 import { SkeletonCard } from '../ui/Skeleton';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';

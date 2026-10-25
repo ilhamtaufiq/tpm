@@ -1,5 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { format, startOfMonth, subMonths } from 'date-fns';
+import { format } from 'date-fns/format';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { subMonths } from 'date-fns/subMonths';
 import { bengkelService } from '../services/bengkel';
 import { mobilService } from '../services/mobil';
 import { jasaAngkutService } from '../services/jasaAngkut';

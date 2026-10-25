@@ -9,42 +9,40 @@ import { Badge } from '../../components/ui/Badge';
 import { PendingSyncBadge, isPendingSyncRow } from '../../components/ui/PendingSyncBadge';
 import { Button } from '../../components/ui/Button';
 import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
-import {
-    ChevronLeft,
-    Plus,
-    Search,
-    Filter,
-    Calendar,
-    Wrench,
-    Settings,
-    Clock,
-    CheckCircle2,
-    Package,
-    Receipt,
-    Database,
-    Activity,
-    ArrowRight,
-    Printer,
-    Download,
-    X,
-    AlertCircle,
-    Banknote,
-    Truck,
-    Car,
-    Share2,
-    Edit2,
-    QrCode,
-    Wallet,
-    ArrowUpCircle,
-    ArrowDownCircle,
-    TrendingDown,
-    TrendingUp,
-    CircleDollarSign,
-    Boxes,
-    ShoppingCart,
-    History,
-    CreditCard
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Filter from 'lucide-react-native/dist/esm/icons/funnel.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Settings from 'lucide-react-native/dist/esm/icons/settings.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import Receipt from 'lucide-react-native/dist/esm/icons/receipt.js';
+import Database from 'lucide-react-native/dist/esm/icons/database.js';
+import Activity from 'lucide-react-native/dist/esm/icons/activity.js';
+import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right.js';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import Download from 'lucide-react-native/dist/esm/icons/download.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import Share2 from 'lucide-react-native/dist/esm/icons/share-2.js';
+import Edit2 from 'lucide-react-native/dist/esm/icons/pen.js';
+import QrCode from 'lucide-react-native/dist/esm/icons/qr-code.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import ArrowUpCircle from 'lucide-react-native/dist/esm/icons/circle-arrow-up.js';
+import ArrowDownCircle from 'lucide-react-native/dist/esm/icons/circle-arrow-down.js';
+import TrendingDown from 'lucide-react-native/dist/esm/icons/trending-down.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import CircleDollarSign from 'lucide-react-native/dist/esm/icons/circle-dollar-sign.js';
+import Boxes from 'lucide-react-native/dist/esm/icons/boxes.js';
+import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart.js';
+import History from 'lucide-react-native/dist/esm/icons/history.js';
+import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card.js';
 import { router, useLocalSearchParams } from 'expo-router';
 import BottomSheetBase, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';
@@ -54,8 +52,11 @@ import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksi
 import { useMobilList } from '../../hooks/useMobil';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { formatDistanceToNow, format, isValid, parse } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
+import { format } from 'date-fns/format';
+import { isValid } from 'date-fns/isValid';
+import { parse } from 'date-fns/parse';
+import { id as localeID } from 'date-fns/locale/id';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
 import { buildBengkelPrintData } from '../../utils/buildPrintReceiptData';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';

@@ -11,15 +11,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
 import { Button } from '../../../components/ui/Button';
-import {
-    Download,
-    Share2,
-    ArrowLeft,
-    Image as ImageIcon,
-    Printer,
-    ShieldCheck,
-    RefreshCw,
-} from 'lucide-react-native';
+import Download from 'lucide-react-native/dist/esm/icons/download.js';
+import Share2 from 'lucide-react-native/dist/esm/icons/share-2.js';
+import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left.js';
+import ImageIcon from 'lucide-react-native/dist/esm/icons/image.js';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
 import api from '../../../utils/api';
 import { printSettingsService, PrintSettings } from '../../../utils/printSettings';
 import {

@@ -6,19 +6,17 @@ import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import {
-    ChevronLeft,
-    Plus,
-    Wallet,
-    User,
-    Calendar,
-    Check,
-    X,
-    AlertTriangle,
-    RefreshCw,
-    Trash2,
-    Search,
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import Check from 'lucide-react-native/dist/esm/icons/check.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
 import { useRouter } from 'expo-router';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';

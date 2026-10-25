@@ -1,27 +1,28 @@
 import { appAlert } from '../../utils/appAlert';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Platform, Modal, StyleSheet } from 'react-native';
-import { format, startOfMonth, isValid, parse } from 'date-fns';
+import { format } from 'date-fns/format';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { isValid } from 'date-fns/isValid';
+import { parse } from 'date-fns/parse';
 import { Stack, useRouter } from 'expo-router';
-import {
-    PieChart,
-    BarChart3,
-    Scale,
-    Calendar,
-    ArrowUpRight,
-    ArrowDownRight,
-    Filter,
-    FileText,
-    TrendingUp,
-    TrendingDown,
-    Building2,
-    Briefcase,
-    Settings,
-    ShieldCheck,
-    HelpCircle,
-    Info,
-    X
-} from 'lucide-react-native';
+import PieChart from 'lucide-react-native/dist/esm/icons/chart-pie.js';
+import BarChart3 from 'lucide-react-native/dist/esm/icons/chart-column.js';
+import Scale from 'lucide-react-native/dist/esm/icons/scale.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import ArrowUpRight from 'lucide-react-native/dist/esm/icons/arrow-up-right.js';
+import ArrowDownRight from 'lucide-react-native/dist/esm/icons/arrow-down-right.js';
+import Filter from 'lucide-react-native/dist/esm/icons/funnel.js';
+import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import TrendingDown from 'lucide-react-native/dist/esm/icons/trending-down.js';
+import Building2 from 'lucide-react-native/dist/esm/icons/building-2.js';
+import Briefcase from 'lucide-react-native/dist/esm/icons/briefcase.js';
+import Settings from 'lucide-react-native/dist/esm/icons/settings.js';
+import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check.js';
+import HelpCircle from 'lucide-react-native/dist/esm/icons/circle-question-mark.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { Input } from '../../components/ui/Input';

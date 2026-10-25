@@ -12,33 +12,41 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import { AlasanBatalDialog } from '../../components/ui/AlasanBatalDialog';
 import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
-import {
-    ChevronLeft,
-    Search,
-    X,
-    Calendar,
-    Clock,
-    Plus,
-    Package,
-    Wrench,
-    Receipt,
-    Printer,
-    Share2,
-    Trash2,
-    Edit2,
-    ChevronRight,
-    CheckCircle2,
-    Wallet,
-    ListOrdered,
-    Banknote,
-    Car,
-    TrendingUp,
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Receipt from 'lucide-react-native/dist/esm/icons/receipt.js';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import Share2 from 'lucide-react-native/dist/esm/icons/share-2.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import Edit2 from 'lucide-react-native/dist/esm/icons/pen.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import ListOrdered from 'lucide-react-native/dist/esm/icons/list-ordered.js';
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
 import { useRouter } from 'expo-router';
-import { format, subDays, addDays, subMonths, addMonths, subYears, addYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { format } from 'date-fns/format';
+import { subDays } from 'date-fns/subDays';
+import { addDays } from 'date-fns/addDays';
+import { subMonths } from 'date-fns/subMonths';
+import { addMonths } from 'date-fns/addMonths';
+import { subYears } from 'date-fns/subYears';
+import { addYears } from 'date-fns/addYears';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { endOfMonth } from 'date-fns/endOfMonth';
+import { startOfYear } from 'date-fns/startOfYear';
+import { endOfYear } from 'date-fns/endOfYear';
 import { BengkelPaymentModal, PaymentItem } from '../../components/BengkelPaymentModal';
-import { id as localeID } from 'date-fns/locale';
-import { formatDistanceToNow } from 'date-fns';
+import { id as localeID } from 'date-fns/locale/id';
+import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import {
     useTransaksiBengkelList,
     useTransaksiBengkelSummary,

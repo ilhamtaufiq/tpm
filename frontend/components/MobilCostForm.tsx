@@ -16,16 +16,14 @@ import { offlineAwareWrite } from '../services/offlineQueue';
 import { useUIStore } from '../store/useUIStore';
 
 // Import Icons properly
-import {
-    Receipt,
-    Wrench,
-    Trash2,
-    Calendar,
-    FileText,
-    PlusCircle,
-    TrendingDown,
-    TrendingUp
-} from 'lucide-react-native';
+import Receipt from 'lucide-react-native/dist/esm/icons/receipt.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
+import PlusCircle from 'lucide-react-native/dist/esm/icons/circle-plus.js';
+import TrendingDown from 'lucide-react-native/dist/esm/icons/trending-down.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
 
 interface MobilCostFormProps {
     unit: any;

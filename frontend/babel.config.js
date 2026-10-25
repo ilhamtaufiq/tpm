@@ -6,5 +6,11 @@ module.exports = function (api) {
             "nativewind/babel",
         ],
         plugins: ["react-native-reanimated/plugin"],
+        env: {
+            // Build produksi: buang console.log/info/debug. error dan warn tetap dipertahankan.
+            production: {
+                plugins: [["transform-remove-console", { exclude: ["error", "warn"] }]],
+            },
+        },
     };
 };

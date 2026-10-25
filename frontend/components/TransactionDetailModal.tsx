@@ -1,27 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { View, Modal, Pressable, ScrollView, ActivityIndicator, Dimensions, SafeAreaView, Share, Platform } from 'react-native';
-import {
-    X,
-    Wallet,
-    Wrench,
-    Truck,
-    Calendar,
-    Hash,
-    User,
-    Info,
-    ArrowRight,
-    Printer,
-    Share2,
-    CheckCircle2,
-    Clock,
-    AlertCircle,
-    ArrowUpRight,
-    ArrowDownRight,
-    Car,
-    ChevronDown
-} from 'lucide-react-native';
-import { format } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import Hash from 'lucide-react-native/dist/esm/icons/hash.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
+import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right.js';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import Share2 from 'lucide-react-native/dist/esm/icons/share-2.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
+import ArrowUpRight from 'lucide-react-native/dist/esm/icons/arrow-up-right.js';
+import ArrowDownRight from 'lucide-react-native/dist/esm/icons/arrow-down-right.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down.js';
+import { format } from 'date-fns/format';
+import { id as localeID } from 'date-fns/locale/id';
 import { Typography } from './ui/Typography';
 import { Badge } from './ui/Badge';
 import { useUIStore } from '../store/useUIStore';

@@ -1,7 +1,15 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { View, Pressable } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
-import { Wrench, CarFront, Truck, Users, BarChart3, Database, History, Wallet, Settings } from 'lucide-react-native';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import CarFront from 'lucide-react-native/dist/esm/icons/car-front.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import Users from 'lucide-react-native/dist/esm/icons/users.js';
+import BarChart3 from 'lucide-react-native/dist/esm/icons/chart-column.js';
+import Database from 'lucide-react-native/dist/esm/icons/database.js';
+import History from 'lucide-react-native/dist/esm/icons/history.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import Settings from 'lucide-react-native/dist/esm/icons/settings.js';
 import { Typography } from './ui/Typography';
 import { useAuthStore } from '../store/useAuthStore';
 import { router } from 'expo-router';

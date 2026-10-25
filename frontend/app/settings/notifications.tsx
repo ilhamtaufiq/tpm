@@ -1,7 +1,10 @@
 import React, { useMemo } from 'react';
 import { View, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, CheckCheck, Trash2, Bell } from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import CheckCheck from 'lucide-react-native/dist/esm/icons/check-check.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import Bell from 'lucide-react-native/dist/esm/icons/bell.js';
 import { router } from 'expo-router';
 
 import { Header } from '../../components/ui/Header';

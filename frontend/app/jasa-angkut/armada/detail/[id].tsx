@@ -2,7 +2,8 @@ import React from 'react';
 import { View, TouchableOpacity, StatusBar } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Edit } from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Edit from 'lucide-react-native/dist/esm/icons/square-pen.js';
 import { Typography } from '../../../../components/ui/Typography';
 import { ArmadaDetail } from '../../../../components/jasa-angkut/ArmadaDetail';
 

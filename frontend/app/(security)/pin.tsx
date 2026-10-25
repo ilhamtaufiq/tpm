@@ -4,7 +4,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSecurityStore } from '../../store/useSecurityStore';
 import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 import { useSetupPin, useVerifyPin, useChangePin, useDisablePin } from '../../hooks/useSecurityAPI';
-import { LucideDelete, LucideFingerprint, LucideChevronLeft } from 'lucide-react-native';
+import LucideDelete from 'lucide-react-native/dist/esm/icons/delete.js';
+import LucideFingerprint from 'lucide-react-native/dist/esm/icons/fingerprint-pattern.js';
+import LucideChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
 import * as LocalAuthentication from 'expo-local-authentication';
 import Animated, { useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 

@@ -4,13 +4,25 @@ import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshCont
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
-import {
-    ShoppingCart, TrendingUp, Clock, Package,
-    ClipboardList, X
-} from 'lucide-react-native';
+import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
 import { useRouter } from 'expo-router';
-import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { addDays } from 'date-fns/addDays';
+import { subDays } from 'date-fns/subDays';
+import { addMonths } from 'date-fns/addMonths';
+import { subMonths } from 'date-fns/subMonths';
+import { addYears } from 'date-fns/addYears';
+import { subYears } from 'date-fns/subYears';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { endOfMonth } from 'date-fns/endOfMonth';
+import { startOfYear } from 'date-fns/startOfYear';
+import { endOfYear } from 'date-fns/endOfYear';
+import { id as localeID } from 'date-fns/locale/id';
 import { bengkelService } from '../../services/bengkel';
 import { formatCurrency, tanggalLokal } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';

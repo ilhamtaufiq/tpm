@@ -3,7 +3,11 @@ import { View, Pressable, TextInput, FlatList, ActivityIndicator, StyleSheet, To
 import { Typography } from './Typography';
 import { Card } from './Card';
 import { Badge } from './Badge';
-import { Search, Package, X, Check, QrCode } from 'lucide-react-native';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Check from 'lucide-react-native/dist/esm/icons/check.js';
+import QrCode from 'lucide-react-native/dist/esm/icons/qr-code.js';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { bengkelService } from '../../services/bengkel';
 import { useQuery } from '@tanstack/react-query';

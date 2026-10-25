@@ -7,27 +7,25 @@ import { useUIStore } from '../../store/useUIStore';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Header } from '../../components/ui/Header';
-import {
-    Plus,
-    Search,
-    Trash2,
-    Package,
-    FileUp,
-    Sparkles,
-    AlertTriangle,
-    RefreshCw,
-    QrCode,
-    Barcode,
-    Printer,
-    Check,
-    CheckCircle2,
-    XCircle,
-    Upload,
-    Circle,
-    Download,
-    Eye,
-    Coins
-} from 'lucide-react-native';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import FileUp from 'lucide-react-native/dist/esm/icons/file-up.js';
+import Sparkles from 'lucide-react-native/dist/esm/icons/sparkles.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import QrCode from 'lucide-react-native/dist/esm/icons/qr-code.js';
+import Barcode from 'lucide-react-native/dist/esm/icons/barcode.js';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import Check from 'lucide-react-native/dist/esm/icons/check.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import XCircle from 'lucide-react-native/dist/esm/icons/circle-x.js';
+import Upload from 'lucide-react-native/dist/esm/icons/upload.js';
+import Circle from 'lucide-react-native/dist/esm/icons/circle.js';
+import Download from 'lucide-react-native/dist/esm/icons/download.js';
+import Eye from 'lucide-react-native/dist/esm/icons/eye.js';
+import Coins from 'lucide-react-native/dist/esm/icons/coins.js';
 import * as Print from 'expo-print';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';

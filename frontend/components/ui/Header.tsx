@@ -1,5 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Bell, User, X, ChevronRight, ChevronLeft, LogOut, Activity } from 'lucide-react-native';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Bell from 'lucide-react-native/dist/esm/icons/bell.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import LogOut from 'lucide-react-native/dist/esm/icons/log-out.js';
+import Activity from 'lucide-react-native/dist/esm/icons/activity.js';
 import { Typography } from './Typography';
 import { Pressable, View, Modal, TextInput, ScrollView, Dimensions, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

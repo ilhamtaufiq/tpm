@@ -4,24 +4,22 @@ import { View, ScrollView, Pressable, RefreshControl, Platform, Modal, StyleShee
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUIStore } from '../../store/useUIStore';
 import { Stack, useRouter } from 'expo-router';
-import {
-    Wallet,
-    CreditCard,
-    Banknote,
-    RefreshCw,
-    Info,
-    TrendingUp,
-    TrendingDown,
-    Calendar,
-    FileText,
-    X,
-    Building2,
-    Wrench,
-    Truck,
-    Car,
-    History,
-    Landmark
-} from 'lucide-react-native';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card.js';
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import TrendingDown from 'lucide-react-native/dist/esm/icons/trending-down.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Building2 from 'lucide-react-native/dist/esm/icons/building-2.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import History from 'lucide-react-native/dist/esm/icons/history.js';
+import Landmark from 'lucide-react-native/dist/esm/icons/landmark.js';
 import BottomSheetBase, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { keuanganService, KasBankAllBalances, KasBankBalance, KasBankJenis } from '../../services/keuangan';

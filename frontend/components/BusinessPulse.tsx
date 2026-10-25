@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Pressable, ActivityIndicator } from 'react-native';
-import { Truck, AlertTriangle, Wallet } from 'lucide-react-native';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
 import { Typography } from './ui/Typography';
 import { usePiutangSummary, useDashboardSummary, useHutangSummary, useInvestorDisbursementSummary } from '../hooks/useKeuangan';
 import { useLowStockParts } from '../hooks/useBengkel';

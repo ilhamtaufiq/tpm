@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { format } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { id as localeID } from 'date-fns/locale/id';
 import { Typography } from './Typography';
 import { serverNow } from '../../utils/format';
 

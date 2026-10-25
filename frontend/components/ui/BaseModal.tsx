@@ -3,7 +3,7 @@ import { View, Modal, Pressable, Animated, ScrollView, Platform, DimensionValue,
 import { useNavigation } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Typography } from './Typography';
-import { X } from 'lucide-react-native';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
 import { ModalThemeView } from './ModalThemeView';
 import { findPaletteBorder, useUIStore } from '../../store/useUIStore';
 

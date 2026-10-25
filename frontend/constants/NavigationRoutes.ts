@@ -1,4 +1,31 @@
-import { Wrench, Truck, CarFront, Users, BarChart3, LayoutDashboard, Database, Receipt, History, Wallet, User, UserPlus, ShieldCheck, Printer, Settings, Home, ShoppingCart, CirclePlus, Boxes, ArrowRightLeft, Package, Archive, FileText, Landmark, CircleDollarSign, Banknote, ArrowDownCircle, Scale } from 'lucide-react-native';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import CarFront from 'lucide-react-native/dist/esm/icons/car-front.js';
+import Users from 'lucide-react-native/dist/esm/icons/users.js';
+import BarChart3 from 'lucide-react-native/dist/esm/icons/chart-column.js';
+import LayoutDashboard from 'lucide-react-native/dist/esm/icons/layout-dashboard.js';
+import Database from 'lucide-react-native/dist/esm/icons/database.js';
+import Receipt from 'lucide-react-native/dist/esm/icons/receipt.js';
+import History from 'lucide-react-native/dist/esm/icons/history.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import UserPlus from 'lucide-react-native/dist/esm/icons/user-plus.js';
+import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check.js';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import Settings from 'lucide-react-native/dist/esm/icons/settings.js';
+import Home from 'lucide-react-native/dist/esm/icons/house.js';
+import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart.js';
+import CirclePlus from 'lucide-react-native/dist/esm/icons/circle-plus.js';
+import Boxes from 'lucide-react-native/dist/esm/icons/boxes.js';
+import ArrowRightLeft from 'lucide-react-native/dist/esm/icons/arrow-right-left.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import Archive from 'lucide-react-native/dist/esm/icons/archive.js';
+import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
+import Landmark from 'lucide-react-native/dist/esm/icons/landmark.js';
+import CircleDollarSign from 'lucide-react-native/dist/esm/icons/circle-dollar-sign.js';
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote.js';
+import ArrowDownCircle from 'lucide-react-native/dist/esm/icons/circle-arrow-down.js';
+import Scale from 'lucide-react-native/dist/esm/icons/scale.js';
 
 export interface AppRoute {
     id: string;

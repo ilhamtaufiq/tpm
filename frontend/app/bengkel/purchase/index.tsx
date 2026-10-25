@@ -17,21 +17,19 @@ import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { BottomSheetContainer, BoundedSheetScrollView } from '../../../components/ui/BottomSheetContainer';
-import {
-    Search,
-    Plus,
-    Package,
-    ClipboardList,
-    ShoppingCart,
-    Clock,
-    X,
-    Calendar,
-    User,
-    Undo2
-} from 'lucide-react-native';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list.js';
+import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import Undo2 from 'lucide-react-native/dist/esm/icons/undo-2.js';
 import { useRouter } from 'expo-router';
-import { format } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { id as localeID } from 'date-fns/locale/id';
 import { usePembelianPartsList, useReturPembelianList, useBatalReturPembelian } from '../../../hooks/useBengkel';
 import { formatCurrency, tanggalLokal } from '../../../utils/format';
 import { getErrorMessage } from '../../../utils/error';

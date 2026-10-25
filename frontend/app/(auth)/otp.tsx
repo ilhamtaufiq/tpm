@@ -8,7 +8,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../utils/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getErrorMessage } from '../../utils/error';
-import { ShieldAlert, ArrowLeft, CheckCircle2 } from 'lucide-react-native';
+import ShieldAlert from 'lucide-react-native/dist/esm/icons/shield-alert.js';
+import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
 import { StatusBar } from 'expo-status-bar';
 
 export default function OTPScreen() {

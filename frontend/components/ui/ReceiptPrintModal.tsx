@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, View, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Printer, Share2, CheckCircle2, XCircle } from 'lucide-react-native';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import Share2 from 'lucide-react-native/dist/esm/icons/share-2.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import XCircle from 'lucide-react-native/dist/esm/icons/circle-x.js';
 import { Typography } from './Typography';
 import { CenterModalContainer } from './BottomSheetContainer';
 import { Button } from './Button';

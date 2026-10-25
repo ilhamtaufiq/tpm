@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Platform, KeyboardAvoidingView } from 'react-native';
-import { Lock, Eye, EyeOff, Save, ShieldCheck } from 'lucide-react-native';
+import Lock from 'lucide-react-native/dist/esm/icons/lock.js';
+import Eye from 'lucide-react-native/dist/esm/icons/eye.js';
+import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off.js';
+import Save from 'lucide-react-native/dist/esm/icons/save.js';
+import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check.js';
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { useRouter } from 'expo-router';

@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, Pressable, ActivityIndicator, Platform, PermissionsAndroid } from 'react-native';
-import { Bluetooth, RefreshCw, Printer, Search, CheckCircle, XCircle } from 'lucide-react-native';
+import Bluetooth from 'lucide-react-native/dist/esm/icons/bluetooth.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import CheckCircle from 'lucide-react-native/dist/esm/icons/circle-check-big.js';
+import XCircle from 'lucide-react-native/dist/esm/icons/circle-x.js';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { AlertDialog } from '../../components/ui/AlertDialog';

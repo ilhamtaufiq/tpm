@@ -4,7 +4,8 @@ import { Card } from '../ui/Card';
 import { Typography } from '../ui/Typography';
 import { Badge } from '../ui/Badge';
 import { Armada } from '../../services/jasaAngkut';
-import { Truck, Info } from 'lucide-react-native';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
 
 interface FleetCardProps {
     armada: Armada;

@@ -4,12 +4,10 @@ import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicat
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
-import {
-    Calendar as CalendarIcon,
-    User,
-    Save,
-    Search,
-} from 'lucide-react-native';
+import CalendarIcon from 'lucide-react-native/dist/esm/icons/calendar.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import Save from 'lucide-react-native/dist/esm/icons/save.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
 import { useRouter } from 'expo-router';
 import { Calendar } from 'react-native-calendars';
 import { sdmService, Karyawan, AttendanceStatus } from '../../services/sdm';

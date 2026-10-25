@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { View, Modal, Pressable, TextInput, useWindowDimensions } from 'react-native';
-import { X, Banknote, Wallet, ChevronRight, CheckCircle2, Calculator } from 'lucide-react-native';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import Calculator from 'lucide-react-native/dist/esm/icons/calculator.js';
 import { Typography } from './ui/Typography';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';

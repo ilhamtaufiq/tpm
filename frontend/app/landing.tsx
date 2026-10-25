@@ -3,7 +3,14 @@ import { View, ScrollView, Pressable, Image, Platform, Dimensions } from 'react-
 import { Typography } from '../components/ui/Typography';
 import { useUIStore } from '../store/useUIStore';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Smartphone, ShieldCheck, Zap, BarChart3, ChevronRight, Layout, Moon, MonitorOff } from 'lucide-react-native';
+import Smartphone from 'lucide-react-native/dist/esm/icons/smartphone.js';
+import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check.js';
+import Zap from 'lucide-react-native/dist/esm/icons/zap.js';
+import BarChart3 from 'lucide-react-native/dist/esm/icons/chart-column.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import Layout from 'lucide-react-native/dist/esm/icons/panels-top-left.js';
+import Moon from 'lucide-react-native/dist/esm/icons/moon.js';
+import MonitorOff from 'lucide-react-native/dist/esm/icons/monitor-off.js';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');

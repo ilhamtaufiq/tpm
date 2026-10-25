@@ -2,25 +2,23 @@ import React, { useMemo, useState } from 'react';
 import { View, ScrollView, Pressable, StatusBar, TextInput } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
-import {
-    ChevronLeft,
-    Package,
-    ShoppingCart,
-    Car,
-    Wrench,
-    Truck,
-    BarChart3,
-    Wallet,
-    TrendingUp,
-    ChevronRight,
-    Scale,
-    Search,
-    X,
-    FileText,
-    PieChart,
-    Layers,
-    ArrowRightLeft,
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import BarChart3 from 'lucide-react-native/dist/esm/icons/chart-column.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import Scale from 'lucide-react-native/dist/esm/icons/scale.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
+import PieChart from 'lucide-react-native/dist/esm/icons/chart-pie.js';
+import Layers from 'lucide-react-native/dist/esm/icons/layers.js';
+import ArrowRightLeft from 'lucide-react-native/dist/esm/icons/arrow-right-left.js';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';

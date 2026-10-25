@@ -4,7 +4,11 @@ import { Typography } from '../ui/Typography';
 import { ReceiptQRCode } from '../ui/ReceiptQRCode';
 import { formatCurrency } from '../../utils/format';
 import { FILE_URL } from '../../utils/api';
-import { Car, MapPin, User, Wrench, Package } from 'lucide-react-native';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
 import { useUIStore } from '../../store/useUIStore';
 
 export interface PublicReceiptItem {

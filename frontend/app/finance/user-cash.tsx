@@ -7,22 +7,20 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import {
-    ChevronLeft,
-    Wallet,
-    History,
-    Search,
-    Edit3,
-    ArrowUpCircle,
-    ArrowDownCircle,
-    CheckCircle2,
-    Calendar,
-    User,
-    ArrowRightLeft,
-    Shield,
-    Plus,
-    PlusCircle
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import History from 'lucide-react-native/dist/esm/icons/history.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Edit3 from 'lucide-react-native/dist/esm/icons/pen-line.js';
+import ArrowUpCircle from 'lucide-react-native/dist/esm/icons/circle-arrow-up.js';
+import ArrowDownCircle from 'lucide-react-native/dist/esm/icons/circle-arrow-down.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import ArrowRightLeft from 'lucide-react-native/dist/esm/icons/arrow-right-left.js';
+import Shield from 'lucide-react-native/dist/esm/icons/shield.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import PlusCircle from 'lucide-react-native/dist/esm/icons/circle-plus.js';
 import { router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
@@ -33,8 +31,8 @@ import { useUserCashList, useAdjustUserCash, useSetUserCash, useUserCashHistory 
 import { useAuthStore } from '../../store/useAuthStore';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonCard } from '../../components/ui/Skeleton';
-import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { id as id } from 'date-fns/locale/id';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';

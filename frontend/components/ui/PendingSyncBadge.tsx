@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { CloudOff } from 'lucide-react-native';
+import CloudOff from 'lucide-react-native/dist/esm/icons/cloud-off.js';
 
 /** Small badge for list rows that exist only in local offline queue. */
 export function PendingSyncBadge({
