@@ -5,22 +5,20 @@ import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import {
-    Database,
-    Download,
-    Trash2,
-    RefreshCw,
-    ShieldCheck,
-    FileArchive,
-    History,
-    AlertTriangle,
-    CheckCircle2,
-    Lock,
-    X,
-    HardDrive,
-    Shield,
-    Upload
-} from 'lucide-react-native';
+import Database from 'lucide-react-native/dist/esm/icons/database.js';
+import Download from 'lucide-react-native/dist/esm/icons/download.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check.js';
+import FileArchive from 'lucide-react-native/dist/esm/icons/file-archive.js';
+import History from 'lucide-react-native/dist/esm/icons/history.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import Lock from 'lucide-react-native/dist/esm/icons/lock.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import HardDrive from 'lucide-react-native/dist/esm/icons/hard-drive.js';
+import Shield from 'lucide-react-native/dist/esm/icons/shield.js';
+import Upload from 'lucide-react-native/dist/esm/icons/upload.js';
 import { useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { useBackupList, useCreateBackup, useDeleteBackup, useRestoreBackup, useUploadBackup } from '../../hooks/useBackups';
@@ -29,8 +27,8 @@ import { Header } from '../../components/ui/Header';
 import { useUIStore } from '../../store/useUIStore';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
-import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { id as idLocale } from 'date-fns/locale/id';
 
 /**
  * Byte-level bar when the platform reports Content-Length, else an indeterminate

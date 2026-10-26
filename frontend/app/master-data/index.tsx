@@ -4,17 +4,15 @@ import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
-import {
-    Users,
-    Building2,
-    ChevronRight,
-    Wrench,
-    Tag,
-    Box,
-    Clock,
-    Activity,
-    CheckCircle2,
-} from 'lucide-react-native';
+import Users from 'lucide-react-native/dist/esm/icons/users.js';
+import Building2 from 'lucide-react-native/dist/esm/icons/building-2.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Tag from 'lucide-react-native/dist/esm/icons/tag.js';
+import Box from 'lucide-react-native/dist/esm/icons/box.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import Activity from 'lucide-react-native/dist/esm/icons/activity.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
 import { useRouter } from 'expo-router';
 import { masterDataService } from '../../services/masterData';
 import { useAuthStore } from '../../store/useAuthStore';

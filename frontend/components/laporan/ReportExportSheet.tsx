@@ -1,7 +1,10 @@
 import React from 'react';
 import { View, Pressable, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Download, Eye, Printer, X } from 'lucide-react-native';
+import Download from 'lucide-react-native/dist/esm/icons/download.js';
+import Eye from 'lucide-react-native/dist/esm/icons/eye.js';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
 import { Typography } from '../ui/Typography';
 import { BottomSheetContainer } from '../ui/BottomSheetContainer';
 

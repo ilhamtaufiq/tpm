@@ -6,21 +6,19 @@ import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Header } from '../../components/ui/Header';
-import {
-    ChevronLeft,
-    Search,
-    Plus,
-    User,
-    Phone,
-    Mail,
-    MapPin,
-    Building2,
-    X,
-    MoreVertical,
-    Filter,
-    Truck,
-    Trash2,
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import Phone from 'lucide-react-native/dist/esm/icons/phone.js';
+import Mail from 'lucide-react-native/dist/esm/icons/mail.js';
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin.js';
+import Building2 from 'lucide-react-native/dist/esm/icons/building-2.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import MoreVertical from 'lucide-react-native/dist/esm/icons/ellipsis-vertical.js';
+import Filter from 'lucide-react-native/dist/esm/icons/funnel.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
 import { useRouter } from 'expo-router';
 import { masterDataService, Customer } from '../../services/masterData';
 import { useCustomerList, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from '../../hooks/useMasterData';

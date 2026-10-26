@@ -9,7 +9,12 @@ import {
     Modal,
     Platform,
 } from 'react-native';
-import { CloudOff, RefreshCw, Trash2, X, AlertCircle, Clock } from 'lucide-react-native';
+import CloudOff from 'lucide-react-native/dist/esm/icons/cloud-off.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
 import {
     useOfflineQueueStore,
     flushOfflineQueue,

@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
-import { WifiOff, CloudUpload, AlertTriangle } from 'lucide-react-native';
+import WifiOff from 'lucide-react-native/dist/esm/icons/wifi-off.js';
+import CloudUpload from 'lucide-react-native/dist/esm/icons/cloud-upload.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
 import { useOfflineQueueStore, flushOfflineQueue } from '../services/offlineQueue';
 import { onlineManager } from '@tanstack/react-query';
 

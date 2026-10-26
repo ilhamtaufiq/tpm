@@ -8,22 +8,20 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import {
-    ArrowUpCircle,
-    ArrowDownCircle,
-    Wallet,
-    Building2,
-    ArrowRightLeft,
-    Filter,
-    RefreshCw,
-    Plus,
-    PlusCircle,
-    ArrowDownLeft,
-    ArrowUpRight,
-    Search,
-    Calendar,
-    History
-} from 'lucide-react-native';
+import ArrowUpCircle from 'lucide-react-native/dist/esm/icons/circle-arrow-up.js';
+import ArrowDownCircle from 'lucide-react-native/dist/esm/icons/circle-arrow-down.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import Building2 from 'lucide-react-native/dist/esm/icons/building-2.js';
+import ArrowRightLeft from 'lucide-react-native/dist/esm/icons/arrow-right-left.js';
+import Filter from 'lucide-react-native/dist/esm/icons/funnel.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import PlusCircle from 'lucide-react-native/dist/esm/icons/circle-plus.js';
+import ArrowDownLeft from 'lucide-react-native/dist/esm/icons/arrow-down-left.js';
+import ArrowUpRight from 'lucide-react-native/dist/esm/icons/arrow-up-right.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import History from 'lucide-react-native/dist/esm/icons/history.js';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';

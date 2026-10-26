@@ -2,7 +2,10 @@ import React from 'react';
 import { View } from 'react-native';
 import { Typography } from './Typography';
 import { Button } from './Button';
-import { AlertCircle, Inbox, Search, WifiOff } from 'lucide-react-native';
+import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
+import Inbox from 'lucide-react-native/dist/esm/icons/inbox.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import WifiOff from 'lucide-react-native/dist/esm/icons/wifi-off.js';
 
 interface EmptyStateProps {
     icon?: 'empty' | 'search' | 'error' | 'offline' | React.ComponentType<any>;

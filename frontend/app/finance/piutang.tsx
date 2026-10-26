@@ -9,17 +9,15 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { DatePicker } from '../../components/ui/DatePicker';
-import {
-    AlertTriangle,
-    CheckCircle2,
-    Clock,
-    CircleDollarSign,
-    Search,
-    ChevronRight,
-    CreditCard,
-    Plus,
-    Trash2,
-} from 'lucide-react-native';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import CircleDollarSign from 'lucide-react-native/dist/esm/icons/circle-dollar-sign.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
 import { useRouter, router, useLocalSearchParams } from 'expo-router';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';

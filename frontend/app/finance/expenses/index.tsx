@@ -11,27 +11,31 @@ import { Input } from '../../../components/ui/Input';
 import { DatePicker } from '../../../components/ui/DatePicker';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
-import {
-    Receipt,
-    Plus,
-    X,
-    ChevronLeft,
-    ChevronRight,
-    Wallet,
-    Wrench,
-    Package,
-    Info,
-    Calendar,
-    TrendingDown,
-    Search,
-    Split,
-    Trash2,
-    Truck,
-    Car,
-} from 'lucide-react-native';
+import Receipt from 'lucide-react-native/dist/esm/icons/receipt.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import TrendingDown from 'lucide-react-native/dist/esm/icons/trending-down.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Split from 'lucide-react-native/dist/esm/icons/split.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
 import { useRouter } from 'expo-router';
-import { format as formatDateFns, subDays, addDays, subMonths, addMonths, subYears, addYears } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import { format as formatDateFns } from 'date-fns/format';
+import { subDays } from 'date-fns/subDays';
+import { addDays } from 'date-fns/addDays';
+import { subMonths } from 'date-fns/subMonths';
+import { addMonths } from 'date-fns/addMonths';
+import { subYears } from 'date-fns/subYears';
+import { addYears } from 'date-fns/addYears';
+import { id as localeID } from 'date-fns/locale/id';
 import { usePengeluaranList, useCreatePengeluaran, usePengeluaranSummary } from '../../../hooks/useBengkel';
 import { Header } from '../../../components/ui/Header';
 import { useQueryClient } from '@tanstack/react-query';

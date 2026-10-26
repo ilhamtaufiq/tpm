@@ -7,18 +7,16 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Header } from '../../components/ui/Header';
 import { useUIStore } from '../../store/useUIStore';
-import {
-    ChevronLeft,
-    Search,
-    Plus,
-    Package,
-    Phone,
-    Mail,
-    MapPin,
-    CreditCard,
-    X,
-    MoreVertical,
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import Phone from 'lucide-react-native/dist/esm/icons/phone.js';
+import Mail from 'lucide-react-native/dist/esm/icons/mail.js';
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin.js';
+import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import MoreVertical from 'lucide-react-native/dist/esm/icons/ellipsis-vertical.js';
 import { masterDataService, Supplier } from '../../services/masterData';
 import { useSupplierList, useCreateSupplier, useUpdateSupplier, useDeleteSupplier } from '../../hooks/useMasterData';
 import { SkeletonCard } from '../../components/ui/Skeleton';

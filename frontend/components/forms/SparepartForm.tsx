@@ -15,7 +15,12 @@ import { FILE_URL } from '../../utils/api';
 import { useScanSound } from '../../utils/sounds';
 import { mapBarcodeToSparePartFields, parseBarcodeScan } from '../../utils/barcodeScan';
 import { ALWAYS_READY_STOCK, isAlwaysReadyStock } from '../../utils/sparepartStock';
-import { Package, Image as ImageIcon, Camera, QrCode, Sparkles, Check } from 'lucide-react-native';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import ImageIcon from 'lucide-react-native/dist/esm/icons/image.js';
+import Camera from 'lucide-react-native/dist/esm/icons/camera.js';
+import QrCode from 'lucide-react-native/dist/esm/icons/qr-code.js';
+import Sparkles from 'lucide-react-native/dist/esm/icons/sparkles.js';
+import Check from 'lucide-react-native/dist/esm/icons/check.js';
 
 export interface SparePartFormData {
     id?: number;

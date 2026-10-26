@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable, TextInput, Image, Platform } from 'react-native';
-import { Info, Image as ImageIcon, Save, RefreshCw, Type } from 'lucide-react-native';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
+import ImageIcon from 'lucide-react-native/dist/esm/icons/image.js';
+import Save from 'lucide-react-native/dist/esm/icons/save.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import Type from 'lucide-react-native/dist/esm/icons/type.js';
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { Button } from '../../components/ui/Button';

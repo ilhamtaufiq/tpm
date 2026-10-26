@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Modal, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';

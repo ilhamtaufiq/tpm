@@ -4,7 +4,10 @@ import { View, Pressable, TextInput, FlatList, ActivityIndicator, StyleSheet, To
 import { Typography } from './Typography';
 import { Card } from './Card';
 import { Badge } from './Badge';
-import { Search, Wrench, X, Check } from 'lucide-react-native';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Check from 'lucide-react-native/dist/esm/icons/check.js';
 import { jasaServisService } from '../../services/jasaServis';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

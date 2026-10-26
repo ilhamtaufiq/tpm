@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, ScrollView, Pressable, TextInput, Switch, Platform } from 'react-native';
-import { Scan, Keyboard, Info, CheckCircle2, AlertCircle, RefreshCw, Trash2 } from 'lucide-react-native';
+import Scan from 'lucide-react-native/dist/esm/icons/scan.js';
+import Keyboard from 'lucide-react-native/dist/esm/icons/keyboard.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';

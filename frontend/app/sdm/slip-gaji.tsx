@@ -5,21 +5,19 @@ import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import {
-    ChevronLeft,
-    FileText,
-    User,
-    Calendar,
-    RefreshCw,
-    X,
-    Edit3,
-    Search,
-    CheckCircle2,
-    Clock,
-    ArrowRight,
-    TrendingUp,
-    Trash,
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Edit3 from 'lucide-react-native/dist/esm/icons/pen-line.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import Trash from 'lucide-react-native/dist/esm/icons/trash.js';
 import { useRouter } from 'expo-router';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';

@@ -2,20 +2,18 @@ import React from 'react';
 import { View, ScrollView, Pressable, Switch, Platform, ActivityIndicator } from 'react-native';
 import { Header } from '../../components/ui/Header';
 import { useRouter } from 'expo-router';
-import {
-    ShieldCheck,
-    Wallet,
-    Wrench,
-    Truck,
-    FileBarChart,
-    Database,
-    Car,
-    Users,
-    Settings as SettingsIcon,
-    Lock,
-    MonitorOff,
-    Globe
-} from 'lucide-react-native';
+import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import FileBarChart from 'lucide-react-native/dist/esm/icons/file-chart-column-increasing.js';
+import Database from 'lucide-react-native/dist/esm/icons/database.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import Users from 'lucide-react-native/dist/esm/icons/users.js';
+import SettingsIcon from 'lucide-react-native/dist/esm/icons/settings.js';
+import Lock from 'lucide-react-native/dist/esm/icons/lock.js';
+import MonitorOff from 'lucide-react-native/dist/esm/icons/monitor-off.js';
+import Globe from 'lucide-react-native/dist/esm/icons/globe.js';
 import { Typography } from '../../components/ui/Typography';
 import { useSecurityStore, ProtectedFeatures } from '../../store/useSecurityStore';
 import { useUIStore } from '../../store/useUIStore';

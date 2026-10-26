@@ -1,13 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, StatusBar } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
-import {
-    Users,
-    Clock,
-    Wallet,
-    ChevronRight,
-    FileText,
-} from 'lucide-react-native';
+import Users from 'lucide-react-native/dist/esm/icons/users.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import { useAuthStore } from '../../store/useAuthStore';

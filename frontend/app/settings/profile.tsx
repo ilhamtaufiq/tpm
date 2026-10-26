@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Platform, KeyboardAvoidingView, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Camera, User, Mail, Phone, Briefcase, Save, CheckCircle2 } from 'lucide-react-native';
+import Camera from 'lucide-react-native/dist/esm/icons/camera.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import Mail from 'lucide-react-native/dist/esm/icons/mail.js';
+import Phone from 'lucide-react-native/dist/esm/icons/phone.js';
+import Briefcase from 'lucide-react-native/dist/esm/icons/briefcase.js';
+import Save from 'lucide-react-native/dist/esm/icons/save.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { useRouter } from 'expo-router';

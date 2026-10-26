@@ -2,7 +2,6 @@ import { Platform, Share } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import api, { BASE_URL } from './api';
-import { formatNumber } from './format';
 import { printSettingsService } from './printSettings';
 import {
     buildPublicReceiptUrl,
@@ -14,38 +13,9 @@ import {
 
 export const PUBLIC_RECEIPT_SHARE_TITLE = 'Struk Tiga Putra Motor';
 
-/**
- * Pesan share: judul, total, dan link ke halaman struk. Chat membuat pratinjau gambar dari link ini
- * (tag OG di halaman struk), jadi gambar bisa diklik seperti link. Rincian ada di struk digital.
- */
-export function buildPublicReceiptShareMessage(
-    transactionNumber: string | undefined,
-    linkUrl: string,
-    total?: number | null,
-): string {
-    const baris = [`Struk Transaksi ${(transactionNumber || '').trim() || '-'} - Tiga Putra Motor`];
-    if (total != null) baris.push(`Total : Rp. ${formatNumber(total)}`);
-    baris.push(`Klik link di bawah ini : ${linkUrl}`);
-    return baris.join('\n');
-}
-
 /** Link halaman struk di server. Halaman ini memuat tag OG, jadi chat menampilkan gambar struk sebagai pratinjau. */
 export function buildPublicReceiptViewUrl(type: PublicReceiptType, idOrToken: string): string {
     return `${getPublicApiBase()}/public/receipt/view/${type}/${encodeURIComponent(idOrToken)}`;
-}
-
-/** Ambil total struk dari endpoint publik. Gagal = null, pesan tetap berisi link. */
-async function fetchPublicReceiptTotal(
-    type: PublicReceiptType,
-    idOrToken: string,
-): Promise<number | null> {
-    try {
-        const { data } = await api.get(`/public/receipt/${type}/${encodeURIComponent(idOrToken)}`);
-        return Number(data.total ?? 0);
-    } catch (error) {
-        console.warn('[Share] gagal ambil total struk, kirim tanpa total:', error);
-        return null;
-    }
 }
 
 export async function resolvePublicReceiptBaseUrl(): Promise<string> {
@@ -431,10 +401,8 @@ export async function sharePublicReceiptLink(
     const shareUrl = options.receiptType && options.receiptId
         ? (await buildPublicShortUrl(options.receiptType, options.receiptId)) ?? viewUrl
         : viewUrl;
-    const total = options.receiptType && options.receiptId
-        ? await fetchPublicReceiptTotal(options.receiptType, options.receiptId)
-        : null;
-    const message = buildPublicReceiptShareMessage(options.transactionNumber, shareUrl, total);
+    // Hanya link: chat membuat pratinjau gambar struk dari tag OG di halaman /s/{kode}.
+    const message = shareUrl;
 
     try {
         if (Platform.OS === 'web') {

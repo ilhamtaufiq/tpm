@@ -6,7 +6,9 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useRouter } from 'expo-router';
 import api from '../../utils/api';
-import { Mail, ArrowLeft, Send } from 'lucide-react-native';
+import Mail from 'lucide-react-native/dist/esm/icons/mail.js';
+import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left.js';
+import Send from 'lucide-react-native/dist/esm/icons/send.js';
 import { StatusBar } from 'expo-status-bar';
 
 import { useUIStore } from '../../store/useUIStore';

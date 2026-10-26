@@ -4,10 +4,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, type BarcodeType } from 'expo-camera';
 import { Typography } from './Typography';
-import { X, Zap, ZapOff, Scan, Camera, AlertTriangle, CheckCircle2 } from 'lucide-react-native';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Zap from 'lucide-react-native/dist/esm/icons/zap.js';
+import ZapOff from 'lucide-react-native/dist/esm/icons/zap-off.js';
+import Scan from 'lucide-react-native/dist/esm/icons/scan.js';
+import Camera from 'lucide-react-native/dist/esm/icons/camera.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
 import { Button } from './Button';
 import { useScanSound, ensureAudioUnlocked } from '../../utils/sounds';
 import { parseBarcodeScan, shouldRejectLinearPreferredScan } from '../../utils/barcodeScan';
+import { loadHtml5Qrcode } from '../../utils/html5QrcodeLoader';
 
 // Dynamic import type for html5-qrcode (web only)
 type Html5QrcodeType = any;
@@ -184,9 +191,8 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
         const startWebScanner = async () => {
             try {
-                // Dynamic import — only loaded on web, no native bundle impact
-                // @ts-expect-error -- dynamic import fine for web build
-                const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
+                // Hanya web: html5-qrcode dimuat lewat utils/html5QrcodeLoader.web.ts, tidak masuk bundle native.
+                const { Html5Qrcode, Html5QrcodeSupportedFormats } = await loadHtml5Qrcode();
 
                 if (isCancelled) return;
 

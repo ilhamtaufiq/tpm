@@ -6,21 +6,19 @@ import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import {
-    ChevronLeft,
-    Search,
-    Plus,
-    User,
-    Phone,
-    Mail,
-    Briefcase,
-    Calendar,
-    MoreVertical,
-    X,
-    FileText,
-    RefreshCw,
-    Trash2,
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import Phone from 'lucide-react-native/dist/esm/icons/phone.js';
+import Mail from 'lucide-react-native/dist/esm/icons/mail.js';
+import Briefcase from 'lucide-react-native/dist/esm/icons/briefcase.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import MoreVertical from 'lucide-react-native/dist/esm/icons/ellipsis-vertical.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
 import { useRouter } from 'expo-router';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';

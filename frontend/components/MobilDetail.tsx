@@ -6,35 +6,33 @@ import { useUIStore } from '../store/useUIStore';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import {
-    Calendar,
-    GaugeCircle,
-    Palette,
-    Settings,
-    FileText,
-    CircleDollarSign,
-    Edit,
-    X,
-    Plus,
-    Trash2,
-    PlayCircle,
-    TrendingUp,
-    Image as ImageIcon,
-    CreditCard,
-    Banknote,
-    CheckCircle2,
-    Clock,
-    Wallet,
-    Ban,
-    AlertTriangle,
-    ArrowDownLeft,
-    Info,
-    Share2,
-    Link,
-    Tag,
-    ChevronLeft,
-    ChevronRight
-} from 'lucide-react-native';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import GaugeCircle from 'lucide-react-native/dist/esm/icons/circle-gauge.js';
+import Palette from 'lucide-react-native/dist/esm/icons/palette.js';
+import Settings from 'lucide-react-native/dist/esm/icons/settings.js';
+import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
+import CircleDollarSign from 'lucide-react-native/dist/esm/icons/circle-dollar-sign.js';
+import Edit from 'lucide-react-native/dist/esm/icons/square-pen.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import PlayCircle from 'lucide-react-native/dist/esm/icons/circle-play.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import ImageIcon from 'lucide-react-native/dist/esm/icons/image.js';
+import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card.js';
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import Ban from 'lucide-react-native/dist/esm/icons/ban.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import ArrowDownLeft from 'lucide-react-native/dist/esm/icons/arrow-down-left.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
+import Share2 from 'lucide-react-native/dist/esm/icons/share-2.js';
+import Link from 'lucide-react-native/dist/esm/icons/link.js';
+import Tag from 'lucide-react-native/dist/esm/icons/tag.js';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
 import { useMobilDetail, useUploadMedia, useDeleteMedia, usePenjualanMobilList, usePayPenjualanMobil, useCancelBookingMobil, useCancelSaleMobil } from '../hooks/useMobil';

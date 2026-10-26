@@ -1,7 +1,10 @@
 import React from 'react';
 import { View, Text, Modal, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react-native';
+import CheckCircle from 'lucide-react-native/dist/esm/icons/circle-check-big.js';
+import XCircle from 'lucide-react-native/dist/esm/icons/circle-x.js';
+import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
 import { CenterModalContainer } from './BottomSheetContainer';
 import { Button } from './Button';
 import { useUIStore } from '../../store/useUIStore';

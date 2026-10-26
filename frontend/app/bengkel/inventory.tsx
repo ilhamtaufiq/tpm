@@ -11,25 +11,23 @@ import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { appAlert } from '../../utils/appAlert';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import {
-    Search,
-    Plus,
-    AlertTriangle,
-    Package,
-    ArrowUpDown,
-    Barcode as BarcodeIcon,
-    Edit3,
-    Minus,
-    X,
-    CheckCircle2,
-    Check,
-    Circle,
-    Download,
-    Boxes,
-    TrendingUp,
-    ChevronRight,
-    Receipt,
-} from 'lucide-react-native';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import ArrowUpDown from 'lucide-react-native/dist/esm/icons/arrow-up-down.js';
+import BarcodeIcon from 'lucide-react-native/dist/esm/icons/barcode.js';
+import Edit3 from 'lucide-react-native/dist/esm/icons/pen-line.js';
+import Minus from 'lucide-react-native/dist/esm/icons/minus.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import Check from 'lucide-react-native/dist/esm/icons/check.js';
+import Circle from 'lucide-react-native/dist/esm/icons/circle.js';
+import Download from 'lucide-react-native/dist/esm/icons/download.js';
+import Boxes from 'lucide-react-native/dist/esm/icons/boxes.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import Receipt from 'lucide-react-native/dist/esm/icons/receipt.js';
 import { router } from 'expo-router';
 import { useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock, useSparePartStats, useExportSpareParts, useSparePartStockValue } from '../../hooks/useBengkel';
 import { useDebounce } from '../../hooks/useDebounce';

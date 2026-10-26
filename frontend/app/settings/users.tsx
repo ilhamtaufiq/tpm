@@ -4,12 +4,30 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';
-import { format } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
-import {
-    Search, Plus, X, Shield, UserCircle2, Wallet, Wrench, Warehouse, Truck, Car, UserSquare2, Eye,
-    Mail, Phone, Clock, Trash2, Power, PencilLine, LogIn, AlertTriangle, ShieldCheck, Users,
-} from 'lucide-react-native';
+import { format } from 'date-fns/format';
+import { id as localeID } from 'date-fns/locale/id';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Shield from 'lucide-react-native/dist/esm/icons/shield.js';
+import UserCircle2 from 'lucide-react-native/dist/esm/icons/circle-user-round.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import Warehouse from 'lucide-react-native/dist/esm/icons/warehouse.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import UserSquare2 from 'lucide-react-native/dist/esm/icons/square-user-round.js';
+import Eye from 'lucide-react-native/dist/esm/icons/eye.js';
+import Mail from 'lucide-react-native/dist/esm/icons/mail.js';
+import Phone from 'lucide-react-native/dist/esm/icons/phone.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import Power from 'lucide-react-native/dist/esm/icons/power.js';
+import PencilLine from 'lucide-react-native/dist/esm/icons/pencil-line.js';
+import LogIn from 'lucide-react-native/dist/esm/icons/log-in.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check.js';
+import Users from 'lucide-react-native/dist/esm/icons/users.js';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';

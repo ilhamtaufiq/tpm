@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Pressable, ActivityIndicator } from 'react-native';
-import { ChevronLeft, Download } from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Download from 'lucide-react-native/dist/esm/icons/download.js';
 import { Typography } from '../ui/Typography';
 import { useUIStore } from '../../store/useUIStore';
 

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, Platform, TouchableOpacity } from 'react-native';
-import { Calendar as LucideCalendar, X, RotateCcw } from 'lucide-react-native';
+import LucideCalendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import RotateCcw from 'lucide-react-native/dist/esm/icons/rotate-ccw.js';
 import { Calendar } from 'react-native-calendars';
 import { cn } from './Card';
 import { usePlaceholderColor } from '../../utils/themeStyles';

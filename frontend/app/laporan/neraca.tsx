@@ -3,15 +3,28 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useNavigation } from 'expo-router';
-import {
-    Landmark, Banknote, Box,
-    Download, X, Scale, AlertTriangle, CheckCircle, CreditCard,
-} from 'lucide-react-native';
+import Landmark from 'lucide-react-native/dist/esm/icons/landmark.js';
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote.js';
+import Box from 'lucide-react-native/dist/esm/icons/box.js';
+import Download from 'lucide-react-native/dist/esm/icons/download.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Scale from 'lucide-react-native/dist/esm/icons/scale.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import CheckCircle from 'lucide-react-native/dist/esm/icons/circle-check-big.js';
+import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card.js';
 import { WebView } from 'react-native-webview';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, endOfMonth, endOfYear } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { addDays } from 'date-fns/addDays';
+import { subDays } from 'date-fns/subDays';
+import { addMonths } from 'date-fns/addMonths';
+import { subMonths } from 'date-fns/subMonths';
+import { addYears } from 'date-fns/addYears';
+import { subYears } from 'date-fns/subYears';
+import { endOfMonth } from 'date-fns/endOfMonth';
+import { endOfYear } from 'date-fns/endOfYear';
+import { id as localeID } from 'date-fns/locale/id';
 
 import { Typography } from '../../components/ui/Typography';
 import { useUIStore } from '../../store/useUIStore';

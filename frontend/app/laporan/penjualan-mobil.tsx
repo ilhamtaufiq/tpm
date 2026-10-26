@@ -4,13 +4,26 @@ import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshCont
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
-import {
-    TrendingUp, User, BarChart3, X, CreditCard,
-    Percent, Car
-} from 'lucide-react-native';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import BarChart3 from 'lucide-react-native/dist/esm/icons/chart-column.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card.js';
+import Percent from 'lucide-react-native/dist/esm/icons/percent.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
 import { useRouter } from 'expo-router';
-import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { addDays } from 'date-fns/addDays';
+import { subDays } from 'date-fns/subDays';
+import { addMonths } from 'date-fns/addMonths';
+import { subMonths } from 'date-fns/subMonths';
+import { addYears } from 'date-fns/addYears';
+import { subYears } from 'date-fns/subYears';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { endOfMonth } from 'date-fns/endOfMonth';
+import { startOfYear } from 'date-fns/startOfYear';
+import { endOfYear } from 'date-fns/endOfYear';
+import { id as localeID } from 'date-fns/locale/id';
 import { mobilService } from '../../services/mobil';
 import { formatCurrency, tanggalLokal } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';

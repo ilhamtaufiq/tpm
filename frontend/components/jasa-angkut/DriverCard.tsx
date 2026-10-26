@@ -4,7 +4,8 @@ import { Card } from '../ui/Card';
 import { Typography } from '../ui/Typography';
 import { Badge } from '../ui/Badge';
 import { Supir } from '../../services/jasaAngkut';
-import { Phone, FileText } from 'lucide-react-native';
+import Phone from 'lucide-react-native/dist/esm/icons/phone.js';
+import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
 
 import { tanggalLokal } from '../../utils/format';
 interface DriverCardProps {

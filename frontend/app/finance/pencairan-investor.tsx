@@ -7,23 +7,21 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { DatePicker } from '../../components/ui/DatePicker';
-import {
-    Search,
-    RefreshCw,
-    CircleDollarSign,
-    Wallet,
-    ArrowUpRight,
-    Car,
-    User,
-    Calendar,
-    FileText,
-    Banknote,
-    CheckCircle2,
-    Plus,
-    Trash2,
-    History,
-    Download
-} from 'lucide-react-native';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import CircleDollarSign from 'lucide-react-native/dist/esm/icons/circle-dollar-sign.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import ArrowUpRight from 'lucide-react-native/dist/esm/icons/arrow-up-right.js';
+import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import History from 'lucide-react-native/dist/esm/icons/history.js';
+import Download from 'lucide-react-native/dist/esm/icons/download.js';
 import { useRouter, router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';

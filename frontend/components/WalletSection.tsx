@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { ArrowUp, Plus, Wallet, Eye, EyeOff } from 'lucide-react-native';
+import ArrowUp from 'lucide-react-native/dist/esm/icons/arrow-up.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import Eye from 'lucide-react-native/dist/esm/icons/eye.js';
+import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off.js';
 import { Typography } from './ui/Typography';
 import { Pressable, ActivityIndicator, View } from 'react-native';
 import { useKasBankBalances } from '../hooks/useKeuangan';

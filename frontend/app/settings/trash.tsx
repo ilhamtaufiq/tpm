@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { appAlert } from '../../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Trash2, RotateCcw, AlertTriangle, ShieldCheck } from 'lucide-react-native';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import RotateCcw from 'lucide-react-native/dist/esm/icons/rotate-ccw.js';
+import AlertTriangle from 'lucide-react-native/dist/esm/icons/triangle-alert.js';
+import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check.js';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
@@ -10,8 +13,8 @@ import { Card } from '../../components/ui/Card';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { useUIStore } from '../../store/useUIStore';
 import { useTrashList, useRestoreItem, usePermanentDelete, useEmptyTrash } from '../../hooks/useTrash';
-import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { id as id } from 'date-fns/locale/id';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 const CATEGORIES = [

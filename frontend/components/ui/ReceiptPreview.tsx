@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { View, ScrollView, Modal, Pressable, Platform } from 'react-native';
-import { X, Printer, Download, ZoomIn, ZoomOut } from 'lucide-react-native';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Printer from 'lucide-react-native/dist/esm/icons/printer.js';
+import Download from 'lucide-react-native/dist/esm/icons/download.js';
+import ZoomIn from 'lucide-react-native/dist/esm/icons/zoom-in.js';
+import ZoomOut from 'lucide-react-native/dist/esm/icons/zoom-out.js';
 import { Typography } from './Typography';
 import { Button } from './Button';
 import { PrintReceiptData } from '../../utils/printReceipt';

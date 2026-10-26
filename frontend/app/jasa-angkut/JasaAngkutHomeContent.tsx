@@ -8,37 +8,38 @@ import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import {
-    ChevronLeft,
-    Plus,
-    Search,
-    Truck,
-    Clock,
-    CheckCircle,
-    RotateCcw,
-    Calendar,
-    Users,
-    Wallet,
-    ArrowUpRight,
-    MapPin,
-    ArrowRight,
-    RefreshCw,
-    Edit,
-    X,
-    Trash2,
-    Share2,
-    ArrowUpCircle,
-    ArrowDownCircle,
-    TrendingDown,
-    TrendingUp,
-    CircleDollarSign,
-    Banknote,
-    Receipt,
-    CreditCard
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import CheckCircle from 'lucide-react-native/dist/esm/icons/circle-check-big.js';
+import RotateCcw from 'lucide-react-native/dist/esm/icons/rotate-ccw.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import Users from 'lucide-react-native/dist/esm/icons/users.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import ArrowUpRight from 'lucide-react-native/dist/esm/icons/arrow-up-right.js';
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin.js';
+import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import Edit from 'lucide-react-native/dist/esm/icons/square-pen.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import Share2 from 'lucide-react-native/dist/esm/icons/share-2.js';
+import ArrowUpCircle from 'lucide-react-native/dist/esm/icons/circle-arrow-up.js';
+import ArrowDownCircle from 'lucide-react-native/dist/esm/icons/circle-arrow-down.js';
+import TrendingDown from 'lucide-react-native/dist/esm/icons/trending-down.js';
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up.js';
+import CircleDollarSign from 'lucide-react-native/dist/esm/icons/circle-dollar-sign.js';
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote.js';
+import Receipt from 'lucide-react-native/dist/esm/icons/receipt.js';
+import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card.js';
 import { useRouter, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { format, startOfMonth, isValid, parse } from 'date-fns';
+import { format } from 'date-fns/format';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { isValid } from 'date-fns/isValid';
+import { parse } from 'date-fns/parse';
 import BottomSheetBase, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';
 import { formatCurrency, formatDate, getTodayString, tanggalLokal } from '../../utils/format';

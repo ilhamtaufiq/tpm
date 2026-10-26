@@ -8,21 +8,19 @@ import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
 import { DatePicker } from '../../../components/ui/DatePicker';
 import { Button } from '../../../components/ui/Button';
-import {
-    AlertCircle,
-    Check,
-    ChevronLeft,
-    Plus,
-    Trash2,
-    Calendar,
-    Search,
-    Package,
-    X,
-    CheckCircle2,
-    Barcode as BarcodeIcon,
-    Info,
-    Wallet,
-} from 'lucide-react-native';
+import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
+import Check from 'lucide-react-native/dist/esm/icons/check.js';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Package from 'lucide-react-native/dist/esm/icons/package.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
+import BarcodeIcon from 'lucide-react-native/dist/esm/icons/barcode.js';
+import Info from 'lucide-react-native/dist/esm/icons/info.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { BottomSheetContainer, CenterModalContainer, BoundedSheetScrollView } from '../../../components/ui/BottomSheetContainer';

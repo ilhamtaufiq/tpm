@@ -3,14 +3,12 @@ import { View, ScrollView, Pressable, RefreshControl, StatusBar, FlatList, Activ
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
 import { Header } from '../../components/ui/Header';
-import {
-    ChevronLeft,
-    Plus,
-    Search,
-    Tag,
-    RefreshCw,
-    X,
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Tag from 'lucide-react-native/dist/esm/icons/tag.js';
+import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
 import { useRouter } from 'expo-router';
 import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import BottomSheet from '../../components/ui/BottomSheetWithBack';

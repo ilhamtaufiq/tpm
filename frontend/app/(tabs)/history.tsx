@@ -9,25 +9,30 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Header } from '../../components/ui/Header';
-import {
-    Search,
-    Wrench,
-    CarFront,
-    Truck,
-    Receipt,
-    Wallet,
-    HelpCircle,
-    Filter,
-    Calendar,
-    User,
-    ChevronLeft,
-    ChevronRight,
-    X,
-} from 'lucide-react-native';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
+import CarFront from 'lucide-react-native/dist/esm/icons/car-front.js';
+import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
+import Receipt from 'lucide-react-native/dist/esm/icons/receipt.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
+import HelpCircle from 'lucide-react-native/dist/esm/icons/circle-question-mark.js';
+import Filter from 'lucide-react-native/dist/esm/icons/funnel.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import User from 'lucide-react-native/dist/esm/icons/user.js';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
 import { router, Redirect, useLocalSearchParams } from 'expo-router';
 import { useUnitWalletHistory, useRecentActivity } from '../../hooks/useKeuangan';
-import { format, formatDistanceToNow, subDays, addDays, subMonths, addMonths, subYears, addYears } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
+import { subDays } from 'date-fns/subDays';
+import { addDays } from 'date-fns/addDays';
+import { subMonths } from 'date-fns/subMonths';
+import { addMonths } from 'date-fns/addMonths';
+import { subYears } from 'date-fns/subYears';
+import { addYears } from 'date-fns/addYears';
+import { id as localeID } from 'date-fns/locale/id';
 import { ActivityItem, KasBankTransaction } from '../../services/keuangan';
 import { formatCurrency } from '../../utils/format';
 import { TransactionDetailModal } from '../../components/TransactionDetailModal';

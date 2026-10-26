@@ -7,20 +7,18 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Header } from '../../components/ui/Header';
 import { useUIStore } from '../../store/useUIStore';
-import {
-    ChevronLeft,
-    Search,
-    Plus,
-    X,
-    MoreVertical,
-    Box,
-    MapPin,
-    Calendar,
-    DollarSign,
-    Trash2,
-    Clock,
-    Wallet,
-} from 'lucide-react-native';
+import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
+import Search from 'lucide-react-native/dist/esm/icons/search.js';
+import Plus from 'lucide-react-native/dist/esm/icons/plus.js';
+import X from 'lucide-react-native/dist/esm/icons/x.js';
+import MoreVertical from 'lucide-react-native/dist/esm/icons/ellipsis-vertical.js';
+import Box from 'lucide-react-native/dist/esm/icons/box.js';
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin.js';
+import Calendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import DollarSign from 'lucide-react-native/dist/esm/icons/dollar-sign.js';
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2.js';
+import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
 import { useRouter } from 'expo-router';
 import { Asset } from '../../services/masterData';
 import { useAssetList, useCreateAsset, useUpdateAsset, useDeleteAsset, useAssetStats } from '../../hooks/useMasterData';
