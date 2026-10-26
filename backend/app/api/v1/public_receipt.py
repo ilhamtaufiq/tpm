@@ -345,156 +345,174 @@ def get_font_path(bold=False):
             return p
     return None
 
-def generate_receipt_image(data: Dict[str, Any], public_url: Optional[str] = None) -> io.BytesIO:
-    """Generate a thermal-style OG / WhatsApp share image for the receipt"""
-    # Create canvas (1200x630, lebih tinggi bila item banyak agar ringkasan dan link tidak bertumpuk)
-    width = 1200
-    jumlah_item = len(data.get("items", []))
-    height = max(630, 366 + min(jumlah_item, 4) * 60 + (30 if jumlah_item > 4 else 0) + 300)
-    
-    # Receipt-like background (off-white)
-    img = Image.new('RGB', (width, height), color='#f3f4f6')
-    draw = ImageDraw.Draw(img)
-    
-    # Draw "Paper"
-    paper_width = 500
-    paper_x = (width - paper_width) // 2
-    draw.rectangle([paper_x, 20, paper_x + paper_width, height - 20], fill="white", outline="#d1d5db")
-    
-    # Load fonts
+def generate_receipt_image(data: Dict[str, Any], public_url: Optional[str] = None, receipt_type: str = "") -> io.BytesIO:
+    """Gambar OG struk: kartu biru STRUK DIGITAL, sama dengan halaman server (pratinjau chat)."""
+    CW = 800
+    CX0, CX1 = 40, 760
+    BLUE, BLUE_SOFT = "#023C69", "#1f5a86"
+    GRAY, DARK, LINE = "#6b7280", "#111827", "#d1d5db"
     font_path = get_font_path(bold=False)
-    font_bold_path = get_font_path(bold=True)
-    
+    bold_path = get_font_path(bold=True)
+
+    def font(size: int, bold: bool = False):
+        p = bold_path if bold else font_path
+        try:
+            return ImageFont.truetype(p, size) if p else ImageFont.load_default()
+        except Exception:
+            return ImageFont.load_default()
+
+    f_kicker, f_type, f_badge = font(15, True), font(30, True), font(15, True)
+    f_company, f_small, f_body, f_body_b, f_total = font(26, True), font(18), font(20), font(20, True), font(26, True)
+    f_section = font(16, True)
+
+    tipe_label = {"bengkel": "Bengkel", "jasa_angkut": "Jasa Angkut", "mobil": "Mobil"}.get(receipt_type, "Struk")
+    paid = float(data.get("paid", 0) or 0)
+    total = float(data.get("total", 0) or 0)
+    remaining = float(data.get("remaining", total - paid) or 0)
+    lunas = remaining <= 0
+    status_text = "LUNAS" if lunas else "BELUM LUNAS"
+    discount = float(data.get("discount", 0) or 0)
+    metode = str(data.get("paymentMethod") or "").upper()
+
+    if data.get("services") or data.get("parts"):
+        groups = []
+        if data.get("services"):
+            groups.append(("LAYANAN", data["services"]))
+        if data.get("parts"):
+            groups.append(("SPARE PART", data["parts"]))
+    else:
+        groups = [(None, data.get("items", []))]
+
+    logo = None
     try:
-        header_font = ImageFont.truetype(font_bold_path, 32) if font_bold_path else ImageFont.load_default()
-        sub_header_font = ImageFont.truetype(font_path, 18) if font_path else ImageFont.load_default()
-        body_font = ImageFont.truetype(font_path, 20) if font_path else ImageFont.load_default()
-        body_bold_font = ImageFont.truetype(font_bold_path, 20) if font_bold_path else ImageFont.load_default()
-        total_font = ImageFont.truetype(font_bold_path, 36) if font_bold_path else ImageFont.load_default()
-    except:
-        header_font = ImageFont.load_default()
-        sub_header_font = ImageFont.load_default()
-        body_font = ImageFont.load_default()
-        body_bold_font = ImageFont.load_default()
-        total_font = ImageFont.load_default()
-    
-    # Logo
-    logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "static", "logo_tpm.png")
-    y = 30
-    logo_img = None
-    
-    # Try custom logo first
-    if data.get("customLogo") and data["customLogo"] != "tpm_default":
-        try:
-            header, encoded = data["customLogo"].split(",", 1)
-            logo_data = base64.b64decode(encoded)
-            logo_img = Image.open(io.BytesIO(logo_data)).convert("RGBA")
-        except:
-            pass
-            
-    # Fallback to default asset
-    if not logo_img and os.path.exists(logo_path):
-        try:
-            logo_img = Image.open(logo_path).convert("RGBA")
-        except:
-            pass
-            
-    if logo_img:
-        try:
-            # Resize logo to fit well in header (e.g. 100px height)
-            aspect = logo_img.width / logo_img.height
-            logo_w = int(80 * aspect)
-            logo_h = 80
-            logo_img = logo_img.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
-            
-            # Create a white background for the logo paste if it has transparency
-            img.paste(logo_img, (int(width/2 - logo_w/2), y), mask=logo_img)
-            y += logo_h + 10
-        except Exception as e:
-            print(f"Error drawing logo in OG image: {e}")
-            pass
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "static")
+        logo_path = os.path.join(static_dir, "logo_tpm.png")
+        if os.path.exists(logo_path):
+            logo = Image.open(logo_path).convert("RGBA")
+            aspect = logo.width / logo.height
+            logo = logo.resize((int(96 * aspect), 96), Image.Resampling.LANCZOS)
+    except Exception:
+        logo = None
 
-    # Business Name
-    draw.text((width/2, y), data['companyName'], font=header_font, fill="black", anchor="mm")
-    y += 40
-    draw.text((width/2, y), data['companyAddress'], font=sub_header_font, fill="black", anchor="mm")
-    y += 25
-    draw.text((width/2, y), f"Telp: {data['companyPhone']}", font=sub_header_font, fill="black", anchor="mm")
-    
-    y += 30
-    # Dashed Divider
-    for x in range(paper_x + 20, paper_x + paper_width - 20, 10):
-        draw.line([x, y, x + 5, y], fill="black", width=1)
-    
-    y += 20
-    # Info
-    draw.text((paper_x + 30, y), "Nomor Transaksi:", font=body_font, fill="black")
-    draw.text((paper_x + paper_width - 30, y), data['transactionNumber'], font=body_bold_font, fill="black", anchor="ra")
-    y += 30
-    
-    # Date
-    try:
-        dt = datetime.fromisoformat(data['date'])
-        formatted_date = dt.strftime("%d/%m/%Y %H:%M")
-    except:
-        formatted_date = data['date']
-    draw.text((paper_x + 30, y), "Tanggal:", font=body_font, fill="black")
-    draw.text((paper_x + paper_width - 30, y), formatted_date, font=body_font, fill="black", anchor="ra")
-    y += 30
-    
-    # Customer
-    draw.text((paper_x + 30, y), "Pelanggan:", font=body_font, fill="black")
-    draw.text((paper_x + paper_width - 30, y), data['customerName'], font=body_font, fill="black", anchor="ra")
-    y += 40
-    
-    # Items
-    for x in range(paper_x + 20, paper_x + paper_width - 20, 10):
-        draw.line([x, y, x + 5, y], fill="black", width=1)
-    y += 20
-    
-    # Only show first 3 items to avoid overflow
-    items = data.get("items", [])
-    for i, item in enumerate(items[:4]):
-        desc = item['description'].upper()
-        if len(desc) > 30: desc = desc[:27] + "..."
-        draw.text((paper_x + 30, y), desc, font=body_bold_font, fill="black")
-        y += 25
-        qty_str = f"{int(item['quantity'])} x {item['unitPrice']:,.0f}"
-        sub_str = f"{item['subtotal']:,.0f}"
-        draw.text((paper_x + 40, y), qty_str, font=body_font, fill="black")
-        draw.text((paper_x + paper_width - 30, y), sub_str, font=body_font, fill="black", anchor="ra")
-        y += 35
-    
-    if len(items) > 4:
-        draw.text((width/2, y), f"... and {len(items)-4} more items ...", font=sub_header_font, fill="gray", anchor="mm")
-        y += 30
+    def trim(text: str, limit: int = 44) -> str:
+        text = str(text or "-").upper()
+        return text if len(text) <= limit else text[: limit - 3] + "..."
 
-    y += 10
-    for x in range(paper_x + 20, paper_x + paper_width - 20, 10):
-        draw.line([x, y, x + 5, y], fill="black", width=1)
-    y += 20
-    
-    # Total
-    draw.text((paper_x + 30, y), "TOTAL", font=total_font, fill="black")
-    total_str = f"Rp {data['total']:,.0f}"
-    draw.text((paper_x + paper_width - 30, y), total_str, font=total_font, fill="black", anchor="ra")
-    
-    y += 60
-    status_text = "LUNAS" if data.get('remaining', 0) <= 0 else "BELUM LUNAS"
-    draw.text((width/2, y), f"*** {status_text} ***", font=body_bold_font, fill="black", anchor="mm")
+    def render(img, draw, card_bottom: int) -> int:
+        # Kartu putih dengan header biru
+        y_top = 20
+        if card_bottom > y_top:
+            draw.rounded_rectangle((CX0, y_top, CX1, card_bottom), radius=28, fill="white", outline=LINE)
+        draw.rounded_rectangle((CX0, y_top, CX1, y_top + 110), radius=28, fill=BLUE)
+        draw.rectangle((CX0, y_top + 80, CX1, y_top + 110), fill=BLUE)
+        draw.text((CX0 + 32, y_top + 24), "STRUK DIGITAL", font=f_kicker, fill="#b8c7d9")
+        draw.text((CX0 + 32, y_top + 44), tipe_label, font=f_type, fill="white")
+        badge_x1 = CX1 - 32
+        badge_x0 = badge_x1 - 170
+        draw.rounded_rectangle((badge_x0, y_top + 36, badge_x1, y_top + 72), radius=18, fill=BLUE_SOFT)
+        draw.text(((badge_x0 + badge_x1) // 2, y_top + 54), status_text, font=f_badge, fill="white", anchor="mm")
 
-    # Public link at bottom so WhatsApp image shares still carry the URL
+        y = y_top + 140
+        if logo is not None:
+            img.paste(logo, (CW // 2 - logo.width // 2, y), logo)
+            y += logo.height + 12
+        draw.text((CW // 2, y), data.get("companyName", "Tiga Putra Motor"), font=f_company, fill=DARK, anchor="mt")
+        y += 36
+        draw.text((CW // 2, y), data.get("companyAddress", ""), font=f_small, fill=GRAY, anchor="mt")
+        y += 26
+        draw.text((CW // 2, y), f"Telp: {data.get('companyPhone', '')}", font=f_small, fill=GRAY, anchor="mt")
+        y += 40
+
+        def dash():
+            nonlocal y
+            x = CX0 + 32
+            while x < CX1 - 32:
+                draw.line((x, y, x + 6, y), fill=LINE, width=1)
+                x += 10
+            y += 22
+
+        def info(label, value, bold=False):
+            nonlocal y
+            draw.text((CX0 + 32, y), label, font=f_body, fill=GRAY)
+            draw.text((CX1 - 32, y), value, font=f_body_b if bold else f_body, fill=DARK, anchor="ra")
+            y += 34
+
+        dash()
+        info("Nomor Transaksi", str(data.get("transactionNumber", "")), bold=True)
+        date_text = data.get("date", "")
+        try:
+            date_text = datetime.fromisoformat(date_text).strftime("%d/%m/%Y %H:%M")
+        except Exception:
+            pass
+        info("Tanggal", date_text)
+        info("Pelanggan", str(data.get("customerName") or "Umum"))
+        if data.get("vehiclePlate"):
+            info("No. Polisi", str(data["vehiclePlate"]))
+        dash()
+
+        for title, items in groups:
+            if not items:
+                continue
+            if title:
+                draw.text((CX0 + 32, y), title, font=f_section, fill=GRAY)
+                y += 28
+            for item in items:
+                draw.text((CX0 + 32, y), trim(item.get("description")), font=f_body_b, fill=DARK)
+                y += 28
+                qty = int(float(item.get("quantity", 1) or 1))
+                draw.text((CX0 + 44, y), f"{qty} x {float(item.get('unitPrice', 0) or 0):,.0f}", font=f_body, fill=GRAY)
+                draw.text((CX1 - 32, y), f"{float(item.get('subtotal', 0) or 0):,.0f}", font=f_body, fill=DARK, anchor="ra")
+                y += 36
+            if title:
+                sub = sum(float(i.get("subtotal", 0) or 0) for i in items)
+                draw.line((CX0 + 32, y, CX1 - 32, y), fill=LINE, width=1)
+                y += 10
+                draw.text((CX0 + 32, y), "Total", font=f_small, fill=GRAY)
+                draw.text((CX1 - 32, y), f"{sub:,.0f}", font=f_body_b, fill=DARK, anchor="ra")
+                y += 40
+        dash()
+
+        draw.text((CX0 + 32, y), "SUBTOTAL", font=f_body, fill=GRAY)
+        draw.text((CX1 - 32, y), f"{float(data.get('subtotal', 0) or 0):,.0f}", font=f_body, fill=DARK, anchor="ra")
+        y += 34
+        if discount > 0 and data.get("showDiscount", True):
+            draw.text((CX0 + 32, y), "DISKON", font=f_body, fill=GRAY)
+            draw.text((CX1 - 32, y), f"-{discount:,.0f}", font=f_body, fill=DARK, anchor="ra")
+            y += 34
+        draw.line((CX0 + 32, y, CX1 - 32, y), fill=DARK, width=2)
+        y += 10
+        draw.text((CX0 + 32, y), "TOTAL", font=f_total, fill=DARK)
+        draw.text((CX1 - 32, y), f"{total:,.0f}", font=f_total, fill=DARK, anchor="ra")
+        y += 48
+        draw.text((CX0 + 32, y), "SUDAH DIBAYAR", font=f_body, fill=GRAY)
+        draw.text((CX1 - 32, y), f"{paid:,.0f}", font=f_body, fill=DARK, anchor="ra")
+        y += 34
+        draw.text((CX0 + 32, y), "SISA TAGIHAN", font=f_body_b, fill=DARK)
+        draw.text((CX1 - 32, y), f"{remaining:,.0f}", font=f_body_b, fill=DARK, anchor="ra")
+        y += 34
+        if paid > 0 and metode and metode != "NONE":
+            draw.text((CX0 + 32, y), "METODE", font=f_body, fill=GRAY)
+            draw.text((CX1 - 32, y), metode, font=f_body, fill=DARK, anchor="ra")
+            y += 34
+        dash()
+        draw.text((CW // 2, y), "Terima kasih", font=f_small, fill=GRAY, anchor="mt")
+        y += 26
+        draw.text((CW // 2, y), f"Layanan pelanggan: {data.get('companyPhone', '')}", font=f_small, fill=GRAY, anchor="mt")
+        y += 40
+        return y
+
+    measure_img = Image.new("RGB", (CW, 10), "white")
+    card_end = render(measure_img, ImageDraw.Draw(measure_img), 0)
+    height = card_end + 40 + (50 if public_url else 0)
+    img = Image.new("RGB", (CW, height), "#f3f4f6")
+    draw = ImageDraw.Draw(img)
+    render(img, draw, card_end)
     if public_url:
-        y = height - 48
-        for x in range(paper_x + 20, paper_x + paper_width - 20, 10):
-            draw.line([x, y - 12, x + 5, y - 12], fill="#9ca3af", width=1)
-        draw.text((width / 2, y), "Lihat struk online:", font=sub_header_font, fill="#4b5563", anchor="mm")
         url_draw = public_url if len(public_url) <= 64 else public_url[:61] + "..."
-        draw.text((width / 2, y + 22), url_draw, font=sub_header_font, fill="#023C69", anchor="mm")
-    
-    # Save to bytes
+        draw.text((CW // 2, card_end + 25), url_draw, font=f_small, fill=BLUE, anchor="mm")
+
     buf = io.BytesIO()
-    img.save(buf, format='PNG')
+    img.save(buf, format="PNG")
     buf.seek(0)
     return buf
 
@@ -532,7 +550,7 @@ async def get_receipt_image(
         except ValueError:
             public_url = f"{origin}/receipt/{receipt_type}/{transaction_id}"
             
-        img_buf = generate_receipt_image(data, public_url=public_url)
+        img_buf = generate_receipt_image(data, public_url=public_url, receipt_type=receipt_type)
         return Response(content=img_buf.getvalue(), media_type="image/png")
     except Exception as e:
         print(f"Error generating OG image: {e}")
