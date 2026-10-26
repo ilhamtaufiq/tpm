@@ -564,6 +564,39 @@ async def view_receipt(
         print(f"Error generating public view: {e}")
         return HTMLResponse(content="<div style='text-align:center; padding: 50px;'><h1 style='color:#EE2737;'>Struk tidak ditemukan</h1><p>Pastikan link yang Anda buka sudah benar.</p></div>", status_code=404)
 
+CSS_STRUK = """
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f3f4f6; font-family: Arial, Helvetica, sans-serif; color: #111827; padding: 16px; }
+  .card { max-width: 420px; margin: 0 auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 28px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .header { background: #023C69; color: #fff; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .kicker { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; opacity: .7; font-weight: 700; }
+  .type { font-size: 18px; font-weight: 700; margin-top: 2px; }
+  .badge { background: rgba(255,255,255,.2); padding: 4px 12px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+  .body { padding: 22px 22px 26px; }
+  .brand { text-align: center; margin-bottom: 14px; }
+  .logo { width: 88px; height: auto; display: block; margin: 0 auto 8px; }
+  .company { font-size: 16px; font-weight: 700; }
+  .sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .dash { border-bottom: 1px dashed #d1d5db; margin: 14px 0; }
+  .info, .sum { display: flex; justify-content: space-between; gap: 12px; font-family: "Courier New", monospace; font-size: 12px; margin-bottom: 8px; }
+  .lbl { color: #6b7280; }
+  .val { text-align: right; color: #111827; }
+  .bold { font-weight: 700; }
+  .total { font-size: 15px; font-weight: 700; border-top: 1px solid #111827; padding-top: 8px; margin-top: 4px; }
+  .items { margin: 4px 0; }
+  .section-title { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #6b7280; text-transform: uppercase; margin: 10px 0 6px; }
+  .item-row { margin-bottom: 12px; }
+  .item-desc { font-family: "Courier New", monospace; font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .item-details { display: flex; justify-content: space-between; font-family: "Courier New", monospace; font-size: 12px; color: #374151; }
+  .mini-divider { border-bottom: 1px dashed #e5e7eb; margin: 6px 0 8px; }
+  .section-total { display: flex; justify-content: space-between; font-family: "Courier New", monospace; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+  .footer { text-align: center; font-size: 11px; color: #6b7280; line-height: 1.6; }
+  .btns { display: flex; gap: 10px; justify-content: center; margin: 18px auto 0; max-width: 420px; }
+  .btn { flex: 1; text-align: center; background: #023C69; color: #fff; text-decoration: none; border: 0; border-radius: 16px; padding: 14px 10px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn2 { background: #fff; color: #023C69; border: 1px solid #023C69; }
+  @media print { .btns { display: none; } body { background: #fff; padding: 0; } .card { border: 0; box-shadow: none; } }
+"""
+
 def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transaction_id: str = "") -> str:
     """Generate a thermal-style HTML receipt with OG tags"""
     
@@ -656,177 +689,84 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
     else:
         payment_status_html = '<div class="summary-row" style="font-weight: bold; text-align: center; display: block;">*** LUNAS ***</div>'
 
+    tipe_label = {"bengkel": "Bengkel", "jasa_angkut": "Jasa Angkut", "mobil": "Mobil"}.get(receipt_type, "Struk")
+    paid = float(data.get("paid", 0) or 0)
+    total = float(data.get("total", 0) or 0)
+    remaining = float(data.get("remaining", total - paid) or 0)
+    lunas = remaining <= 0
+    status_text = "LUNAS" if lunas else "BELUM LUNAS"
+    metode = str(data.get("paymentMethod") or "").upper()
+    baris_metode = (
+        f'<div class="sum"><span>METODE</span><span>{metode}</span></div>'
+        if paid > 0 and metode and metode != "NONE" else ""
+    )
+    baris_plat = (
+        f'<div class="info"><span class="lbl">No. Polisi</span><span class="val">{data["vehiclePlate"]}</span></div>'
+        if data.get("vehiclePlate") else ""
+    )
+    discount = float(data.get("discount", 0) or 0)
+    baris_diskon = (
+        f'<div class="sum"><span>DISKON</span><span>-{discount:,.0f}</span></div>'
+        if discount > 0 and data.get("showDiscount", True) else ""
+    )
+    logo_html = f'<img class="logo" src="{logo_b64}" alt="Logo">' if logo_b64 else ""
+
     return f"""
     <!DOCTYPE html>
     <html lang="id">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Struk Digital - {data['transactionNumber']}</title>
-        
-        <!-- Open Graph / Social Media -->
+        <title>Struk Digital - TIGA PUTRA MOTOR</title>
         <meta property="og:type" content="website">
         <meta property="og:url" content="{page_url}">
         <meta property="og:title" content="Struk Digital - TIGA PUTRA MOTOR">
         <meta property="og:description" content="{desc}">
         <meta property="og:image" content="{image_url}">
-
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
-            
-            body {{ 
-                font-family: 'Courier Prime', 'Courier', monospace; 
-                background-color: #e5e7eb; 
-                margin: 0; 
-                padding: 20px 10px; 
-                color: #000;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }}
-            
-            .receipt-container {{ 
-                background: white; 
-                width: 100%;
-                max-width: {'220px' if data.get('paperSize') == '58mm' else '302px'}; 
-                padding: 20px;
-                box-sizing: border-box;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            }}
-            .header {{ 
-                text-align: center; 
-                margin-bottom: 20px; 
-            }}
-            .logo-container {{
-                display: flex;
-                justify-content: center;
-                margin-bottom: 10px;
-            }}
-            .logo-container img {{
-                height: 60px;
-                width: auto;
-            }}
-            
-            .business-name {{ font-size: 18px; font-weight: 700; margin-bottom: 2px; }}
-            .business-info {{ font-size: 11px; margin-bottom: 2px; }}
-            
-            .divider {{ border-top: 1px dashed #000; margin: 10px 0; }}
-            .mini-divider {{ border-top: 1px dashed #000; margin: 4px 0; }}
-            
-            .info-row {{ display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }}
-            
-            .item-row {{ margin-bottom: 8px; font-size: 12px; }}
-            .item-desc {{ font-weight: bold; margin-bottom: 2px; }}
-            .item-details {{ display: flex; justify-content: space-between; }}
-            .section-title {{ text-align: center; font-size: 12px; margin-bottom: 8px; }}
-            .section-total {{ display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; }}
-            
-            .summary-row {{ display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }}
-            .grand-total {{ font-size: 16px; font-weight: 700; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 5px 0; margin: 10px 0; }}
-            
-            .footer {{ text-align: center; margin-top: 20px; font-size: 11px; line-height: 1.4; }}
-            
-            .btn-container {{ width: 100%; max-width: 380px; margin-top: 20px; }}
-            .btn {{ 
-                display: block; 
-                width: 100%; 
-                padding: 15px; 
-                margin-bottom: 10px;
-                background: #023C69; 
-                color: white; 
-                text-decoration: none; 
-                border-radius: 8px; 
-                font-weight: 700; 
-                text-align: center; 
-                border: none; 
-                cursor: pointer;
-                font-family: sans-serif;
-                box-sizing: border-box;
-            }}
-            .btn-secondary {{
-                background: #6b7280;
-            }}
-            .btn:hover {{
-                opacity: 0.9;
-            }}
-            
-            @media print {{ 
-                .btn-container {{ display: none; }} 
-                body {{ padding: 0; background: white; }} 
-                .receipt-container {{ box-shadow: none; max-width: 100%; }} 
-            }}
-        </style>
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:image" content="{image_url}">
+        <style>{CSS_STRUK}</style>
     </head>
     <body>
-        <div class="receipt-container">
+        <div class="card">
             <div class="header">
-                {f'<div style="text-align:center; font-size:10px; margin-bottom:5px;">{data["customHeader"]}</div>' if data.get("customHeader") else ''}
-                <div class="logo-container">
-                    <img src="{data.get('customLogo') if data.get('customLogo') and data['customLogo'] != 'tpm_default' else logo_b64}" alt="Logo" onerror="this.style.display='none'">
+                <div>
+                    <div class="kicker">STRUK DIGITAL</div>
+                    <div class="type">{tipe_label}</div>
                 </div>
-                <div class="business-name">{data['companyName']}</div>
-                <div class="business-info">{data['companyAddress']}</div>
-                <div class="business-info">Telp: {data['companyPhone']}</div>
+                <div class="badge">{status_text}</div>
             </div>
-            
-            <div class="divider"></div>
-            
-            <div class="info-row">
-                <span>Nomor Transaksi:</span>
-                <span>{data['transactionNumber']}</span>
-            </div>
-            <div class="info-row">
-                <span>Tanggal:</span>
-                <span>{formatted_date}</span>
-            </div>
-            <div class="info-row">
-                <span>Pelanggan:</span>
-                <span>{data['customerName']}</span>
-            </div>
-            {f'<div class="info-row"><span>No. Polisi:</span><span>{data["vehiclePlate"]}</span></div>' if data.get("vehiclePlate") else ''}
-            
-            <div class="divider"></div>
-            
-            <div class="items-list">
-                {items_html}
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="summary">
-                <div class="summary-row">
-                    <span>SUBTOTAL</span>
-                    <span>{data.get('subtotal', 0):,.0f}</span>
+            <div class="body">
+                <div class="brand">
+                    {logo_html}
+                    <div class="company">{data.get("companyName", "Tiga Putra Motor")}</div>
+                    <div class="sub">{data.get("companyAddress", "")}</div>
+                    <div class="sub">Telp: {data.get("companyPhone", "")}</div>
                 </div>
-                {f'<div class="summary-row"><span>DISKON</span><span>-{data["discount"]:,.0f}</span></div>' if data.get('discount', 0) > 0 and data.get('showDiscount', True) else ''}
-                
-                <div class="summary-row grand-total">
-                    <span>TOTAL</span>
-                    <span>{data['total']:,.0f}</span>
+                <div class="dash"></div>
+                <div class="info"><span class="lbl">Nomor Transaksi</span><span class="val bold">{data["transactionNumber"]}</span></div>
+                <div class="info"><span class="lbl">Tanggal</span><span class="val">{formatted_date}</span></div>
+                <div class="info"><span class="lbl">Pelanggan</span><span class="val">{customer}</span></div>
+                {baris_plat}
+                <div class="dash"></div>
+                <div class="items">{items_html}</div>
+                <div class="dash"></div>
+                <div class="sum"><span>SUBTOTAL</span><span>{float(data.get("subtotal", 0) or 0):,.0f}</span></div>
+                {baris_diskon}
+                <div class="sum total"><span>TOTAL</span><span>{total:,.0f}</span></div>
+                <div class="sum"><span>SUDAH DIBAYAR</span><span>{paid:,.0f}</span></div>
+                <div class="sum bold"><span>SISA TAGIHAN</span><span>{remaining:,.0f}</span></div>
+                {baris_metode}
+                <div class="dash"></div>
+                <div class="footer">
+                    <div>Terima kasih</div>
+                    <div>Layanan pelanggan: {data.get("companyPhone", "")}</div>
                 </div>
-                
-                {payment_status_html}
-                
-                <div class="summary-row" style="margin-top: 5px;">
-                    <span>METODE</span>
-                    <span>{str(data.get('paymentMethod', '-')).upper()}</span>
-                </div>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="footer">
-                <div>TERIMA KASIH</div>
-                <div>LAYANAN PELANGGAN: {data['companyPhone']}</div>
-                {f'<div style="margin-top: 10px; font-weight: bold;">{data["customFooter"]}</div>' if data.get("customFooter") else ''}
-                <div style="margin-top: 5px;">{data.get('notes', '')}</div>
-                {f'<div style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; display: inline-block; font-size: 8px;">DIGITAL RECEIPT VERIFIED</div>' if data.get("showQRCode") else ''}
             </div>
         </div>
-        
-        <div class="btn-container">
-            <a href="/api/v1/public/receipt/{receipt_type}/{transaction_id}/pdf" class="btn">SIMPAN SEBAGAI PDF</a>
-            <button class="btn btn-secondary" onclick="window.print()">CETAK STRUK</button>
+        <div class="btns">
+            <a class="btn" href="/api/v1/public/receipt/{receipt_type}/{transaction_id}/pdf">SIMPAN PDF</a>
+            <button class="btn btn2" onclick="window.print()">CETAK</button>
         </div>
     </body>
     </html>
