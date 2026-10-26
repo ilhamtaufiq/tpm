@@ -413,6 +413,12 @@ def generate_receipt_image(data: Dict[str, Any], public_url: Optional[str] = Non
         draw.text(((badge_x0 + badge_x1) // 2, y_top + 54), status_text, font=f_badge, fill="white", anchor="mm")
 
         y = y_top + 140
+        judul_struk = f"Struk Transaksi {data.get('transactionNumber', '')} - Tiga Putra Motor"
+        total_teks = f"Total : Rp. {total:,.0f}".replace(",", ".")
+        draw.text((CW // 2, y), judul_struk, font=f_body_b, fill=DARK, anchor="mt")
+        y += 32
+        draw.text((CW // 2, y), total_teks, font=f_body, fill=DARK, anchor="mt")
+        y += 40
         if logo is not None:
             img.paste(logo, (CW // 2 - logo.width // 2, y), logo)
             y += logo.height + 12
