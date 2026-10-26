@@ -413,6 +413,12 @@ def generate_receipt_image(data: Dict[str, Any], public_url: Optional[str] = Non
         draw.text(((badge_x0 + badge_x1) // 2, y_top + 54), status_text, font=f_badge, fill="white", anchor="mm")
 
         y = y_top + 140
+        judul_struk = f"Struk Transaksi {data.get('transactionNumber', '')} - Tiga Putra Motor"
+        total_teks = f"Total : Rp. {total:,.0f}".replace(",", ".")
+        draw.text((CW // 2, y), judul_struk, font=f_body_b, fill=DARK, anchor="mt")
+        y += 32
+        draw.text((CW // 2, y), total_teks, font=f_body, fill=DARK, anchor="mt")
+        y += 40
         if logo is not None:
             img.paste(logo, (CW // 2 - logo.width // 2, y), logo)
             y += logo.height + 12
@@ -609,9 +615,8 @@ CSS_STRUK = """
   .mini-divider { border-bottom: 1px dashed #e5e7eb; margin: 6px 0 8px; }
   .section-total { display: flex; justify-content: space-between; font-family: "Courier New", monospace; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
   .footer { text-align: center; font-size: 11px; color: #6b7280; line-height: 1.6; }
-  .btns { display: flex; gap: 10px; justify-content: center; margin: 18px auto 0; max-width: 420px; }
-  .btn { flex: 1; text-align: center; background: #023C69; color: #fff; text-decoration: none; border: 0; border-radius: 16px; padding: 14px 10px; font-size: 13px; font-weight: 700; cursor: pointer; }
-  .btn2 { background: #fff; color: #023C69; border: 1px solid #023C69; }
+  .btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 18px auto 0; max-width: 420px; }
+  .btn { flex: 1 1 0; min-width: 80px; text-align: center; background: none; color: inherit; text-decoration: none; border: 1px solid #111827; border-radius: 16px; padding: 12px 8px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
   @media print { .btns { display: none; } body { background: #fff; padding: 0; } .card { border: 0; box-shadow: none; } }
 """
 
@@ -783,9 +788,22 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
             </div>
         </div>
         <div class="btns">
-            <a class="btn" href="/api/v1/public/receipt/{receipt_type}/{transaction_id}/pdf">SIMPAN PDF</a>
-            <button class="btn btn2" onclick="window.print()">CETAK</button>
+            <button class="btn" onclick="window.print()">Cetak</button>
+            <a class="btn" href="/api/v1/public/receipt/{receipt_type}/{transaction_id}/pdf">PDF</a>
+            <a class="btn" href="/api/v1/public/receipt/image/{receipt_type}/{transaction_id}" download="struk-{transaction_id}.png">Gambar</a>
+            <button class="btn" onclick="bagikanStruk()">Bagikan</button>
         </div>
+        <script>
+            async function bagikanStruk() {{
+                const url = window.location.href;
+                if (navigator.share) {{
+                    try {{ await navigator.share({{ url: url }}); }} catch (e) {{ }}
+                    return;
+                }}
+                try {{ await navigator.clipboard.writeText(url); alert("Link struk disalin"); }}
+                catch (e) {{ prompt("Salin link struk:", url); }}
+            }}
+        </script>
     </body>
     </html>
     """

@@ -290,8 +290,8 @@ async function shareOnWeb(
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
         // Link sudah ada di `message`. Jangan kirim `url` terpisah: beberapa aplikasi
         // (mis. Telegram, WhatsApp) menambahkannya lagi sehingga link muncul dua kali.
+        // Hanya teks (URL). Judul tidak dikirim: beberapa aplikasi menampilkannya sebagai teks pembuka.
         const basePayload: ShareData = {
-            title,
             text: message,
         };
 
@@ -351,7 +351,7 @@ async function shareOnNative(
     // iOS: satu lembar share berisi gambar sebagai lampiran utama, dan pesan (rincian + link).
     if (imageUri && Platform.OS === 'ios') {
         try {
-            await Share.share({ message, url: imageUri, title });
+            await Share.share({ message, url: imageUri });
             return 'shared';
         } catch (error) {
             if (isShareCancelled(error)) return 'cancelled';
@@ -377,7 +377,7 @@ async function shareOnNative(
 
     // Tanpa gambar atau gambar gagal: kirim teks (rincian + link).
     try {
-        await Share.share({ message, title });
+        await Share.share({ message });
         return 'shared';
     } catch (error) {
         if (isShareCancelled(error)) return 'cancelled';
@@ -446,6 +446,5 @@ export async function copyPublicReceiptLink(
 
     await Share.share({
         message,
-        title: PUBLIC_RECEIPT_SHARE_TITLE,
     });
 }
