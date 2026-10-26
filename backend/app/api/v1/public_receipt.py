@@ -588,6 +588,21 @@ async def view_receipt(
         print(f"Error generating public view: {e}")
         return HTMLResponse(content="<div style='text-align:center; padding: 50px;'><h1 style='color:#EE2737;'>Struk tidak ditemukan</h1><p>Pastikan link yang Anda buka sudah benar.</p></div>", status_code=404)
 
+def _qr_svg(url: str) -> str:
+    """QR code sebagai SVG inline (reportlab, sudah ada di requirements)."""
+    from reportlab.graphics.barcode.qr import QrCodeWidget
+    from reportlab.graphics.shapes import Drawing
+    from reportlab.graphics import renderSVG
+
+    widget = QrCodeWidget(url)
+    bounds = widget.getBounds()
+    size = 120
+    drawing = Drawing(size, size, transform=[size / (bounds[2] - bounds[0]), 0, 0, size / (bounds[3] - bounds[1]), 0, 0])
+    drawing.add(widget)
+    svg = renderSVG.drawToString(drawing)
+    return svg[svg.index("<svg"):]
+
+
 CSS_STRUK = """
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #f3f4f6; font-family: Arial, Helvetica, sans-serif; color: #111827; padding: 16px; }
@@ -615,9 +630,20 @@ CSS_STRUK = """
   .mini-divider { border-bottom: 1px dashed #e5e7eb; margin: 6px 0 8px; }
   .section-total { display: flex; justify-content: space-between; font-family: "Courier New", monospace; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
   .footer { text-align: center; font-size: 11px; color: #6b7280; line-height: 1.6; }
-  .btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 18px auto 0; max-width: 420px; }
-  .btn { flex: 1 1 0; min-width: 80px; text-align: center; background: none; color: inherit; text-decoration: none; border: 1px solid #111827; border-radius: 16px; padding: 12px 8px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
-  @media print { .btns { display: none; } body { background: #fff; padding: 0; } .card { border: 0; box-shadow: none; } }
+  .panel { max-width: 420px; margin: 16px auto 0; background: #fff; border: 1px solid #e5e7eb; border-radius: 24px; padding: 18px; }
+  .panel-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .act { display: block; width: 100%; text-align: center; text-decoration: none; border: 0; border-radius: 14px; padding: 13px 10px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; margin-bottom: 10px; }
+  .act-primary { background: none; color: #111827; border: 1px solid #111827; }
+  .act-soft { background: none; color: #111827; border: 1px solid #111827; }
+  .act-danger { background: none; color: #111827; border: 1px solid #111827; }
+  .act-row { display: flex; gap: 10px; }
+  .act-row .act { flex: 1; margin-bottom: 10px; }
+  .panel-note { font-size: 11px; color: #6b7280; line-height: 1.5; margin-top: 4px; }
+  .qr { text-align: center; margin-top: 18px; }
+  .qr svg { width: 120px; height: 120px; }
+  .qr-cap { font-size: 11px; color: #6b7280; margin-top: 6px; }
+  .bukti { text-align: center; font-family: "Courier New", monospace; font-size: 11px; color: #6b7280; margin-top: 12px; }
+  @media print { .panel { display: none; } body { background: #fff; padding: 0; } .card { border: 0; box-shadow: none; } }
 """
 
 def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transaction_id: str = "") -> str:
@@ -733,6 +759,7 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
         if discount > 0 and data.get("showDiscount", True) else ""
     )
     logo_html = f'<img class="logo" src="{logo_b64}" alt="Logo">' if logo_b64 else ""
+    qr_svg = _qr_svg(page_url)
 
     return f"""
     <!DOCTYPE html>
@@ -782,16 +809,24 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
                 {baris_metode}
                 <div class="dash"></div>
                 <div class="footer">
-                    <div>Terima kasih</div>
-                    <div>Layanan pelanggan: {data.get("companyPhone", "")}</div>
+                    <div>Terima kasih atas kepercayaan Anda</div>
+                </div>
+                <div class="bukti">Bukti transaksi sah &middot; Tiga Putra Motor</div>
+                <div class="qr">
+                    {qr_svg}
+                    <div class="qr-cap">Scan untuk verifikasi struk</div>
                 </div>
             </div>
         </div>
-        <div class="btns">
-            <button class="btn" onclick="window.print()">Cetak</button>
-            <a class="btn" href="/api/v1/public/receipt/{receipt_type}/{transaction_id}/pdf">PDF</a>
-            <a class="btn" href="/api/v1/public/receipt/image/{receipt_type}/{transaction_id}" download="struk-{transaction_id}.png">Gambar</a>
-            <button class="btn" onclick="bagikanStruk()">Bagikan</button>
+        <div class="panel">
+            <div class="panel-title">Aksi Struk</div>
+            <button class="act act-primary" onclick="window.print()">Cetak Struk</button>
+            <div class="act-row">
+                <a class="act act-soft" href="/api/v1/public/receipt/{receipt_type}/{transaction_id}/pdf">PDF</a>
+                <a class="act act-soft" href="/api/v1/public/receipt/image/{receipt_type}/{transaction_id}" download="struk-{transaction_id}.png">Gambar</a>
+            </div>
+            <button class="act act-danger" onclick="bagikanStruk()">Bagikan (Gambar + Link)</button>
+            <div class="panel-note">Struk ini diterbitkan secara digital oleh Tiga Putra Motor. Pastikan nominal dan nomor nota sesuai sebelum melakukan pembayaran.</div>
         </div>
         <script>
             async function bagikanStruk() {{
