@@ -820,6 +820,15 @@ class MuatanService:
             self.db.commit()
             
         elif muatan.status_bayar == PaymentStatus.BELUM_LUNAS:
+            # Kas pelunasan muatan (dicatat saat LUNAS) tidak berlaku lagi untuk status belum lunas.
+            # Kas pembayaran piutang punya nomor_referensi = nomor piutang, jadi tidak ikut terhapus.
+            self.db.query(KasBank).filter(
+                KasBank.referensi_id == muatan.id,
+                KasBank.nomor_referensi == muatan.nomor_transaksi,
+                KasBank.sumber == KasBankSource.JASA_ANGKUT,
+                KasBank.tipe == KasBankType.MASUK,
+            ).delete(synchronize_session=False)
+
             piutang = self.db.query(PiutangUsaha).filter(
                 PiutangUsaha.referensi_id == muatan.id,
                 PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
@@ -852,7 +861,8 @@ class MuatanService:
                     self.db.flush()
                     piutang.total_dibayar = Decimal("0")
                     piutang.sisa_piutang = piutang.nominal_piutang
-                    
+                    piutang.status = PiutangStatus.BELUM_LUNAS
+
                     # Apply new partial payments
                     for p in data.payments:
                         if p.nominal > 0:
@@ -883,8 +893,19 @@ class MuatanService:
                                 kas_jenis=p.kas_jenis,
                             )
                 else:
-                    # Just recalc sisa if nominal_piutang changed (net after costs)
-                    piutang.sisa_piutang = piutang.nominal_piutang - piutang.total_dibayar
+                    # Hitung ulang dari pembayaran asli. Edit ke LUNAS sebelumnya memaksa total_dibayar
+                    # sama dengan nominal tanpa catatan pembayaran, jadi angka itu tidak dipakai lagi.
+                    total_asli = self.db.query(func.coalesce(func.sum(PembayaranPiutang.nominal), 0)).filter(
+                        PembayaranPiutang.piutang_id == piutang.id
+                    ).scalar()
+                    piutang.total_dibayar = Decimal(str(total_asli))
+                    piutang.sisa_piutang = max(Decimal("0"), piutang.nominal_piutang - piutang.total_dibayar)
+                    if piutang.sisa_piutang <= 0:
+                        piutang.status = PiutangStatus.LUNAS
+                    elif piutang.total_dibayar > 0:
+                        piutang.status = PiutangStatus.SEBAGIAN
+                    else:
+                        piutang.status = PiutangStatus.BELUM_LUNAS
                     
                 self.db.commit()
 
