@@ -69,6 +69,7 @@ import {
     isSoldJbmWorkshopItem,
 } from '../../utils/bengkelTransaction';
 import { useKasBankBalances, useCreateTransaction, useTransfer, useUnitWalletHistory, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
+import { BatalkanBarisButton } from '../../components/finance/BatalkanBarisButton';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
@@ -1573,6 +1574,7 @@ export default function BengkelScreen() {
                                                 }`}>
                                                 {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
                                             </Typography>
+                                        <BatalkanBarisButton item={item} />
                                         </View>
                                     </View>
                                 ))}
@@ -2286,6 +2288,7 @@ export default function BengkelScreen() {
                                                 }`}>
                                                 {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
                                             </Typography>
+                                        <BatalkanBarisButton item={item} />
                                         </View>
                                     </View>
                                 ))}

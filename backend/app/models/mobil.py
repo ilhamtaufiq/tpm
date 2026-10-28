@@ -1,8 +1,9 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List, TYPE_CHECKING
 
 from sqlalchemy import (
+    DateTime,
     String,
     Text,
     Integer,
@@ -277,6 +278,8 @@ class MobilPartService(Base, TimestampMixin):
     harga_satuan: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     total: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Pembatalan (bukan hapus): baris turunan pengeluaran bengkel ikut batal.
+    dibatalkan_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, index=True)
 
     # Relationships
     mobil: Mapped["Mobil"] = relationship(back_populates="part_services")

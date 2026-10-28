@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from app.utils.helpers import get_jakarta_date
 from decimal import Decimal
 from typing import Optional, List, TYPE_CHECKING
@@ -9,6 +9,7 @@ from sqlalchemy import (
     Integer,
     Numeric,
     Date,
+    DateTime,
     ForeignKey,
     Enum as SQLEnum,
 )
@@ -296,6 +297,10 @@ class KasBank(Base, TimestampMixin):
     # Balance tracking
     saldo_sebelum: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     saldo_sesudah: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+
+    # Pembatalan (bukan hapus): jurnal asli dan jurnal balik diberi waktu batal,
+    # lalu disembunyikan dari semua SELECT lewat app/models/pembatalan_filter.py.
+    dibatalkan_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, index=True)
 
     keterangan: Mapped[str] = mapped_column(String(255))
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

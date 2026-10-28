@@ -622,21 +622,6 @@ class PiutangService:
             
         return pembayaran_records
 
-    def delete(self, piutang_id: int) -> bool:
-        """Delete receivable (only if no payments)."""
-        piutang = self.get_by_id(piutang_id)
-
-        if piutang.total_dibayar > 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tidak dapat menghapus piutang yang sudah ada pembayaran",
-            )
-
-        self.db.delete(piutang)
-        self.db.commit()
-
-        return True
-
     def get_summary(
         self,
         tanggal_dari: Optional[date] = None,

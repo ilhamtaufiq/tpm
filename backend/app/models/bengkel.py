@@ -464,6 +464,12 @@ class PengeluaranBengkel(Base, TimestampMixin):
         nullable=True,
     )
 
+    # Pembatalan (bukan hapus): baris tetap ada, tersembunyi dari laporan lewat
+    # filter ORM di app/models/pembatalan_filter.py.
+    dibatalkan_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, index=True)
+    dibatalkan_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    alasan_batal: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
     # Relationships
     muatan: Mapped[Optional["MuatanJasaAngkut"]] = relationship()
     armada: Mapped[Optional["ArmadaJasaAngkut"]] = relationship()

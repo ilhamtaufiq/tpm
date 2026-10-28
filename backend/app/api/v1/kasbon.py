@@ -144,15 +144,3 @@ def process_payment_split(
     """Process split payment for kasbon."""
     service = KasbonService(db)
     return service.process_payment_split(kasbon_id, data.payments, data.catatan, current_user.id)
-
-
-@router.delete("/{kasbon_id}")
-def delete_kasbon(
-    kasbon_id: int,
-    db: DBSession,
-    current_user: ManagerUser,
-):
-    """Delete kasbon (only if unpaid)."""
-    service = KasbonService(db)
-    service.delete(kasbon_id)
-    return {"message": "Kasbon berhasil dihapus"}

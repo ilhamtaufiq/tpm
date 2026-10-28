@@ -41,9 +41,12 @@ from app.models.keuangan import (
 from app.models.system_setting import SystemSetting
 from app.models.monitoring import ClientLog
 from app.models.perbaikan_data_log import PerbaikanDataLog
+from app.models.pembatalan_keuangan import PembatalanKeuangan
+from app.models import pembatalan_filter  # noqa: F401 - pasang filter pengeluaran batal
 
 
 __all__ = [
+    "PembatalanKeuangan",
     "User",
     "LoginOtp",
     "Supplier",

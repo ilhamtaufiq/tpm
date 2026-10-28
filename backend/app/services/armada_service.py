@@ -45,6 +45,7 @@ class ArmadaService:
 
         last = (
             self.db.query(PengeluaranBengkel)
+            .execution_options(include_dibatalkan=True)
             .filter(PengeluaranBengkel.nomor_transaksi.like(f"{prefix}{date_str}%"))
             .order_by(PengeluaranBengkel.id.desc())
             .first()
