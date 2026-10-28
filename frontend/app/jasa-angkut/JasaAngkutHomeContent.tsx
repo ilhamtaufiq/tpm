@@ -59,6 +59,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTransactions';
 import { useKasBankBalances, useCreateTransaction, useTransfer, useUnitWalletHistory, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
+import { BatalkanBarisButton } from '../../components/finance/BatalkanBarisButton';
 
 import { formatNumber, parseNumber } from '../../utils/format';
 import {
@@ -743,6 +744,7 @@ export default function JasaAngkutScreen() {
                                                 }`}>
                                                 {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
                                             </Typography>
+                                        <BatalkanBarisButton item={item} />
                                         </View>
                                     </View>
                                 ))}
@@ -1976,6 +1978,7 @@ export default function JasaAngkutScreen() {
                                                 <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                     {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
                                                 </Typography>
+                                            <BatalkanBarisButton item={item} />
                                             </View>
                                         </View>
                                     ))}
@@ -2056,6 +2059,7 @@ export default function JasaAngkutScreen() {
                                                 <Typography weight="bold" className={`text-base ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                     {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
                                                 </Typography>
+                                            <BatalkanBarisButton item={item} />
                                             </View>
                                         </View>
                                     ))}

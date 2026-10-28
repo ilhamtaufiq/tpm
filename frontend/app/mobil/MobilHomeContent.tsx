@@ -52,6 +52,7 @@ import { parse } from 'date-fns/parse';
 import { useMobilList, useDeleteMobil, usePenjualanSummary, useInventorySummary } from '../../hooks/useMobil';
 import { FILE_URL } from '../../utils/api';
 import { useKasBankBalances, useUnitWalletHistory, useCreateTransaction, useTransfer, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
+import { BatalkanBarisButton } from '../../components/finance/BatalkanBarisButton';
 
 import { useCreatePengeluaran } from '../../hooks/useBengkel';
 import { formatCurrency, formatNumber, parseNumber, formatDate, getTodayString, tanggalLokal } from '../../utils/format';
@@ -795,6 +796,7 @@ export default function MobilInventoryScreen() {
                                                 }`}>
                                                 {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
                                             </Typography>
+                                        <BatalkanBarisButton item={item} />
                                         </View>
                                     </View>
                                 ))}
@@ -1454,6 +1456,7 @@ export default function MobilInventoryScreen() {
                                                     <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                         {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
                                                     </Typography>
+                                                <BatalkanBarisButton item={item} />
                                                 </View>
                                             </View>
                                         ))}
@@ -1634,6 +1637,7 @@ export default function MobilInventoryScreen() {
                                                     <Typography weight="bold" className={`text-base ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                         {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
                                                     </Typography>
+                                                <BatalkanBarisButton item={item} />
                                                 </View>
                                             </View>
                                         ))}

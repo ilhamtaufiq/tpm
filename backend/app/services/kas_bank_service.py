@@ -35,6 +35,7 @@ class KasBankService:
 
         last = (
             self.db.query(KasBank)
+            .execution_options(include_dibatalkan=True)
             .filter(KasBank.nomor_transaksi.like(f"{prefix}{date_str}%"))
             .order_by(KasBank.id.desc())
             .first()
@@ -562,7 +563,7 @@ class KasBankService:
             )
 
         # Record the transfer out
-        self.create(
+        kas_keluar = self.create(
             KasBankCreate(
                 tanggal=tanggal,
                 jenis=dari,
@@ -576,7 +577,7 @@ class KasBankService:
         )
 
         # Record the transfer in
-        self.create(
+        kas_masuk = self.create(
             KasBankCreate(
                 tanggal=tanggal,
                 jenis=ke,
@@ -587,6 +588,12 @@ class KasBankService:
             ),
             user_id,
         )
+
+        # Kedua kaki diberi nomor grup yang sama, supaya pembatalan membalik keduanya.
+        grup = f"TRF-{kas_keluar.nomor_transaksi}"
+        kas_keluar.nomor_referensi = grup
+        kas_masuk.nomor_referensi = grup
+        self.db.commit()
         publish_realtime_event(
             event="finance.kas.updated",
             scope="finance",

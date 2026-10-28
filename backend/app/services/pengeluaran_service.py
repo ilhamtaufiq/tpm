@@ -48,6 +48,7 @@ class PengeluaranService:
 
         last = (
             self.db.query(PengeluaranBengkel)
+            .execution_options(include_dibatalkan=True)
             .filter(PengeluaranBengkel.nomor_transaksi.like(f"{prefix}{date_str}%"))
             .order_by(PengeluaranBengkel.id.desc())
             .first()
@@ -261,25 +262,6 @@ class PengeluaranService:
         self.db.refresh(pengeluaran)
         self._emit_change("updated", pengeluaran)
         return pengeluaran
-
-    def delete(self, pengeluaran_id: int) -> bool:
-        """Delete expense record."""
-        pengeluaran = self.get_by_id(pengeluaran_id)
-
-        # Clean linked costs
-        self.db.query(JasaAngkutPartService).filter(
-            JasaAngkutPartService.catatan.like(f"Pengeluaran Bengkel: {pengeluaran.nomor_transaksi}")
-        ).delete(synchronize_session=False)
-
-        self.db.query(MobilPartService).filter(
-            MobilPartService.catatan.like(f"Pengeluaran Bengkel: {pengeluaran.nomor_transaksi}")
-        ).delete(synchronize_session=False)
-
-        self.db.delete(pengeluaran)
-        self.db.commit()
-        self._emit_change("deleted", pengeluaran)
-
-        return True
 
     def get_summary(
         self,

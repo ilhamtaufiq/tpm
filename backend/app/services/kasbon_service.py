@@ -419,38 +419,6 @@ class KasbonService:
 
         return kasbon
 
-    def delete(self, kasbon_id: int) -> bool:
-        """Delete kasbon (only if no payments made)."""
-        kasbon = self.get_by_id(kasbon_id)
-
-        if kasbon.status != PaymentStatus.BELUM_LUNAS or (hasattr(kasbon, 'jumlah_bayar') and kasbon.jumlah_bayar > 0):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tidak dapat menghapus kasbon yang sudah memiliki riwayat pembayaran",
-            )
-
-        # Delete related KasBank entries (Money OUT records)
-        # This ensures the cash balance returns to what it was
-        from app.models.keuangan import KasBank
-        # nomor_referensi wajib: kas pelunasan kasbon lama memakai sumber KASBON
-        # dengan referensi_id = id pembayaran piutang (bisa sama dengan kasbon.id).
-        self.db.query(KasBank).filter(
-            KasBank.referensi_id == kasbon.id,
-            KasBank.nomor_referensi == kasbon.nomor_kasbon,
-            KasBank.sumber == KasBankSource.KASBON,
-        ).delete()
-
-        # Delete related piutang
-        self.db.query(PiutangUsaha).filter(
-            PiutangUsaha.nomor_referensi == kasbon.nomor_kasbon,
-            PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN,
-        ).delete()
-
-        self.db.delete(kasbon)
-        self.db.commit()
-
-        return True
-
     def get_employee_kasbon(
         self,
         karyawan_id: int,

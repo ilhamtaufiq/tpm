@@ -32,6 +32,8 @@ import { KasBankTransaction, KasBankAllBalances, KasBankJenis } from '../../serv
 import { User } from '../../services/auth';
 import { formatCurrency, formatNumber, parseNumber, getTodayString, tanggalLokal } from '../../utils/format';
 import { useKasBankList, useKasBankBalances, useTransfer, useCreateTransaction } from '../../hooks/useKeuangan';
+import { useBatalkanKas } from '../../hooks/usePembatalan';
+import { BatalkanKasModal } from '../../components/finance/BatalkanKasModal';
 import { useUserList } from '../../hooks/useUsers';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -194,6 +196,32 @@ export default function MutasiKasScreen() {
     });
 
     const [sheetVisible, setSheetVisible] = useState(false);
+    const [batalTarget, setBatalTarget] = useState<KasBankTransaction | null>(null);
+    const batalMutation = useBatalkanKas();
+
+    const handleBatalkan = async (alasan: string) => {
+        if (!batalTarget) return;
+        try {
+            await batalMutation.mutateAsync({ kasId: batalTarget.id, alasan });
+            setBatalTarget(null);
+            setDialogConfig({
+                visible: true,
+                title: 'Dibatalkan',
+                message: 'Transaksi dibatalkan. Jurnal dibalik dan tercatat di Riwayat Pembatalan.',
+                variant: 'success',
+                type: 'alert',
+            });
+        } catch (error: any) {
+            setBatalTarget(null);
+            setDialogConfig({
+                visible: true,
+                title: 'Gagal Membatalkan',
+                message: error?.response?.data?.detail || 'Transaksi tidak bisa dibatalkan',
+                variant: 'error',
+                type: 'alert',
+            });
+        }
+    };
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -539,6 +567,15 @@ export default function MutasiKasScreen() {
                 </View>
             )}
 
+            <BatalkanKasModal
+                visible={batalTarget !== null}
+                judul="Batalkan Transaksi"
+                ringkasan={batalTarget ? `${batalTarget.keterangan} • ${formatCurrency(batalTarget.nominal)}` : undefined}
+                loading={batalMutation.isPending}
+                onClose={() => setBatalTarget(null)}
+                onConfirm={handleBatalkan}
+            />
+
             {/* Transaction List */}
             <FlatList
                 data={transactions}
@@ -607,6 +644,12 @@ export default function MutasiKasScreen() {
                                         {isIncome ? '+' : '-'}{formatCurrency(item.nominal)}
                                     </Typography>
                                 </View>
+                                <Pressable
+                                    onPress={() => setBatalTarget(item)}
+                                    className="self-end mt-3 px-3 py-1.5 rounded-xl border border-rose-200"
+                                >
+                                    <Typography weight="bold" className="text-rose-600 text-[10px] uppercase tracking-widest">Batalkan</Typography>
+                                </Pressable>
                             </View>
                         </Pressable>
                     );
@@ -615,6 +658,14 @@ export default function MutasiKasScreen() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                 ListHeaderComponent={
                     <View className="mb-6">
+                        <Pressable
+                            onPress={() => router.push('/finance/pembatalan')}
+                            className="flex-row items-center self-end mb-4 px-4 py-2 rounded-xl border border-gray-200"
+                        >
+                            <History size={14} color="#6B7280" />
+                            <Typography className="text-textGray text-xs font-bold ml-2">Riwayat Pembatalan</Typography>
+                        </Pressable>
+
                         {/* Balance Insight Card (White Bento Style) */}
                         <View className="bg-surface p-6 rounded-[32px] border border-transparent shadow-sm mb-6">
                             <View className="flex-row justify-between items-center mb-6">

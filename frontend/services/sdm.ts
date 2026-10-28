@@ -471,8 +471,8 @@ export const sdmService = {
         return response.data;
     },
 
-    deleteKasbon: async (id: number) => {
-        const response = await api.delete(`/kasbon/${id}`);
+    batalkanKasbon: async (id: number, alasan: string) => {
+        const response = await api.post(`/pembatalan/kasbon/${id}`, null, { params: { alasan } });
         return response.data;
     },
 

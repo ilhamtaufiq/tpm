@@ -25,6 +25,7 @@ import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString }
 import { useAlert } from '../../context/AlertContext';
 import { getErrorMessage } from '../../utils/error';
 import { PaymentModal } from '../../components/PaymentModal';
+import { BatalkanKasModal } from '../../components/finance/BatalkanKasModal';
 import { Header } from '../../components/ui/Header';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
@@ -64,6 +65,8 @@ export default function KasbonScreen() {
     ]);
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
     const [selectedKasbon, setSelectedKasbon] = useState<Kasbon | null>(null);
+    const [batalKasbon, setBatalKasbon] = useState<Kasbon | null>(null);
+    const [batalLoading, setBatalLoading] = useState(false);
 
     const filterCounts = useMemo(() => ({
         all: summary?.count_total,
@@ -224,23 +227,20 @@ export default function KasbonScreen() {
     };
 
 
-    const handleDelete = async (kasbon: Kasbon) => {
-        showAlert({
-            title: 'Hapus Kasbon',
-            message: `Yakin ingin menghapus kasbon ${kasbon.karyawan_nama} senilai ${formatCurrency(kasbon.nominal)}? Data tidak dapat dikembalikan.`,
-            variant: 'warning',
-            type: 'confirm',
-            onConfirm: async () => {
-                try {
-                    await sdmService.deleteKasbon(kasbon.id);
-                    showAlert({ title: 'Sukses', message: 'Kasbon berhasil dihapus', variant: 'success' });
-                    loadData();
-                } catch (error) {
-                    console.error('Failed to delete kasbon:', error);
-                    showAlert({ title: 'Error', message: getErrorMessage(error, 'Gagal menghapus kasbon'), variant: 'error' });
-                }
-            }
-        });
+    const handleBatalkanKasbon = async (alasan: string) => {
+        if (!batalKasbon) return;
+        setBatalLoading(true);
+        try {
+            await sdmService.batalkanKasbon(batalKasbon.id, alasan);
+            setBatalKasbon(null);
+            showAlert({ title: 'Dibatalkan', message: 'Kasbon dibatalkan. Jurnal dibalik dan tercatat di Riwayat Pembatalan.', variant: 'success' });
+            loadData();
+        } catch (error) {
+            console.error('Failed to cancel kasbon:', error);
+            showAlert({ title: 'Gagal Membatalkan', message: getErrorMessage(error, 'Kasbon tidak bisa dibatalkan'), variant: 'error' });
+        } finally {
+            setBatalLoading(false);
+        }
     };
 
     // ... render methods ...
@@ -300,10 +300,10 @@ export default function KasbonScreen() {
                         {selectedKasbon.status?.toUpperCase() !== 'LUNAS' && (
                             <Button
                                 variant="outline"
-                                title="Hapus"
+                                title="Batalkan"
                                 onPress={() => {
                                     handleCloseSheet();
-                                    handleDelete(selectedKasbon);
+                                    setBatalKasbon(selectedKasbon);
                                 }}
                                 className="flex-1 h-14 rounded-2xl border-rose-100 bg-rose-50"
                                 icon={<Trash2 size={20} color="#E11D48" />}
@@ -518,6 +518,7 @@ export default function KasbonScreen() {
 
 
     return (
+        <>
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
@@ -814,5 +815,15 @@ export default function KasbonScreen() {
                 />
             )}
         </View>
+
+        <BatalkanKasModal
+            visible={batalKasbon !== null}
+            judul="Batalkan Kasbon"
+            ringkasan={batalKasbon ? `${batalKasbon.karyawan_nama} • ${formatCurrency(batalKasbon.nominal)}` : undefined}
+            loading={batalLoading}
+            onClose={() => setBatalKasbon(null)}
+            onConfirm={handleBatalkanKasbon}
+        />
+        </>
     );
 }

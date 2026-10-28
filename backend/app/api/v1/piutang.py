@@ -188,15 +188,3 @@ def process_payment_split(
     if unit_scope and service.get_by_id(data.piutang_id).unit != unit_scope:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses piutang unit ditolak")
     return service.process_payment_split(data, current_user.id)
-
-
-@router.delete("/{piutang_id}")
-def delete_piutang(
-    piutang_id: int,
-    db: DBSession,
-    current_user: ManagerUser,
-):
-    """Delete receivable (only if no payments)."""
-    service = PiutangService(db)
-    service.delete(piutang_id)
-    return {"message": "Piutang berhasil dihapus"}

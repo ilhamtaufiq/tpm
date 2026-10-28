@@ -115,15 +115,3 @@ def update_pengeluaran(
     """Update expense record."""
     service = PengeluaranService(db)
     return service.update(pengeluaran_id, data)
-
-
-@router.delete("/{pengeluaran_id}")
-def delete_pengeluaran(
-    pengeluaran_id: int,
-    db: DBSession,
-    current_user: ManagerUser,
-):
-    """Delete expense record."""
-    service = PengeluaranService(db)
-    service.delete(pengeluaran_id)
-    return {"message": "Pengeluaran berhasil dihapus"}
