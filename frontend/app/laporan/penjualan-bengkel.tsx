@@ -1,6 +1,6 @@
 import { appAlert } from '../../utils/appAlert';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -29,7 +29,7 @@ import { id as localeID } from 'date-fns/locale/id';
 import { bengkelService } from '../../services/bengkel';
 import { formatCurrency, tanggalLokal } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
-import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetContainer, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useSheetChrome } from '../../utils/themeStyles';
 import {
@@ -59,7 +59,7 @@ export default function PenjualanBengkelReportScreen() {
     const [transactions, setTransactions] = useState<any[]>([]);
 
     // Detail Modal State
-    const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+    const [detailOpen, setDetailOpen] = useState(false);
     const snapPoints = useMemo(() => ['85%', '92%'], []);
     const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -141,7 +141,7 @@ export default function PenjualanBengkelReportScreen() {
 
     const handlePressTransaction = async (item: any) => {
         setSelectedTransaction(item);
-        bottomSheetModalRef.current?.present();
+        setDetailOpen(true);
         setDetailLoading(true);
         try {
             const detail = await bengkelService.getDetailTransaksi(item.id);
@@ -154,7 +154,7 @@ export default function PenjualanBengkelReportScreen() {
     };
 
     const handleCloseModal = () => {
-        bottomSheetModalRef.current?.dismiss();
+        setDetailOpen(false);
     };
 
     const stats = useMemo(() => [
@@ -360,19 +360,9 @@ export default function PenjualanBengkelReportScreen() {
             </ScrollView>
 
             {/* Detail Modal */}
-            <BottomSheetModal
-    ref={bottomSheetModalRef}
-    index={0}
-    snapPoints={snapPoints}
-    enablePanDownToClose={true}
-    topInset={insets.top}
-    backdropComponent={({ style }) => (
-        <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
-    )}
-    backgroundStyle={chrome.backgroundStyle}
-    handleIndicatorStyle={chrome.handleIndicatorStyle}
->
-                <BottomSheetView className="flex-1 px-6 pb-6">
+            <Modal visible={detailOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={handleCloseModal}>
+              <BottomSheetContainer onClose={handleCloseModal} insets={insets} maxHeight="88%">
+                <View className="flex-1 px-6 pb-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <View>
                             <Typography variant="h2" weight="bold">Detail Transaksi</Typography>
@@ -389,7 +379,7 @@ export default function PenjualanBengkelReportScreen() {
                             <Typography className="mt-4 text-textGray">Memuat detail...</Typography>
                         </View>
                     ) : selectedTransaction ? (
-                        <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+                        <BoundedSheetScrollView showsVerticalScrollIndicator={false}>
                             {/* Summary Card */}
                             <View className="bg-background p-5 rounded-2xl mb-6 border border-transparent">
                                 <View className="flex-row justify-between mb-4">
@@ -513,10 +503,11 @@ export default function PenjualanBengkelReportScreen() {
                                 </View>
                             </View>
                             <View className="h-10" />
-                        </BottomSheetScrollView>
+                        </BoundedSheetScrollView>
                     ) : null}
-                </BottomSheetView>
-            </BottomSheetModal>
+                </View>
+              </BottomSheetContainer>
+            </Modal>
 
             <ReportExportSheet
                 visible={showExportMenu}
