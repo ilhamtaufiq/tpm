@@ -73,6 +73,11 @@ export default function ArmadaScreen() {
 
                 <View className="flex-row space-x-2">
                     <FilterTab
+                        label="Semua"
+                        active={filterActive === undefined}
+                        onPress={() => setFilterActive(undefined)}
+                    />
+                    <FilterTab
                         label="Aktif"
                         active={filterActive === true}
                         onPress={() => setFilterActive(true)}
@@ -82,12 +87,17 @@ export default function ArmadaScreen() {
                         active={filterActive === false}
                         onPress={() => setFilterActive(false)}
                     />
-                    <FilterTab
-                        label="Semua"
-                        active={filterActive === undefined}
-                        onPress={() => setFilterActive(undefined)}
-                    />
                 </View>
+
+            <View className="px-4 pt-3 bg-surface">
+                <Pressable
+                    onPress={() => router.push('/jasa-angkut/armada/form')}
+                    className="bg-primary h-11 rounded-2xl flex-row items-center justify-center"
+                >
+                    <Plus size={18} color="white" />
+                    <Typography weight="bold" className="text-white text-sm ml-2">Tambah Armada</Typography>
+                </Pressable>
+            </View>
             </View>
 
             <FlatList

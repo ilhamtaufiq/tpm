@@ -521,15 +521,6 @@ export default function PurchaseScreen() {
                             onPress={() => { setScanLog([]); setScannerOpen(true); }}
                         />
                     </View>
-                    {showPartSearch && (
-                        <View className="mt-3">
-                            <SearchBox
-                                value={partSearch}
-                                onChange={setPartSearch}
-                                placeholder="Cari sparepart..."
-                            />
-                        </View>
-                    )}
                     {scanLog.length > 0 && (
                         <View className="mt-2">
                             {scanLog.slice(0, 3).map(log => (
@@ -562,8 +553,11 @@ export default function PurchaseScreen() {
                 onScroll={handlePartsScroll}
                 scrollEventThrottle={16}
             >
-                {/* Pilih urutan isi: sebelum ada part/supplier terpilih */}
-                {!isEditMode && items.length === 0 && !selectedSupplier && (
+                {/* Pilih urutan isi. Tetap tampil supaya tata letak (dan kolom search di bawahnya) tidak bergeser;
+                    setelah ada part/supplier, pilihannya terkunci. */}
+                {!isEditMode && (() => {
+                    const terkunci = items.length > 0 || !!selectedSupplier;
+                    return (
                     <View className="mb-4">
                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-2">Mulai isi dari</Typography>
                         <View className="flex-row bg-background rounded-2xl p-1">
@@ -572,8 +566,9 @@ export default function PurchaseScreen() {
                                 return (
                                     <Pressable
                                         key={opt}
+                                        disabled={terkunci}
                                         onPress={() => handleChangeUrutan(opt)}
-                                        className={`flex-1 py-2.5 rounded-xl items-center ${active ? 'bg-primary' : ''}`}
+                                        className={`flex-1 py-2.5 rounded-xl items-center ${active ? 'bg-primary' : ''} ${terkunci && !active ? 'opacity-40' : ''}`}
                                     >
                                         <Typography weight="bold" className={`text-xs ${active ? 'text-white' : 'text-textGray'}`}>
                                             {opt === 'PART' ? 'Part' : 'Supplier'}
@@ -582,6 +577,18 @@ export default function PurchaseScreen() {
                                 );
                             })}
                         </View>
+                    </View>
+                    );
+                })()}
+
+                {/* Search sparepart: di bawah pilihan "Mulai isi dari" */}
+                {step === 1 && showPartSearch && (
+                    <View className="mb-4">
+                        <SearchBox
+                            value={partSearch}
+                            onChange={setPartSearch}
+                            placeholder="Cari sparepart..."
+                        />
                     </View>
                 )}
 
@@ -644,6 +651,7 @@ export default function PurchaseScreen() {
                         />
 
                         <DatePicker
+                            autoToday
                             label="Tanggal Pembelian"
                             placeholder="Pilih Tanggal (YYYY-MM-DD)"
                             value={tanggalText}

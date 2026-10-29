@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { View, ScrollView, Image, Pressable, ActivityIndicator, FlatList, Dimensions, StatusBar, Modal, TextInput, TouchableOpacity, Platform, Share, Linking } from 'react-native';
 import { appAlert } from '../utils/appAlert';
+import { unduhFakturMobil } from '../services/faktur';
 import { useUIStore } from '../store/useUIStore';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
@@ -662,6 +663,20 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                     <Typography className="text-textGray text-xs font-semibold">No. Transaksi</Typography>
                                                     <Typography className="text-textMain text-xs font-bold">{activeTx.nomor_transaksi}</Typography>
                                                 </View>
+                                            )}
+                                            {activeTx.id && (
+                                                <Button
+                                                    title="Faktur PDF"
+                                                    variant="outline"
+                                                    className="mt-3"
+                                                    onPress={async () => {
+                                                        try {
+                                                            await unduhFakturMobil(activeTx.id, activeTx.nomor_transaksi || String(activeTx.id));
+                                                        } catch (e: any) {
+                                                            appAlert('Gagal', e?.message || 'Faktur tidak bisa dibuat');
+                                                        }
+                                                    }}
+                                                />
                                             )}
                                             {(activeTx.tanggal || activeTx.created_at) && (
                                                 <View className="flex-row justify-between py-0.5">

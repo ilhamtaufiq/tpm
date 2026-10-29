@@ -279,6 +279,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
 
                 <View className="mb-4">
                     <DatePicker
+                        autoToday
                         label="Tanggal Biaya"
                         placeholder="Pilih Tanggal (YYYY-MM-DD)"
                         value={tanggal}

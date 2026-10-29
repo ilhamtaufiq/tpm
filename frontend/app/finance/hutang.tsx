@@ -38,8 +38,8 @@ import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 
 const STATUS_FILTERS: { label: string; value: HutangStatus | 'all' }[] = [
     { label: 'Semua', value: 'all' },
-    { label: 'Belum Lunas', value: 'BELUM_LUNAS' },
-    { label: 'Sebagian', value: 'SEBAGIAN' },
+    { label: 'Belum Bayar', value: 'BELUM_LUNAS' },
+    { label: 'Belum Lunas', value: 'SEBAGIAN' },
     { label: 'Lunas', value: 'LUNAS' },
 ];
 
@@ -48,6 +48,13 @@ const STATUS_BADGE_MAP: Record<HutangStatus, 'warning' | 'success' | 'info'> = {
     SEBAGIAN: 'info',
     LUNAS: 'success',
 };
+
+// Filter status Per Nama: nama lolos jika punya minimal satu struk dengan status itu.
+const cocokFilterNama = (g: GrupNama, f: HutangStatus | 'all') =>
+    f === 'all'
+    || (f === 'BELUM_LUNAS' && (g.belum_bayar ?? 0) > 0)
+    || (f === 'SEBAGIAN' && (g.sebagian ?? 0) > 0)
+    || (f === 'LUNAS' && (g.lunas ?? 0) > 0);
 
 const SUMBER_LABEL: Record<string, string> = {
     PEMBELIAN_PART: 'Pembelian Part',
@@ -113,18 +120,29 @@ export default function HutangUsahaScreen() {
         unit: unitFilter as any,
     });
     const { data: mobilData } = useMobilList();
-    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = useHutangSummary({ unit: unitFilter as any });
+    // exclude_internal: angka tab sama dengan daftar (hutang internal dan yang dibatalkan tidak ikut).
+    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = useHutangSummary({ unit: unitFilter as any, exclude_internal: true });
     const paymentMutation = useProcessHutangPaymentSplit();
     const queryClient = useQueryClient();
     const [tampilan, setTampilan] = useState<'struk' | 'nama'>('struk');
+    // Filter status untuk tampilan Per Nama (terpisah dari filter Per Struk).
+    const [namaFilter, setNamaFilter] = useState<HutangStatus | 'all'>('all');
     const grupQuery = useQuery({
-        queryKey: ['hutang-nama', 'grup'],
-        queryFn: () => namaGrupService.hutangGrup(),
+        queryKey: ['hutang-nama', 'grup', unitFilter ?? null],
+        queryFn: () => namaGrupService.hutangGrup(unitFilter),
     });
-    const grupList = useMemo(() => {
+    // Semua nama yang cocok pencarian (dipakai untuk total). grupList = yang lolos filter status.
+    const grupSemua = useMemo(() => {
         const kata = search.trim().toLowerCase();
         return (grupQuery.data ?? []).filter((g) => !kata || g.nama.toLowerCase().includes(kata));
     }, [grupQuery.data, search]);
+    const grupList = useMemo(() => grupSemua.filter((g) => cocokFilterNama(g, namaFilter)), [grupSemua, namaFilter]);
+    const namaFilterCounts = useMemo(() => ({
+        all: grupSemua.length,
+        BELUM_LUNAS: grupSemua.filter((g) => (g.belum_bayar ?? 0) > 0).length,
+        SEBAGIAN: grupSemua.filter((g) => (g.sebagian ?? 0) > 0).length,
+        LUNAS: grupSemua.filter((g) => (g.lunas ?? 0) > 0).length,
+    }) as Record<string, number | undefined>, [grupSemua]);
     const createMutation = useCreateHutang();
 
     const detailSheetRef = useRef<any>(null);
@@ -252,13 +270,15 @@ export default function HutangUsahaScreen() {
     const hutangList = filteredList;
 
     // Ringkasan atas ikut mode: di Per Nama dihitung dari grup yang tampil (sudah difilter pencarian nama).
+    // Total sisa sama di kedua mode: dihitung dari grup per nama (semua hutang aktif, tidak ikut tab).
     const overview = useMemo(() => {
-        if (tampilan !== 'nama') return localSummary;
+        const totalSisa = grupSemua.reduce((jumlah, g) => jumlah + Number(g.total_sisa || 0), 0);
+        if (tampilan !== 'nama') return { total_sisa: totalSisa, jumlah_belum_lunas: Number((localSummary as any)?.jumlah_belum_lunas ?? 0) };
         return {
-            total_sisa: grupList.reduce((jumlah, g) => jumlah + Number(g.total_sisa || 0), 0),
-            jumlah_belum_lunas: grupList.filter((g) => g.belum_lunas > 0).length,
+            total_sisa: totalSisa,
+            jumlah_belum_lunas: grupSemua.filter((g) => g.belum_lunas > 0).length,
         };
-    }, [tampilan, grupList, localSummary]);
+    }, [tampilan, grupSemua, localSummary]);
 
     const filterCounts = useMemo(() => {
         if (!summary) return {} as Record<string, number | undefined>;
@@ -554,6 +574,7 @@ export default function HutangUsahaScreen() {
             </View>
 
             <DatePicker
+                autoToday
                 label="Tanggal Transaksi"
                 placeholder="Pilih Tanggal (YYYY-MM-DD)"
                 value={createDate}
@@ -606,7 +627,7 @@ export default function HutangUsahaScreen() {
                         <Typography variant="caption" className="text-textGray">{selectedHutang.nomor_hutang}</Typography>
                     </View>
                     <Badge
-                        label={selectedHutang.status === 'LUNAS' ? 'Lunas' : selectedHutang.status === 'SEBAGIAN' ? 'Sebagian' : 'Belum Lunas'}
+                        label={selectedHutang.status === 'LUNAS' ? 'Lunas' : selectedHutang.status === 'SEBAGIAN' ? 'Belum Lunas' : 'Belum Bayar'}
                         variant={STATUS_BADGE_MAP[selectedHutang.status]}
                     />
                 </View>
@@ -663,6 +684,13 @@ export default function HutangUsahaScreen() {
                                 <Typography variant="body2" weight="medium" className="text-right">
                                     {selectedHutang.nomor_referensi}
                                 </Typography>
+                            </View>
+                        )}
+
+                        {selectedHutang.catatan && (
+                            <View className="mt-2 bg-background rounded-2xl p-3">
+                                <Typography variant="caption" className="text-textGray mb-1">Keterangan saat input</Typography>
+                                <Typography variant="body2" className="text-textMain">{selectedHutang.catatan}</Typography>
                             </View>
                         )}
 
@@ -767,15 +795,15 @@ export default function HutangUsahaScreen() {
             {!isSheetOpen && (
                 <View className="px-6 mt-4">
                     <View className="bg-surface p-3 rounded-[24px] border border-transparent shadow-sm flex-col">
-                        {tampilan === 'struk' && (
+                        {(
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-3 space-x-2 pb-1">
                             {STATUS_FILTERS.map((filter) => {
-                                const isActive = selectedFilter === filter.value;
-                                const count = filterCounts[filter.value];
+                                const isActive = (tampilan === 'nama' ? namaFilter : selectedFilter) === filter.value;
+                                const count = tampilan === 'nama' ? namaFilterCounts[filter.value] : filterCounts[filter.value];
                                 return (
                                     <Pressable
                                         key={filter.value}
-                                        onPress={() => setSelectedFilter(filter.value)}
+                                        onPress={() => (tampilan === 'nama' ? setNamaFilter(filter.value) : setSelectedFilter(filter.value))}
                                         className={`px-4 py-2 rounded-xl mr-2 flex-row items-center ${isActive ? 'bg-primary border border-primary shadow-sm' : 'bg-background border border-transparent'}`}
                                     >
                                         <Typography

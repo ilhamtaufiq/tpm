@@ -16,7 +16,7 @@ from app.models.keuangan import HutangUsaha, PiutangUsaha
 from app.schemas.keuangan import PaymentDetail, PaymentDetailHutang, PembayaranHutangSplit, PembayaranPiutangSplit
 from app.services.hutang_service import HutangService
 from app.services.piutang_service import PiutangService
-from app.utils.constants import HutangStatus, KasBankJenis, PaymentMethod, PiutangStatus
+from app.utils.constants import HutangStatus, KasBankJenis, KasBankSource, PaymentMethod, PiutangStatus
 
 
 def _d(x) -> float:
@@ -33,35 +33,40 @@ class NamaGrupService:
         self.db = db
 
     # ---------------- PIUTANG ----------------
-    def _piutang_nama(self, nama: str):
-        return (
-            self.db.query(PiutangUsaha)
-            .filter(
-                func.lower(func.trim(PiutangUsaha.nama_debitur)) == _kunci(nama),
-                PiutangUsaha.is_internal == False,  # noqa: E712
-                PiutangUsaha.status != PiutangStatus.BATAL,
-            )
-            .order_by(PiutangUsaha.tanggal, PiutangUsaha.id)
+    def _piutang_nama(self, nama: str, unit: Optional[KasBankSource] = None):
+        q = self.db.query(PiutangUsaha).filter(
+            func.lower(func.trim(PiutangUsaha.nama_debitur)) == _kunci(nama),
+            PiutangUsaha.is_internal == False,  # noqa: E712
+            PiutangUsaha.status != PiutangStatus.BATAL,
         )
+        if unit:
+            q = q.filter(PiutangUsaha.unit == unit)
+        return q.order_by(PiutangUsaha.tanggal, PiutangUsaha.id)
 
-    def piutang_grup(self) -> List[Dict[str, Any]]:
-        rows = (
-            self.db.query(PiutangUsaha)
-            .filter(PiutangUsaha.is_internal == False, PiutangUsaha.status != PiutangStatus.BATAL)  # noqa: E712
-            .all()
-        )
+    def piutang_grup(self, unit: Optional[KasBankSource] = None) -> List[Dict[str, Any]]:
+        q = self.db.query(PiutangUsaha).filter(PiutangUsaha.is_internal == False, PiutangUsaha.status != PiutangStatus.BATAL)  # noqa: E712
+        if unit:
+            q = q.filter(PiutangUsaha.unit == unit)
+        rows = q.all()
         grup: Dict[str, Dict[str, Any]] = {}
         for p in rows:
-            g = grup.setdefault(_kunci(p.nama_debitur), {"nama": p.nama_debitur.strip(), "jumlah_struk": 0, "total_nominal": 0.0, "total_sisa": 0.0, "belum_lunas": 0})
+            g = grup.setdefault(_kunci(p.nama_debitur), {"nama": p.nama_debitur.strip(), "jumlah_struk": 0, "total_nominal": 0.0, "total_sisa": 0.0, "belum_lunas": 0, "belum_bayar": 0, "sebagian": 0, "lunas": 0})
             g["jumlah_struk"] += 1
             g["total_nominal"] += _d(p.nominal_piutang)
             g["total_sisa"] += _d(p.sisa_piutang)
             if p.status != PiutangStatus.LUNAS:
                 g["belum_lunas"] += 1
+            # Jumlah struk per status: dipakai filter status di tampilan Per Nama.
+            if p.status == PiutangStatus.BELUM_LUNAS:
+                g["belum_bayar"] += 1
+            elif p.status == PiutangStatus.SEBAGIAN:
+                g["sebagian"] += 1
+            elif p.status == PiutangStatus.LUNAS:
+                g["lunas"] += 1
         return sorted(grup.values(), key=lambda g: -g["total_sisa"])
 
-    def piutang_detail(self, nama: str) -> Dict[str, Any]:
-        rows = self._piutang_nama(nama).all()
+    def piutang_detail(self, nama: str, unit: Optional[KasBankSource] = None) -> Dict[str, Any]:
+        rows = self._piutang_nama(nama, unit).all()
         if not rows:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Tidak ada piutang atas nama {nama}")
         return {
@@ -76,6 +81,10 @@ class NamaGrupService:
                     "total_dibayar": _d(p.total_dibayar),
                     "sisa": _d(p.sisa_piutang),
                     "status": p.status.value,
+                    "sumber": p.sumber.value,
+                    "unit": p.unit.value if p.unit else None,
+                    "nomor_referensi": p.nomor_referensi,
+                    "catatan": p.catatan,
                     "pembayaran": [
                         {"tanggal": x.tanggal.isoformat(), "nominal": _d(x.nominal), "metode": x.metode_bayar.value if x.metode_bayar else None}
                         for x in sorted(p.pembayaran, key=lambda x: (x.tanggal, x.id))
@@ -116,35 +125,39 @@ class NamaGrupService:
         return {"nama": nama, "dibayar": dibayar, "total": float(nominal)}
 
     # ---------------- HUTANG ----------------
-    def _hutang_nama(self, nama: str):
-        return (
-            self.db.query(HutangUsaha)
-            .filter(
-                func.lower(func.trim(HutangUsaha.nama_kreditur)) == _kunci(nama),
-                HutangUsaha.is_internal == False,  # noqa: E712
-                HutangUsaha.status != HutangStatus.BATAL,
-            )
-            .order_by(HutangUsaha.tanggal, HutangUsaha.id)
+    def _hutang_nama(self, nama: str, unit: Optional[KasBankSource] = None):
+        q = self.db.query(HutangUsaha).filter(
+            func.lower(func.trim(HutangUsaha.nama_kreditur)) == _kunci(nama),
+            HutangUsaha.is_internal == False,  # noqa: E712
+            HutangUsaha.status != HutangStatus.BATAL,
         )
+        if unit:
+            q = q.filter(HutangUsaha.unit == unit)
+        return q.order_by(HutangUsaha.tanggal, HutangUsaha.id)
 
-    def hutang_grup(self) -> List[Dict[str, Any]]:
-        rows = (
-            self.db.query(HutangUsaha)
-            .filter(HutangUsaha.is_internal == False, HutangUsaha.status != HutangStatus.BATAL)  # noqa: E712
-            .all()
-        )
+    def hutang_grup(self, unit: Optional[KasBankSource] = None) -> List[Dict[str, Any]]:
+        q = self.db.query(HutangUsaha).filter(HutangUsaha.is_internal == False, HutangUsaha.status != HutangStatus.BATAL)  # noqa: E712
+        if unit:
+            q = q.filter(HutangUsaha.unit == unit)
+        rows = q.all()
         grup: Dict[str, Dict[str, Any]] = {}
         for h in rows:
-            g = grup.setdefault(_kunci(h.nama_kreditur), {"nama": h.nama_kreditur.strip(), "jumlah_struk": 0, "total_nominal": 0.0, "total_sisa": 0.0, "belum_lunas": 0})
+            g = grup.setdefault(_kunci(h.nama_kreditur), {"nama": h.nama_kreditur.strip(), "jumlah_struk": 0, "total_nominal": 0.0, "total_sisa": 0.0, "belum_lunas": 0, "belum_bayar": 0, "sebagian": 0, "lunas": 0})
             g["jumlah_struk"] += 1
             g["total_nominal"] += _d(h.nominal_hutang)
             g["total_sisa"] += _d(h.sisa_hutang)
             if h.status != HutangStatus.LUNAS:
                 g["belum_lunas"] += 1
+            if h.status == HutangStatus.BELUM_LUNAS:
+                g["belum_bayar"] += 1
+            elif h.status == HutangStatus.SEBAGIAN:
+                g["sebagian"] += 1
+            elif h.status == HutangStatus.LUNAS:
+                g["lunas"] += 1
         return sorted(grup.values(), key=lambda g: -g["total_sisa"])
 
-    def hutang_detail(self, nama: str) -> Dict[str, Any]:
-        rows = self._hutang_nama(nama).all()
+    def hutang_detail(self, nama: str, unit: Optional[KasBankSource] = None) -> Dict[str, Any]:
+        rows = self._hutang_nama(nama, unit).all()
         if not rows:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Tidak ada hutang atas nama {nama}")
         return {
@@ -159,6 +172,14 @@ class NamaGrupService:
                     "total_dibayar": _d(h.total_dibayar),
                     "sisa": _d(h.sisa_hutang),
                     "status": h.status.value,
+                    "sumber": h.sumber.value,
+                    "unit": h.unit.value if h.unit else None,
+                    "nomor_referensi": h.nomor_referensi,
+                    "catatan": h.catatan,
+                    "pembayaran": [
+                        {"tanggal": x.tanggal.isoformat(), "nominal": _d(x.nominal), "metode": x.metode_bayar.value if x.metode_bayar else None}
+                        for x in sorted(h.pembayaran, key=lambda x: (x.tanggal, x.id))
+                    ],
                 }
                 for h in rows
             ],

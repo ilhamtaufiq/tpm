@@ -399,6 +399,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                 <View className="space-y-6">
                     {!isEdit && (
                         <DatePicker
+                            autoToday
                             label="Tanggal Beli / Masuk Mobil"
                             placeholder="Pilih Tanggal (YYYY-MM-DD)"
                             value={tanggalMasuk}

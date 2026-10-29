@@ -61,9 +61,7 @@ def buka_short_link(kode: str, db: Session = Depends(get_db)):
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="{gambar}">
   <meta http-equiv="refresh" content="0;url={tujuan}">
-</head>
-<body>
-  <p>Membuka struk... <a href="{tujuan}">Klik di sini jika tidak berpindah otomatis.</a></p>
   <script>window.location.replace("{tujuan}");</script>
-</body>
+</head>
+<body></body>
 </html>"""

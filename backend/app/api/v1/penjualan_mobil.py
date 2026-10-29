@@ -2,7 +2,7 @@ from typing import Literal, Optional, List
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from app.api.deps import DBSession, CurrentUser, ManagerUser, MobilUnitUser
@@ -187,6 +187,33 @@ def get_disbursement_history(
 
 
 # --- Transaction-specific routes (use /{transaksi_id} path parameter) ---
+
+@router.get("/{transaksi_id}/faktur.pdf")
+def get_faktur_pdf(
+    transaksi_id: int,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Faktur penjualan mobil (PDF A4 dengan kotak materai)."""
+    from fastapi.responses import Response
+
+    from app.models.mobil import Mobil, TransaksiPenjualanMobil
+    from app.services.faktur_mobil_service import build_faktur_pdf
+
+    transaksi = db.query(TransaksiPenjualanMobil).filter(TransaksiPenjualanMobil.id == transaksi_id).first()
+    if transaksi is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaksi tidak ditemukan")
+    mobil = db.query(Mobil).filter(Mobil.id == transaksi.mobil_id).first()
+    if mobil is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data mobil tidak ditemukan")
+
+    pdf = build_faktur_pdf(transaksi, mobil)
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="faktur-{transaksi.nomor_transaksi}.pdf"'},
+    )
+
 
 @router.get("/{transaksi_id}", response_model=TransaksiMobilResponse)
 def get_transaksi(

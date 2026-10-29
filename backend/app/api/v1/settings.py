@@ -25,13 +25,16 @@ def get_settings(db: DBSession, current_user: CurrentUser):
     try:
         smtp_setting = db.query(SystemSetting).filter(SystemSetting.key == "smtp_config").first()
         print_setting = db.query(SystemSetting).filter(SystemSetting.key == "print_config").first()
+        theme_setting = db.query(SystemSetting).filter(SystemSetting.key == "theme_config").first()
     except:
         smtp_setting = None
         print_setting = None
+        theme_setting = None
 
     # Default values
     resp = {
         "smtp": None,
+        "theme": None,
         "print": {
             "company_name": "Tiga Putra Motor",
             "company_address": "Cianjur, Jawa Barat",
@@ -64,6 +67,14 @@ def get_settings(db: DBSession, current_user: CurrentUser):
         except:
             pass
         
+    if theme_setting and theme_setting.value:
+        try:
+            val = json.loads(theme_setting.value)
+            if isinstance(val, dict):
+                resp["theme"] = val
+        except:
+            pass
+
     return resp
 
 @router.put("")
@@ -92,6 +103,14 @@ def update_settings(data: SettingsUpdate, db: DBSession, current_user: CurrentUs
         
         print_setting.value = json.dumps(data.print.model_dump())
         
+    if data.theme:
+        theme_setting = db.query(SystemSetting).filter(SystemSetting.key == "theme_config").first()
+        if not theme_setting:
+            theme_setting = SystemSetting(key="theme_config", description="Warna tema perusahaan")
+            db.add(theme_setting)
+
+        theme_setting.value = json.dumps(data.theme.model_dump())
+
     db.commit()
     return {"message": "Pengaturan berhasil diperbarui"}
 

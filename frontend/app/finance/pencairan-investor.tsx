@@ -580,6 +580,7 @@ export default function PencairanInvestorScreen() {
                 <View className="flex-row gap-4 mb-6">
                     <View className="flex-1">
                         <DatePicker
+                            autoToday
                             label={isWithdraw ? 'Tanggal Tarik' : 'Tanggal Cair'}
                             placeholder="Pilih Tanggal (YYYY-MM-DD)"
                             value={tanggal}

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { View, ScrollView, Pressable, TextInput, Modal, StatusBar, ActivityIndicator, Platform, Share, FlatList, RefreshControl as RNRefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
@@ -144,12 +144,13 @@ export default function QueueScreen() {
     }, []);
 
     // Data fetching
+    // Saat kata cari berganti, hasil lama tetap tampil (bukan skeleton) supaya input tidak ter-unmount dan keyboard tidak tertutup.
     const { data: queueData, isLoading, refetch } = useTransaksiBengkelList({
         tanggal_dari,
         tanggal_sampai,
         search: debouncedSearch || undefined,
         limit: 100,
-    });
+    }, { placeholderData: keepPreviousData });
 
     const { data: summary, refetch: refetchSummary } = useTransaksiBengkelSummary({
         tanggal_dari,

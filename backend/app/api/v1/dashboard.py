@@ -502,7 +502,7 @@ def get_recent_activity(
             "subtitle": subtitle,
             "amount": float(item.grand_total),
             "is_incoming": True,
-            "status": item.status_pengerjaan.name,  # ANTRE, PROSES, SELESAI
+            "status": item.status_bayar.name,  # LUNAS, BELUM_LUNAS, CICILAN (status bayar, bukan status pengerjaan)
             "timestamp": activity_ts.isoformat(),
             "source": _workshop_activity_source(item),
             "ref_number": item.nomor_transaksi,
@@ -535,7 +535,8 @@ def get_recent_activity(
             "amount": float(item.pendapatan_kotor - item.laba_supir), # TPM Margin
             "is_incoming": True,
             "status": item.status_bayar.value if hasattr(item.status_bayar, 'value') else str(item.status_bayar),
-            "timestamp": item.created_at.isoformat(),
+            # Muatan yang diedit tampil di tanggal edit terakhir (sama seperti bengkel).
+            "timestamp": (getattr(item, "updated_at", None) or item.created_at).isoformat(),
             "source": "jasa_angkut",
             "ref_number": item.nomor_transaksi,
         })

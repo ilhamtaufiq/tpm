@@ -282,6 +282,35 @@ export default function FinanceTab() {
                     )}
                 </View>
 
+                {/* Circular Glass Quick Actions */}
+                <View className="mb-10">
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-2 px-2">
+                        {[
+                            { label: 'Mutasi', icon: ArrowRightLeft, color: '#3B82F6', path: '/finance/mutasi' },
+                            { label: 'Keluar', icon: ArrowUpCircle, color: '#EF4444', path: '/finance/expenses' },
+                            { label: 'Cash User', icon: Users, color: '#06b6d4', path: '/finance/user-cash' },
+
+
+                            { label: 'Piutang', icon: CircleDollarSign, color: '#F59E0B', path: '/finance/piutang' },
+                            { label: 'Hutang', icon: ArrowDownCircle, color: '#E11D48', path: '/finance/hutang' },
+                            { label: 'Investor', icon: TrendingUp, color: '#8B5CF6', path: '/finance/pencairan-investor' },
+                            { label: 'Hutang Investor', icon: Landmark, color: '#7C3AED', path: '/finance/hutang-investor' },
+                            { label: 'Report', icon: BarChart3, color: '#10B981', path: '/laporan' },
+                        ].map((action, idx) => (
+                            <Pressable
+                                key={idx}
+                                className="mr-6 items-center"
+                                onPress={() => router.push(action.path as any)}
+                            >
+                                <View style={{ backgroundColor: `${action.color}10` }} className="w-16 h-16 rounded-[24px] items-center justify-center mb-3 border border-white shadow-sm">
+                                    <action.icon size={26} color={action.color} />
+                                </View>
+                                <Typography className="text-textMain text-[10px] font-bold uppercase tracking-wider">{action.label}</Typography>
+                            </Pressable>
+                        ))}
+                    </ScrollView>
+                </View>
+
                 {/* Main Profit Card (Standard Bento Style) */}
                 <View className="bg-surface p-6 rounded-[32px] border border-transparent shadow-sm mb-6">
                     <View className="flex-row justify-between items-center mb-1">
@@ -544,36 +573,6 @@ export default function FinanceTab() {
                         </View>
                     </Pressable>
                 )}
-
-                {/* Circular Glass Quick Actions */}
-                <View className="mb-10">
-                    <Typography variant="h3" weight="bold" className="mb-6 tracking-tight px-1">Aksi Cepat</Typography>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-2 px-2">
-                        {[
-                            { label: 'Mutasi', icon: ArrowRightLeft, color: '#3B82F6', path: '/finance/mutasi' },
-                            { label: 'Keluar', icon: ArrowUpCircle, color: '#EF4444', path: '/finance/expenses' },
-                            { label: 'Cash User', icon: Users, color: '#06b6d4', path: '/finance/user-cash' },
-
-
-                            { label: 'Piutang', icon: CircleDollarSign, color: '#F59E0B', path: '/finance/piutang' },
-                            { label: 'Hutang', icon: ArrowDownCircle, color: '#E11D48', path: '/finance/hutang' },
-                            { label: 'Investor', icon: TrendingUp, color: '#8B5CF6', path: '/finance/pencairan-investor' },
-                            { label: 'Hutang Investor', icon: Landmark, color: '#7C3AED', path: '/finance/hutang-investor' },
-                            { label: 'Report', icon: BarChart3, color: '#10B981', path: '/laporan' },
-                        ].map((action, idx) => (
-                            <Pressable
-                                key={idx}
-                                className="mr-6 items-center"
-                                onPress={() => router.push(action.path as any)}
-                            >
-                                <View style={{ backgroundColor: `${action.color}10` }} className="w-16 h-16 rounded-[24px] items-center justify-center mb-3 border border-white shadow-sm">
-                                    <action.icon size={26} color={action.color} />
-                                </View>
-                                <Typography className="text-textMain text-[10px] font-bold uppercase tracking-wider">{action.label}</Typography>
-                            </Pressable>
-                        ))}
-                    </ScrollView>
-                </View>
 
                 {/* Unit Business Breakdown (Card Pattern 3) */}
                 <View className="mb-10">

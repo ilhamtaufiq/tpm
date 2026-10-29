@@ -716,6 +716,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
             <View className="mb-2">
                 <DatePicker
+                    autoToday
                     label="Tanggal Transaksi"
                     placeholder="Pilih Tanggal (YYYY-MM-DD)"
                     value={formData.tanggal}

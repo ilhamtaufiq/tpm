@@ -42,9 +42,20 @@ export interface PrintSettings {
     print_method?: 'browser' | 'qz';
 }
 
+// Warna tema perusahaan (berlaku untuk semua pengguna; hanya admin yang bisa mengubah).
+export interface ThemeSettings {
+    primary: string;
+    secondary: string;
+    background: string;
+    surface: string;
+    text: string;
+    textGray: string;
+}
+
 export interface SystemSettings {
     smtp?: SMTPSettings;
     print?: PrintSettings;
+    theme?: ThemeSettings | null;
 }
 
 export const settingsService = {

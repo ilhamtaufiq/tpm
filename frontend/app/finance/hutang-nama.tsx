@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, RefreshControl } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, Share } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns/format';
@@ -13,6 +13,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { namaGrupService, StrukNama } from '../../services/namaGrup';
 import { formatCurrency, formatNumber, parseNumber, getTodayString, tanggalLokal } from '../../utils/format';
 import { getErrorMessage } from '../../utils/error';
+import { buildRincianNamaPesan } from '../../utils/rincianNama';
 
 const STATUS_LABEL: Record<StrukNama['status'], { text: string; cls: string }> = {
     LUNAS: { text: 'Lunas', cls: 'bg-emerald-50 text-emerald-700' },
@@ -22,6 +23,16 @@ const STATUS_LABEL: Record<StrukNama['status'], { text: string; cls: string }> =
 };
 
 const TANGGAL_VALID = /^\d{4}-\d{2}-\d{2}$/;
+
+const SUMBER_LABEL: Record<string, string> = {
+    PEMBELIAN_PART: 'Pembelian Part',
+    PEMBELIAN_MOBIL: 'Pembelian Mobil',
+    JUAL_BELI_MOBIL: 'Jual Mobil',
+    UANG_MUKA_PENJUALAN: 'Uang Muka Penjualan',
+    LAINNYA: 'Lainnya',
+    BENGKEL: 'Bengkel',
+    JASA_ANGKUT: 'Jasa Angkut',
+};
 
 export default function HutangNamaScreen() {
     const { nama } = useLocalSearchParams<{ nama?: string }>();
@@ -74,6 +85,15 @@ export default function HutangNamaScreen() {
         },
     });
 
+    const kirimRincian = async () => {
+        if (!detailQuery.data) return;
+        try {
+            await Share.share({ message: buildRincianNamaPesan('HUTANG', detailQuery.data) });
+        } catch (e) {
+            tampilkan('Gagal', getErrorMessage(e, 'Rincian tidak bisa dibagikan'), 'error');
+        }
+    };
+
     const onRefresh = async () => {
         setRefreshing(true);
         await refreshSemua();
@@ -100,6 +120,14 @@ export default function HutangNamaScreen() {
                 contentContainerStyle={{ paddingBottom: 120 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             >
+                <Button
+                    title="Kirim Rincian"
+                    variant="outline"
+                    onPress={kirimRincian}
+                    disabled={!detail}
+                    className="mb-4"
+                />
+
                 <Card className="p-4 gap-3 mb-4">
                     <Typography weight="bold" className="text-textMain text-sm">Bayar hutang {namaDebitur}</Typography>
                     <Typography className="text-textGray text-xs">
@@ -155,6 +183,14 @@ export default function HutangNamaScreen() {
                             <Typography className="text-textGray text-xs">
                                 {format(tanggalLokal(p.tanggal), 'dd MMM yyyy', { locale: localeID })} · {formatCurrency(p.nominal)} · sisa {formatCurrency(p.sisa)}
                             </Typography>
+                            {p.sumber ? (
+                                <Typography className="text-textGray text-[11px]">
+                                    Dari: {SUMBER_LABEL[p.sumber] || p.sumber}{p.unit ? ` · ${SUMBER_LABEL[p.unit] || p.unit}` : ''}{p.nomor_referensi ? ` · ${p.nomor_referensi}` : ''}
+                                </Typography>
+                            ) : null}
+                            {p.catatan ? (
+                                <Typography className="text-textMain text-[11px]">Keterangan: {p.catatan}</Typography>
+                            ) : null}
                             {(p.pembayaran ?? []).map((x, i) => (
                                 <Typography key={i} className="text-emerald-700 text-[11px]">
                                     Dibayar {formatCurrency(x.nominal)} pada {format(tanggalLokal(x.tanggal), 'dd MMM yyyy', { locale: localeID })}{x.metode ? ` (${x.metode})` : ''}

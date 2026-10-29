@@ -40,11 +40,18 @@ type PiutangFilter = PiutangStatus | 'all' | 'sebagian' | 'belum_bayar';
 // Belum Lunas = sudah ada uang masuk tapi sisa masih ada (status SEBAGIAN).
 // Belum Bayar = belum ada uang masuk sama sekali (total_dibayar 0).
 const STATUS_FILTERS: { label: string; value: PiutangFilter }[] = [
-    { label: 'Belum Lunas', value: 'sebagian' },
-    { label: 'Belum Bayar', value: 'belum_bayar' },
     { label: 'Semua', value: 'all' },
+    { label: 'Belum Bayar', value: 'belum_bayar' },
+    { label: 'Belum Lunas', value: 'sebagian' },
     { label: 'Lunas', value: 'LUNAS' },
 ];
+
+// Filter status Per Nama: nama lolos jika punya minimal satu struk dengan status itu.
+const cocokFilterNama = (g: GrupNama, f: PiutangFilter) =>
+    f === 'all'
+    || (f === 'belum_bayar' && (g.belum_bayar ?? 0) > 0)
+    || (f === 'sebagian' && (g.sebagian ?? 0) > 0)
+    || (f === 'LUNAS' && (g.lunas ?? 0) > 0);
 
 const STATUS_BADGE_MAP: Record<PiutangStatus, 'warning' | 'success' | 'info'> = {
     BELUM_LUNAS: 'warning',
@@ -129,18 +136,29 @@ export default function PiutangUsahaScreen() {
         unit: unitFilter as any,
         exclude_internal: true,
     });
-    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePiutangSummary({ unit: unitFilter as any });
+    // exclude_internal: angka tab sama dengan daftar (piutang internal antar unit tidak ikut).
+    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePiutangSummary({ unit: unitFilter as any, exclude_internal: true });
     const paymentMutation = useProcessPaymentSplit();
     const queryClient = useQueryClient();
     const [tampilan, setTampilan] = useState<'struk' | 'nama'>('struk');
+    // Filter status untuk tampilan Per Nama (terpisah dari filter Per Struk).
+    const [namaFilter, setNamaFilter] = useState<PiutangFilter>('all');
     const grupQuery = useQuery({
-        queryKey: ['piutang-nama', 'grup'],
-        queryFn: () => namaGrupService.piutangGrup(),
+        queryKey: ['piutang-nama', 'grup', unitFilter ?? null],
+        queryFn: () => namaGrupService.piutangGrup(unitFilter),
     });
-    const grupList = useMemo(() => {
+    // Semua nama yang cocok pencarian (dipakai untuk total). grupList = yang lolos filter status.
+    const grupSemua = useMemo(() => {
         const kata = search.trim().toLowerCase();
         return (grupQuery.data ?? []).filter((g) => !kata || g.nama.toLowerCase().includes(kata));
     }, [grupQuery.data, search]);
+    const grupList = useMemo(() => grupSemua.filter((g) => cocokFilterNama(g, namaFilter)), [grupSemua, namaFilter]);
+    const namaFilterCounts = useMemo(() => ({
+        all: grupSemua.length,
+        belum_bayar: grupSemua.filter((g) => (g.belum_bayar ?? 0) > 0).length,
+        sebagian: grupSemua.filter((g) => (g.sebagian ?? 0) > 0).length,
+        LUNAS: grupSemua.filter((g) => (g.lunas ?? 0) > 0).length,
+    }) as Record<string, number | undefined>, [grupSemua]);
     const createMutation = useCreatePiutang();
 
     const createSheetRef = useRef<any>(null);
@@ -204,14 +222,16 @@ export default function PiutangUsahaScreen() {
         return { total_sisa: totalSisa, jumlah_belum_lunas: countBelumLunas, jumlah_overdue: countOverdue };
     }, [piutangList]);
     // Ringkasan atas ikut mode: di Per Nama dihitung dari grup yang tampil (sudah difilter pencarian nama).
+    // Total sisa sama di kedua mode: dihitung dari grup per nama (semua piutang aktif, tidak ikut tab).
     const overview = useMemo(() => {
-        if (tampilan !== 'nama') return localSummary;
+        const totalSisa = grupSemua.reduce((jumlah, g) => jumlah + Number(g.total_sisa || 0), 0);
+        if (tampilan !== 'nama') return { ...localSummary, total_sisa: totalSisa };
         return {
-            total_sisa: grupList.reduce((jumlah, g) => jumlah + Number(g.total_sisa || 0), 0),
-            jumlah_belum_lunas: grupList.filter((g) => g.belum_lunas > 0).length,
+            total_sisa: totalSisa,
+            jumlah_belum_lunas: grupSemua.filter((g) => g.belum_lunas > 0).length,
             jumlah_overdue: 0, // blok Jatuh Tempo disembunyikan di mode Per Nama
         };
-    }, [tampilan, grupList, localSummary]);
+    }, [tampilan, grupSemua, localSummary]);
 
     // Angka badge per filter. Sumbernya summary (satu query, unfiltered by status);
     // list tak bisa dipakai karena dibatasi limit + sudah terfilter server-side.
@@ -502,6 +522,7 @@ export default function PiutangUsahaScreen() {
             </View>
 
             <DatePicker
+                autoToday
                 label="Tanggal Transaksi"
                 placeholder="Pilih Tanggal (YYYY-MM-DD)"
                 value={createDate}
@@ -614,6 +635,13 @@ export default function PiutangUsahaScreen() {
                             </View>
                         )}
 
+                        {selectedPiutang.catatan && (
+                            <View className="mt-2 bg-background rounded-2xl p-3">
+                                <Typography variant="caption" className="text-textGray mb-1">Keterangan saat input</Typography>
+                                <Typography variant="body2" className="text-textMain">{selectedPiutang.catatan}</Typography>
+                            </View>
+                        )}
+
                         {selectedPiutang.tanggal_jatuh_tempo && (
                             <View className="flex-row justify-between gap-4">
                                 <Typography variant="caption" className="text-textGray">Jatuh Tempo</Typography>
@@ -719,15 +747,15 @@ export default function PiutangUsahaScreen() {
             {!isSheetOpen && (
                 <View className="px-6 mt-4">
                     <View className="bg-surface p-3 rounded-[24px] border border-transparent shadow-sm flex-col">
-                        {tampilan === 'struk' && (
+                        {(
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-3 space-x-2 pb-1">
                             {STATUS_FILTERS.map((filter) => {
-                                const isActive = selectedFilter === filter.value;
-                                const count = filterCounts[filter.value];
+                                const isActive = (tampilan === 'nama' ? namaFilter : selectedFilter) === filter.value;
+                                const count = tampilan === 'nama' ? namaFilterCounts[filter.value] : filterCounts[filter.value];
                                 return (
                                     <Pressable
                                         key={filter.value}
-                                        onPress={() => setSelectedFilter(filter.value)}
+                                        onPress={() => (tampilan === 'nama' ? setNamaFilter(filter.value) : setSelectedFilter(filter.value))}
                                         className={`px-4 py-2 rounded-xl mr-2 flex-row items-center ${isActive ? 'bg-primary border border-primary shadow-sm' : 'bg-background border border-transparent'}`}
                                     >
                                         <Typography

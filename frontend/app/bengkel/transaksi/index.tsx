@@ -1945,7 +1945,7 @@ export default function BengkelTransaksiScreen() {
                                 <X size={18} color="#475569" />
                             </Pressable>
                         </View>
-                        <SearchBox value={existingSearch} onChange={setExistingSearch} placeholder="Cari nomor, customer, atau plat..." />
+                        <SearchBox value={existingSearch} onChange={setExistingSearch} placeholder="Cari nomor, customer, atau plat..." autoFocus />
                         <Pressable
                             onPress={openExistingDatePicker}
                             className="flex-row items-center justify-between mb-3 bg-background border border-transparent rounded-2xl px-3 py-3"
@@ -2078,7 +2078,7 @@ export default function BengkelTransaksiScreen() {
                                 <X size={18} color="#475569" />
                             </Pressable>
                         </View>
-                        <SearchBox value={partSearch} onChange={setPartSearch} placeholder="Cari sparepart..." />
+                        <SearchBox value={partSearch} onChange={setPartSearch} placeholder="Cari sparepart..." autoFocus />
                         <BoundedSheetScrollView
                             maxHeightRatio={0.78}
                             headerReserve={180}
@@ -2113,7 +2113,7 @@ export default function BengkelTransaksiScreen() {
                                 <X size={18} color="#475569" />
                             </Pressable>
                         </View>
-                        <SearchBox value={serviceSearch} onChange={setServiceSearch} placeholder="Cari service..." />
+                        <SearchBox value={serviceSearch} onChange={setServiceSearch} placeholder="Cari service..." autoFocus />
                         <BoundedSheetScrollView
                             maxHeightRatio={0.78}
                             headerReserve={180}
@@ -2131,12 +2131,12 @@ export default function BengkelTransaksiScreen() {
     );
 }
 
-function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
+function SearchBox({ value, onChange, placeholder, autoFocus = false }: { value: string; onChange: (value: string) => void; placeholder: string; autoFocus?: boolean }) {
     const textGray = useUIStore((s) => s.themeColors.textGray);
     return (
         <View className="flex-row items-center bg-background rounded-2xl px-3 h-11 mb-3 border border-transparent">
             <Search size={16} color={textGray} />
-            <TextInput placeholder={placeholder} placeholderTextColor={textGray} className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} />
+            <TextInput placeholder={placeholder} placeholderTextColor={textGray} className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} autoFocus={autoFocus} />
             {value.length > 0 && (
                 <Pressable onPress={() => onChange('')}>
                     <X size={16} color={textGray} />

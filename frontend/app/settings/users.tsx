@@ -1,9 +1,9 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, Pressable, TextInput, StatusBar, ActivityIndicator, FlatList, RefreshControl, Platform, Switch, ScrollView } from 'react-native';
+import { View, Pressable, TextInput, StatusBar, ActivityIndicator, FlatList, RefreshControl, Platform, Switch, ScrollView, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import BottomSheet from '../../components/ui/BottomSheetWithBack';
+import { BottomSheetContainer, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { format } from 'date-fns/format';
 import { id as localeID } from 'date-fns/locale/id';
 import Search from 'lucide-react-native/dist/esm/icons/search.js';
@@ -38,7 +38,7 @@ import { useUserList, useCreateUser, useUpdateUser, useDeleteUser, useDeleteChec
 import { useUIStore } from '../../store/useUIStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getErrorMessage } from '../../utils/error';
-import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
+import { usePlaceholderColor } from '../../utils/themeStyles';
 
 const ROLE_META: Record<string, { label: string; color: string; icon: any }> = {
     ADMIN: { label: 'Admin', color: '#EF4444', icon: Shield },
@@ -100,7 +100,6 @@ export default function UsersScreen() {
     const currentUser = useAuthStore((s) => s.user);
     const startImpersonation = useAuthStore((s) => s.startImpersonation);
     const themeColors = useUIStore((s) => s.themeColors);
-    const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
 
     const [search, setSearch] = useState('');
@@ -118,8 +117,7 @@ export default function UsersScreen() {
         variant: 'success' | 'error' | 'warning' | 'info'; type?: 'alert' | 'confirm'; onConfirm?: () => void;
     }>({ visible: false, title: '', message: '', variant: 'info', type: 'alert' });
 
-    const sheetRef = useRef<any>(null);
-    const snapPoints = useMemo(() => ['72%', '94%'], []);
+
 
     const { data: userData, isLoading, isError, refetch } = useUserList({ limit: 500 });
     const { data: check, isLoading: checkLoading } = useDeleteCheck(sheetMode === 'detail' ? selected?.id : null);
@@ -153,11 +151,6 @@ export default function UsersScreen() {
     const tampilkan = (title: string, message: string, variant: 'success' | 'error' | 'warning' | 'info', extra?: Partial<typeof dialog>) =>
         setDialog({ visible: true, title, message, variant, type: 'alert', ...extra });
 
-    const renderBackdrop = useCallback(
-        (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,
-        []
-    );
-
     const bukaDetail = (u: UserType) => {
         setSelected(u);
         setSheetMode('detail');
@@ -172,7 +165,7 @@ export default function UsersScreen() {
         setSheetMode('form');
     };
 
-    const tutupSheet = () => sheetRef.current?.close();
+    const tutupSheet = () => setSheetMode(null);
 
     const isSelf = !!selected && selected.id === currentUser?.id;
     const adminTerakhir = !!check?.is_last_admin;
@@ -472,11 +465,21 @@ export default function UsersScreen() {
 
         return (
             <View className="px-6 pb-6">
+                {/* Simpan ada di header supaya selalu terlihat, tanpa perlu scroll sampai bawah form. */}
                 <View className="flex-row items-center justify-between mb-5">
                     <Typography variant="h3" weight="bold">{selected ? 'Edit user' : 'Tambah user'}</Typography>
-                    <Pressable onPress={tutupSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                        <X size={18} color="#6B7280" />
-                    </Pressable>
+                    <View className="flex-row items-center">
+                        <Pressable
+                            onPress={simpanForm}
+                            disabled={saving}
+                            className={`bg-primary px-5 h-10 rounded-full items-center justify-center mr-2 ${saving ? 'opacity-60' : ''}`}
+                        >
+                            <Typography weight="bold" className="text-white text-sm">{saving ? 'Menyimpan…' : 'Simpan'}</Typography>
+                        </Pressable>
+                        <Pressable onPress={tutupSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
+                            <X size={18} color="#6B7280" />
+                        </Pressable>
+                    </View>
                 </View>
 
                 {label('Nama lengkap')}
@@ -528,13 +531,6 @@ export default function UsersScreen() {
                     </View>
                 ) : null}
 
-                <Button
-                    title={selected ? 'Simpan perubahan' : 'Tambah user'}
-                    onPress={simpanForm}
-                    loading={saving}
-                    className="mt-4"
-                    size="lg"
-                />
             </View>
         );
     };
@@ -638,32 +634,31 @@ export default function UsersScreen() {
                 />
             )}
 
+            {/* FAB: tombol tambah user (lingkaran), posisi sama dengan FAB di layar lain. */}
             <Pressable
                 onPress={() => bukaForm()}
-                style={{ backgroundColor: themeColors.primary, bottom: insets.bottom + 24 }}
-                className="absolute right-6 h-14 px-5 rounded-2xl flex-row items-center shadow-lg"
+                accessibilityLabel="Tambah user"
+                style={{ position: 'absolute', right: 20, bottom: getCustomTabBarBottomPadding(insets.bottom, 16), elevation: 5, zIndex: 999, backgroundColor: themeColors.primary }}
+                className="w-14 h-14 rounded-full items-center justify-center shadow-xl active:opacity-90"
             >
-                <Plus size={20} color="white" strokeWidth={2.5} />
-                <Typography weight="bold" className="text-white ml-2">Tambah user</Typography>
+                <Plus size={24} color="white" strokeWidth={2.5} />
             </Pressable>
 
-            {sheetMode ? (
-                <BottomSheet
-                    ref={sheetRef}
-                    index={0}
-                    snapPoints={snapPoints}
-                    enablePanDownToClose
-                    backdropComponent={renderBackdrop}
-                    backgroundStyle={chrome.backgroundStyle}
-                    handleIndicatorStyle={chrome.handleIndicatorStyle}
-                    topInset={insets.top}
-                    onClose={() => setSheetMode(null)}
-                >
-                    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator>
-                        {sheetMode === 'detail' ? renderDetail() : renderForm()}
-                    </BottomSheetScrollView>
-                </BottomSheet>
-            ) : null}
+            {/* Sheet detail/form dengan Modal biasa (bukan gorhom): tidak bergantung animasi reanimated,
+                jadi langsung tampil penuh saat dibuka dan tombol di dalamnya bisa diklik. */}
+            <Modal
+                visible={sheetMode !== null}
+                transparent
+                animationType="slide"
+                statusBarTranslucent
+                onRequestClose={tutupSheet}
+            >
+                <BottomSheetContainer onClose={tutupSheet} insets={insets} maxHeight="92%">
+                    <BoundedSheetScrollView keyboardShouldPersistTaps="handled">
+                        {sheetMode === 'detail' ? renderDetail() : sheetMode === 'form' ? renderForm() : null}
+                    </BoundedSheetScrollView>
+                </BottomSheetContainer>
+            </Modal>
 
             <AlertDialog
                 visible={dialog.visible}
