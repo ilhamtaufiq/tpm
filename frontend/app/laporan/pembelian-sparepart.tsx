@@ -26,7 +26,7 @@ import { id as localeID } from 'date-fns/locale/id';
 import { bengkelService } from '../../services/bengkel';
 import { formatCurrency, tanggalLokal } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
-import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetContainer } from '../../components/ui/BottomSheetContainer';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useSheetChrome } from '../../utils/themeStyles';
 import { useUIStore } from '../../store/useUIStore';
@@ -59,7 +59,7 @@ export default function PembelianSparepartReportScreen() {
     const [purchases, setPurchases] = useState<any[]>([]);
 
     // Detail Modal State
-    const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+    const [detailOpen, setDetailOpen] = useState(false);
     const snapPoints = useMemo(() => ['85%', '92%'], []);
     const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -143,7 +143,7 @@ export default function PembelianSparepartReportScreen() {
         if (Platform.OS === 'web') {
             setDetailModalOpen(true);
         } else {
-            bottomSheetModalRef.current?.present();
+            setDetailOpen(true);
         }
         setDetailLoading(true);
         try {
@@ -160,7 +160,7 @@ export default function PembelianSparepartReportScreen() {
         if (Platform.OS === 'web') {
             setDetailModalOpen(false);
         } else {
-            bottomSheetModalRef.current?.dismiss();
+            setDetailOpen(false);
         }
     };
 
@@ -376,7 +376,7 @@ export default function PembelianSparepartReportScreen() {
         );
 
         if (scroll === 'sheet') {
-            return <BottomSheetScrollView showsVerticalScrollIndicator={false}>{content}</BottomSheetScrollView>;
+            return <BoundedSheetScrollView showsVerticalScrollIndicator={false}>{content}</BoundedSheetScrollView>;
         }
         return content;
     };
@@ -510,19 +510,9 @@ export default function PembelianSparepartReportScreen() {
                     </View>
                 </Modal>
             ) : (
-                <BottomSheetModal
-                    ref={bottomSheetModalRef}
-                    index={0}
-                    snapPoints={snapPoints}
-                    enablePanDownToClose={true}
-                    topInset={insets.top}
-                    backdropComponent={({ style }) => (
-                        <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
-                    )}
-                    backgroundStyle={chrome.backgroundStyle}
-                    handleIndicatorStyle={chrome.handleIndicatorStyle}
-                >
-                    <BottomSheetView className="flex-1 px-6 pb-6">
+                <Modal visible={detailOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={handleCloseModal}>
+                  <BottomSheetContainer onClose={handleCloseModal} insets={insets} maxHeight="88%">
+                    <View className="flex-1 px-6 pb-6">
                         <View className="flex-row justify-between items-center mb-6">
                             <View>
                                 <Typography variant="h2" weight="bold">Detail Pembelian</Typography>
@@ -534,8 +524,9 @@ export default function PembelianSparepartReportScreen() {
                         </View>
 
                         {renderDetailBody('sheet')}
-                    </BottomSheetView>
-                </BottomSheetModal>
+                    </View>
+                  </BottomSheetContainer>
+                </Modal>
             )}
 
             <ReportExportSheet
