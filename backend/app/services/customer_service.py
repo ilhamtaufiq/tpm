@@ -13,6 +13,7 @@ from app.models.keuangan import PiutangUsaha
 from app.schemas.master import CustomerCreate, CustomerUpdate
 from app.realtime import publish_realtime_event
 from app.utils.constants import PiutangStatus
+from app.utils.nama_piutang import ganti_nama_customer_di_piutang
 
 
 class CustomerService:
@@ -236,9 +237,10 @@ class CustomerService:
             self.db.query(TransaksiPenjualanBengkel).filter(
                 TransaksiPenjualanBengkel.customer_id == customer.id
             ).update({TransaksiPenjualanBengkel.nama_customer: customer.nama}, synchronize_session=False)
-            self.db.query(PiutangUsaha).filter(
-                PiutangUsaha.customer_id == customer.id
-            ).update({PiutangUsaha.nama_debitur: customer.nama}, synchronize_session=False)
+            for piutang in self.db.query(PiutangUsaha).filter(PiutangUsaha.customer_id == customer.id).all():
+                piutang.nama_debitur = ganti_nama_customer_di_piutang(
+                    piutang.nama_debitur, nama_lama, customer.nama, piutang.sumber
+                )
 
         if len(plat_lama) != len(plat_baru):
             return

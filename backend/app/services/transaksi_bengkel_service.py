@@ -23,6 +23,7 @@ from app.models.jasa_angkut import JasaAngkutPartService
 from app.schemas.bengkel import DetailPartCreate, DetailServiceCreate, TransaksiBengkelCreate, PaymentItem
 from app.realtime import publish_realtime_event
 from app.utils.helpers import get_jakarta_date
+from app.utils.nama_piutang import TAG_JB_MOBIL, TAG_JASA_ANGKUT, beri_tag_asal, nama_piutang_transaksi
 from app.utils.sparepart_stock import ALWAYS_READY_STOCK, is_always_ready_stock
 from app.utils.constants import (
     PaymentStatus,
@@ -666,6 +667,7 @@ class TransaksiBengkelService:
             else:
                 piutang_sumber = PiutangSource.BENGKEL
                 piutang_catatan = f"Piutang dari transaksi bengkel {nomor_transaksi}"
+            debtor_name = nama_piutang_transaksi(debtor_name, piutang_sumber)
 
             out_amount = grand_total
             piutang = PiutangUsaha(
@@ -711,7 +713,7 @@ class TransaksiBengkelService:
                     new_hutang = HutangUsaha(
                         nomor_hutang=self._generate_nomor_hutang(),
                         tanggal=transaksi_tanggal,
-                        nama_kreditur="BENGKEL TPM",
+                        nama_kreditur=beri_tag_asal("BENGKEL TPM", TAG_JB_MOBIL),
                         nominal_hutang=grand_total,
                         sisa_hutang=grand_total,
                         total_dibayar=Decimal("0"),
@@ -734,7 +736,7 @@ class TransaksiBengkelService:
                         new_hutang = HutangUsaha(
                             nomor_hutang=self._generate_nomor_hutang(),
                             tanggal=transaksi_tanggal,
-                            nama_kreditur="BENGKEL TPM",
+                            nama_kreditur=beri_tag_asal("BENGKEL TPM", TAG_JASA_ANGKUT),
                             nominal_hutang=grand_total,
                             sisa_hutang=grand_total,
                             total_dibayar=Decimal("0"),
@@ -1121,7 +1123,7 @@ class TransaksiBengkelService:
             and status_bayar in (PaymentStatus.CICILAN, PaymentStatus.BELUM_LUNAS)
             and is_not_internal
         ):
-            debtor_name = transaksi.nama_customer or "Guest"
+            debtor_name = nama_piutang_transaksi(transaksi.nama_customer or "Guest", PiutangSource.BENGKEL)
             new_piutang = PiutangUsaha(
                 nomor_piutang=self._generate_nomor_piutang(),
                 tanggal=effective_tanggal,
