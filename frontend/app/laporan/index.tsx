@@ -64,7 +64,7 @@ const REPORT_GROUPS: ReportGroup[] = [
     },
     {
         id: 'operasional',
-        name: 'Operasional & Jasa',
+        name: 'Bengkel & Jasa Angkut',
         accent: '#2563EB',
         reports: [
             { title: 'Penjualan Bengkel', icon: Wrench, path: '/laporan/penjualan-bengkel', size: 'large', color: '#023C69', desc: 'Rekap transaksi & penjualan unit bengkel' },

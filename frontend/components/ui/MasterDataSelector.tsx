@@ -298,12 +298,12 @@ export const MasterDataSelector = ({
                                 </Pressable>
                             )}
 
-                            {type === 'customer' && (
+                            {(type === 'customer' || (type === 'supplier' && !!onAddNew)) && (
                                 <Pressable onPress={() => setIsAddModalOpen(true)} className="flex-1">
                                     <Card className="p-3 bg-blue-50 border border-dashed border-blue-300 flex-row items-center">
                                         <UserPlus size={18} color="#2563EB" />
                                         <View className="ml-2">
-                                            <Typography weight="semibold" className="text-xs text-primary">Daftarkan Baru</Typography>
+                                            <Typography weight="semibold" className="text-xs text-primary">{type === 'supplier' ? 'Daftarkan Supplier Baru' : 'Daftarkan Baru'}</Typography>
                                         </View>
                                     </Card>
                                 </Pressable>

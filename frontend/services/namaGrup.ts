@@ -7,6 +7,10 @@ export interface GrupNama {
     total_nominal: number;
     total_sisa: number;
     belum_lunas: number;
+    // Jumlah struk per status: dipakai filter status di tampilan Per Nama.
+    belum_bayar?: number;
+    sebagian?: number;
+    lunas?: number;
 }
 
 export interface StrukNama {
@@ -18,6 +22,10 @@ export interface StrukNama {
     sisa: number;
     status: 'BELUM_LUNAS' | 'SEBAGIAN' | 'LUNAS' | 'BATAL';
     pembayaran?: { tanggal: string; nominal: number; metode: string | null }[];
+    sumber?: string;
+    unit?: string | null;
+    nomor_referensi?: string | null;
+    catatan?: string | null;
 }
 
 export interface DetailNama {
@@ -41,14 +49,14 @@ export interface HasilBayarNama {
 }
 
 export const namaGrupService = {
-    piutangGrup: async (): Promise<GrupNama[]> => (await api.get('/per-nama/piutang')).data,
-    piutangDetail: async (nama: string): Promise<DetailNama> =>
-        (await api.get('/per-nama/piutang/detail', { params: { nama } })).data,
+    piutangGrup: async (unit?: string): Promise<GrupNama[]> => (await api.get('/per-nama/piutang', { params: { unit } })).data,
+    piutangDetail: async (nama: string, unit?: string): Promise<DetailNama> =>
+        (await api.get('/per-nama/piutang/detail', { params: { nama, unit } })).data,
     piutangBayar: async (nama: string, payload: BayarNamaPayload): Promise<HasilBayarNama> =>
         (await api.post('/per-nama/piutang/bayar', { nama, ...payload })).data,
-    hutangGrup: async (): Promise<GrupNama[]> => (await api.get('/per-nama/hutang')).data,
-    hutangDetail: async (nama: string): Promise<DetailNama> =>
-        (await api.get('/per-nama/hutang/detail', { params: { nama } })).data,
+    hutangGrup: async (unit?: string): Promise<GrupNama[]> => (await api.get('/per-nama/hutang', { params: { unit } })).data,
+    hutangDetail: async (nama: string, unit?: string): Promise<DetailNama> =>
+        (await api.get('/per-nama/hutang/detail', { params: { nama, unit } })).data,
     hutangBayar: async (nama: string, payload: BayarNamaPayload): Promise<HasilBayarNama> =>
         (await api.post('/per-nama/hutang/bayar', { nama, ...payload })).data,
 };

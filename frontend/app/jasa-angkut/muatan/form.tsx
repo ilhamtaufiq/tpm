@@ -142,6 +142,7 @@ export default function MuatanFormScreen() {
                     )}
 
                     <DatePicker
+                        autoToday
                         label="Tanggal"
                         placeholder="Pilih Tanggal (YYYY-MM-DD)"
                         value={formData.tanggal}

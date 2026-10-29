@@ -657,6 +657,7 @@ export default function AssetScreen() {
                     <View className="flex-row space-x-3">
                         <View className="flex-1">
                             <DatePicker
+                                autoToday
                                 label="Tanggal Beli"
                                 placeholder="Pilih Tanggal (YYYY-MM-DD)"
                                 value={formData.tanggal_beli}

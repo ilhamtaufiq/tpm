@@ -349,9 +349,16 @@ class HutangService:
         tanggal_dari: Optional[date] = None,
         tanggal_sampai: Optional[date] = None,
         unit: Optional[KasBankSource] = None,
+        exclude_internal: bool = False,
     ) -> Dict[str, Any]:
-        """Get payables summary."""
+        """Get payables summary.
+
+        exclude_internal=True dipakai layar Hutang: hutang internal dan yang dibatalkan tidak ikut,
+        supaya angka tab sama dengan daftar dan total Per Nama.
+        """
         query = self.db.query(HutangUsaha)
+        if exclude_internal:
+            query = query.filter(HutangUsaha.is_internal == False, HutangUsaha.status != HutangStatus.BATAL)  # noqa: E712
 
         if unit:
             query = query.filter(HutangUsaha.unit == unit)

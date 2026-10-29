@@ -15,7 +15,8 @@ import X from 'lucide-react-native/dist/esm/icons/x.js';
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { router } from 'expo-router';
-import { useUIStore, colorPalettes, findPaletteId, ColorPalette, ThemeColors } from '../../store/useUIStore';
+import { useUIStore, colorPalettes, findPaletteId, ColorPalette, ThemeColors, defaultColors } from '../../store/useUIStore';
+import { settingsService } from '../../services/settings';
 import * as ImagePicker from 'expo-image-picker';
 import { authService } from '../../services/auth';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -72,7 +73,19 @@ export default function ThemeSettingsScreen() {
             return;
         }
         setThemeColor(editingColorKey, cleanHex.toUpperCase());
+        simpanTemaKeServer(useUIStore.getState().themeColors);
         setEditingColorKey(null);
+    };
+
+    // Tema disimpan di server supaya berlaku untuk semua pengguna. Hanya admin yang bisa mengubah.
+    const simpanTemaKeServer = async (colors: ThemeColors) => {
+        if (user?.role !== 'ADMIN') return;
+        try {
+            await settingsService.updateSettings({ theme: colors });
+        } catch (error) {
+            console.warn('Gagal menyimpan tema ke server:', error);
+            appAlert('Tema Lokal Saja', 'Tema tersimpan di perangkat ini, tetapi gagal disimpan ke server.');
+        }
     };
 
     const pickBackground = async () => {
@@ -137,6 +150,7 @@ export default function ThemeSettingsScreen() {
             "Semua warna akan dikembalikan ke palet TPM Default. Lanjutkan?",
             () => {
                 resetTheme();
+                simpanTemaKeServer(defaultColors);
                 appAlert("Berhasil", "Tema dikembalikan ke TPM Default.");
             },
             { confirmText: 'Reset', variant: 'warning' }
@@ -194,7 +208,10 @@ export default function ThemeSettingsScreen() {
                             return (
                                 <Pressable
                                     key={palette.id}
-                                    onPress={() => setPalette(palette)}
+                                    onPress={() => {
+                                        setPalette(palette);
+                                        simpanTemaKeServer(palette.colors);
+                                    }}
                                     className="w-[48%] mb-4 rounded-[28px] overflow-hidden border shadow-sm"
                                     style={{
                                         borderColor: selected ? palette.colors.primary : '#E5E7EB',

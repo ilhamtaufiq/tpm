@@ -627,12 +627,19 @@ class PiutangService:
         tanggal_dari: Optional[date] = None,
         tanggal_sampai: Optional[date] = None,
         unit: Optional[KasBankSource] = None,
+        exclude_internal: bool = False,
     ) -> Dict[str, Any]:
-        """Get receivables summary (Snapshot at tanggal_sampai)."""
+        """Get receivables summary (Snapshot at tanggal_sampai).
+
+        exclude_internal=True dipakai layar Piutang: piutang internal antar unit tidak ikut,
+        supaya angka tab sama dengan daftar dan total Per Nama.
+        """
         # Base query for Piutang created up to tanggal_sampai
         # (tanggal_dari is used for reporting 'New Piutang in period', 
         # but for Balance Sheet/Neraca, we usually just need till tanggal_sampai)
         query = self.db.query(PiutangUsaha).filter(PiutangUsaha.status != PiutangStatus.BATAL)
+        if exclude_internal:
+            query = query.filter(PiutangUsaha.is_internal == False)  # noqa: E712
         if unit:
             query = query.filter(PiutangUsaha.unit == unit)
         
@@ -652,12 +659,17 @@ class PiutangService:
         ).filter(PiutangUsaha.tanggal <= (tanggal_sampai or date.max))
         if unit:
             q_payments = q_payments.filter(PiutangUsaha.unit == unit)
+        if exclude_internal:
+            q_payments = q_payments.filter(PiutangUsaha.is_internal == False)  # noqa: E712
         
         if tanggal_sampai:
              q_payments = q_payments.filter(PembayaranPiutang.tanggal <= tanggal_sampai)
         
         total_terbayar_snapshot = q_payments.scalar() or 0
         total_sisa_snapshot = total_piutang_gross - total_terbayar_snapshot
+        if exclude_internal:
+            # Sama dengan Per Nama: jumlah sisa_piutang per struk (bukan gross - pembayaran).
+            total_sisa_snapshot = query.with_entities(func.sum(PiutangUsaha.sisa_piutang)).scalar() or 0
 
         # Calculate counts (Snapshot status is harder, but we can approximate)
         lunas_count = query.filter(PiutangUsaha.status == PiutangStatus.LUNAS).count()

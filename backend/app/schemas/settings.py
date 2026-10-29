@@ -1,5 +1,6 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+import re
 
 class SMTPSetting(BaseModel):
     server: str = Field(..., example="smtp.gmail.com")
@@ -20,10 +21,29 @@ class PrintSetting(BaseModel):
     paper_size: str = "80mm"
     print_method: str = "browser"
 
+class ThemeSetting(BaseModel):
+    """Warna tema perusahaan (berlaku untuk semua pengguna)."""
+
+    primary: str
+    secondary: str
+    background: str
+    surface: str
+    text: str
+    textGray: str
+
+    @field_validator("primary", "secondary", "background", "surface", "text", "textGray")
+    @classmethod
+    def hex_valid(cls, v: str) -> str:
+        if not re.fullmatch(r"#[0-9A-Fa-f]{6}", v):
+            raise ValueError("Warna harus format hex #RRGGBB")
+        return v.upper()
+
 class SettingsUpdate(BaseModel):
     smtp: Optional[SMTPSetting] = None
     print: Optional[PrintSetting] = None
+    theme: Optional[ThemeSetting] = None
 
 class SystemSettingResponse(BaseModel):
     smtp: Optional[dict] = None
     print: Optional[dict] = None
+    theme: Optional[dict] = None

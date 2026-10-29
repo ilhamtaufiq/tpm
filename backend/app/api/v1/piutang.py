@@ -87,11 +87,12 @@ def get_summary(
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
     unit: Optional[KasBankSource] = None,
+    exclude_internal: bool = False,
 ):
     """Get receivables summary."""
     service = PiutangService(db)
     role_unit_scope = get_unit_scope_for_role(current_user.role)
-    return service.get_summary(tanggal_dari, tanggal_sampai, unit=role_unit_scope or unit)
+    return service.get_summary(tanggal_dari, tanggal_sampai, unit=role_unit_scope or unit, exclude_internal=exclude_internal)
 
 
 @router.get("/overdue")

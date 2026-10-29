@@ -35,6 +35,7 @@ import { useMonitorStore } from '../store/useMonitorStore';
 import { useSecurityStatus } from '../hooks/useSecurityAPI';
 import { vars } from 'nativewind';
 import { useUIStore, findPaletteBorder } from '../store/useUIStore';
+import { settingsService } from '../services/settings';
 import { useOrientationLock } from '../hooks/useOrientationLock';
 import { useDimensionsListener } from '../hooks/useResponsive';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -203,6 +204,18 @@ function RootLayoutContent() {
     useSinkronJamServer();
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
     const hasHydrated = useAuthStore(state => state.hasHydrated);
+
+    // Tema perusahaan dari server dimuat setelah login, sehingga berlaku untuk semua pengguna.
+    useEffect(() => {
+        if (!isAuthenticated || !hasHydrated) return;
+        settingsService.getSettings()
+            .then((s) => {
+                if (!s.theme) return;
+                const colors = { ...s.theme };
+                useUIStore.getState().setPalette({ id: 'server', name: 'Tema Perusahaan', colors, border: findPaletteBorder(colors) });
+            })
+            .catch(() => {});
+    }, [isAuthenticated, hasHydrated]);
     // Selector per field: destructure store utuh = root (seluruh Stack) render ulang
     // tiap ada perubahan apa pun di store.
     const webMobilePreview = useUIStore(s => s.webMobilePreview);

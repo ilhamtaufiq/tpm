@@ -324,6 +324,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 </View>
 
                 <DatePicker
+                    autoToday
                     label="Tanggal Transaksi"
                     placeholder="Pilih Tanggal (YYYY-MM-DD)"
                     value={tanggal}

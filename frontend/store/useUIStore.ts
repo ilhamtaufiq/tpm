@@ -34,7 +34,18 @@ interface UIState {
     setWebMobilePreview: (enabled: boolean) => void;
 }
 
+// Ciri khas TPM: tiga warna — biru (primary), abu (secondary & teks sekunder), putih (permukaan).
 export const defaultColors: ThemeColors = {
+    primary: "#023C69",
+    secondary: "#64748B",
+    background: "#F4F6F8",
+    surface: "#FFFFFF",
+    text: "#111827",
+    textGray: "#6B7280",
+};
+
+// Tema klasik sebelumnya (aksen merah), tetap tersedia sebagai palet.
+const klasikColors: ThemeColors = {
     primary: "#023C69",
     secondary: "#EE2737",
     background: "#F9F9F9",
@@ -56,7 +67,8 @@ export interface ColorPalette {
 }
 
 export const colorPalettes: ColorPalette[] = [
-    { id: 'tpm', name: 'TPM Default', colors: defaultColors, border: '#E5E7EB' },
+    { id: 'tpm', name: 'TPM Biru-Abu-Putih', colors: defaultColors, border: '#E5E7EB' },
+    { id: 'tpm-klasik', name: 'TPM Klasik', colors: klasikColors, border: '#E5E7EB' },
     {
         id: 'ocean', name: 'Ocean',
         colors: { primary: '#0369A1', secondary: '#06B6D4', background: '#F8FAFC', surface: '#FFFFFF', text: '#0F172A', textGray: '#64748B' }, border: '#E2E8F0' },

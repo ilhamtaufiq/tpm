@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, Modal, Platform, TouchableOpacity } from 'react-native';
 import LucideCalendar from 'lucide-react-native/dist/esm/icons/calendar.js';
+import Pencil from 'lucide-react-native/dist/esm/icons/pencil.js';
 import X from 'lucide-react-native/dist/esm/icons/x.js';
 import RotateCcw from 'lucide-react-native/dist/esm/icons/rotate-ccw.js';
 import { Calendar } from 'react-native-calendars';
@@ -16,6 +17,8 @@ interface DatePickerProps {
     placeholder?: string;
     required?: boolean;
     containerClassName?: string;
+    // Isi tanggal hari ini otomatis saat kosong. Pengguna mengubahnya lewat ikon ubah tanggal.
+    autoToday?: boolean;
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -26,9 +29,16 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     placeholder = 'Pilih tanggal (YYYY-MM-DD)',
     required = false,
     containerClassName,
+    autoToday = false,
 }) => {
     const placeholderColor = usePlaceholderColor();
     const [modalVisible, setModalVisible] = useState(false);
+
+    useEffect(() => {
+        if (autoToday && !value) onChange(getTodayString());
+        // Hanya saat mount / nilai kosong: pilihan pengguna tidak boleh ditimpa.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [autoToday, value]);
 
     const handleToday = () => {
         const today = getTodayString();
@@ -112,17 +122,24 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                         {value || placeholder}
                     </Text>
                 </View>
-                {value ? (
-                    <TouchableOpacity
-                        onPress={(e) => {
-                            e.stopPropagation();
-                            onChange('');
-                        }}
-                        activeOpacity={0.7}
-                    >
-                        <X size={16} color="#94A3B8" />
-                    </TouchableOpacity>
-                ) : null}
+                <View className="flex-row items-center">
+                    {value ? (
+                        <TouchableOpacity
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                onChange('');
+                            }}
+                            activeOpacity={0.7}
+                            className="mr-3"
+                        >
+                            <X size={16} color="#94A3B8" />
+                        </TouchableOpacity>
+                    ) : null}
+                    <View className="flex-row items-center bg-surface rounded-lg px-2 py-1 border border-border">
+                        <Pencil size={13} color="#2563EB" />
+                        <Text className="text-xs text-primary font-semibold ml-1">Ubah</Text>
+                    </View>
+                </View>
             </Pressable>
 
             {error && <Text className="text-secondary text-xs mt-1">{error}</Text>}

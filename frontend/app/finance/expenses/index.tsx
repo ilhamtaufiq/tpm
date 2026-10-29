@@ -421,6 +421,7 @@ export default function ExpensesScreen() {
                                 </View>
 
                                 <DatePicker
+                                    autoToday
                                     label="Tanggal Transaksi"
                                     placeholder="Pilih Tanggal (YYYY-MM-DD)"
                                     value={tanggal}
