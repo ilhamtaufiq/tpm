@@ -73,6 +73,12 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - **Filter status di Per Nama:** Semua, Belum Bayar, Belum Lunas, Lunas. Nama lolos jika punya struk dengan status itu. Total tidak ikut filter.
 - **Belum dicek di web atau perangkat.** Tes backend lulus (182).
 
+## Permintaan Lanjutan: Penamaan Piutang Per Unit dan Slip Gaji
+
+- **Nama piutang/hutang dari transaksi unit diberi akhiran asal:** piutang bengkel jadi `Akas alam - Bengkel`, piutang internal jasa angkut jadi `Mang Usa - Jasa Angkut`, kreditur internal jadi `BENGKEL TPM - Jual Beli Mobil` / `BENGKEL TPM - Jasa Angkut`. Piutang pribadi yang diinput manual tetap memakai nama dari keterangan. Ganti nama customer ikut menjaga akhiran. Aturan: invariant 36 di `TPM - Aturan Bisnis & Invariant.md`. Tes: `tests/test_nama_piutang_transaksi.py`. Piutang/hutang lama belum diubah otomatis (perlu keputusan).
+- **Slip gaji lintas minggu:** backend sudah mendukung periode Kamis s/d Rabu (preview dan bulk-range). Tes: `tests/test_slip_lintas_minggu.py`. Gejala "icon Proses tidak muncul" belum bisa direproduksi di data lokal. Perlu tanggal persis dan layar yang dilihat.
+- **Tunai ke Pusat di pembayaran unit:** modal pembayaran piutang/hutang (`PaymentModal`) sudah menawarkan Tunai ke Pusat. Belum diubah: pembayaran transaksi bengkel (`BengkelPaymentModal`), form pengeluaran, muatan, dan penjualan mobil. Menunggu konfirmasi layar yang dimaksud.
+
 ## Perbaikan Lanjutan (di luar 22 poin)
 
 - **2. Sheet edit pengguna:** `frontend/app/settings/users.tsx`. Penyebab: sheet gorhom crash saat dibuka (`_WORKLET is not defined` di animasi reanimated, di web). Diganti Modal biasa (`BottomSheetContainer`), dan tombol Simpan dipindah ke header form. Diuji di web: edit, simpan, dan sheet tertutup berhasil. Belum diuji di perangkat.
