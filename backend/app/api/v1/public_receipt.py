@@ -65,9 +65,9 @@ def format_payment_method(method: str) -> str:
     mapping = {
         "SPLIT": "GABUNGAN",
         "TUNAI": "TUNAI",
-        "TRANSFER": "TRANSFER / QRIS",
+        "TRANSFER": "TRANSFER",
         "DEBIT": "KARTU DEBIT",
-        "KREDIT": "KARTU KREDIT",
+        "KREDIT": "BON / PIUTANG",
         "PIUTANG": "BON / PIUTANG"
     }
 
