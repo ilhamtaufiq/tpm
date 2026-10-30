@@ -42,6 +42,7 @@ class PiutangUsaha(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     nomor_piutang: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+    public_receipt_token: Mapped[Optional[str]] = mapped_column(String(64), unique=True, index=True, nullable=True)
     tanggal: Mapped[date] = mapped_column(Date, index=True)
 
     # Source reference
@@ -158,6 +159,7 @@ class HutangUsaha(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     nomor_hutang: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+    public_receipt_token: Mapped[Optional[str]] = mapped_column(String(64), unique=True, index=True, nullable=True)
     tanggal: Mapped[date] = mapped_column(Date, index=True)
 
     # Source reference

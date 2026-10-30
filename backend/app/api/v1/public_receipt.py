@@ -21,8 +21,27 @@ from app.models.jasa_angkut import MuatanJasaAngkut
 from app.models.mobil import Mobil, TransaksiPenjualanMobil
 from app.models.system_setting import SystemSetting
 from app.services.short_link_service import ShortLinkService
+from app.services.struk_piutang_service import get_hutang_receipt, get_piutang_receipt
 
 router = APIRouter(prefix="/public/receipt", tags=["Public Receipt"])
+
+
+def load_receipt_data(db: Session, receipt_type: str, transaction_id: str) -> Dict[str, Any]:
+    """Data struk untuk satu tipe. Dipakai view, gambar OG, PDF, dan endpoint data."""
+    if receipt_type == "bengkel":
+        return get_bengkel_receipt(db, transaction_id)
+    if receipt_type == "jasa_angkut":
+        return get_jasa_angkut_receipt(db, transaction_id)
+    if receipt_type == "mobil":
+        return get_mobil_receipt(db, transaction_id)
+    if receipt_type == "piutang":
+        return apply_branding(db, get_piutang_receipt(db, transaction_id))
+    if receipt_type == "hutang":
+        return apply_branding(db, get_hutang_receipt(db, transaction_id))
+    raise HTTPException(status_code=400, detail="Invalid receipt type")
+
+
+RECEIPT_TYPES = ["bengkel", "jasa_angkut", "mobil", "piutang", "hutang"]
 
 
 @router.get("/{receipt_type}/{transaction_id}")
@@ -38,16 +57,11 @@ async def get_receipt(
     Example: GET /public/receipt/bengkel/{token}
     """
     
-    if receipt_type not in ["bengkel", "jasa_angkut", "mobil"]:
+    if receipt_type not in RECEIPT_TYPES:
         raise HTTPException(status_code=400, detail="Invalid receipt type")
     
     try:
-        if receipt_type == "bengkel":
-            return get_bengkel_receipt(db, transaction_id)
-        elif receipt_type == "jasa_angkut":
-            return get_jasa_angkut_receipt(db, transaction_id)
-        else:
-            return get_mobil_receipt(db, transaction_id)
+        return load_receipt_data(db, receipt_type, transaction_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -365,7 +379,7 @@ def generate_receipt_image(data: Dict[str, Any], public_url: Optional[str] = Non
     f_company, f_small, f_body, f_body_b, f_total = font(26, True), font(18), font(20), font(20, True), font(26, True)
     f_section = font(16, True)
 
-    tipe_label = {"bengkel": "Bengkel", "jasa_angkut": "Jasa Angkut", "mobil": "Mobil"}.get(receipt_type, "Struk")
+    tipe_label = {"bengkel": "Bengkel", "jasa_angkut": "Jasa Angkut", "mobil": "Mobil", "piutang": "Piutang", "hutang": "Hutang"}.get(receipt_type, "Struk")
     paid = float(data.get("paid", 0) or 0)
     total = float(data.get("total", 0) or 0)
     remaining = float(data.get("remaining", total - paid) or 0)
@@ -535,14 +549,7 @@ async def get_receipt_image(
     Used by WhatsApp / social share and client share-with-image.
     """
     try:
-        if receipt_type == "bengkel":
-            data = get_bengkel_receipt(db, transaction_id)
-        elif receipt_type == "jasa_angkut":
-            data = get_jasa_angkut_receipt(db, transaction_id)
-        elif receipt_type == "mobil":
-            data = get_mobil_receipt(db, transaction_id)
-        else:
-            raise HTTPException(status_code=400, detail="Invalid receipt type")
+        data = load_receipt_data(db, receipt_type, transaction_id)
 
         # Prefer app public page URL for share caption on image
         origin = str(request.base_url).rstrip("/")
@@ -574,14 +581,7 @@ async def view_receipt(
     Public HTML view for the receipt
     """
     try:
-        if receipt_type == "bengkel":
-            data = get_bengkel_receipt(db, transaction_id)
-        elif receipt_type == "jasa_angkut":
-            data = get_jasa_angkut_receipt(db, transaction_id)
-        elif receipt_type == "mobil":
-            data = get_mobil_receipt(db, transaction_id)
-        else:
-            raise HTTPException(status_code=400, detail="Invalid receipt type")
+        data = load_receipt_data(db, receipt_type, transaction_id)
             
         return generate_html_receipt(data, receipt_type, transaction_id)
     except Exception as e:
@@ -738,17 +738,24 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
     else:
         payment_status_html = '<div class="summary-row" style="font-weight: bold; text-align: center; display: block;">*** LUNAS ***</div>'
 
-    tipe_label = {"bengkel": "Bengkel", "jasa_angkut": "Jasa Angkut", "mobil": "Mobil"}.get(receipt_type, "Struk")
+    tipe_label = {"bengkel": "Bengkel", "jasa_angkut": "Jasa Angkut", "mobil": "Mobil", "piutang": "Piutang", "hutang": "Hutang"}.get(receipt_type, "Struk")
     paid = float(data.get("paid", 0) or 0)
     total = float(data.get("total", 0) or 0)
     remaining = float(data.get("remaining", total - paid) or 0)
     lunas = remaining <= 0
-    status_text = "LUNAS" if lunas else "BELUM LUNAS"
+    status_text = data.get("paymentStatus") or ("LUNAS" if lunas else "BELUM LUNAS")
     metode = str(data.get("paymentMethod") or "").upper()
     baris_metode = (
         f'<div class="sum"><span>METODE</span><span>{metode}</span></div>'
         if paid > 0 and metode and metode != "NONE" else ""
     )
+    riwayat_html = ""
+    if data.get("payments"):
+        baris_riwayat = "".join(
+            f'<div class="sum"><span>{p["tanggal"] or "-"} {p["metode"]}</span><span>{p["nominal"]:,.0f}</span></div>'
+            for p in data["payments"]
+        )
+        riwayat_html = f'<div class="dash"></div><div class="section-title">RIWAYAT PEMBAYARAN</div>{baris_riwayat}'
     baris_plat = (
         f'<div class="info"><span class="lbl">No. Polisi</span><span class="val">{data["vehiclePlate"]}</span></div>'
         if data.get("vehiclePlate") else ""
@@ -807,6 +814,7 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
                 <div class="sum"><span>SUDAH DIBAYAR</span><span>{paid:,.0f}</span></div>
                 <div class="sum bold"><span>SISA TAGIHAN</span><span>{remaining:,.0f}</span></div>
                 {baris_metode}
+                {riwayat_html}
                 <div class="dash"></div>
                 <div class="footer">
                     <div>Terima kasih atas kepercayaan Anda</div>
@@ -882,14 +890,7 @@ async def get_receipt_pdf(
     Filename: nomor_transaksi-nama_pelanggan-nomor_polisi-tanggal
     """
     try:
-        if receipt_type == "bengkel":
-            data = get_bengkel_receipt(db, transaction_id)
-        elif receipt_type == "jasa_angkut":
-            data = get_jasa_angkut_receipt(db, transaction_id)
-        elif receipt_type == "mobil":
-            data = get_mobil_receipt(db, transaction_id)
-        else:
-            raise HTTPException(status_code=400, detail="Invalid receipt type")
+        data = load_receipt_data(db, receipt_type, transaction_id)
             
         # Generate PDF
         from reportlab.pdfgen import canvas

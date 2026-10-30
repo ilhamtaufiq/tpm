@@ -37,6 +37,9 @@ export interface PublicReceiptData {
     remaining?: number;
     paymentMethod?: string | null;
     paymentMethods?: { metode: string; nominal: number }[];
+    paymentStatus?: string | null;
+    payments?: { tanggal: string | null; nominal: number; metode: string }[];
+    counterpartyLabel?: string;
     notes?: string;
     companyName?: string;
     companyAddress?: string;
@@ -53,7 +56,7 @@ export interface PublicReceiptData {
 
 interface PublicReceiptCardProps {
     receipt: PublicReceiptData;
-    receiptType: 'bengkel' | 'jasa_angkut' | 'mobil';
+    receiptType: 'bengkel' | 'jasa_angkut' | 'mobil' | 'piutang' | 'hutang';
     shareUrl?: string;
     /** Use static QR image so html2canvas capture matches on-screen design */
     captureMode?: boolean;
@@ -152,7 +155,9 @@ export function PublicReceiptCard({ receipt, receiptType, shareUrl, captureMode 
     const showBengkelSplit = receiptType === 'bengkel' && (services.length > 0 || parts.length > 0);
     const fallbackItems = showBengkelSplit ? [] : (receipt.items || []);
 
-    const typeLabel = receiptType === 'bengkel' ? 'Bengkel' : receiptType === 'jasa_angkut' ? 'Jasa Angkut' : 'Mobil';
+    const typeLabel = (
+        { bengkel: 'Bengkel', jasa_angkut: 'Jasa Angkut', mobil: 'Mobil', piutang: 'Piutang', hutang: 'Hutang' } as const
+    )[receiptType];
     const logo = resolveLogoSource(receipt.customLogo);
 
     const formattedDate = useMemo(() => {
@@ -223,7 +228,7 @@ export function PublicReceiptCard({ receipt, receiptType, shareUrl, captureMode 
 
                 <Row label="No. Nota" value={receipt.transactionNumber} bold />
                 <Row label="Tanggal" value={formattedDate} />
-                <Row label="Pelanggan" value={receipt.customerName || '-'} />
+                <Row label={receipt.counterpartyLabel || 'Pelanggan'} value={receipt.customerName || '-'} />
 
                 {receipt.vehiclePlate ? (
                     <View className="flex-row items-center mt-1 mb-1">
@@ -322,6 +327,14 @@ export function PublicReceiptCard({ receipt, receiptType, shareUrl, captureMode 
                     </View>
                 )}
 
+                {receipt.paymentStatus && receipt.paymentStatus !== 'LUNAS' ? (
+                    <View className="items-center mt-3 py-2 rounded-xl bg-amber-50 border border-amber-100">
+                        <Typography weight="bold" className="text-amber-700 text-sm tracking-widest" style={mono}>
+                            {receipt.paymentStatus}
+                        </Typography>
+                    </View>
+                ) : null}
+
                 {receipt.paymentMethod ? (
                     <>
                         <Row label="Metode Bayar" value={String(receipt.paymentMethod).toUpperCase()} />
@@ -330,6 +343,22 @@ export function PublicReceiptCard({ receipt, receiptType, shareUrl, captureMode 
                                 <Row key={i} label={`  · ${String(m.metode).toUpperCase()}`} value={formatCurrency(m.nominal)} />
                             ))
                             : null}
+                    </>
+                ) : null}
+
+                {receipt.payments && receipt.payments.length > 0 ? (
+                    <>
+                        <Divider />
+                        <Typography weight="bold" className="text-xs tracking-widest mb-1" style={mono}>
+                            RIWAYAT PEMBAYARAN
+                        </Typography>
+                        {receipt.payments.map((p, i) => (
+                            <Row
+                                key={i}
+                                label={`${p.tanggal ? p.tanggal.split('-').reverse().join('/') : '-'} · ${String(p.metode).toUpperCase()}`}
+                                value={formatCurrency(p.nominal)}
+                            />
+                        ))}
                     </>
                 ) : null}
 

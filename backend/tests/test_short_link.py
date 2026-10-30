@@ -35,7 +35,7 @@ def test_kode_tidak_dikenal_mengembalikan_none(db):
 
 def test_tipe_dan_target_tidak_valid_ditolak(db):
     with pytest.raises(ValueError):
-        ShortLinkService(db).buat_atau_ambil("piutang", f"{PREFIX}x")
+        ShortLinkService(db).buat_atau_ambil("tidak_dikenal", f"{PREFIX}x")
     with pytest.raises(ValueError):
         ShortLinkService(db).buat_atau_ambil("bengkel", f"{PREFIX}tidak/valid")
 
