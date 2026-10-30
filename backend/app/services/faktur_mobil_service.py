@@ -114,16 +114,16 @@ def build_faktur_pdf(transaksi, mobil) -> bytes:
     cx_pembeli = kiri + 2.8 * cm
     cx_penjual = kanan - 2.8 * cm
     c.setFont("Helvetica", 9)
-    c.drawCentredString(cx_pembeli, T(10.6), "Pembeli")
-    c.drawCentredString(cx_penjual, T(10.6), "Penjual")
+    c.drawCentredString(cx_pembeli, T(9.6), "Pembeli")
+    c.drawCentredString(cx_penjual, T(9.6), "Penjual")
 
     # Tempat materai Rp10.000 di antara label Penjual dan garis tanda tangan, tanpa bingkai
     c.setFont("Helvetica", 6)
-    c.drawCentredString(cx_penjual, T(11.6), "Materai Rp10.000")
+    c.drawCentredString(cx_penjual, T(11.3), "Materai Rp10.000")
 
     c.setFont("Helvetica", 9)
-    c.drawCentredString(cx_pembeli, T(12.4), "(                          )")
-    c.drawCentredString(cx_penjual, T(12.4), "(                          )")
+    c.drawCentredString(cx_pembeli, T(13.0), "(                          )")
+    c.drawCentredString(cx_penjual, T(13.0), "(                          )")
 
     # Catatan cetak di bawah
     c.setFont("Helvetica", 7)
