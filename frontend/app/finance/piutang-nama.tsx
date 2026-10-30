@@ -9,6 +9,8 @@ import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import Share2 from 'lucide-react-native/dist/esm/icons/share-2.js';
+import { bagikanStrukUtang } from '../../utils/strukPiutangHutang';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { namaGrupService, StrukNama } from '../../services/namaGrup';
 import { formatCurrency, formatNumber, parseNumber, getTodayString, tanggalLokal } from '../../utils/format';
@@ -82,6 +84,14 @@ export default function PiutangNamaScreen() {
             tampilkan('Gagal', getErrorMessage(e, 'Pembayaran gagal. Cek rincian: bagian yang sudah tercatat tidak dibatalkan otomatis.'), 'error');
         },
     });
+
+    const bagikanStruk = async (strukId: number, nomor: string) => {
+        try {
+            await bagikanStrukUtang('piutang', strukId, nomor);
+        } catch (e) {
+            tampilkan('Gagal', getErrorMessage(e, 'Struk tidak bisa dibagikan'), 'error');
+        }
+    };
 
     const kirimRincian = async () => {
         if (!detailQuery.data) return;
@@ -189,6 +199,14 @@ export default function PiutangNamaScreen() {
                             {p.catatan ? (
                                 <Typography className="text-textMain text-[11px]">Keterangan: {p.catatan}</Typography>
                             ) : null}
+                            <Button
+                                title="Bagikan struk"
+                                variant="outline"
+                                size="sm"
+                                icon={<Share2 size={14} color="#023C69" />}
+                                onPress={() => bagikanStruk(p.id, p.nomor)}
+                                className="mt-2 self-start"
+                            />
                             {(p.pembayaran ?? []).map((x, i) => (
                                 <Typography key={i} className="text-emerald-700 text-[11px]">
                                     Dibayar {formatCurrency(x.nominal)} pada {format(tanggalLokal(x.tanggal), 'dd MMM yyyy', { locale: localeID })}{x.metode ? ` (${x.metode})` : ''}

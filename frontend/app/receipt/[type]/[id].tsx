@@ -36,7 +36,7 @@ import {
     writeReceiptImageDataUriToCache,
 } from '../../../utils/sharePublicReceipt';
 
-type ReceiptType = 'bengkel' | 'jasa_angkut' | 'mobil';
+type ReceiptType = 'bengkel' | 'jasa_angkut' | 'mobil' | 'piutang' | 'hutang';
 
 function buildPrintData(type: ReceiptType, id: string, receipt: PublicReceiptData): PrintReceiptData {
     const receiptType = type === 'mobil' ? 'bengkel' : type;
@@ -369,7 +369,7 @@ export default function PublicReceiptPage() {
                             Aksi Struk
                         </Typography>
                         <View style={{ gap: 10 }}>
-                            {Platform.OS === 'web' ? (
+                            {Platform.OS === 'web' && type !== 'piutang' && type !== 'hutang' ? (
                                 <Button
                                     variant="outline"
                                     title="Cetak Struk"

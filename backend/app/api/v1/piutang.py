@@ -14,6 +14,7 @@ from app.schemas.keuangan import (
     PembayaranPiutangResponse,
 )
 from app.services.piutang_service import PiutangService
+from app.services.struk_piutang_service import buat_atau_ambil_token
 from app.utils.constants import PiutangStatus, PiutangSource, KasBankSource
 
 
@@ -138,6 +139,17 @@ def get_piutang(
     """Get receivable by ID."""
     service = PiutangService(db)
     return service.get_by_id(piutang_id)
+
+
+@router.post("/{piutang_id}/struk-token")
+def buat_struk_token_piutang(
+    piutang_id: int,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Token struk digital publik untuk piutang ini. Dibuat saat pertama kali dibagikan."""
+    piutang = PiutangService(db).get_by_id(piutang_id)
+    return {"token": buat_atau_ambil_token(db, piutang)}
 
 
 @router.get("/{piutang_id}/payments")

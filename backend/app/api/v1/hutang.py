@@ -14,6 +14,7 @@ from app.schemas.keuangan import (
     PembayaranHutangSplit,
 )
 from app.services.hutang_service import HutangService
+from app.services.struk_piutang_service import buat_atau_ambil_token
 from app.utils.constants import HutangStatus, HutangSource, KasBankSource
 
 
@@ -78,6 +79,17 @@ def get_hutang(
     """Get payable by ID."""
     service = HutangService(db)
     return service.get_by_id(hutang_id)
+
+
+@router.post("/{hutang_id}/struk-token")
+def buat_struk_token_hutang(
+    hutang_id: int,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Token struk digital publik untuk hutang ini. Dibuat saat pertama kali dibagikan."""
+    hutang = HutangService(db).get_by_id(hutang_id)
+    return {"token": buat_atau_ambil_token(db, hutang)}
 
 
 @router.post("/pembayaran", response_model=PembayaranHutangResponse)
