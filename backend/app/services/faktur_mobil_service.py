@@ -117,9 +117,9 @@ def build_faktur_pdf(transaksi, mobil) -> bytes:
     c.drawCentredString(cx_pembeli, T(10.6), "Pembeli")
     c.drawCentredString(cx_penjual, T(10.6), "Penjual")
 
-    # Tempat materai Rp10.000 (ditempel di atas tanda tangan penjual), tanpa bingkai
+    # Tempat materai Rp10.000 di antara label Penjual dan garis tanda tangan, tanpa bingkai
     c.setFont("Helvetica", 6)
-    c.drawCentredString(cx_penjual, T(9.4), "Materai Rp10.000")
+    c.drawCentredString(cx_penjual, T(11.6), "Materai Rp10.000")
 
     c.setFont("Helvetica", 9)
     c.drawCentredString(cx_pembeli, T(12.4), "(                          )")
