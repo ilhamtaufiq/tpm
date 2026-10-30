@@ -18,6 +18,7 @@ import {
     resolveSheetMaxHeightPx,
 } from './ui/BottomSheetContainer';
 import { ModalThemeView } from './ui/ModalThemeView';
+import { useUIStore } from '../store/useUIStore';
 
 export interface PaymentItem {
     metode: 'TUNAI' | 'TRANSFER' | 'INTERNAL' | 'KREDIT';
@@ -54,6 +55,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
     isInternalja = false,
     isInternalMobil = false,
 }) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const [paymentMode, setPaymentMode] = useState<'TUNAI' | 'TRANSFER' | 'SPLIT'>('TUNAI');
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -190,7 +192,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                             onPress={onClose}
                             className="w-8 h-8 bg-background rounded-full items-center justify-center"
                         >
-                            <X size={18} color="#4B5563" />
+                            <X size={18} color={themeColors.textGray} />
                         </Pressable>
                     </View>
 
@@ -270,7 +272,7 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                                 className={`w-4 h-4 rounded border-2 items-center justify-center mr-1 ${
                                                     showDiskonInReceipt
                                                         ? 'bg-primary border-primary'
-                                                        : 'border-gray-300'
+                                                        : 'border-border'
                                                 }`}
                                             >
                                                 {showDiskonInReceipt && (
@@ -326,17 +328,17 @@ const BengkelPaymentModalInner: React.FC<BengkelPaymentModalProps> = ({
                                                 className={`flex-1 py-4 rounded-2xl border items-center justify-center ${
                                                     active
                                                         ? 'bg-primary border-primary shadow-sm shadow-primary/20'
-                                                        : 'bg-surface border-gray-100'
+                                                        : 'bg-surface border-border'
                                                 }`}
                                             >
                                                 <Icon
                                                     size={20}
-                                                    color={active ? 'white' : '#64748B'}
+                                                    color={active ? 'white' : themeColors.textGray}
                                                 />
                                                 <Typography
                                                     weight="bold"
                                                     className={`text-[10px] mt-1.5 ${
-                                                        active ? 'text-white' : 'text-gray-500'
+                                                        active ? 'text-white' : 'text-textGray'
                                                     }`}
                                                 >
                                                     {mode.label}

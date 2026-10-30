@@ -6,8 +6,10 @@ import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
 import Edit from 'lucide-react-native/dist/esm/icons/square-pen.js';
 import { Typography } from '../../../../components/ui/Typography';
 import { ArmadaDetail } from '../../../../components/jasa-angkut/ArmadaDetail';
+import { useUIStore } from '../../../../store/useUIStore';
 
 export default function ArmadaDetailScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
 
@@ -35,7 +37,7 @@ export default function ArmadaDetailScreen() {
                             onPress={handleBack}
                             className="w-10 h-10 bg-background rounded-xl items-center justify-center mr-4 border border-transparent"
                         >
-                            <ChevronLeft size={24} color="#1C1C1C" />
+                            <ChevronLeft size={24} color={themeColors.text} />
                         </TouchableOpacity>
                         <Typography variant="h3" weight="bold">Detail Armada</Typography>
                     </View>
@@ -44,7 +46,7 @@ export default function ArmadaDetailScreen() {
                         onPress={handleEdit}
                         className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center border border-primary/10"
                     >
-                        <Edit size={20} color="#023C69" />
+                        <Edit size={20} color={themeColors.primary} />
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>

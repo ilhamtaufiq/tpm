@@ -218,7 +218,7 @@ export default function LoginScreen() {
                             <Typography variant="caption" className="text-textGray">BELUM PUNYA AKUN? </Typography>
                             <Typography variant="caption" weight="bold" className="text-primary">HUBUNGI ADMIN</Typography>
                         </View>
-                        <Typography variant="caption" className="text-gray-300 mt-2 text-[10px] tracking-normal">
+                        <Typography variant="caption" className="text-textGray mt-2 text-[10px] tracking-normal">
                             v{Constants.expoConfig?.version || '1.0.0'} · {buildCommit} © 2025 TPM GROUP
                         </Typography>
                     </View>

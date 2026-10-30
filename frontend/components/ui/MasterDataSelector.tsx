@@ -50,6 +50,7 @@ export const MasterDataSelector = ({
     inlineLimit = 5,
     hideTrigger = false
 }: MasterDataSelectorProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const primaryColor = useUIStore((s) => s.themeColors.primary);
 
@@ -118,9 +119,9 @@ export const MasterDataSelector = ({
             {!hideTrigger && <Pressable onPress={handleOpen} disabled={inlineMode}>
                 <View className="bg-background rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
                     {type === 'customer' ? (
-                        <User size={20} color={value ? '#2563EB' : '#9CA3AF'} />
+                        <User size={20} color={value ? '#2563EB' : themeColors.textGray} />
                     ) : (
-                        <Truck size={20} color={value ? '#F59E0B' : '#9CA3AF'} />
+                        <Truck size={20} color={value ? '#F59E0B' : themeColors.textGray} />
                     )}
 
                     <View className="flex-1 ml-3">
@@ -142,7 +143,7 @@ export const MasterDataSelector = ({
 
                     {value && !inlineMode && (
                         <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
-                            <X size={18} color="#9CA3AF" />
+                            <X size={18} color={themeColors.textGray} />
                         </Pressable>
                     )}
                 </View>
@@ -151,17 +152,17 @@ export const MasterDataSelector = ({
             {inlineMode && (
                 <View className={hideTrigger ? '' : 'mt-3'}>
                     <View className="flex-row items-center bg-background rounded-xl px-4 py-3 mb-3">
-                        <Search size={20} color="#9CA3AF" />
+                        <Search size={20} color={themeColors.textGray} />
                         <TextInput
                             className="flex-1 ml-3 text-base text-text font-outfit"
                             placeholder={`Cari nama atau nopol ${type === 'customer' ? 'customer' : 'supplier'}...`}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                         />
                         {searchQuery.length > 0 && (
                             <Pressable onPress={() => setSearchQuery('')}>
-                                <X size={18} color="#9CA3AF" />
+                                <X size={18} color={themeColors.textGray} />
                             </Pressable>
                         )}
                     </View>
@@ -172,7 +173,7 @@ export const MasterDataSelector = ({
                             className={`mb-3 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-background border-transparent'}`}
                         >
                             <View className="flex-row items-center flex-1">
-                                <User size={18} color={selectedGuestName === searchQuery.trim() && !value ? '#10B981' : '#4B5563'} />
+                                <User size={18} color={selectedGuestName === searchQuery.trim() && !value ? '#10B981' : themeColors.textGray} />
                                 <View className="ml-2 flex-1">
                                     <Typography weight="semibold" className="text-xs">Guest "{searchQuery}"</Typography>
                                 </View>
@@ -258,25 +259,25 @@ export const MasterDataSelector = ({
                 <View className="bg-surface" style={{ flex: 1 }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
-                            <View className="w-10 h-1 bg-gray-300 rounded-full" />
+                            <View className="w-10 h-1 bg-border rounded-full" />
                         </View>
 
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold">Cari {type === 'customer' ? 'Customer' : 'Supplier'}</Typography>
                             <Pressable onPress={handleClose} hitSlop={12}>
-                                <X size={24} color="#6B7280" />
+                                <X size={24} color={themeColors.textGray} />
                             </Pressable>
                         </View>
 
                         <View className="flex-row items-center bg-background rounded-xl px-4 py-3 mb-4">
-                            <Search size={20} color="#9CA3AF" />
+                            <Search size={20} color={themeColors.textGray} />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-text font-outfit"
                                 placeholder={`Ketik nama atau nopol ${type === 'customer' ? 'customer' : 'supplier'}...`}
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                                 autoFocus
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={themeColors.textGray}
                             />
                         </View>
 
@@ -287,7 +288,7 @@ export const MasterDataSelector = ({
                                     className={`flex-1 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-background border-transparent'}`}
                                 >
                                     <View className="flex-row items-center flex-1">
-                                        <User size={18} color={selectedGuestName === searchQuery.trim() && !value ? '#10B981' : '#4B5563'} />
+                                        <User size={18} color={selectedGuestName === searchQuery.trim() && !value ? '#10B981' : themeColors.textGray} />
                                         <View className="ml-2 flex-1">
                                             <Typography weight="semibold" className="text-xs">Guest "{searchQuery}"</Typography>
                                         </View>

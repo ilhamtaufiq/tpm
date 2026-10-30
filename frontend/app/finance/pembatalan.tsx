@@ -31,7 +31,7 @@ export default function PembatalanRiwayatScreen() {
                     </Typography>
                 }
                 renderItem={({ item }) => (
-                    <View className="bg-surface rounded-[24px] p-5 mb-4 border border-gray-100">
+                    <View className="bg-surface rounded-[24px] p-5 mb-4 border border-border">
                         <View className="flex-row justify-between items-center mb-2">
                             <Typography className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">
                                 {JENIS_LABEL[item.jenis] ?? item.jenis}
@@ -42,7 +42,7 @@ export default function PembatalanRiwayatScreen() {
                         <Typography className="text-textGray text-xs mt-1">
                             No. {item.nomor_dokumen} • {formatCurrency(Number(item.nominal))}
                         </Typography>
-                        <View className="mt-3 bg-gray-50 rounded-2xl p-3">
+                        <View className="mt-3 bg-background rounded-2xl p-3">
                             <Typography className="text-[10px] font-bold text-textGray uppercase mb-1">Alasan</Typography>
                             <Typography className="text-sm text-textMain">{item.alasan}</Typography>
                         </View>

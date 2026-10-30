@@ -320,23 +320,23 @@ export default function BackupScreen() {
     };
 
     const renderBackupItem = ({ item }: { item: BackupFile }) => (
-        <View className="p-6 mb-6 rounded-[32px] bg-surface border border-slate-100 shadow-sm shadow-slate-200/50">
+        <View className="p-6 mb-6 rounded-[32px] bg-surface border border-border shadow-sm shadow-border">
             <View className="flex-row items-center mb-5">
-                <View className="w-14 h-14 rounded-2xl bg-background items-center justify-center mr-4 border border-slate-100">
-                    <FileArchive size={28} color="#64748B" strokeWidth={1.5} />
+                <View className="w-14 h-14 rounded-2xl bg-background items-center justify-center mr-4 border border-border">
+                    <FileArchive size={28} color={themeColors.textGray} strokeWidth={1.5} />
                 </View>
                 <View className="flex-1">
                     <Typography weight="bold" className="text-text text-sm mb-0.5" numberOfLines={1}>
                         {item.filename}
                     </Typography>
-                    <Typography className="text-slate-400 text-[10px] font-medium uppercase tracking-wider">
+                    <Typography className="text-textGray text-[10px] font-medium uppercase tracking-wider">
                         {format(new Date(item.created_at), 'dd MMM yyyy, HH:mm', { locale: idLocale })} • {formatSize(item.size)}
                     </Typography>
                 </View>
 
             </View>
 
-            <View className="flex-row pt-4 border-t border-slate-50 space-x-3">
+            <View className="flex-row pt-4 border-t border-border space-x-3">
                 <Pressable 
                     onPress={() => handleDownload(item.filename)}
                     disabled={!!downloadingName}
@@ -379,7 +379,7 @@ export default function BackupScreen() {
                         onPress={onRefresh}
                         className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
-                        {refreshing ? <ActivityIndicator size="small" color="#1F2937" /> : <RefreshCw size={20} color="#1F2937" />}
+                        {refreshing ? <ActivityIndicator size="small" color={themeColors.text} /> : <RefreshCw size={20} color={themeColors.text} />}
                     </Pressable>
                 }
             />
@@ -397,7 +397,7 @@ export default function BackupScreen() {
                         <Pressable 
                             onPress={handleUploadBackup}
                             disabled={uploadMutation.isPending}
-                            className={`w-12 h-14 rounded-2xl items-center justify-center border border-slate-100 ${uploadMutation.isPending ? 'bg-background' : 'bg-surface active:bg-background'}`}
+                            className={`w-12 h-14 rounded-2xl items-center justify-center border border-border ${uploadMutation.isPending ? 'bg-background' : 'bg-surface active:bg-background'}`}
                         >
                             {uploadMutation.isPending ? (
                                 <ActivityIndicator size="small" color={themeColors.primary} />
@@ -425,12 +425,12 @@ export default function BackupScreen() {
 
             {busyLabel && (
                 <View className="px-6 pt-4">
-                    <View className="bg-surface rounded-2xl border border-slate-100 p-4">
+                    <View className="bg-surface rounded-2xl border border-border p-4">
                         <View className="flex-row items-center justify-between mb-2">
                             <Typography className="text-textGray text-[10px] font-bold uppercase tracking-wider flex-1" numberOfLines={1}>
                                 {busyLabel}
                             </Typography>
-                            <Typography className="text-slate-400 text-[10px] font-bold ml-2">
+                            <Typography className="text-textGray text-[10px] font-bold ml-2">
                                 {progress !== null ? `${progress}%` : <ElapsedText active={timed} />}
                             </Typography>
                         </View>
@@ -480,19 +480,19 @@ export default function BackupScreen() {
                 {isLoading ? (
                     <View className="py-20 items-center">
                         <ActivityIndicator size="large" color={themeColors.primary} />
-                        <Typography className="mt-4 text-slate-400 font-medium">Memuat riwayat...</Typography>
+                        <Typography className="mt-4 text-textGray font-medium">Memuat riwayat...</Typography>
                     </View>
                 ) : backups && backups.length > 0 ? (
                     backups.map((item) => (
                         <View key={item.filename}>{renderBackupItem({ item })}</View>
                     ))
                 ) : (
-                    <View className="items-center justify-center p-14 bg-surface rounded-[40px] border border-dashed border-slate-200">
+                    <View className="items-center justify-center p-14 bg-surface rounded-[40px] border border-dashed border-border">
                         <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-6">
                             <Database size={40} color="#CBD5E1" strokeWidth={1} />
                         </View>
                         <Typography weight="bold" className="text-text text-lg text-center">Belum ada backup</Typography>
-                        <Typography className="mt-2 text-slate-400 text-sm text-center px-6">
+                        <Typography className="mt-2 text-textGray text-sm text-center px-6">
                             Data cadangan Anda akan muncul di sini setelah Anda membuat backup pertama.
                         </Typography>
                     </View>
@@ -519,7 +519,7 @@ export default function BackupScreen() {
 
                         <View className="mb-6">
                             <View className="flex-row items-center mb-2 ml-1">
-                                <Lock size={12} color="#9CA3AF" />
+                                <Lock size={12} color={themeColors.textGray} />
                                 <Typography className="text-textGray font-bold text-[10px] uppercase ml-1.5">Password Verifikasi</Typography>
                             </View>
                             <TextInput
@@ -559,7 +559,7 @@ export default function BackupScreen() {
                                 disabled={isRestoring}
                                 className="h-14 rounded-2xl items-center justify-center"
                             >
-                                <Typography weight="bold" className="text-slate-400 text-sm">Batalkan</Typography>
+                                <Typography weight="bold" className="text-textGray text-sm">Batalkan</Typography>
                             </Pressable>
                         </View>
                     </Card>

@@ -16,7 +16,7 @@ import MonitorOff from 'lucide-react-native/dist/esm/icons/monitor-off.js';
 import Globe from 'lucide-react-native/dist/esm/icons/globe.js';
 import { Typography } from '../../components/ui/Typography';
 import { useSecurityStore, ProtectedFeatures } from '../../store/useSecurityStore';
-import { useUIStore } from '../../store/useUIStore';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 import { useUpdateSecuritySettings } from '../../hooks/useSecurityAPI';
 
 export default function SecurityFeaturesScreen() {
@@ -114,7 +114,7 @@ export default function SecurityFeaturesScreen() {
             label: 'Pengaturan Sistem',
             desc: 'Proteksi printer dan konfigurasi',
             icon: SettingsIcon,
-            color: 'bg-slate-50',
+            color: 'bg-background',
             iconColor: '#475569'
         },
     ];
@@ -139,7 +139,7 @@ export default function SecurityFeaturesScreen() {
 
                 {/* Section: Platform Access (Independent of PIN) */}
                 <View className="mb-8">
-                    <Typography weight="bold" className="text-slate-400 text-[10px] uppercase tracking-widest mb-4 px-2">Akses Platform</Typography>
+                    <Typography weight="bold" className="text-textGray text-[10px] uppercase tracking-widest mb-4 px-2">Akses Platform</Typography>
                     <View className="bg-surface rounded-[32px] overflow-hidden border border-transparent shadow-sm relative">
                         {updateSettingsMutation.isPending && (
                             <View className="absolute inset-0 z-10 bg-surface/50 items-center justify-center">
@@ -153,14 +153,14 @@ export default function SecurityFeaturesScreen() {
                                 </View>
                                 <View className="flex-1 pr-4">
                                     <View className="flex-row items-center mb-0.5">
-                                        <Typography weight="bold" className="text-[14px] text-slate-800">Batasi Akses Web</Typography>
+                                        <Typography weight="bold" className="text-[14px] text-textMain">Batasi Akses Web</Typography>
                                         {process.env.EXPO_PUBLIC_DISABLE_WEB_ACCESS === 'true' && (
                                             <View className="ml-2 bg-blue-100 px-1.5 py-0.5 rounded-md">
                                                 <Typography className="text-[8px] text-blue-700 font-bold uppercase">ENV LOCKED</Typography>
                                             </View>
                                         )}
                                     </View>
-                                    <Typography numberOfLines={2} className="text-[10px] text-slate-400">
+                                    <Typography numberOfLines={2} className="text-[10px] text-textGray">
                                         Hanya izinkan akses lewat aplikasi mobile (Web akan dialihkan ke landing page).
                                     </Typography>
                                 </View>
@@ -169,7 +169,7 @@ export default function SecurityFeaturesScreen() {
                             <Switch
                                 value={protectedFeatures.disable_web_access || process.env.EXPO_PUBLIC_DISABLE_WEB_ACCESS === 'true'}
                                 onValueChange={() => handleToggle('disable_web_access')}
-                                trackColor={{ false: '#E2E8F0', true: '#F43F5E' }}
+                                trackColor={{ false: findPaletteBorder(themeColors), true: '#F43F5E' }}
                                 thumbColor="#FFFFFF"
                                 disabled={updateSettingsMutation.isPending || process.env.EXPO_PUBLIC_DISABLE_WEB_ACCESS === 'true'}
                             />
@@ -183,7 +183,7 @@ export default function SecurityFeaturesScreen() {
                 </View>
 
                 <View className="mb-4">
-                    <Typography weight="bold" className="text-slate-400 text-[10px] uppercase tracking-widest mb-4 px-2">Proteksi PIN Granular</Typography>
+                    <Typography weight="bold" className="text-textGray text-[10px] uppercase tracking-widest mb-4 px-2">Proteksi PIN Granular</Typography>
                 </View>
 
                 {!isPinEnabled && (
@@ -211,14 +211,14 @@ export default function SecurityFeaturesScreen() {
                                 </View>
                                 <View className="flex-1 pr-4">
                                     <Typography weight="bold" className="text-[14px] text-text mb-0.5">{item.label}</Typography>
-                                    <Typography numberOfLines={1} className="text-[10px] text-slate-400">{item.desc}</Typography>
+                                    <Typography numberOfLines={1} className="text-[10px] text-textGray">{item.desc}</Typography>
                                 </View>
                             </View>
 
                             <Switch
                                 value={protectedFeatures[item.id as keyof ProtectedFeatures]}
                                 onValueChange={() => handleToggle(item.id as keyof ProtectedFeatures)}
-                                trackColor={{ false: '#E2E8F0', true: '#10B981' }}
+                                trackColor={{ false: findPaletteBorder(themeColors), true: '#10B981' }}
                                 thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : '#FFFFFF'}
                                 disabled={!isPinEnabled || updateSettingsMutation.isPending}
                             />
@@ -230,7 +230,7 @@ export default function SecurityFeaturesScreen() {
             {/* Bottom Insight */}
             <View className="p-8 bg-background rounded-t-[48px] items-center">
                 <View className="w-10 h-1bg-slate-200 rounded-full mb-6" />
-                <Typography className="text-slate-400 text-center text-[10px] leading-relaxed">
+                <Typography className="text-textGray text-center text-[10px] leading-relaxed">
                     Perubahan akan langsung diterapkan pada navigasi berikutnya.{"\n"}Halaman yang diproteksi tidak akan menampilkan data sebelum PIN dimasukkan.
                 </Typography>
             </View>

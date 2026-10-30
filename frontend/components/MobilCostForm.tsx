@@ -31,6 +31,7 @@ interface MobilCostFormProps {
 }
 
 export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const { data: detailUnit, isLoading: isDetailLoading } = useMobilDetail(unit?.id);
 
@@ -421,7 +422,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                         </View>
                         <View className="items-end mr-4">
                             <Typography weight="bold" className="text-primary">{formatCurrency(Number(item.jumlah))}</Typography>
-                            <Typography variant="caption" className="text-gray-300 mt-1">{item.tanggal}</Typography>
+                            <Typography variant="caption" className="text-textGray mt-1">{item.tanggal}</Typography>
                         </View>
                         <Pressable
                             onPress={() => handleDeleteBiaya(item.id)}
@@ -441,7 +442,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                     {(activeUnit?.part_services || []).map((item: any) => (
                         <Card key={item.id} className="mb-3 p-3 flex-row items-center border border-transparent opacity-60 bg-background">
                             <View className="w-10 h-10 bg-background rounded-full items-center justify-center mr-3">
-                                <Wrench size={18} color="#9CA3AF" />
+                                <Wrench size={18} color={themeColors.textGray} />
                             </View>
                             <View className="flex-1">
                                 <Typography weight="bold" className="text-xs text-textGray">{item.deskripsi}</Typography>

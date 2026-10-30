@@ -14,6 +14,7 @@ import { useUIStore } from '../../store/useUIStore';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function BrandingSettingsScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const appLogo = useUIStore((s) => s.appLogo);
     const appName = useUIStore((s) => s.appName);
     const setBranding = useUIStore((s) => s.setBranding);
@@ -117,7 +118,7 @@ export default function BrandingSettingsScreen() {
                 showBell={false}
                 rightElement={
                     <View className="w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center text-primary">
-                        <Type size={24} color="#023C69" />
+                        <Type size={24} color={themeColors.primary} />
                     </View>
                 }
             />
@@ -177,7 +178,7 @@ export default function BrandingSettingsScreen() {
                             className="bg-background border-2 border-dashed border-transparent rounded-[32px] p-10 items-center"
                         >
                             <View className="w-16 h-16 bg-background rounded-full items-center justify-center mb-3">
-                                <ImageIcon size={32} color="#9CA3AF" />
+                                <ImageIcon size={32} color={themeColors.textGray} />
                             </View>
                             <Typography weight="medium" className="text-textGray">Gunakan Logo Kustom</Typography>
                             <Typography variant="caption" className="text-textGray mt-1">Format PNG/JPG transparan (Maks 1MB)</Typography>
@@ -199,7 +200,7 @@ export default function BrandingSettingsScreen() {
                         variant="ghost"
                         title="Reset ke Default TPM"
                         onPress={handleReset}
-                        icon={<RefreshCw size={18} color="#9CA3AF" />}
+                        icon={<RefreshCw size={18} color={themeColors.textGray} />}
                         className="h-12"
                         disabled={saving}
                     />

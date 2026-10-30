@@ -37,10 +37,12 @@ import {
     ReportExportSheet,
     ReportFilterType,
 } from '../../components/laporan';
+import { useUIStore } from '../../store/useUIStore';
 
 const escapeHtml = (str: any) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
 
 export default function PembelianMobilReportScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome({ borderRadius: 32 });
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -278,7 +280,7 @@ export default function PembelianMobilReportScreen() {
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
                 }
             >
                 <View className="px-6 pt-4">
@@ -302,13 +304,13 @@ export default function PembelianMobilReportScreen() {
                 <View className="px-6">
                     {isLoading ? (
                         <View className="py-20 items-center">
-                            <ActivityIndicator size="large" color="#023C69" />
+                            <ActivityIndicator size="large" color={themeColors.primary} />
                             <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                         </View>
                     ) : mobils.length === 0 ? (
                         <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-transparent">
                             <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
-                                <Car size={40} color="#9CA3AF" />
+                                <Car size={40} color={themeColors.textGray} />
                             </View>
                             <Typography className="text-textGray font-bold uppercase tracking-[6px]">Belum Ada Data</Typography>
                             <Typography variant="caption" className="text-textGray mt-2">Tidak ada unit masuk periode ini</Typography>
@@ -364,13 +366,13 @@ export default function PembelianMobilReportScreen() {
                             <Typography className="text-textGray text-xs mt-1">Informasi lengkap kendaraan</Typography>
                         </View>
                         <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                            <X size={16} color="#4B5563" />
+                            <X size={16} color={themeColors.textGray} />
                         </Pressable>
                     </View>
 
                     {detailLoading ? (
                         <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="#023C69" />
+                            <ActivityIndicator size="large" color={themeColors.primary} />
                             <Typography className="mt-4 text-textGray">Memuat detail...</Typography>
                         </View>
                     ) : selectedMobil ? (

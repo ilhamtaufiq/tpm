@@ -252,7 +252,7 @@ export default function SMTPSettingsScreen() {
                         ) : null}
                         {status?.checked_at ? (
                             <View className="flex-row items-center mt-3">
-                                <Clock size={12} color="#6B7280" />
+                                <Clock size={12} color={themeColors.textGray} />
                                 <Typography variant="caption" className="text-textGray ml-1">Terakhir dicek {formatWaktu(status.checked_at)}</Typography>
                             </View>
                         ) : null}
@@ -282,7 +282,7 @@ export default function SMTPSettingsScreen() {
                     <View className="bg-surface p-5 rounded-[28px] mb-5">
                         <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[3px] mb-4">Server</Typography>
                         <Field label="Alamat SMTP">
-                            <InputRow icon={<Server size={18} color="#9CA3AF" />}>
+                            <InputRow icon={<Server size={18} color={themeColors.textGray} />}>
                                 <TextInput
                                     className="flex-1 ml-3 text-text font-bold"
                                     placeholder="smtp.contoh.com"
@@ -313,7 +313,7 @@ export default function SMTPSettingsScreen() {
                                         onPress={() => setUseTLS(!useTLS)}
                                         className={`h-14 rounded-2xl flex-row items-center justify-center border ${useTLS ? 'bg-emerald-50 border-emerald-100' : 'bg-background border-transparent'}`}
                                     >
-                                        <ShieldCheck size={18} color={useTLS ? '#10B981' : '#9CA3AF'} />
+                                        <ShieldCheck size={18} color={useTLS ? '#10B981' : themeColors.textGray} />
                                         <Typography weight="bold" className={`ml-2 ${useTLS ? 'text-emerald-700' : 'text-textGray'}`}>
                                             {useTLS ? 'TLS aktif' : 'Tanpa TLS'}
                                         </Typography>
@@ -327,7 +327,7 @@ export default function SMTPSettingsScreen() {
                     <View className="bg-surface p-5 rounded-[28px] mb-5">
                         <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-[3px] mb-4">Akun pengirim</Typography>
                         <Field label="Username (alamat email)">
-                            <InputRow icon={<Mail size={18} color="#9CA3AF" />}>
+                            <InputRow icon={<Mail size={18} color={themeColors.textGray} />}>
                                 <TextInput
                                     className="flex-1 ml-3 text-text font-bold"
                                     placeholder="email@contoh.com"
@@ -340,7 +340,7 @@ export default function SMTPSettingsScreen() {
                             </InputRow>
                         </Field>
                         <Field label="Password / App Password" hint={preset === 'gmail' ? 'Untuk Gmail, pakai App Password 16 digit.' : undefined}>
-                            <InputRow icon={<Lock size={18} color="#9CA3AF" />}>
+                            <InputRow icon={<Lock size={18} color={themeColors.textGray} />}>
                                 <TextInput
                                     className="flex-1 ml-3 text-text font-bold"
                                     placeholder="Password SMTP"
@@ -351,12 +351,12 @@ export default function SMTPSettingsScreen() {
                                     onChangeText={setPassword}
                                 />
                                 <Pressable onPress={() => setShowPassword(!showPassword)} className="p-1" hitSlop={8}>
-                                    {showPassword ? <EyeOff size={18} color="#9CA3AF" /> : <Eye size={18} color="#9CA3AF" />}
+                                    {showPassword ? <EyeOff size={18} color={themeColors.textGray} /> : <Eye size={18} color={themeColors.textGray} />}
                                 </Pressable>
                             </InputRow>
                         </Field>
                         <Field label="Nama pengirim" hint="Nama yang tampil di email yang diterima user.">
-                            <InputRow icon={<User size={18} color="#9CA3AF" />}>
+                            <InputRow icon={<User size={18} color={themeColors.textGray} />}>
                                 <TextInput
                                     className="flex-1 ml-3 text-text font-bold"
                                     placeholder="TPM Business"
@@ -401,7 +401,7 @@ export default function SMTPSettingsScreen() {
                         disabled={isTesting || isSaving}
                         className={`flex-1 h-14 rounded-2xl flex-row items-center justify-center border border-primary/20 bg-surface ${isTesting ? 'opacity-50' : ''}`}
                     >
-                        {isTesting ? <ActivityIndicator size="small" color="#023C69" /> : <Send size={17} color="#023C69" />}
+                        {isTesting ? <ActivityIndicator size="small" color={themeColors.primary} /> : <Send size={17} color={themeColors.primary} />}
                         <Typography weight="bold" className="text-primary ml-2">Tes Koneksi</Typography>
                     </Pressable>
                     <Pressable

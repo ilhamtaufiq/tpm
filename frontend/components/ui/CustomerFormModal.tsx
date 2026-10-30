@@ -15,6 +15,7 @@ import { useCreateCustomer } from '../../hooks/useMasterData';
 import { getErrorMessage } from '../../utils/error';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetContainer, BoundedSheetScrollView } from './BottomSheetContainer';
+import { useUIStore } from '../../store/useUIStore';
 
 interface CustomerFormModalProps {
     visible: boolean;
@@ -29,6 +30,7 @@ function CustomerFormModalInner({
     onSuccess,
     initialName = ''
 }: CustomerFormModalProps) {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const createMutation = useCreateCustomer();
 
@@ -115,12 +117,12 @@ function CustomerFormModalInner({
                     />
                 }
             >
-                    <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
+                    <View className="w-12 h-1.5 bg-border rounded-full self-center my-4" />
                     
                     <View className="flex-row justify-between items-center px-6 mb-6">
                         <Typography variant="h2" weight="bold">Tambah Customer</Typography>
                         <Pressable onPress={onClose} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                            <X size={20} color="#6B7280" />
+                            <X size={20} color={themeColors.textGray} />
                         </Pressable>
                     </View>
 
@@ -136,7 +138,7 @@ function CustomerFormModalInner({
                                 <TextInput
                                     className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                     placeholder="Contoh: Budi Santoso"
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={themeColors.textGray}
                                     value={formData.nama}
                                     onChangeText={(text) => setFormData({ ...formData, nama: text })}
                                 />
@@ -167,7 +169,7 @@ function CustomerFormModalInner({
                                     <TextInput
                                         className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                         placeholder="08xxxxxxxxxx"
-                                        placeholderTextColor="#9CA3AF"
+                                        placeholderTextColor={themeColors.textGray}
                                         value={formData.telepon}
                                         onChangeText={(text) => setFormData({ ...formData, telepon: text })}
                                         keyboardType="phone-pad"
@@ -178,7 +180,7 @@ function CustomerFormModalInner({
                                     <TextInput
                                         className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                         placeholder="Jakarta"
-                                        placeholderTextColor="#9CA3AF"
+                                        placeholderTextColor={themeColors.textGray}
                                         value={formData.kota}
                                         onChangeText={(text) => setFormData({ ...formData, kota: text })}
                                     />
@@ -190,7 +192,7 @@ function CustomerFormModalInner({
                                 <TextInput
                                     className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]"
                                     placeholder="Masukan alamat lengkap..."
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={themeColors.textGray}
                                     value={formData.alamat}
                                     onChangeText={(text) => setFormData({ ...formData, alamat: text })}
                                     multiline
@@ -224,7 +226,7 @@ function CustomerFormModalInner({
                                                 <TextInput
                                                     className="bg-surface border border-transparent rounded-xl px-3 py-2 text-textMain font-medium focus:border-primary"
                                                     placeholder="Plat Nomor (B 1234 ABC)"
-                                                    placeholderTextColor="#9CA3AF"
+                                                    placeholderTextColor={themeColors.textGray}
                                                     value={vehicle.plat_nomor}
                                                     onChangeText={(text) => updateVehicle(index, 'plat_nomor', text)}
                                                     autoCapitalize="characters"
@@ -234,7 +236,7 @@ function CustomerFormModalInner({
                                                 <TextInput
                                                     className="bg-surface border border-transparent rounded-xl px-3 py-2 text-textMain font-medium focus:border-primary"
                                                     placeholder="Jenis Unit (Avanza, Xenia, dsb)"
-                                                    placeholderTextColor="#9CA3AF"
+                                                    placeholderTextColor={themeColors.textGray}
                                                     value={vehicle.jenis_unit}
                                                     onChangeText={(text) => updateVehicle(index, 'jenis_unit', text)}
                                                 />

@@ -19,7 +19,7 @@ const STATUS_LABEL: Record<StrukNama['status'], { text: string; cls: string }> =
     LUNAS: { text: 'Lunas', cls: 'bg-emerald-50 text-emerald-700' },
     SEBAGIAN: { text: 'Sebagian', cls: 'bg-amber-50 text-amber-700' },
     BELUM_LUNAS: { text: 'Belum lunas', cls: 'bg-rose-50 text-rose-700' },
-    BATAL: { text: 'Batal', cls: 'bg-slate-100 text-slate-500' },
+    BATAL: { text: 'Batal', cls: 'bg-background text-textGray' },
 };
 
 const TANGGAL_VALID = /^\d{4}-\d{2}-\d{2}$/;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { Typography } from './Typography';
 import { Button } from './Button';
@@ -6,6 +6,7 @@ import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
 import Inbox from 'lucide-react-native/dist/esm/icons/inbox.js';
 import Search from 'lucide-react-native/dist/esm/icons/search.js';
 import WifiOff from 'lucide-react-native/dist/esm/icons/wifi-off.js';
+import { useUIStore, ThemeColors } from '../../store/useUIStore';
 
 interface EmptyStateProps {
     icon?: 'empty' | 'search' | 'error' | 'offline' | React.ComponentType<any>;
@@ -22,12 +23,12 @@ const icons = {
     offline: WifiOff,
 };
 
-const iconColors = {
-    empty: '#9CA3AF',
-    search: '#9CA3AF',
+const make_iconColors = (themeColors: ThemeColors) => ({
+    empty: themeColors.textGray,
+    search: themeColors.textGray,
     error: '#EF4444',
     offline: '#F59E0B',
-};
+});
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
     icon = 'empty',
@@ -36,9 +37,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     actionLabel,
     onAction,
 }) => {
+    const themeColors = useUIStore((s) => s.themeColors);
+    const iconColors = useMemo(() => make_iconColors(themeColors), [themeColors]);
     const isCustomIcon = typeof icon !== 'string';
     const IconComponent = isCustomIcon ? icon : icons[icon as keyof typeof icons] || Inbox;
-    const iconColor = isCustomIcon ? '#9CA3AF' : iconColors[icon as keyof typeof iconColors] || '#9CA3AF';
+    const iconColor = isCustomIcon ? themeColors.textGray : iconColors[icon as keyof typeof iconColors] || themeColors.textGray;
 
     return (
         <View className="flex-1 items-center justify-center py-16 px-8">

@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { jasaAngkutService } from '../../services/jasaAngkut';
 import { usePlaceholderColor } from '../../utils/themeStyles';
+import { useUIStore } from '../../store/useUIStore';
 
 interface ArmadaSelectorProps {
     value?: any; // Selected object or null
@@ -26,6 +27,7 @@ export const ArmadaSelector = ({
     label,
     placeholder
 }: ArmadaSelectorProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const placeholderColor = usePlaceholderColor();
     const [searchQuery, setSearchQuery] = useState('');
@@ -63,7 +65,7 @@ export const ArmadaSelector = ({
 
             <Pressable onPress={handleOpen}>
                 <View className="bg-background rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
-                    <Truck size={20} color={value ? '#10B981' : '#9CA3AF'} />
+                    <Truck size={20} color={value ? '#10B981' : themeColors.textGray} />
 
                     <View className="flex-1 ml-3">
                         {value ? (
@@ -80,7 +82,7 @@ export const ArmadaSelector = ({
 
                     {value && (
                         <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
-                            <X size={18} color="#9CA3AF" />
+                            <X size={18} color={themeColors.textGray} />
                         </Pressable>
                     )}
                 </View>
@@ -96,7 +98,7 @@ export const ArmadaSelector = ({
                 <View className="bg-surface" style={{ flex: 1 }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
-                            <View className="w-10 h-1 bg-gray-300 rounded-full" />
+                            <View className="w-10 h-1 bg-border rounded-full" />
                         </View>
 
                         <View className="flex-row justify-between items-center mb-6">

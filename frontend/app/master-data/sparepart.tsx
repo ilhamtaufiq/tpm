@@ -3,7 +3,7 @@ import { View, Pressable, RefreshControl, StatusBar, FlatList, ActivityIndicator
 
 const escapeHtml = (str: any) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
 import { Typography } from '../../components/ui/Typography';
-import { useUIStore } from '../../store/useUIStore';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Header } from '../../components/ui/Header';
@@ -494,7 +494,7 @@ export default function SparePartMasterScreen() {
                             {imageUrl ? (
                                 <Image source={{ uri: imageUrl }} className="w-full h-full" resizeMode="cover" />
                             ) : (
-                                <Package size={28} color={isLowStock ? '#EF4444' : '#9CA3AF'} strokeWidth={1.5} />
+                                <Package size={28} color={isLowStock ? '#EF4444' : themeColors.textGray} strokeWidth={1.5} />
                             )}
                         </View>
                         <View className="flex-1">
@@ -666,7 +666,7 @@ export default function SparePartMasterScreen() {
                                 onPress={() => setIsExportModalVisible(true)}
                                 className="px-3 py-2 bg-background rounded-xl flex-row items-center border border-transparent"
                             >
-                                <Download size={14} color="#4B5563" className="mr-2" />
+                                <Download size={14} color={themeColors.textGray} className="mr-2" />
                                 <Typography className="text-[10px] font-bold text-textGray">Download XLS</Typography>
                             </Pressable>
                         )}
@@ -687,13 +687,13 @@ export default function SparePartMasterScreen() {
                 showProfile={true}
             >
                 <View className="flex-row items-center bg-background h-11 rounded-2xl border border-transparent">
-                    <Search size={18} color="#9CA3AF" className="ml-4" />
+                    <Search size={18} color={themeColors.textGray} className="ml-4" />
                     <TextInput
                         placeholder="Cari sparepart..."
                         className="flex-1 ml-3 text-sm font-medium text-textMain"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={themeColors.textGray}
                         showSoftInputOnFocus={true}
                     />
                     <Pressable
@@ -739,7 +739,7 @@ export default function SparePartMasterScreen() {
                     }
                     ListEmptyComponent={
                         <View className="items-center justify-center py-20">
-                            <Package size={64} color="#E5E7EB" strokeWidth={1} />
+                            <Package size={64} color={findPaletteBorder(themeColors)} strokeWidth={1} />
                             <Typography className="text-textGray mt-4">Tidak ada data sparepart</Typography>
                         </View>
                     }
@@ -993,7 +993,7 @@ export default function SparePartMasterScreen() {
                                         <View className={`w-10 h-10 rounded-full items-center justify-center ${
                                             isFailed ? 'bg-red-500' :
                                             isCompleted ? 'bg-emerald-500' :
-                                            isActive ? 'bg-primary' : 'bg-gray-200'
+                                            isActive ? 'bg-primary' : 'bg-border'
                                         }`}>
                                             {isFailed ? (
                                                 <XCircle size={20} color="white" />
@@ -1008,12 +1008,12 @@ export default function SparePartMasterScreen() {
                                         <Typography className={`text-[10px] font-bold mt-1.5 ${
                                             isFailed ? 'text-red-500' :
                                             isCompleted ? 'text-emerald-600' :
-                                            isActive ? 'text-primary' : 'text-gray-400'
+                                            isActive ? 'text-primary' : 'text-textGray'
                                         }`}>{step.label}</Typography>
                                     </View>
                                     {i < 2 && (
                                         <View className={`flex-1 h-0.5 mx-2 mt-[-12px] rounded-full ${
-                                            isCompleted ? 'bg-emerald-400' : 'bg-gray-200'
+                                            isCompleted ? 'bg-emerald-400' : 'bg-border'
                                         }`} />
                                     )}
                                 </React.Fragment>

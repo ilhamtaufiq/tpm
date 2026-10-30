@@ -8,6 +8,7 @@ import { Calendar } from 'react-native-calendars';
 import { cn } from './Card';
 import { usePlaceholderColor } from '../../utils/themeStyles';
 import { getTodayString } from '../../utils/format';
+import { useUIStore } from '../../store/useUIStore';
 
 interface DatePickerProps {
     label?: string;
@@ -31,6 +32,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     containerClassName,
     autoToday = false,
 }) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const placeholderColor = usePlaceholderColor();
     const [modalVisible, setModalVisible] = useState(false);
 
@@ -67,7 +69,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                     )}
                 >
                     <View className="flex-row items-center flex-1 mr-2">
-                        <LucideCalendar size={18} color="#64748B" className="mr-2" />
+                        <LucideCalendar size={18} color={themeColors.textGray} className="mr-2" />
                         <input
                             type="date"
                             value={value || ''}
@@ -86,7 +88,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                     </View>
                     {value ? (
                         <TouchableOpacity onPress={() => onChange('')} activeOpacity={0.7}>
-                            <X size={16} color="#94A3B8" />
+                            <X size={16} color={themeColors.textGray} />
                         </TouchableOpacity>
                     ) : null}
                 </View>
@@ -112,7 +114,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 )}
             >
                 <View className="flex-row items-center flex-1 mr-2">
-                    <LucideCalendar size={18} color="#64748B" className="mr-2" />
+                    <LucideCalendar size={18} color={themeColors.textGray} className="mr-2" />
                     <Text
                         className={cn(
                             'text-base font-normal',
@@ -132,7 +134,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                             activeOpacity={0.7}
                             className="mr-3"
                         >
-                            <X size={16} color="#94A3B8" />
+                            <X size={16} color={themeColors.textGray} />
                         </TouchableOpacity>
                     ) : null}
                     <View className="flex-row items-center bg-surface rounded-lg px-2 py-1 border border-border">
@@ -161,7 +163,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                         <View className="flex-row items-center justify-between mb-3 pb-2 border-b border-border">
                             <Text className="text-text font-bold text-base">Pilih Tanggal</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <X size={20} color="#64748B" />
+                                <X size={20} color={themeColors.textGray} />
                             </TouchableOpacity>
                         </View>
 
@@ -184,7 +186,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                             }
                             theme={{
                                 calendarBackground: 'transparent',
-                                textSectionTitleColor: '#64748B',
+                                textSectionTitleColor: themeColors.textGray,
                                 selectedDayBackgroundColor: '#2563EB',
                                 selectedDayTextColor: '#ffffff',
                                 todayTextColor: '#2563EB',
@@ -200,7 +202,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                                 onPress={handleClear}
                                 className="flex-row items-center px-3 py-2 bg-background rounded-xl"
                             >
-                                <RotateCcw size={14} color="#64748B" className="mr-1" />
+                                <RotateCcw size={14} color={themeColors.textGray} className="mr-1" />
                                 <Text className="text-xs text-textGray font-semibold">Kosongkan</Text>
                             </TouchableOpacity>
 

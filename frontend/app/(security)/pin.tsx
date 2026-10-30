@@ -295,7 +295,7 @@ export default function PinScreen() {
                     <Pressable
                         key={num}
                         onPress={() => handlePress(num.toString())}
-                        className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-background border border-slate-100"
+                        className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-background border border-border"
                     >
                         <Text className="text-3xl font-semibold text-text">{num}</Text>
                     </Pressable>
@@ -314,7 +314,7 @@ export default function PinScreen() {
 
                 <Pressable
                     onPress={() => handlePress('0')}
-                    className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-background border border-slate-100"
+                    className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-background border border-border"
                 >
                     <Text className="text-3xl font-semibold text-text">0</Text>
                 </Pressable>
@@ -323,7 +323,7 @@ export default function PinScreen() {
                     onPress={handleDelete}
                     className="w-[28%] aspect-square items-center justify-center rounded-full mb-6"
                 >
-                    <LucideDelete size={32} color="#64748b" />
+                    <LucideDelete size={32} color={themeColors.textGray} />
                 </Pressable>
             </View>
         </View>

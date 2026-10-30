@@ -6,8 +6,10 @@ import { useTransaksiBengkelDetail } from '../../hooks/useBengkel';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { isBengkelTransactionLocked } from '../../utils/bengkelTransaction';
+import { useUIStore } from '../../store/useUIStore';
 
 export default function BengkelOrderScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id?: string }>();
     const orderId = id ? Number(id) : null;
@@ -26,7 +28,7 @@ export default function BengkelOrderScreen() {
     if (orderId && isLoading) {
         return (
             <View className="flex-1 bg-surface items-center justify-center">
-                <ActivityIndicator size="large" color="#023C69" />
+                <ActivityIndicator size="large" color={themeColors.primary} />
             </View>
         );
     }

@@ -29,6 +29,7 @@ import { BatalkanKasModal } from '../../components/finance/BatalkanKasModal';
 import { Header } from '../../components/ui/Header';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 
 const STATUS_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -37,6 +38,7 @@ const STATUS_FILTERS = [
 ];
 
 export default function KasbonScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
@@ -269,7 +271,7 @@ export default function KasbonScreen() {
                         <Typography variant="caption" className="text-textGray font-bold uppercase tracking-widest">Sudah Dibayar</Typography>
                         <Typography variant="body1" weight="bold" className="text-emerald-600">{formatCurrency(selectedKasbon.jumlah_bayar || 0)}</Typography>
                     </View>
-                    <View className="h-[1px] bg-gray-200 my-4" />
+                    <View className="h-[1px] bg-border my-4" />
                     <View className="flex-row justify-between">
                         <Typography variant="caption" weight="bold" className="text-textMain font-bold uppercase tracking-widest">Sisa Kasbon</Typography>
                         <Typography variant="h3" weight="bold" className="text-rose-600">
@@ -331,7 +333,7 @@ export default function KasbonScreen() {
                     <Typography variant="h2" weight="bold" className="text-2xl tracking-tight">Buat Kasbon Baru</Typography>
                 </View>
                 <Pressable onPress={closeSheets} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                    <X size={20} color="#6B7280" />
+                    <X size={20} color={themeColors.textGray} />
                 </Pressable>
             </View>
 
@@ -343,12 +345,12 @@ export default function KasbonScreen() {
                         className="bg-background rounded-2xl border border-transparent px-5 py-4 flex-row items-center justify-between"
                     >
                         <View className="flex-row items-center">
-                            <User size={18} color={formData.karyawan_nama ? "#023C69" : "#9CA3AF"} />
+                            <User size={18} color={formData.karyawan_nama ? themeColors.primary : themeColors.textGray} />
                             <Typography className={`ml-3 font-medium ${formData.karyawan_nama ? 'text-textMain' : 'text-textGray'}`}>
                                 {formData.karyawan_nama || 'Pilih Karyawan'}
                             </Typography>
                         </View>
-                        <ChevronLeft size={18} color="#9CA3AF" style={{ transform: [{ rotate: showKaryawanPicker ? '90deg' : '270deg' }] }} />
+                        <ChevronLeft size={18} color={themeColors.textGray} style={{ transform: [{ rotate: showKaryawanPicker ? '90deg' : '270deg' }] }} />
                     </Pressable>
 
                     {showKaryawanPicker && (
@@ -447,7 +449,7 @@ export default function KasbonScreen() {
 
                                     <View>
                                         <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest mb-2.5 ml-1">Nominal (Rp)</Typography>
-                                        <View className="bg-surface/80 rounded-2xl border border-gray-100/50 px-5 py-4">
+                                        <View className="bg-surface/80 rounded-2xl border border-border px-5 py-4">
                                             <TextInput
                                                 className="font-bold text-textMain text-base h-7 p-0"
                                                 placeholder="0"
@@ -471,7 +473,7 @@ export default function KasbonScreen() {
                                 onPress={() => setDisbursements([...disbursements, { id: Date.now() + Math.random(), metode: 'tunai', nominal: '' }])}
                                 className="flex-row items-center justify-center py-6 border border-dashed border-transparent rounded-[32px] bg-surface/30"
                             >
-                                <Plus size={18} color="#9CA3AF" />
+                                <Plus size={18} color={themeColors.textGray} />
                                 <Typography className="text-textGray font-bold text-xs ml-2 tracking-wide">Tambah Metode Pembayaran Lain</Typography>
                             </Pressable>
                         </View>
@@ -588,7 +590,7 @@ export default function KasbonScreen() {
                                         {filter.label}
                                     </Typography>
                                     {count !== undefined && (
-                                        <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                        <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-border'}`}>
                                             <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : 'text-textGray'}`}>
                                                 {formatNumber(count)}
                                             </Typography>
@@ -600,13 +602,13 @@ export default function KasbonScreen() {
                     </ScrollView>
 
                     <View className="flex-row items-center px-4 bg-background h-14 rounded-2xl border border-transparent">
-                        <Search size={18} color="#9CA3AF" />
+                        <Search size={18} color={themeColors.textGray} />
                         <TextInput
                             className="flex-1 ml-3 text-sm text-textMain font-medium h-full"
                             placeholder="Cari nama karyawan atau nomor kasbon..."
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                             clearButtonMode="while-editing"
                         />
                     </View>
@@ -615,7 +617,7 @@ export default function KasbonScreen() {
 
             {loading && !refreshing ? (
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="#023C69" />
+                    <ActivityIndicator size="large" color={themeColors.primary} />
                 </View>
             ) : (
                 <FlatList
@@ -634,7 +636,7 @@ export default function KasbonScreen() {
                                 <View className="flex-row items-center justify-between mb-4">
                                     <View className="flex-row items-center flex-1">
                                         <View className={`w-12 h-12 ${isLunas ? 'bg-emerald-50' : 'bg-primary/5'} rounded-2xl items-center justify-center mr-4 border ${isLunas ? 'border-emerald-100/50' : 'border-primary/5'}`}>
-                                            <User size={24} color={isLunas ? '#10B981' : '#023C69'} />
+                                            <User size={24} color={isLunas ? '#10B981' : themeColors.primary} />
                                         </View>
                                         <View className="flex-1">
                                             <Typography variant="body1" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
@@ -682,11 +684,11 @@ export default function KasbonScreen() {
                     }}
                     keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 200 }}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                     ListEmptyComponent={
                         <View className="items-center py-20">
                             <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-6">
-                                <Wallet size={40} color="#D1D5DB" />
+                                <Wallet size={40} color={findPaletteBorder(themeColors)} />
                             </View>
                             <Typography className="text-textGray font-medium">Tidak ada kasbon ditemukan</Typography>
                         </View>
@@ -712,7 +714,7 @@ export default function KasbonScreen() {
                         <View className="flex-1 justify-end bg-black/40">
                             <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                             <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
-                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                                <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                                 <ScrollView style={{ flex: 1 }} className="px-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                     {renderCreateForm()}
                                 </ScrollView>
@@ -724,7 +726,7 @@ export default function KasbonScreen() {
                         <View className="flex-1 justify-end bg-black/40">
                             <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                             <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[80%] self-center p-0 overflow-hidden shadow-2xl relative">
-                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                                <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                                 <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                     {renderDetailContent()}
                                 </ScrollView>

@@ -178,7 +178,7 @@ function CustomTabBarInner() {
             case 'fin-akun':
                 return { path: '/finance/akun', icon: Wallet, color: '#2563EB' };
             case 'history':
-                return { path: '/history', icon: History, color: '#64748B' };
+                return { path: '/history', icon: History, color: themeColors.textGray };
             case 'sdm-gaji':
                 return { path: '/sdm/slip-gaji', icon: Receipt, color: '#06B6D4' };
             case 'profile':
@@ -347,7 +347,7 @@ function CustomTabBarInner() {
                                     <View className="mb-1">
                                         <IconComponent
                                             size={20}
-                                            color="#9CA3AF"
+                                            color={themeColors.textGray}
                                             strokeWidth={2}
                                         />
                                     </View>

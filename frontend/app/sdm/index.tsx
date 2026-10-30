@@ -9,6 +9,7 @@ import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 
 const QUICK_ACTIONS = [
     { id: 'karyawan', label: 'Karyawan', icon: Users, color: '#3B82F6', route: '/sdm/karyawan' },
@@ -18,6 +19,7 @@ const QUICK_ACTIONS = [
 ];
 
 export default function SDMScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
     const user = useAuthStore((s) => s.user);
     const [refreshing, setRefreshing] = useState(false);
@@ -53,7 +55,7 @@ export default function SDMScreen() {
                 className="flex-1 px-6"
                 contentContainerStyle={{ paddingBottom: 100, paddingTop: 16 }}
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
             >
                 {/* Premium Circular Quick Actions */}
                 <Typography variant="h3" weight="bold" className="text-textMain mb-5 tracking-tight">Navigasi Cepat</Typography>
@@ -99,7 +101,7 @@ export default function SDMScreen() {
                                 <Typography className="text-textGray text-xs">Catat Masuk, Pulang & Izin</Typography>
                             </View>
                         </View>
-                        <ChevronRight size={18} color="#D1D5DB" />
+                        <ChevronRight size={18} color={findPaletteBorder(themeColors)} />
                     </Pressable>
 
                     {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
@@ -116,7 +118,7 @@ export default function SDMScreen() {
                                     <Typography className="text-textGray text-xs">Informasi Data Karyawan</Typography>
                                 </View>
                             </View>
-                            <ChevronRight size={18} color="#D1D5DB" />
+                            <ChevronRight size={18} color={findPaletteBorder(themeColors)} />
                         </Pressable>
                     )}
 
@@ -133,7 +135,7 @@ export default function SDMScreen() {
                                 <Typography className="text-textGray text-xs">Pinjaman & Riwayat Kasbon</Typography>
                             </View>
                         </View>
-                        <ChevronRight size={18} color="#D1D5DB" />
+                        <ChevronRight size={18} color={findPaletteBorder(themeColors)} />
                     </Pressable>
 
                     {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
@@ -150,7 +152,7 @@ export default function SDMScreen() {
                                     <Typography className="text-textGray text-xs">Generate & Download Slip</Typography>
                                 </View>
                             </View>
-                            <ChevronRight size={18} color="#D1D5DB" />
+                            <ChevronRight size={18} color={findPaletteBorder(themeColors)} />
                         </Pressable>
                     )}
                 </View>

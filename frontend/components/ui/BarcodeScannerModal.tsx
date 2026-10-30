@@ -382,7 +382,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                 ) : (
                     <View style={styles.cameraContainer}>
                         {webCameraError ? (
-                            <View className="flex-1 items-center justify-center bg-gray-900 px-10">
+                            <View className="flex-1 items-center justify-center bg-textMain px-10">
                                 <View className="w-20 h-20 bg-red-500/10 rounded-full items-center justify-center mb-6 border border-red-500/20">
                                     <AlertTriangle size={40} color="#EF4444" strokeWidth={1} />
                                 </View>
@@ -394,7 +394,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                 </View>
                             </View>
                         ) : scannerMode === 'web-camera' ? (
-                            <View className="flex-1 items-center justify-center bg-gray-900 px-4">
+                            <View className="flex-1 items-center justify-center bg-textMain px-4">
                                 {/* Web Camera Scanner via html5-qrcode */}
                                 <View className="w-full max-w-md">
                                     <View className="items-center mb-4">
@@ -531,7 +531,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                 </View>
                             </CameraView>
                         ) : (
-                            <View className="flex-1 items-center justify-center bg-gray-900 px-10">
+                            <View className="flex-1 items-center justify-center bg-textMain px-10">
                                 {/* Item Scan Mode Badge for Hardware */}
                                 {continuous && (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.85)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, marginBottom: 24 }}>

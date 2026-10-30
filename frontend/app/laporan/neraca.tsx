@@ -172,7 +172,7 @@ export default function NeracaScreen() {
     const renderAktivaLancar = () => {
         const al = report?.aktiva_lancar || {} as any;
         return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-border bg-surface rounded-2xl w-full">
                 <View className="bg-emerald-50/70 px-5 py-4 flex-row justify-between items-center border-b border-emerald-100/50 w-full">
                     <View className="flex-row items-center">
                         <View className="w-10 h-10 rounded-full bg-emerald-100/80 items-center justify-center mr-3">
@@ -225,7 +225,7 @@ export default function NeracaScreen() {
                             <FinancialRow label="Piutang Unit Bengkel" value={al.piutang_usaha || 0} small />
                             <FinancialRow label="Piutang Unit Mobil" value={al.piutang_mobil || 0} small />
                             <FinancialRow label="Piutang Jasa Angkut" value={al.piutang_jasa_angkut || 0} small />
-                            <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">Total Piutang = akumulasi sejak awal sistem per tanggal sama.</Typography>
+                            <Typography variant="caption" className="text-textGray text-[10px] mt-1">Total Piutang = akumulasi sejak awal sistem per tanggal sama.</Typography>
                             <View className="h-[1px] bg-background w-full my-2" />
                             <FinancialRow label="Total Piutang" value={al.total_piutang || 0} bold color="text-indigo-700" />
                         </View>
@@ -254,7 +254,7 @@ export default function NeracaScreen() {
     const renderAktivaTetap = () => {
         const at = report?.aktiva_tetap || {} as any;
         return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-border bg-surface rounded-2xl w-full">
                 <View className="bg-indigo-50/70 px-5 py-4 flex-row justify-between items-center border-b border-indigo-100/50 w-full">
                     <View className="flex-row items-center">
                         <View className="w-10 h-10 rounded-full bg-indigo-100/80 items-center justify-center mr-3">
@@ -281,7 +281,7 @@ export default function NeracaScreen() {
                             ))
                         ) : (
                             <View className="py-4 items-center">
-                                <Typography variant="caption" className="text-slate-400">Belum ada aset terdaftar</Typography>
+                                <Typography variant="caption" className="text-textGray">Belum ada aset terdaftar</Typography>
                             </View>
                         )}
                         <View className="h-[1px] bg-background w-full my-3" />
@@ -295,7 +295,7 @@ export default function NeracaScreen() {
     const renderModalSection = () => {
         const m = report?.modal || {} as any;
         return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-border bg-surface rounded-2xl w-full">
                 <View className="bg-violet-50/70 px-5 py-4 flex-row justify-between items-center border-b border-violet-100/50 w-full">
                     <View className="flex-row items-center">
                         <View className="w-10 h-10 rounded-full bg-violet-100/80 items-center justify-center mr-3">
@@ -324,20 +324,20 @@ export default function NeracaScreen() {
 
                     <View className="mb-4 w-full">
                         <FinancialRow label="Penyesuaian Harga Beli Spare Part" value={m.penyesuaian_harga_beli_sparepart || 0} bold large color={(m.penyesuaian_harga_beli_sparepart || 0) < 0 ? undefined : 'text-violet-700'} />
-                        <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">
+                        <Typography variant="caption" className="text-textGray text-[10px] mt-1">
                             Selisih harga beli stok lama saat harga beli berubah: positif = laba, negatif = rugi. Persediaan dinilai harga beli terbaru. Sudah termasuk di baris Modal.
                         </Typography>
                         {(m.koreksi_stok_sparepart || 0) !== 0 && (
                             <View className="mt-2">
                                 <FinancialRow label="Koreksi Stok Opname Spare Part (Memo)" value={m.koreksi_stok_sparepart} color="text-violet-700" />
-                                <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">Selisih stok fisik vs sistem (edit stok di Master Data), sudah termasuk di baris Modal.</Typography>
+                                <Typography variant="caption" className="text-textGray text-[10px] mt-1">Selisih stok fisik vs sistem (edit stok di Master Data), sudah termasuk di baris Modal.</Typography>
                             </View>
                         )}
                     </View>
 
                     <View className="mb-4 w-full">
                         <FinancialRow label="3. Prive (Pengambilan Pemilik)" value={m.prive} isNegative bold large />
-                        <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">Prive kumulatif; Prive Laba Rugi = periode berjalan saja.</Typography>
+                        <Typography variant="caption" className="text-textGray text-[10px] mt-1">Prive kumulatif; Prive Laba Rugi = periode berjalan saja.</Typography>
                     </View>
                 </View>
             </Card>
@@ -347,7 +347,7 @@ export default function NeracaScreen() {
     const renderHutangSection = () => {
         const h = report?.hutang || {} as any;
         return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-border bg-surface rounded-2xl w-full">
                 <View className="bg-rose-50/70 px-5 py-4 flex-row justify-between items-center border-b border-rose-100/50 w-full">
                     <View className="flex-row items-center">
                         <View className="w-10 h-10 rounded-full bg-rose-100/80 items-center justify-center mr-3">
@@ -369,7 +369,7 @@ export default function NeracaScreen() {
                     <FinancialRow label="1. Hutang Pembelian Part" value={h.hutang_part} small large />
                     <FinancialRow label="2. Hutang Pembelian Mobil" value={h.hutang_mobil} small large />
                     <FinancialRow label="3. Hutang Investor" value={h.hutang_investor} small large />
-                    <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">Cerminan Dana Investor di Perubahan Modal — berkurang saat unit terjual & dana cair ke investor.</Typography>
+                    <Typography variant="caption" className="text-textGray text-[10px] mt-1">Cerminan Dana Investor di Perubahan Modal — berkurang saat unit terjual & dana cair ke investor.</Typography>
                     <FinancialRow label="4. Hutang Lainnya / Manual Unit" value={h.hutang_lainnya} small large />
                     {(h.hutang_jasa_angkut || 0) > 0 && (
                         <FinancialRow label="5. Hutang Jasa Angkut" value={h.hutang_jasa_angkut} small large />
@@ -536,7 +536,7 @@ export default function NeracaScreen() {
                     </View>
                 ) : (
                     <>
-                        <View className="bg-slate-900 p-6 rounded-[32px] shadow-xl shadow-slate-900/20 mb-8 mt-2 w-full">
+                        <View className="bg-textMain p-6 rounded-[32px] shadow-xl shadow-slate-900/20 mb-8 mt-2 w-full">
                             <View className="flex-row justify-between items-center mb-6">
                                 <View className="bg-emerald-500/20 px-3 py-1.5 rounded-full border border-emerald-500/20">
                                     <Typography className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Balance Sheet</Typography>
@@ -550,12 +550,12 @@ export default function NeracaScreen() {
                             </View>
                             <View className="flex-row justify-between pt-1">
                                 <View className="flex-1">
-                                    <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Aktiva</Typography>
+                                    <Typography className="text-textGray text-[9px] uppercase font-bold mb-1 tracking-widest">Total Aktiva</Typography>
                                     <Typography weight="bold" className={(report?.total_aktiva || 0) < 0 ? "text-red-400" : "text-white"}>{formatCurrencyDisplay(report?.total_aktiva || 0)}</Typography>
                                 </View>
-                                <View className="w-[1px] bg-slate-700/50 mx-4" />
+                                <View className="w-[1px] bg-textMain mx-4" />
                                 <View className="flex-1 items-end">
-                                    <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Pasiva</Typography>
+                                    <Typography className="text-textGray text-[9px] uppercase font-bold mb-1 tracking-widest">Total Pasiva</Typography>
                                     <Typography weight="bold" className={(report?.total_pasiva || 0) < 0 ? "text-red-400" : "text-white"}>{formatCurrencyDisplay(report?.total_pasiva || 0)}</Typography>
                                 </View>
                             </View>
@@ -599,7 +599,7 @@ export default function NeracaScreen() {
             {showPdfPreview && (
                 <Modal onRequestClose={() => setShowPdfPreview(false)} visible={showPdfPreview} animationType="slide">
                     <SafeAreaView className="flex-1 bg-surface">
-                        <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-surface">
+                        <View className="flex-row items-center justify-between px-4 py-3 border-b border-border bg-surface">
                             <Pressable onPress={() => setShowPdfPreview(false)} className="w-10 h-10 items-center justify-center rounded-full bg-background"><X size={20} color="#1e293b" /></Pressable>
                             <Typography variant="body1" weight="bold" className="text-text">Preview Neraca</Typography>
                             <Pressable

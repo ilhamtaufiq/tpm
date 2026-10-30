@@ -17,6 +17,7 @@ import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw.js';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { useUnsoldInvestorCars, usePendingInvestorDisbursements, useHutangList } from '../../hooks/useKeuangan';
 import { Hutang } from '../../services/keuangan';
+import { useUIStore } from '../../store/useUIStore';
 
 const formatUnitLabel = (unit?: string) => {
     if (!unit) return '-';
@@ -24,6 +25,7 @@ const formatUnitLabel = (unit?: string) => {
 };
 
 export default function HutangInvestorScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const [search, setSearch] = useState('');
     const [refreshing, setRefreshing] = useState(false);
 
@@ -73,7 +75,7 @@ export default function HutangInvestorScreen() {
                         onPress={onRefresh}
                         className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
-                        <RefreshCw size={20} color="#1F2937" />
+                        <RefreshCw size={20} color={themeColors.text} />
                     </Pressable>
                 }
             />
@@ -81,7 +83,7 @@ export default function HutangInvestorScreen() {
             <ScrollView
                 className="flex-1"
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
             >
                 <View className="px-6 mt-4">
                     <Card className="p-6 rounded-[32px] border-transparent shadow-sm bg-primary">
@@ -128,13 +130,13 @@ export default function HutangInvestorScreen() {
                 <View className="px-6 mt-4">
                     <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-transparent shadow-sm">
                         <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-background">
-                            <Search size={18} color="#9CA3AF" />
+                            <Search size={18} color={themeColors.textGray} />
                             <TextInput
                                 placeholder="Cari nama investor atau unit..."
                                 className="flex-1 ml-3 text-sm font-semibold text-textMain"
                                 value={search}
                                 onChangeText={setSearch}
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={themeColors.textGray}
                             />
                         </View>
                     </View>
@@ -146,7 +148,7 @@ export default function HutangInvestorScreen() {
                         <Typography variant="h3" weight="bold" className="tracking-tight text-textMain">Dana Tertanam</Typography>
                         <Pressable onPress={() => router.push('/finance/pencairan-investor')} className="flex-row items-center">
                             <Typography variant="caption" className="text-primary font-bold mr-1">Tarik Dana</Typography>
-                            <ChevronRight size={14} color="#023C69" />
+                            <ChevronRight size={14} color={themeColors.primary} />
                         </Pressable>
                     </View>
 
@@ -161,11 +163,11 @@ export default function HutangInvestorScreen() {
                                 <View className="flex-row justify-between items-start mb-3">
                                     <View className="flex-1 mr-3">
                                         <View className="flex-row items-center mb-1">
-                                            <Car size={14} color="#023C69" className="mr-1.5" />
+                                            <Car size={14} color={themeColors.primary} className="mr-1.5" />
                                             <Typography variant="body1" weight="bold" numberOfLines={1}>{item.mobil}</Typography>
                                         </View>
                                         <View className="flex-row items-center">
-                                            <User size={12} color="#9CA3AF" className="mr-1.5" />
+                                            <User size={12} color={themeColors.textGray} className="mr-1.5" />
                                             <Typography variant="caption" className="text-textGray">{item.nama_investor}</Typography>
                                         </View>
                                     </View>
@@ -174,7 +176,7 @@ export default function HutangInvestorScreen() {
                                     </View>
                                 </View>
 
-                                <View className="bg-surface/50 rounded-3xl p-4 border border-gray-100/50">
+                                <View className="bg-surface/50 rounded-3xl p-4 border border-border">
                                     <View className="flex-row justify-between mb-2">
                                         <Typography className="text-textGray text-[10px] font-bold">DANA INVESTOR</Typography>
                                         <Typography variant="caption" weight="semibold" className="text-textGray">{formatCurrency(item.nominal_investor)}</Typography>
@@ -183,7 +185,7 @@ export default function HutangInvestorScreen() {
                                         <Typography className="text-textGray text-[10px] font-bold">SUDAH DITARIK</Typography>
                                         <Typography variant="caption" weight="bold" className="text-rose-600">-{formatCurrency(item.total_ditarik)}</Typography>
                                     </View>
-                                    <View className="h-[1px] bg-gray-200 my-2 border-dashed" />
+                                    <View className="h-[1px] bg-border my-2 border-dashed" />
                                     <View className="flex-row justify-between">
                                         <Typography className="text-textMain text-[11px] font-bold">SISA TERTANAM</Typography>
                                         <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(item.sisa_bisa_ditarik)}</Typography>
@@ -216,18 +218,18 @@ export default function HutangInvestorScreen() {
                                 <View className="flex-row justify-between items-start mb-3">
                                     <View className="flex-1 mr-3">
                                         <View className="flex-row items-center mb-1">
-                                            <Car size={14} color="#023C69" className="mr-1.5" />
+                                            <Car size={14} color={themeColors.primary} className="mr-1.5" />
                                             <Typography variant="body1" weight="bold" numberOfLines={1}>{item.mobil}</Typography>
                                         </View>
                                         <View className="flex-row items-center">
-                                            <User size={12} color="#9CA3AF" className="mr-1.5" />
+                                            <User size={12} color={themeColors.textGray} className="mr-1.5" />
                                             <Typography variant="caption" className="text-textGray">{item.nama_investor}</Typography>
                                         </View>
                                     </View>
                                     <Badge label="READY TO PAY" variant="success" />
                                 </View>
 
-                                <View className="bg-surface/50 rounded-3xl p-4 border border-gray-100/50">
+                                <View className="bg-surface/50 rounded-3xl p-4 border border-border">
                                     <View className="flex-row justify-between mb-2">
                                         <Typography className="text-textGray text-[10px] font-bold">MODAL INVESTOR</Typography>
                                         <Typography variant="caption" weight="semibold" className="text-textGray">{formatCurrency(item.nominal_investor)}</Typography>
@@ -236,7 +238,7 @@ export default function HutangInvestorScreen() {
                                         <Typography className="text-textGray text-[10px] font-bold">BAGIAN LABA</Typography>
                                         <Typography variant="caption" weight="bold" className="text-emerald-600">+{formatCurrency(item.laba_investor)}</Typography>
                                     </View>
-                                    <View className="h-[1px] bg-gray-200 my-2 border-dashed" />
+                                    <View className="h-[1px] bg-border my-2 border-dashed" />
                                     <View className="flex-row justify-between">
                                         <Typography className="text-textMain text-[11px] font-bold">TOTAL WAJIB CAIR</Typography>
                                         <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(item.total_pencairan)}</Typography>
@@ -279,7 +281,7 @@ export default function HutangInvestorScreen() {
                                     />
                                 </View>
 
-                                <View className="bg-surface/50 rounded-3xl p-4 border border-gray-100/50">
+                                <View className="bg-surface/50 rounded-3xl p-4 border border-border">
                                     <View className="flex-row justify-between mb-2">
                                         <Typography className="text-textGray text-[10px] font-bold">NOMINAL</Typography>
                                         <Typography variant="caption" weight="semibold" className="text-textGray">{formatCurrency(Number(item.nominal_hutang || 0))}</Typography>
@@ -288,7 +290,7 @@ export default function HutangInvestorScreen() {
                                         <Typography className="text-textGray text-[10px] font-bold">DIBAYAR</Typography>
                                         <Typography variant="caption" weight="bold" className="text-emerald-600">{formatCurrency(Number(item.total_dibayar || 0))}</Typography>
                                     </View>
-                                    <View className="h-[1px] bg-gray-200 my-2 border-dashed" />
+                                    <View className="h-[1px] bg-border my-2 border-dashed" />
                                     <View className="flex-row justify-between">
                                         <Typography className="text-textMain text-[11px] font-bold">SISA HUTANG</Typography>
                                         <Typography variant="body2" weight="bold" className="text-rose-600">{formatCurrency(Number(item.sisa_hutang || 0))}</Typography>

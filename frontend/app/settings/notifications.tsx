@@ -11,6 +11,7 @@ import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { useNotificationStore, RealtimeNotification } from '../../store/useNotificationStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { useUIStore } from '../../store/useUIStore';
 
 const ENTITY_LABELS: Record<string, string> = {
     bengkel: 'Transaksi Bengkel',
@@ -62,6 +63,7 @@ const getNotificationMeta = (item: RealtimeNotification) => {
 };
 
 export default function NotificationsScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const notifications = useNotificationStore(state => state.items);
     const unreadCount = useNotificationStore(state => state.unreadCount);
@@ -119,7 +121,7 @@ export default function NotificationsScreen() {
                 {list.length === 0 ? (
                     <View className="bg-surface border border-transparent rounded-3xl p-6 items-center">
                         <View className="w-14 h-14 rounded-2xl bg-background items-center justify-center mb-3">
-                            <Bell size={24} color="#9CA3AF" />
+                            <Bell size={24} color={themeColors.textGray} />
                         </View>
                         <Typography weight="bold" className="text-text mb-1">Belum ada notifikasi</Typography>
                         <Typography variant="caption" className="text-textGray text-center">

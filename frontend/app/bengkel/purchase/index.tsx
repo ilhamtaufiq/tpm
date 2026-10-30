@@ -35,8 +35,10 @@ import { formatCurrency, tanggalLokal } from '../../../utils/format';
 import { getErrorMessage } from '../../../utils/error';
 import { ReturPembelianModal } from '../../../components/ReturPembelianModal';
 import { getCustomTabBarBottomPadding } from '../../../components/ui/CustomTabBar';
+import { useUIStore } from '../../../store/useUIStore';
 
 export default function PurchaseIndexScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
@@ -129,7 +131,7 @@ export default function PurchaseIndexScreen() {
             {/* Search Box */}
             <View className="p-6 bg-surface border-b border-transparent">
                 <View className="flex-row items-center px-4 bg-background h-12 rounded-2xl border border-transparent">
-                    <Search size={18} color="#9CA3AF" />
+                    <Search size={18} color={themeColors.textGray} />
                     <TextInput
                         placeholder="Cari supplier, nomor faktur, atau nota..."
                         className="flex-1 ml-3 text-sm font-medium text-textMain"
@@ -146,18 +148,18 @@ export default function PurchaseIndexScreen() {
                 className="flex-1 px-6 pt-6"
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
                 }
             >
                 {isLoading ? (
                     <View className="py-20 items-center">
-                        <ActivityIndicator size="large" color="#023C69" />
+                        <ActivityIndicator size="large" color={themeColors.primary} />
                         <Typography className="text-textGray text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
                     </View>
                 ) : purchases.length === 0 ? (
                     <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-transparent">
                         <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
-                            <ShoppingCart size={40} color="#9CA3AF" />
+                            <ShoppingCart size={40} color={themeColors.textGray} />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[6px]">Belum Ada Data</Typography>
                         <Typography variant="caption" className="text-textGray mt-2">Tidak ditemukan transaksi pembelian</Typography>
@@ -190,10 +192,10 @@ export default function PurchaseIndexScreen() {
                                 </View>
                             </View>
 
-                            <View className="flex-row justify-between items-end pt-4 border-t border-gray-50/50">
+                            <View className="flex-row justify-between items-end pt-4 border-t border-border">
                                 <View>
                                     <View className="flex-row items-center mb-1">
-                                        <ClipboardList size={12} color="#9CA3AF" className="mr-1.5" />
+                                        <ClipboardList size={12} color={themeColors.textGray} className="mr-1.5" />
                                         <Typography variant="caption" className="text-textGray font-medium">Items: {item.detail?.length || 0} Barang</Typography>
                                     </View>
                                     <Typography variant="caption" className="text-primary/60 font-bold uppercase text-[9px] tracking-widest">
@@ -246,7 +248,7 @@ export default function PurchaseIndexScreen() {
                         />
                     }
                 >
-                        <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center mb-6" />
+                        <View className="w-12 h-1.5 bg-border rounded-full self-center mb-6" />
 
                         <View className="flex-row items-center justify-between mb-6">
                             <View>
@@ -271,7 +273,7 @@ export default function PurchaseIndexScreen() {
                             <Card variant="outlined" className="p-5 border-transparent bg-surface/30 mb-6">
                                 <View className="space-y-4">
                                     <View className="flex-row items-center">
-                                        <User size={18} color="#64748B" />
+                                        <User size={18} color={themeColors.textGray} />
                                         <View className="ml-3">
                                             <Typography variant="caption" className="text-textGray font-bold uppercase tracking-widest text-[9px]">Supplier</Typography>
                                             <Typography weight="bold" className="text-textMain">{selectedPurchase?.supplier?.nama || selectedPurchase?.supplier_nama || 'Supplier Umum'}</Typography>
@@ -279,7 +281,7 @@ export default function PurchaseIndexScreen() {
                                     </View>
 
                                     <View className="flex-row items-center">
-                                        <Calendar size={18} color="#64748B" />
+                                        <Calendar size={18} color={themeColors.textGray} />
                                         <View className="ml-3">
                                             <Typography variant="caption" className="text-textGray font-bold uppercase tracking-widest text-[9px]">Tanggal & Faktur</Typography>
                                             <Typography weight="bold" className="text-textMain">
@@ -290,7 +292,7 @@ export default function PurchaseIndexScreen() {
                                     </View>
 
                                     <View className="flex-row items-center">
-                                        <Clock size={18} color="#64748B" />
+                                        <Clock size={18} color={themeColors.textGray} />
                                         <View className="ml-3">
                                             <Typography variant="caption" className="text-textGray font-bold uppercase tracking-widest text-[9px]">Status Pembayaran</Typography>
                                             <View className="flex-row items-center mt-0.5">

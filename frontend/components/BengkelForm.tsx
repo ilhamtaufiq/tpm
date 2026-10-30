@@ -39,7 +39,7 @@ import { ArmadaSelector } from './ui/ArmadaSelector';
 import { Customer, Vehicle } from '../services/masterData';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
-import { useUIStore } from '../store/useUIStore';
+import { useUIStore, ThemeColors } from '../store/useUIStore';
 import { findSparePartByBarcode, parseBarcodeScan } from '../utils/barcodeScan';
 import { printReceipt, PrintReceiptData } from '../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../utils/printSettings';
@@ -59,6 +59,8 @@ interface BengkelFormProps {
 }
 
 export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelFormProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
+    const styles = useMemo(() => makeStyles(themeColors), [themeColors]);
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const insets = useSafeAreaInsets();
     const isLocked = isBengkelTransactionLocked(initialData);
@@ -779,7 +781,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                 : 'bg-surface border-border'
                                 }`}
                         >
-                            <cat.icon size={20} color={kategori === cat.key ? cat.color : '#9CA3AF'} />
+                            <cat.icon size={20} color={kategori === cat.key ? cat.color : themeColors.textGray} />
                             <Typography
                                 weight={kategori === cat.key ? 'bold' : 'medium'}
                                 className={`text-[10px] mt-1 ${kategori === cat.key ? 'text-primary' : 'text-textGray'}`}
@@ -822,7 +824,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                             {selectedMobil ? (
                                 <Car size={20} color="#3B82F6" />
                             ) : (
-                                <Search size={20} color="#9CA3AF" />
+                                <Search size={20} color={themeColors.textGray} />
                             )}
                             <View className="flex-1 ml-3">
                                 {selectedMobil ? (
@@ -843,7 +845,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                     <X size={18} color="#EF4444" />
                                 </Pressable>
                             ) : (
-                                <ChevronRight size={18} color="#9CA3AF" />
+                                <ChevronRight size={18} color={themeColors.textGray} />
                             )}
                         </View>
                     </Pressable>
@@ -858,23 +860,23 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                         <View className="bg-surface" style={{ flex: 1 }}>
                             <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                                 <View className="items-center mb-2">
-                                    <View className="w-10 h-1 bg-gray-300 rounded-full" />
+                                    <View className="w-10 h-1 bg-border rounded-full" />
                                 </View>
                                 <View className="flex-row justify-between items-center mb-4">
                                     <Typography variant="h3" weight="bold">Cari Mobil</Typography>
                                     <Pressable onPress={() => setMobilSearchOpen(false)}>
-                                        <X size={24} color="#6B7280" />
+                                        <X size={24} color={themeColors.textGray} />
                                     </Pressable>
                                 </View>
                                 <View className="flex-row items-center bg-background rounded-xl px-4 py-3 mb-4">
-                                    <Search size={20} color="#9CA3AF" />
+                                    <Search size={20} color={themeColors.textGray} />
                                     <TextInput
                                         className="flex-1 ml-3 text-base text-text font-outfit"
                                         placeholder="Ketik plat, merek, atau model"
                                         value={mobilSearchQuery}
                                         onChangeText={setMobilSearchQuery}
                                         autoFocus
-                                        placeholderTextColor="#9CA3AF"
+                                        placeholderTextColor={themeColors.textGray}
                                         autoCapitalize="characters"
                                     />
                                 </View>
@@ -973,7 +975,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                         }}
                                         className={`px-4 py-3 rounded-xl border flex-row items-center ${selectedVehicle?.id === v.id ? 'bg-primary/10 border-primary' : 'bg-surface border-transparent'}`}
                                     >
-                                        <Truck size={14} color={selectedVehicle?.id === v.id ? 'primaryColor' : '#6B7280'} />
+                                        <Truck size={14} color={selectedVehicle?.id === v.id ? 'primaryColor' : themeColors.textGray} />
                                         <View className="ml-2">
                                             <Typography weight="bold" className={selectedVehicle?.id === v.id ? 'text-primary' : 'text-textMain'}>
                                                 {v.plat_nomor}
@@ -1030,7 +1032,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                         <Package size={18} color="#2563EB" />
                         <View className="ml-2">
                             <Typography variant="body2" weight="semibold">Sparepart & Servis</Typography>
-                            <Typography style={{ fontSize: 9, color: '#94A3B8' }}>Tambah item lewat satu daftar pilihan</Typography>
+                            <Typography style={{ fontSize: 9, color: themeColors.textGray }}>Tambah item lewat satu daftar pilihan</Typography>
                         </View>
                     </View>
                     <View className="flex-row items-center gap-2">
@@ -1085,7 +1087,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                     style={{
                                                         fontSize: 15,
                                                         fontWeight: '700',
-                                                        color: '#111827',
+                                                        color: themeColors.text,
                                                         textAlign: 'center',
                                                         width: '100%',
                                                         padding: 0,
@@ -1108,7 +1110,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                     style={{
                                                         fontSize: 15,
                                                         fontWeight: '700',
-                                                        color: '#111827',
+                                                        color: themeColors.text,
                                                         width: '100%',
                                                         padding: 0,
                                                     }}
@@ -1154,7 +1156,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                     style={{
                                                         fontSize: 15,
                                                         fontWeight: '700',
-                                                        color: '#111827',
+                                                        color: themeColors.text,
                                                         textAlign: 'center',
                                                         width: '100%',
                                                         padding: 0,
@@ -1177,7 +1179,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                     style={{
                                                         fontSize: 15,
                                                         fontWeight: '700',
-                                                        color: '#111827',
+                                                        color: themeColors.text,
                                                         width: '100%',
                                                         padding: 0,
                                                     }}
@@ -1234,7 +1236,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
 
                     <View className="h-[1px] bg-primary/10 mb-4" />
 
-                    <View className="bg-background p-4 rounded-3xl border border-slate-100">
+                    <View className="bg-background p-4 rounded-3xl border border-border">
                         <View className="flex-row justify-between items-center mb-1">
                             <View className="flex-row items-center flex-1">
                                 <Typography variant="body2" weight="bold" className="text-textGray uppercase tracking-wider text-[10px]">
@@ -1291,13 +1293,13 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                         })()}
                                     </View>
                                 )}
-                                <Typography variant="caption" className="text-slate-400 mt-1">
+                                <Typography variant="caption" className="text-textGray mt-1">
                                     {hasBillableItems ? 'Pembayaran diproses setelah pekerjaan selesai.' : 'Belum ada servis/sparepart. Simpan sebagai antrian dulu.'}
                                 </Typography>
                             </View>
 
                             <View className="items-end">
-                                <Typography variant="caption" className="text-slate-400 line-through mb-1">{diskon !== '0' ? formatCurrency(total) : ''}</Typography>
+                                <Typography variant="caption" className="text-textGray line-through mb-1">{diskon !== '0' ? formatCurrency(total) : ''}</Typography>
                                 <Typography variant="h2" weight="bold" className="text-primary text-2xl tracking-tighter">
                                     {formatCurrency(grandTotal)}
                                 </Typography>
@@ -1335,8 +1337,8 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                     <Typography variant="caption" weight="semibold" className="text-textGray mb-2 ml-1">Sumber Pembayaran</Typography>
                                     <View className="flex-row space-x-2 mb-3">
                                         {[
-                                            { label: 'Keuangan', value: 'Tunai', icon: <Wallet size={12} color={payments[0]?.metode === 'Tunai' ? 'white' : '#64748b'} /> },
-                                            { label: 'Bank', value: 'Transfer', icon: <Building2 size={12} color={payments[0]?.metode === 'Transfer' ? 'white' : '#64748b'} /> }
+                                            { label: 'Keuangan', value: 'Tunai', icon: <Wallet size={12} color={payments[0]?.metode === 'Tunai' ? 'white' : themeColors.textGray} /> },
+                                            { label: 'Bank', value: 'Transfer', icon: <Building2 size={12} color={payments[0]?.metode === 'Transfer' ? 'white' : themeColors.textGray} /> }
                                         ].map((m) => (
                                             <Pressable
                                                 key={m.value}
@@ -1346,11 +1348,11 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                     newP[0].metode = newP[0].metode === m.value ? '' : m.value;
                                                     setPayments(newP);
                                                 }}
-                                                className={`flex-1 py-2.5 rounded-2xl items-center justify-center border shadow-sm ${payments[0]?.metode === m.value ? 'bg-primary border-primary' : 'bg-background border-slate-100'}`}
+                                                className={`flex-1 py-2.5 rounded-2xl items-center justify-center border shadow-sm ${payments[0]?.metode === m.value ? 'bg-primary border-primary' : 'bg-background border-border'}`}
                                             >
                                                 <View className="flex-row items-center">
                                                     {m.icon}
-                                                    <Typography className={`ml-1.5 ${payments[0]?.metode === m.value ? 'text-white text-[10px] font-bold' : 'text-slate-600 text-[10px] font-semibold'}`}>{m.label}</Typography>
+                                                    <Typography className={`ml-1.5 ${payments[0]?.metode === m.value ? 'text-white text-[10px] font-bold' : 'text-textGray text-[10px] font-semibold'}`}>{m.label}</Typography>
                                                 </View>
                                             </Pressable>
                                         ))}
@@ -1372,7 +1374,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                         placeholder="0"
                                         keyboardType="numeric"
                                         containerClassName="mb-0"
-                                        innerContainerClassName="!bg-surface border-gray-100"
+                                        innerContainerClassName="!bg-surface border-border"
                                         className="h-10 text-sm font-bold"
                                         value={payments[0]?.nominal || ''}
                                         onChangeText={(val) => {
@@ -1430,7 +1432,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                     placeholder="0"
                                                     keyboardType="numeric"
                                                     containerClassName="mb-0"
-                                                    innerContainerClassName="!bg-surface border-gray-100"
+                                                    innerContainerClassName="!bg-surface border-border"
                                                     className="h-10 text-sm font-bold"
                                                     value={p.nominal}
                                                     onChangeText={(val) => {
@@ -1565,7 +1567,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                 >
                         <View className="px-6 pt-6 pb-4">
                             <View className="items-center mb-2">
-                                <View className="w-10 h-1 bg-gray-300 rounded-full" />
+                                <View className="w-10 h-1 bg-border rounded-full" />
                             </View>
                             <View className="flex-row justify-between items-start mb-2">
                                 <View className="flex-1 pr-3">
@@ -1586,20 +1588,20 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                         <Typography className="text-blue-600 text-[10px] ml-1 font-bold">Scan</Typography>
                                     </Pressable>
                                     <Pressable onPress={() => setIsSelectionSheetOpen(false)} className="bg-background rounded-full p-2">
-                                        <X size={20} color="#6B7280" />
+                                        <X size={20} color={themeColors.textGray} />
                                     </Pressable>
                                 </View>
                             </View>
 
                             <View className="flex-row items-center bg-background rounded-2xl px-4 py-3 mb-4">
-                                <Search size={18} color="#9CA3AF" />
+                                <Search size={18} color={themeColors.textGray} />
                                 <TextInput
                                     className="flex-1 ml-3 text-base text-text font-outfit"
                                     placeholder="Cari sparepart atau servis..."
                                     value={selectionSheetSearch}
                                     onChangeText={setSelectionSheetSearch}
                                     autoFocus
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={themeColors.textGray}
                                 />
                             </View>
 
@@ -1648,7 +1650,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                 </Typography>
                                             </View>
                                             <View className={`w-7 h-7 rounded-full items-center justify-center ${isSelected ? 'bg-primary' : 'bg-background'}`}>
-                                                {isSelected ? <CheckCircle2 size={16} color="white" /> : <Circle size={16} color="#94A3B8" />}
+                                                {isSelected ? <CheckCircle2 size={16} color="white" /> : <Circle size={16} color={themeColors.textGray} />}
                                             </View>
                                         </Pressable>
                                     );
@@ -1752,7 +1754,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                 </Typography>
                                             </View>
                                             <View className={`w-7 h-7 rounded-full items-center justify-center ${isSelected ? 'bg-primary' : 'bg-background'}`}>
-                                                {isSelected ? <CheckCircle2 size={16} color="white" /> : <Circle size={16} color="#94A3B8" />}
+                                                {isSelected ? <CheckCircle2 size={16} color="white" /> : <Circle size={16} color={themeColors.textGray} />}
                                             </View>
                                         </Pressable>
                                     );
@@ -1846,7 +1848,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (themeColors: ThemeColors) => StyleSheet.create({
     webContainer: {
         flex: 1,
 
@@ -1865,7 +1867,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 24,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: themeColors.background,
 
     },
     webScrollView: {

@@ -29,6 +29,7 @@ const CATEGORIES = [
 ];
 
 export default function TrashScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].id);
     const { data: items, isLoading, refetch } = useTrashList(activeCategory);
@@ -143,7 +144,7 @@ export default function TrashScreen() {
                             (!items || items.length === 0) ? 'bg-surface opacity-50' : 'bg-red-50'
                         }`}
                     >
-                        <Trash2 size={24} color={(!items || items.length === 0) ? "#9CA3AF" : "#EF4444"} />
+                        <Trash2 size={24} color={(!items || items.length === 0) ? themeColors.textGray : "#EF4444"} />
                     </Pressable>
                 }
             >
@@ -160,7 +161,7 @@ export default function TrashScreen() {
                             className={`px-4 py-2.5 rounded-xl mr-2 border ${
                                 activeCategory === cat.id
                                 ? 'bg-primary border-primary'
-                                : 'bg-surface border-gray-100'
+                                : 'bg-surface border-border'
                             }`}
                         >
                             <Typography
@@ -179,7 +180,7 @@ export default function TrashScreen() {
             <View className="flex-1 px-6 pt-4">
                 {isLoading ? (
                     <View className="flex-1 items-center justify-center">
-                        <ActivityIndicator size="large" color="#023C69" />
+                        <ActivityIndicator size="large" color={themeColors.primary} />
                     </View>
                 ) : items?.length > 0 ? (
                     <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
@@ -220,7 +221,7 @@ export default function TrashScreen() {
                 ) : (
                     <View className="flex-1 items-center justify-center pt-10">
                         <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-4">
-                            <ShieldCheck size={40} color="#9CA3AF" strokeWidth={1.5} />
+                            <ShieldCheck size={40} color={themeColors.textGray} strokeWidth={1.5} />
                         </View>
                         <Typography weight="bold" className="text-textGray">Tempat Sampah Kosong</Typography>
                         <Typography variant="caption" className="text-textGray mt-1 px-10 text-center">

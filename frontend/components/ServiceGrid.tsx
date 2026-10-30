@@ -15,6 +15,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { prefetchMenu, pathForPrefetch } from '../utils/prefetchMenu';
+import { useUIStore } from '../store/useUIStore';
 
 type MenuItem = {
     id: string;
@@ -68,6 +69,7 @@ const ServiceCard = React.memo(function ServiceCard({
 });
 
 function ServiceGridInner() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const user = useAuthStore(state => state.user);
     const { columns } = useResponsive();
     const queryClient = useQueryClient();
@@ -82,7 +84,7 @@ function ServiceGridInner() {
             { id: 'sdm', label: 'SDM', icon: Users, color: '#ec4899', path: '/sdm' },
             { id: 'laporan', label: 'Laporan', icon: BarChart3, color: '#14b8a6', path: '/laporan' },
             { id: 'riwayat', label: 'Riwayat', icon: History, color: '#6366f1', path: '/history' },
-            { id: 'profil', label: 'Pengaturan', icon: Settings, color: '#4b5563', path: '/(tabs)/profile' },
+            { id: 'profil', label: 'Pengaturan', icon: Settings, color: themeColors.textGray, path: '/(tabs)/profile' },
         ],
         []
     );

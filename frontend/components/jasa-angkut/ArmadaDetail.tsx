@@ -441,7 +441,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                                         </Typography>
                                                     </View>
 
-                                                    <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-100/50">
+                                                    <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-border">
                                                         <View className="flex-row items-center">
                                                             <View className={`w-2 h-2 rounded-full mr-1.5 ${
                                                                 isVoided ? 'bg-red-500' : item.status_bayar === 'LUNAS' ? 'bg-emerald-500' : 'bg-amber-500'

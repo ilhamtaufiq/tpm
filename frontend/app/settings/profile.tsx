@@ -206,7 +206,7 @@ export default function ProfileSettingsScreen() {
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-textGray mb-2 ml-1">Nama Lengkap</Typography>
                                 <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
-                                    <User size={18} color="#9CA3AF" />
+                                    <User size={18} color={themeColors.textGray} />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
                                         placeholder="Nama Lengkap"
@@ -220,7 +220,7 @@ export default function ProfileSettingsScreen() {
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-textGray mb-2 ml-1">Alamat Email</Typography>
                                 <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
-                                    <Mail size={18} color="#9CA3AF" />
+                                    <Mail size={18} color={themeColors.textGray} />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
                                         placeholder="email@example.com"
@@ -236,7 +236,7 @@ export default function ProfileSettingsScreen() {
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-textGray mb-2 ml-1">Nomor Telepon</Typography>
                                 <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
-                                    <Phone size={18} color="#9CA3AF" />
+                                    <Phone size={18} color={themeColors.textGray} />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
                                         placeholder="08xxxxxxxxxx"
@@ -251,7 +251,7 @@ export default function ProfileSettingsScreen() {
                             <View>
                                 <Typography variant="caption" className="text-textGray mb-2 ml-1">Jabatan / Divisi</Typography>
                                 <View className={`flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent ${!isAdmin ? 'opacity-50' : ''}`}>
-                                    <Briefcase size={18} color="#9CA3AF" />
+                                    <Briefcase size={18} color={themeColors.textGray} />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
                                         placeholder="Contoh: Manager"

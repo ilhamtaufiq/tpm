@@ -1,7 +1,9 @@
 import { Stack, Redirect } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useUIStore } from '../../store/useUIStore';
 
 export default function LaporanLayout() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const user = useAuthStore((s) => s.user);
     
     // Role-based access control (RBAC) at layout level
@@ -17,11 +19,11 @@ export default function LaporanLayout() {
     return (
         <Stack
             screenOptions={{
-                headerStyle: { backgroundColor: '#F9FAFB' },
+                headerStyle: { backgroundColor: themeColors.background },
                 headerShadowVisible: false,
-                headerTintColor: '#023C69',
+                headerTintColor: themeColors.primary,
                 headerTitleStyle: { fontWeight: 'bold' },
-                contentStyle: { backgroundColor: '#F9FAFB' },
+                contentStyle: { backgroundColor: themeColors.background },
             }}
         >
             <Stack.Screen name="index" options={{ headerShown: false }} />

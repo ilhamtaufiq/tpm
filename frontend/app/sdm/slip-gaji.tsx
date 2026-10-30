@@ -31,6 +31,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { Header } from '../../components/ui/Header';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 
 type RiwayatFilter = 'MINGGU' | 'BULAN' | 'TAHUN' | 'SEMUA';
 const RIWAYAT_FILTER_LABEL: Record<RiwayatFilter, string> = {
@@ -76,6 +77,7 @@ const getDayName = (dateString: string): string => {
 };
 
 export default function SlipGajiScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
@@ -628,10 +630,10 @@ export default function SlipGajiScreen() {
                     <Pressable
                         onPress={() => handleGenerateSingle(item)}
                         disabled={isGenerating || !!generatingId || !periodeSelesai}
-                        className={`h-14 px-4 sm:px-6 rounded-2xl flex-row items-center justify-center flex-shrink-0 ${isGenerating ? 'bg-background' : periodeSelesai ? 'bg-primary shadow-lg shadow-primary/30' : 'bg-gray-300'}`}
+                        className={`h-14 px-4 sm:px-6 rounded-2xl flex-row items-center justify-center flex-shrink-0 ${isGenerating ? 'bg-background' : periodeSelesai ? 'bg-primary shadow-lg shadow-primary/30' : 'bg-border'}`}
                     >
                         {isGenerating ? (
-                            <ActivityIndicator size="small" color="#023C69" />
+                            <ActivityIndicator size="small" color={themeColors.primary} />
                         ) : (
                             <>
                                 <Typography className="text-white text-xs font-black uppercase tracking-widest mr-2">{periodeSelesai ? 'Proses' : 'Belum Selesai'}</Typography>
@@ -690,7 +692,7 @@ export default function SlipGajiScreen() {
             <ScrollView 
                 className="flex-1"
                 contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
             >
                 {/* Range Selection Card - Unified Periode */}
                 <View className="mx-6 mb-4">
@@ -712,7 +714,7 @@ export default function SlipGajiScreen() {
                             </Pressable>
                             
                             <View className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                                <ArrowRight size={16} color="#023C69" />
+                                <ArrowRight size={16} color={themeColors.primary} />
                             </View>
 
                             <Pressable
@@ -747,7 +749,7 @@ export default function SlipGajiScreen() {
                         >
                             <View className="flex-row items-center">
                                 <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3">
-                                    <Calendar size={20} color="#023C69" />
+                                    <Calendar size={20} color={themeColors.primary} />
                                 </View>
                                 <View>
                                     <Typography className="text-textGray text-[8px] font-black uppercase tracking-widest">Tanggal Cetak Slip</Typography>
@@ -766,11 +768,11 @@ export default function SlipGajiScreen() {
                     {/* Glassmorphic Search */}
                     <View className="px-6 pt-2 pb-2">
                         <View className="bg-background px-5 py-4 rounded-[24px] border border-transparent flex-row items-center shadow-inner">
-                            <Search size={20} color="#D1D5DB" strokeWidth={2.5} />
+                            <Search size={20} color={findPaletteBorder(themeColors)} strokeWidth={2.5} />
                             <TextInput
                                 className="flex-1 ml-4 text-textMain font-medium"
                                 placeholder="Cari karyawan..."
-                                placeholderTextColor="#D1D5DB"
+                                placeholderTextColor={findPaletteBorder(themeColors)}
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                             />
@@ -783,11 +785,11 @@ export default function SlipGajiScreen() {
                             onPress={() => setActiveTab('pending')}
                             className={`flex-1 py-4 items-center rounded-3xl flex-row justify-center ${activeTab === 'pending' ? 'bg-primary border border-white/10 shadow-lg shadow-primary/30' : 'bg-background'}`}
                         >
-                            <Clock size={18} color={activeTab === 'pending' ? 'white' : '#9CA3AF'} className="mr-2" />
+                            <Clock size={18} color={activeTab === 'pending' ? 'white' : themeColors.textGray} className="mr-2" />
                             <Typography weight="bold" className={activeTab === 'pending' ? 'text-white' : 'text-textGray'}>
                                 Belum
                             </Typography>
-                            <View className={`ml-2 px-2 py-0.5 rounded-full items-center justify-center ${activeTab === 'pending' ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                            <View className={`ml-2 px-2 py-0.5 rounded-full items-center justify-center ${activeTab === 'pending' ? 'bg-white/25' : 'bg-border'}`}>
                                 <Typography className={`text-[10px] font-bold ${activeTab === 'pending' ? 'text-white' : 'text-textGray'}`}>
                                     {filteredPending.length}
                                 </Typography>
@@ -798,11 +800,11 @@ export default function SlipGajiScreen() {
                             onPress={() => setActiveTab('history')}
                             className={`flex-1 py-4 items-center rounded-3xl flex-row justify-center ${activeTab === 'history' ? 'bg-primary border border-white/10 shadow-lg shadow-primary/30' : 'bg-background'}`}
                         >
-                            <CheckCircle2 size={18} color={activeTab === 'history' ? 'white' : '#9CA3AF'} className="mr-2" />
+                            <CheckCircle2 size={18} color={activeTab === 'history' ? 'white' : themeColors.textGray} className="mr-2" />
                             <Typography weight="bold" className={activeTab === 'history' ? 'text-white' : 'text-textGray'}>
                                 Riwayat
                             </Typography>
-                            <View className={`ml-2 px-2 py-0.5 rounded-full items-center justify-center ${activeTab === 'history' ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                            <View className={`ml-2 px-2 py-0.5 rounded-full items-center justify-center ${activeTab === 'history' ? 'bg-white/25' : 'bg-border'}`}>
                                 <Typography className={`text-[10px] font-bold ${activeTab === 'history' ? 'text-white' : 'text-textGray'}`}>
                                     {searchQuery ? filteredHistory.length : (listData?.pages?.[0]?.total ?? slipHistory.length)}
                                 </Typography>
@@ -818,15 +820,15 @@ export default function SlipGajiScreen() {
                                 renderItem={renderPendingItem}
                                 keyExtractor={(item) => item.karyawan_id.toString()}
                                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 200, paddingTop: 10 }}
-                                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                                 ListEmptyComponent={
                                     <View className="items-center py-20 px-10">
                                         {isLoadingPreview ? (
-                                            <ActivityIndicator size="large" color="#023C69" />
+                                            <ActivityIndicator size="large" color={themeColors.primary} />
                                         ) : (
                                             <>
                                                 <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-6">
-                                                    <CheckCircle2 size={40} color="#D1D5DB" />
+                                                    <CheckCircle2 size={40} color={findPaletteBorder(themeColors)} />
                                                 </View>
                                                 <Typography className="text-textGray text-center font-medium">
                                                     Semua karyawan minggu ini sudah diproses.
@@ -843,7 +845,7 @@ export default function SlipGajiScreen() {
                                 onEndReached={() => { if (hasNextHistoryPage && !isFetchingNextHistoryPage) fetchNextHistoryPage(); }}
                                 onEndReachedThreshold={0.5}
                                 ListFooterComponent={
-                                    isFetchingNextHistoryPage ? <ActivityIndicator className="py-4" color="#023C69" /> : null
+                                    isFetchingNextHistoryPage ? <ActivityIndicator className="py-4" color={themeColors.primary} /> : null
                                 }
                                 ListHeaderComponent={
                                     <View>
@@ -889,15 +891,15 @@ export default function SlipGajiScreen() {
                                 }
                                 keyExtractor={(item) => item.id.toString()}
                                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 200, paddingTop: 10 }}
-                                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                                 ListEmptyComponent={
                                     <View className="items-center py-20 px-10">
                                         {isLoadingList ? (
-                                            <ActivityIndicator size="large" color="#023C69" />
+                                            <ActivityIndicator size="large" color={themeColors.primary} />
                                         ) : (
                                             <>
                                                 <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-6">
-                                                    <FileText size={40} color="#D1D5DB" />
+                                                    <FileText size={40} color={findPaletteBorder(themeColors)} />
                                                 </View>
                                                 <Typography className="text-textGray text-center font-medium">
                                                     Belum ada riwayat slip gaji untuk periode ini.
@@ -916,7 +918,7 @@ export default function SlipGajiScreen() {
                             <Pressable
                                 onPress={handleGenerateBulk}
                                 disabled={createBulkMutation.isPending || !periodeSelesai}
-                                className={`h-16 rounded-[24px] items-center justify-center flex-row shadow-2xl border border-white/20 ${periodeSelesai ? 'bg-primary' : 'bg-gray-400'}`}
+                                className={`h-16 rounded-[24px] items-center justify-center flex-row shadow-2xl border border-white/20 ${periodeSelesai ? 'bg-primary' : 'bg-border'}`}
                             >
                                 {createBulkMutation.isPending ? <ActivityIndicator color="white" /> : (
                                     <>
@@ -938,7 +940,7 @@ export default function SlipGajiScreen() {
                     <View className="flex-1 justify-end bg-black/40">
                         <Pressable className="absolute inset-0" onPress={() => setSelectedSlip(null)} />
                         <View className="bg-surface rounded-t-[56px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                             <ScrollView style={{ flex: 1 }} className="px-10" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {selectedSlip && renderDetailContent()}
                             </ScrollView>
@@ -1012,13 +1014,13 @@ export default function SlipGajiScreen() {
                                 markedDates={{
                                     [datePickingMode === 'start' ? startDate :
                                         datePickingMode === 'end' ? endDate : slipDate]:
-                                        { selected: true, selectedColor: '#023C69' }
+                                        { selected: true, selectedColor: themeColors.primary }
                                 }}
                                 theme={{
-                                    todayTextColor: '#023C69',
-                                    selectedDayBackgroundColor: '#023C69',
-                                    arrowColor: '#023C69',
-                                    monthTextColor: '#023C69',
+                                    todayTextColor: themeColors.primary,
+                                    selectedDayBackgroundColor: themeColors.primary,
+                                    arrowColor: themeColors.primary,
+                                    monthTextColor: themeColors.primary,
                                     textDayFontWeight: '500',
                                     textMonthFontWeight: 'bold',
                                     textDayHeaderFontWeight: 'bold',
@@ -1040,20 +1042,20 @@ export default function SlipGajiScreen() {
                 <View className="flex-row justify-between items-center mb-10">
                     <Typography variant="h2" weight="bold" className="text-3xl tracking-tight">Payroll Detail</Typography>
                     <Pressable onPress={() => Platform.OS === 'web' ? setSelectedSlip(null) : bottomSheetRef.current?.close()} className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-transparent">
-                        <X size={24} color="#6B7280" />
+                        <X size={24} color={themeColors.textGray} />
                     </Pressable>
                 </View>
 
                 <View className="items-center mb-12">
                     <View className="p-1 bg-primary/5 rounded-[40px] border border-primary/10 mb-6">
                         <View className="w-24 h-24 bg-primary/10 rounded-[36px] items-center justify-center">
-                            <User size={48} color="#023C69" />
+                            <User size={48} color={themeColors.primary} />
                         </View>
                     </View>
                     <Typography variant="h2" weight="bold" className="text-2xl text-textMain text-center">{selectedSlip.karyawan_nama}</Typography>
                     <Typography className="text-textGray mt-1 font-medium text-lg">W{selectedSlip.periode_minggu} • {selectedSlip.periode_tahun}</Typography>
                     {selectedSlip.tanggal_mulai && selectedSlip.tanggal_akhir && (
-                        <Typography className="text-textGray mt-2 font-semibold text-xs bg-background px-3 py-1.5 rounded-full border border-gray-200/50">
+                        <Typography className="text-textGray mt-2 font-semibold text-xs bg-background px-3 py-1.5 rounded-full border border-border">
                             {formatDate(selectedSlip.tanggal_mulai)} – {formatDate(selectedSlip.tanggal_akhir)}
                         </Typography>
                     )}
@@ -1069,20 +1071,20 @@ export default function SlipGajiScreen() {
 
                 {/* Info Bento Grid */}
                 <View className="bg-background p-8 rounded-[48px] border border-transparent shadow-sm mb-10">
-                    <View className="flex-row justify-between items-center mb-6 pb-6 border-b border-gray-200/50">
+                    <View className="flex-row justify-between items-center mb-6 pb-6 border-b border-border">
                         <Typography className="text-textGray text-sm font-bold uppercase tracking-widest">Gaji Pokok</Typography>
                         <Typography weight="bold" className="text-textMain text-lg">{formatCurrency(selectedSlip.gaji_pokok)}</Typography>
                     </View>
-                    <View className="mb-6 pb-6 border-b border-gray-200/50">
+                    <View className="mb-6 pb-6 border-b border-border">
                         <View className="flex-row justify-between items-center">
                             <Typography className="text-textGray text-sm font-bold uppercase tracking-widest">Kehadiran</Typography>
                             <Typography weight="bold" className="text-textMain text-lg">{selectedSlip.jumlah_hadir} Hari</Typography>
                         </View>
                         
                         {/* Attendance Dates List */}
-                        <View className="mt-3 bg-surface/50 rounded-2xl p-3 border border-gray-100/50">
+                        <View className="mt-3 bg-surface/50 rounded-2xl p-3 border border-border">
                             {isLoadingAttendance ? (
-                                <ActivityIndicator size="small" color="#023C69" className="py-2" />
+                                <ActivityIndicator size="small" color={themeColors.primary} className="py-2" />
                             ) : attendanceData?.data && attendanceData.data.length > 0 ? (
                                 <View className="gap-2">
                                     {attendanceData.data.map((abs: any) => {
@@ -1120,7 +1122,7 @@ export default function SlipGajiScreen() {
                             )}
                         </View>
                     </View>
-                    <View className="flex-row justify-between items-center mb-6 pb-6 border-b border-gray-200/50">
+                    <View className="flex-row justify-between items-center mb-6 pb-6 border-b border-border">
                         <Typography className="text-textGray text-sm font-bold uppercase tracking-widest">Uang Lembur</Typography>
                         <Typography weight="bold" className="text-emerald-600 text-lg">+{formatCurrency(selectedSlip.uang_lembur || 0)}</Typography>
                     </View>

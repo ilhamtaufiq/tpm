@@ -97,7 +97,7 @@ export function ReportDateControls({
                     />
                     {search && search.length > 0 && (
                         <Pressable onPress={() => onSearchChange('')} className="p-1">
-                            <X size={16} color="#9CA3AF" />
+                            <X size={16} color={themeColors.textGray} />
                         </Pressable>
                     )}
                 </View>

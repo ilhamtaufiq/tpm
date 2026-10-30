@@ -14,8 +14,10 @@ import { jasaAngkutService } from '../../../services/jasaAngkut';
 import { getErrorMessage } from '../../../utils/error';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../../services/offlineQueue';
+import { useUIStore, findPaletteBorder } from '../../../store/useUIStore';
 
 export default function ArmadaFormScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
     const queryClient = useQueryClient();
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -132,7 +134,7 @@ export default function ArmadaFormScreen() {
     if (loading) {
         return (
             <View className="flex-1 items-center justify-center bg-surface">
-                <ActivityIndicator size="large" color="#023C69" />
+                <ActivityIndicator size="large" color={themeColors.primary} />
             </View>
         );
     }
@@ -197,7 +199,7 @@ export default function ArmadaFormScreen() {
                         <Switch
                             value={formData.is_active}
                             onValueChange={(v) => updateField('is_active', v)}
-                            trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                            trackColor={{ false: findPaletteBorder(themeColors), true: '#10B981' }}
                         />
                     </View>
                 </Card>

@@ -26,6 +26,7 @@ export const MobilSelector = ({
     label,
     placeholder
 }: MobilSelectorProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const placeholderColor = usePlaceholderColor();
     const primaryColor = useUIStore((s) => s.themeColors.primary);
@@ -64,7 +65,7 @@ export const MobilSelector = ({
 
             <Pressable onPress={handleOpen}>
                 <View className="bg-background rounded-2xl px-4 py-4 border border-transparent flex-row items-center">
-                    <Car size={20} color={value ? '#3B82F6' : '#9CA3AF'} />
+                    <Car size={20} color={value ? '#3B82F6' : themeColors.textGray} />
 
                     <View className="flex-1 ml-3">
                         {value ? (
@@ -81,7 +82,7 @@ export const MobilSelector = ({
 
                     {value && (
                         <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
-                            <X size={18} color="#9CA3AF" />
+                            <X size={18} color={themeColors.textGray} />
                         </Pressable>
                     )}
                 </View>
@@ -97,7 +98,7 @@ export const MobilSelector = ({
                 <View className="bg-surface" style={{ flex: 1 }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-4">
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full" />
+                            <View className="w-12 h-1.5 bg-border rounded-full" />
                         </View>
 
                         <View className="flex-row justify-between items-center mb-6">

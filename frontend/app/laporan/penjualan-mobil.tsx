@@ -38,10 +38,12 @@ import {
     ReportExportSheet,
     ReportFilterType,
 } from '../../components/laporan';
+import { useUIStore } from '../../store/useUIStore';
 
 const escapeHtml = (str: any) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
 
 export default function PenjualanMobilReportScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome({ borderRadius: 32 });
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -161,7 +163,7 @@ export default function PenjualanMobilReportScreen() {
     const stats = useMemo(() => [
         { label: 'Total Omset', value: formatCurrency(summary?.total_penjualan || 0), icon: TrendingUp, color: '#10B981', bg: 'bg-emerald-50' },
         { label: 'Unit Terjual', value: String(summary?.total_transaksi || 0), icon: Car, color: '#3B82F6', bg: 'bg-blue-50', sub: 'Kendaraan' },
-        { label: 'Laba TPM', value: formatCurrency(summary?.laba_tpm || 0), icon: TrendingUp, color: '#023C69', bg: 'bg-primary/5' },
+        { label: 'Laba TPM', value: formatCurrency(summary?.laba_tpm || 0), icon: TrendingUp, color: themeColors.primary, bg: 'bg-primary/5' },
     ], [summary]);
 
     const secondaryStats = useMemo(() => [
@@ -275,7 +277,7 @@ export default function PenjualanMobilReportScreen() {
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
                 }
             >
                 <View className="px-6 pt-4">
@@ -301,12 +303,12 @@ export default function PenjualanMobilReportScreen() {
 
                 {isLoading ? (
                     <View className="py-10">
-                        <ActivityIndicator size="large" color="#023C69" />
+                        <ActivityIndicator size="large" color={themeColors.primary} />
                     </View>
                 ) : transaksis.length === 0 ? (
                     <View className="items-center justify-center py-16 bg-surface rounded-[40px] border border-dashed border-transparent">
                         <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-4 opacity-50">
-                            <BarChart3 size={32} color="#9CA3AF" />
+                            <BarChart3 size={32} color={themeColors.textGray} />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[4px]">Data Kosong</Typography>
                         <Typography variant="caption" className="text-textGray mt-2">Tidak ada transaksi penjualan ditemukan</Typography>
@@ -339,7 +341,7 @@ export default function PenjualanMobilReportScreen() {
                                 </View>
                             </View>
 
-                            <View className="flex-row justify-between items-end pt-4 border-t border-gray-50/50">
+                            <View className="flex-row justify-between items-end pt-4 border-t border-border">
                                 <View>
                                     <Typography className="text-textGray text-[9px] uppercase font-bold mb-0.5">Pembeli</Typography>
                                     <Typography variant="body2" weight="bold" className="text-textMain">{item.nama_pembeli}</Typography>
@@ -375,13 +377,13 @@ export default function PenjualanMobilReportScreen() {
                             <Typography className="text-textGray text-xs mt-1">Informasi lengkap transaksi</Typography>
                         </View>
                         <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                            <X size={16} color="#4B5563" />
+                            <X size={16} color={themeColors.textGray} />
                         </Pressable>
                     </View>
 
                     {detailLoading ? (
                         <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="#023C69" />
+                            <ActivityIndicator size="large" color={themeColors.primary} />
                             <Typography className="mt-4 text-textGray">Memuat detail...</Typography>
                         </View>
                     ) : selectedTransaction ? (

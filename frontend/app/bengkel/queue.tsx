@@ -534,7 +534,7 @@ export default function QueueScreen() {
 
                         <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-transparent">
                             <View className="flex-row items-center flex-1 mr-2">
-                                <Clock size={12} color="#9CA3AF" />
+                                <Clock size={12} color={themeColors.textGray} />
                                 <Typography className="text-textGray text-[10px] font-semibold ml-1">
                                     {timeAgoMap.get(Number(item.id)) ?? '-'}
                                 </Typography>
@@ -544,7 +544,7 @@ export default function QueueScreen() {
                                     </Typography>
                                 )}
                                 {Number(item.grand_total || 0) <= 0 && itemCount === 0 && (
-                                    <View className="ml-2 px-1.5 py-0.5 rounded-md bg-background border border-slate-200">
+                                    <View className="ml-2 px-1.5 py-0.5 rounded-md bg-background border border-border">
                                         <Typography className="text-textGray text-[8px] font-bold uppercase">Belum tagihan</Typography>
                                     </View>
                                 )}
@@ -657,7 +657,7 @@ export default function QueueScreen() {
                         <Typography variant="body2" weight="bold" className="text-textMain ml-2">
                             {getFormattedDate()}
                         </Typography>
-                        <ChevronRight size={14} color="#9CA3AF" className="ml-1" />
+                        <ChevronRight size={14} color={themeColors.textGray} className="ml-1" />
                     </Pressable>
 
                     <Pressable
@@ -670,12 +670,12 @@ export default function QueueScreen() {
             </View>
 
             <View className="flex-row items-center bg-background border border-transparent rounded-2xl px-4 h-12 mb-3">
-                <Search size={18} color="#9CA3AF" />
+                <Search size={18} color={themeColors.textGray} />
                 <TextInput
                     value={queueSearchQuery}
                     onChangeText={setQueueSearchQuery}
                     placeholder="Cari plat, customer, nomor transaksi..."
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={themeColors.textGray}
                     className="flex-1 ml-3 text-sm font-medium text-textMain"
                     returnKeyType="search"
                     onSubmitEditing={() => setDebouncedSearch(queueSearchQuery.trim())}
@@ -684,7 +684,7 @@ export default function QueueScreen() {
                 />
                 {queueSearchQuery.length > 0 && (
                     <Pressable onPress={() => setQueueSearchQuery('')} className="p-1">
-                        <X size={16} color="#9CA3AF" />
+                        <X size={16} color={themeColors.textGray} />
                     </Pressable>
                 )}
             </View>
@@ -694,7 +694,7 @@ export default function QueueScreen() {
             </Typography>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
                 {[
-                    { id: 'ALL', label: 'Semua', count: queueWorkStatusStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-gray-200', text: 'text-gray-600' },
+                    { id: 'ALL', label: 'Semua', count: queueWorkStatusStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-border', text: 'text-textGray' },
                     { id: 'antre', label: 'Antre', count: queueWorkStatusStats.antre, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                     { id: 'proses', label: 'Proses', count: queueWorkStatusStats.proses, active: 'bg-blue-500 border-blue-500', inactive: 'bg-blue-50 border-blue-100', text: 'text-blue-700' },
                     { id: 'selesai', label: 'Selesai', count: queueWorkStatusStats.selesai, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
@@ -710,7 +710,7 @@ export default function QueueScreen() {
                             <Typography variant="caption" weight="bold" className={isActive ? 'text-white' : filter.text}>
                                 {filter.label}
                             </Typography>
-                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-border'}`}>
                                 <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : filter.text}`}>
                                     {formatNumber(filter.count)}
                                 </Typography>
@@ -725,7 +725,7 @@ export default function QueueScreen() {
             </Typography>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
                 {[
-                    { id: 'ALL', label: 'Semua Bayar', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-gray-200', text: 'text-gray-600' },
+                    { id: 'ALL', label: 'Semua Bayar', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-border', text: 'text-textGray' },
                     { id: 'BELUM_LUNAS', label: 'Belum Lunas', count: queuePaymentStats.BELUM_LUNAS, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                     { id: 'BELUM_BAYAR', label: 'Belum Bayar', count: queuePaymentStats.BELUM_BAYAR, active: 'bg-orange-500 border-orange-500', inactive: 'bg-orange-50 border-orange-100', text: 'text-orange-700' },
                     { id: 'LUNAS', label: 'Lunas', count: queuePaymentStats.LUNAS, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
@@ -741,7 +741,7 @@ export default function QueueScreen() {
                             <Typography variant="caption" weight="bold" className={isActive ? 'text-white' : filter.text}>
                                 {filter.label}
                             </Typography>
-                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-border'}`}>
                                 <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : filter.text}`}>
                                     {formatNumber(filter.count)}
                                 </Typography>
@@ -1029,7 +1029,7 @@ export default function QueueScreen() {
                                                 const RowIcon = row.icon;
                                                 return (
                                                     <View key={`${row.label}-${idx}`} className={`flex-row items-center py-2 ${idx > 0 ? 'border-t border-transparent' : ''}`}>
-                                                        <RowIcon size={13} color="#9CA3AF" />
+                                                        <RowIcon size={13} color={themeColors.textGray} />
                                                         <View className="flex-1 ml-2">
                                                             <Typography variant="caption" weight="semibold" className="text-textMain">{row.label}</Typography>
                                                             <Typography className="text-textGray text-[10px] mt-0.5">
@@ -1131,13 +1131,13 @@ export default function QueueScreen() {
                                         disabled={isBengkelTransactionLocked(selectedItem)}
                                         className={`flex-1 py-3 rounded-xl items-center justify-center flex-row ${
                                             isBengkelTransactionLocked(selectedItem)
-                                                ? 'bg-gray-200 opacity-60'
+                                                ? 'bg-border opacity-60'
                                                 : 'bg-amber-500 active:opacity-90'
                                         }`}
                                     >
-                                        <Edit2 size={16} color={isBengkelTransactionLocked(selectedItem) ? '#9CA3AF' : 'white'} />
+                                        <Edit2 size={16} color={isBengkelTransactionLocked(selectedItem) ? themeColors.textGray : 'white'} />
                                         <Typography weight="bold" className={`text-xs ml-2 uppercase tracking-widest ${
-                                            isBengkelTransactionLocked(selectedItem) ? 'text-gray-400' : 'text-white'
+                                            isBengkelTransactionLocked(selectedItem) ? 'text-textGray' : 'text-white'
                                         }`}>
                                             Edit
                                         </Typography>

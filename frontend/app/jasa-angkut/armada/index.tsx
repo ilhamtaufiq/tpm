@@ -14,8 +14,10 @@ import { useArmadaList } from '../../../hooks/useJasaAngkut';
 import { SkeletonCard } from '../../../components/ui/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { Header } from '../../../components/ui/Header';
+import { useUIStore } from '../../../store/useUIStore';
 
 export default function ArmadaScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
     const [filterActive, setFilterActive] = useState<boolean | undefined>(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -67,7 +69,7 @@ export default function ArmadaScreen() {
                     placeholder="Cari armada (nama/nopol)..."
                     value={searchQuery}
                     onChangeText={setSearchQuery}
-                    startIcon={<Search size={20} color="#9CA3AF" />}
+                    startIcon={<Search size={20} color={themeColors.textGray} />}
                     containerClassName="mb-3"
                 />
 

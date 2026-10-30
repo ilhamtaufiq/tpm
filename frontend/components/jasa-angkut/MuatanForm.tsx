@@ -54,6 +54,7 @@ const emptyFormData = () => ({
 });
 
 export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const queryClient = useQueryClient();
     const isEditMode = !!initialData;
@@ -547,7 +548,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                     onChangeText={setArmadaSearch}
                                     containerClassName="mb-3"
                                     className="h-11 shadow-sm"
-                                    startIcon={<Truck size={18} color="#94A3B8" />}
+                                    startIcon={<Truck size={18} color={themeColors.textGray} />}
                                 />
                                 {armadaSearch.length > 0 && (
                                     <View className="flex-row flex-wrap mb-4">
@@ -656,7 +657,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                     onChangeText={setDriverSearch}
                                     containerClassName="mb-3"
                                     className="h-11 shadow-sm"
-                                    startIcon={<Truck size={18} color="#94A3B8" />}
+                                    startIcon={<Truck size={18} color={themeColors.textGray} />}
                                 />
                                 {driverSearch.length > 0 && (
                                     <View className="flex-row flex-wrap mb-4">
@@ -1146,7 +1147,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 </View>
             </View>
 
-            <View className="h-[1px] bg-gray-200 my-6" />
+            <View className="h-[1px] bg-border my-6" />
 
             {/* Live Profit Split */}
             <ProfitSplitCard

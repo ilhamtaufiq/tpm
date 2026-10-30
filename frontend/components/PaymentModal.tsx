@@ -53,6 +53,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     kas_jenis,
     unit
 }) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
         { id: Date.now() + Math.random(), metode: '', nominal: formatNumber(Number(initialAmount ?? 0)), catatan: '' }
@@ -342,7 +343,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                         activeBorder: 'border-emerald-600'
                                     },
                                 };
-                                const cfg = methodConfig[m] || { label: m, sublabel: '', icon: <Banknote size={16} color="#9CA3AF" />, activeBg: 'bg-primary', activeBorder: 'border-primary' };
+                                const cfg = methodConfig[m] || { label: m, sublabel: '', icon: <Banknote size={16} color={themeColors.textGray} />, activeBg: 'bg-primary', activeBorder: 'border-primary' };
                                 const isActive = p.metode === m;
 
                                 return (
@@ -350,7 +351,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                         key={m}
                                         onPress={() => updatePayment(p.id, 'metode', m)}
                                         className={`flex-row items-center py-3.5 px-4 rounded-2xl border ${
-                                            isActive ? `${cfg.activeBg} ${cfg.activeBorder} shadow-md` : 'border-gray-100 bg-surface'
+                                            isActive ? `${cfg.activeBg} ${cfg.activeBorder} shadow-md` : 'border-border bg-surface'
                                         }`}
                                     >
                                         <View className={`w-8 h-8 rounded-xl items-center justify-center mr-3 ${
@@ -425,7 +426,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             containerClassName="mb-4"
                             value={p.nominal}
                             onChangeText={(t) => updatePayment(p.id, 'nominal', formatNumber(t))}
-                            startIcon={<CircleDollarSign size={18} color="#9CA3AF" />}
+                            startIcon={<CircleDollarSign size={18} color={themeColors.textGray} />}
                         />
 
                         {isSplitPayment && (
@@ -435,7 +436,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 value={p.catatan}
                                 onChangeText={(t) => updatePayment(p.id, 'catatan', t)}
                                 containerClassName="mb-0"
-                                startIcon={<X size={14} color="#9CA3AF" />}
+                                startIcon={<X size={14} color={themeColors.textGray} />}
                             />
                         )}
                     </Card>
@@ -446,7 +447,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         onPress={addPayment}
                         className="w-full py-5 border-2 border-dashed border-transparent rounded-3xl items-center justify-center flex-row bg-surface/30"
                     >
-                        <Plus size={18} color="#9CA3AF" />
+                        <Plus size={18} color={themeColors.textGray} />
                         <Typography className="text-textGray font-bold ml-2 text-xs uppercase tracking-widest">Gunakan Split Payment</Typography>
                     </Pressable>
                 )}
@@ -490,7 +491,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative"
                         style={{ flexShrink: 0, zIndex: 2, elevation: 16 }}
                     >
-                        <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                        <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                         <ScrollView
                             style={{ flex: 1 }}
                             showsVerticalScrollIndicator

@@ -11,6 +11,7 @@ import User from 'lucide-react-native/dist/esm/icons/user.js';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sdmService, Karyawan } from '../../services/sdm';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 
 interface KaryawanSelectorProps {
     value?: Karyawan | null;
@@ -25,6 +26,7 @@ export const KaryawanSelector = ({
     label,
     placeholder
 }: KaryawanSelectorProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const [searchQuery, setSearchQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
@@ -70,7 +72,7 @@ export const KaryawanSelector = ({
             <Pressable onPress={handleOpen}>
                 <View className="bg-background p-5 rounded-3xl border border-transparent flex-row items-center">
                     <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${value ? 'bg-primary/10' : 'bg-background'}`}>
-                        <User size={18} color={value ? '#2563EB' : '#9CA3AF'} />
+                        <User size={18} color={value ? '#2563EB' : themeColors.textGray} />
                     </View>
 
                     <View className="flex-1">
@@ -88,7 +90,7 @@ export const KaryawanSelector = ({
 
                     {value && (
                         <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }} className="bg-background p-1.5 rounded-full">
-                            <X size={14} color="#9CA3AF" />
+                            <X size={14} color={themeColors.textGray} />
                         </Pressable>
                     )}
                 </View>
@@ -104,25 +106,25 @@ export const KaryawanSelector = ({
                 <View className="bg-surface" style={{ flex: 1 }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
-                            <View className="w-10 h-1 bg-gray-200 rounded-full" />
+                            <View className="w-10 h-1 bg-border rounded-full" />
                         </View>
 
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold">Pilih Karyawan</Typography>
                             <Pressable onPress={handleClose} className="bg-background p-2 rounded-full">
-                                <X size={20} color="#6B7280" />
+                                <X size={20} color={themeColors.textGray} />
                             </Pressable>
                         </View>
 
                         <View className="flex-row items-center bg-background rounded-[24px] px-5 py-4 mb-6">
-                            <Search size={20} color="#9CA3AF" />
+                            <Search size={20} color={themeColors.textGray} />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-text font-medium"
                                 placeholder="Cari nama atau jabatan..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                                 autoFocus
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={themeColors.textGray}
                             />
                         </View>
 
@@ -162,7 +164,7 @@ export const KaryawanSelector = ({
                                 )}
                                 ListEmptyComponent={
                                     <View className="items-center mt-20 px-10">
-                                        <Users size={48} color="#E5E7EB" strokeWidth={1} />
+                                        <Users size={48} color={findPaletteBorder(themeColors)} strokeWidth={1} />
                                         <Typography className="text-textGray mt-4 text-center">
                                             {searchQuery.length > 0 ? "Karyawan tidak ditemukan" : "Daftar karyawan kosong atau belum dimuat"}
                                         </Typography>

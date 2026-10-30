@@ -35,6 +35,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { PaymentModal } from '../../components/PaymentModal';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 
 const STATUS_FILTERS: { label: string; value: HutangStatus | 'all' }[] = [
     { label: 'Semua', value: 'all' },
@@ -89,6 +90,7 @@ const getUnitKasJenis = (unit?: string) => {
 };
 
 export default function HutangUsahaScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
@@ -566,7 +568,7 @@ export default function HutangUsahaScreen() {
                             onPress={() => setCreatePayments([...createPayments, { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }])}
                             className="flex-row items-center justify-center p-4 border border-dashed border-transparent rounded-[24px] bg-surface"
                         >
-                            <Plus size={18} color="#64748B" className="mr-2" />
+                            <Plus size={18} color={themeColors.textGray} className="mr-2" />
                             <Typography weight="bold" className="text-textGray text-xs">Tambah Metode Penerimaan</Typography>
                         </Pressable>
                     </View>
@@ -814,7 +816,7 @@ export default function HutangUsahaScreen() {
                                             {filter.label}
                                         </Typography>
                                         {count !== undefined && (
-                                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-border'}`}>
                                                 <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : 'text-textGray'}`}>
                                                     {formatNumber(count)}
                                                 </Typography>
@@ -865,7 +867,7 @@ export default function HutangUsahaScreen() {
                                         </Typography>
                                         <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">{grup.jumlah_struk} struk</Typography>
                                     </View>
-                                    <View className="bg-background p-4 rounded-2xl flex-row justify-between mb-4 border border-gray-100/50">
+                                    <View className="bg-background p-4 rounded-2xl flex-row justify-between mb-4 border border-border">
                                         <View>
                                             <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest mb-1">Total</Typography>
                                             <Typography weight="semibold" className="text-textMain text-sm">{formatCurrency(grup.total_nominal)}</Typography>
@@ -877,7 +879,7 @@ export default function HutangUsahaScreen() {
                                     </View>
                                     <View className="flex-row items-center justify-between pt-2">
                                         <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">{grup.belum_lunas} belum lunas</Typography>
-                                        <ChevronRight size={16} color="#D1D5DB" />
+                                        <ChevronRight size={16} color={findPaletteBorder(themeColors)} />
                                     </View>
                                 </Pressable>
                             );
@@ -967,7 +969,7 @@ export default function HutangUsahaScreen() {
                         <View className="flex-1 justify-end bg-black/50">
                             <Pressable className="absolute inset-0" onPress={() => { setDetailVisible(false); setIsSheetOpen(false); }} />
                             <View className="bg-surface" style={styles.sheetContent}>
-                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                                <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                                 <ScrollView
                                     style={{ flex: 1 }}
                                     showsVerticalScrollIndicator
@@ -983,7 +985,7 @@ export default function HutangUsahaScreen() {
                         <View className="flex-1 justify-end bg-black/50">
                             <Pressable className="absolute inset-0" onPress={() => { setCreateVisible(false); setIsSheetOpen(false); }} />
                             <View className="bg-surface" style={styles.sheetContent}>
-                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                                <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                                 <ScrollView
                                     style={{ flex: 1 }}
                                     showsVerticalScrollIndicator

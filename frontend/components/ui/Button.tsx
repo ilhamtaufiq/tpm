@@ -10,7 +10,7 @@ import {
     TextStyle,
 } from 'react-native';
 import { cssInterop } from 'nativewind';
-import { useUIStore } from '../../store/useUIStore';
+import { useUIStore, findPaletteBorder, type ThemeColors } from '../../store/useUIStore';
 
 cssInterop(Pressable, { className: 'style' });
 
@@ -34,7 +34,7 @@ const SIZE_STYLES: Record<NonNullable<ButtonProps['size']>, { container: ViewSty
 
 function getVariantStyles(
     variant: NonNullable<ButtonProps['variant']>,
-    themeColors: { primary: string; secondary: string }
+    themeColors: ThemeColors
 ): { container: ViewStyle; text: TextStyle; spinner: string } {
     switch (variant) {
         case 'secondary':
@@ -63,9 +63,9 @@ function getVariantStyles(
             };
         case 'outline-neutral':
             return {
-                container: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#D1D5DB' },
-                text: { color: '#4B5563' },
-                spinner: '#6B7280',
+                container: { backgroundColor: 'transparent', borderWidth: 1, borderColor: findPaletteBorder(themeColors) },
+                text: { color: themeColors.textGray },
+                spinner: themeColors.textGray,
             };
         case 'ghost':
             return {

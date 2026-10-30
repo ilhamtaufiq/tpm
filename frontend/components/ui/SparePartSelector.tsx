@@ -17,6 +17,7 @@ import { getBarcodeSearchQuery } from '../../utils/barcodeScan';
 import { isAlwaysReadyStock } from '../../utils/sparepartStock';
 import { usePlaceholderColor } from '../../utils/themeStyles';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useUIStore } from '../../store/useUIStore';
 
 interface SparePartSelectorProps {
     value?: any; // Selected object or null
@@ -31,6 +32,7 @@ export const SparePartSelector = ({
     label,
     placeholder
 }: SparePartSelectorProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const placeholderColor = usePlaceholderColor();
     const [searchQuery, setSearchQuery] = useState('');
@@ -74,7 +76,7 @@ export const SparePartSelector = ({
 
             <Pressable onPress={handleOpen} hitSlop={8}>
                 <View className="bg-background rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
-                    <Package size={20} color={value ? '#2563EB' : '#9CA3AF'} />
+                    <Package size={20} color={value ? '#2563EB' : themeColors.textGray} />
 
                     <View className="flex-1 ml-3">
                         {value ? (
@@ -91,7 +93,7 @@ export const SparePartSelector = ({
 
                     {value && (
                         <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
-                            <X size={18} color="#9CA3AF" />
+                            <X size={18} color={themeColors.textGray} />
                         </Pressable>
                     )}
                 </View>
@@ -109,7 +111,7 @@ export const SparePartSelector = ({
                 <View className="bg-surface" style={{ flex: 1 }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
-                            <View className="w-10 h-1 bg-gray-300 rounded-full" />
+                            <View className="w-10 h-1 bg-border rounded-full" />
                         </View>
 
                         <View className="flex-row justify-between items-center mb-6">

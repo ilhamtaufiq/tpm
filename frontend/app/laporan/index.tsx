@@ -22,6 +22,7 @@ import ArrowRightLeft from 'lucide-react-native/dist/esm/icons/arrow-right-left.
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { useUIStore, ThemeColors } from '../../store/useUIStore';
 
 type ReportSize = 'small' | 'large' | 'full';
 type GroupId = 'persediaan' | 'mobil' | 'operasional' | 'keuangan';
@@ -43,7 +44,7 @@ interface ReportGroup {
     reports: ReportItem[];
 }
 
-const REPORT_GROUPS: ReportGroup[] = [
+const make_REPORT_GROUPS = (themeColors: ThemeColors): ReportGroup[] => ([
     {
         id: 'persediaan',
         name: 'Persediaan',
@@ -67,22 +68,22 @@ const REPORT_GROUPS: ReportGroup[] = [
         name: 'Bengkel & Jasa Angkut',
         accent: '#2563EB',
         reports: [
-            { title: 'Penjualan Bengkel', icon: Wrench, path: '/laporan/penjualan-bengkel', size: 'large', color: '#023C69', desc: 'Rekap transaksi & penjualan unit bengkel' },
+            { title: 'Penjualan Bengkel', icon: Wrench, path: '/laporan/penjualan-bengkel', size: 'large', color: themeColors.primary, desc: 'Rekap transaksi & penjualan unit bengkel' },
             { title: 'Laporan Jasa Angkut', icon: Truck, path: '/laporan/jasa-angkut', size: 'large', color: '#6366F1', desc: 'Performa muatan & pendapatan jasa angkut' },
         ],
     },
     {
         id: 'keuangan',
         name: 'Keuangan Akhir',
-        accent: '#023C69',
+        accent: themeColors.primary,
         reports: [
-            { title: 'Laba Rugi', icon: BarChart3, path: '/laporan/laba-rugi', size: 'full', color: '#023C69', desc: 'Analisa performa keuangan bulanan' },
+            { title: 'Laba Rugi', icon: BarChart3, path: '/laporan/laba-rugi', size: 'full', color: themeColors.primary, desc: 'Analisa performa keuangan bulanan' },
             { title: 'Perubahan Modal', icon: Wallet, path: '/laporan/perubahan-modal', size: 'full', color: '#7C3AED', desc: 'Mutasi modal & posisi kas' },
             { title: 'Neraca', icon: Scale, path: '/laporan/neraca', size: 'full', color: '#0F766E', desc: 'Posisi keuangan: aktiva, hutang & modal' },
             { title: 'Arus Kas per Akun', icon: ArrowRightLeft, path: '/laporan/arus-kas-akun', size: 'full', color: '#0D9488', desc: 'Rincian mutasi kas masuk & keluar per akun' },
         ],
     },
-];
+]);
 
 const isGroupVisibleForRole = (groupId: GroupId, role?: string | null) => {
     if (role === 'ADMIN' || role === 'MANAGER') return true;
@@ -102,6 +103,8 @@ const isReportVisibleForRole = (report: ReportItem, role?: string | null) => {
 };
 
 export default function ReportsScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
+    const REPORT_GROUPS = useMemo(() => make_REPORT_GROUPS(themeColors), [themeColors]);
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const user = useAuthStore((s) => s.user);
@@ -219,7 +222,7 @@ export default function ReportsScreen() {
                         </Typography>
                     ) : null}
                 </View>
-                <ChevronRight size={20} color="#9CA3AF" />
+                <ChevronRight size={20} color={themeColors.textGray} />
             </Pressable>
         );
     };
@@ -256,7 +259,7 @@ export default function ReportsScreen() {
                     ) : null}
                     <View className="flex-row items-center mt-4 pt-4 border-t border-transparent">
                         <Typography className="text-primary text-xs font-bold flex-1">Buka Laporan</Typography>
-                        <ChevronRight size={18} color="#023C69" />
+                        <ChevronRight size={18} color={themeColors.primary} />
                     </View>
                 </View>
             </Pressable>
@@ -270,7 +273,7 @@ export default function ReportsScreen() {
             <View className="px-6 py-4 flex-row items-center justify-between border-b border-transparent bg-surface">
                 <View className="flex-row items-center">
                     <Pressable onPress={handleGoBack} className="mr-4">
-                        <ChevronLeft size={24} color="#1C1C1C" />
+                        <ChevronLeft size={24} color={themeColors.text} />
                     </Pressable>
                     <Typography variant="h2" weight="bold">Pusat Laporan</Typography>
                 </View>
@@ -283,7 +286,7 @@ export default function ReportsScreen() {
             >
                 <View className="flex-row gap-3 mb-4">
                     {[
-                        { label: 'Laporan', value: String(reportStats.total), icon: FileText, color: '#023C69', bg: 'bg-primary/5' },
+                        { label: 'Laporan', value: String(reportStats.total), icon: FileText, color: themeColors.primary, bg: 'bg-primary/5' },
                         { label: 'Operasional', value: String(reportStats.operasional), icon: Layers, color: '#2563EB', bg: 'bg-blue-50' },
                         { label: 'Keuangan', value: String(reportStats.keuangan), icon: PieChart, color: '#059669', bg: 'bg-emerald-50' },
                     ].map((stat) => {
@@ -305,19 +308,19 @@ export default function ReportsScreen() {
                 </View>
 
                 <View className="flex-row items-center bg-background border border-transparent rounded-2xl px-4 h-12 mb-3">
-                    <Search size={18} color="#9CA3AF" />
+                    <Search size={18} color={themeColors.textGray} />
                     <TextInput
                         value={search}
                         onChangeText={setSearch}
                         placeholder="Cari laporan..."
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={themeColors.textGray}
                         className="flex-1 ml-3 text-sm font-medium text-textMain"
                         autoCorrect={false}
                         autoCapitalize="none"
                     />
                     {search.length > 0 && (
                         <Pressable onPress={() => setSearch('')} className="p-1">
-                            <X size={16} color="#9CA3AF" />
+                            <X size={16} color={themeColors.textGray} />
                         </Pressable>
                     )}
                 </View>
@@ -332,7 +335,7 @@ export default function ReportsScreen() {
                                 className={`px-4 py-2 rounded-full border mr-2 ${
                                     isActive
                                         ? 'bg-primary border-primary'
-                                        : 'bg-surface border-gray-200'
+                                        : 'bg-surface border-border'
                                 }`}
                             >
                                 <Typography

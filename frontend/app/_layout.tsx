@@ -498,7 +498,7 @@ function RootLayoutContent() {
         <SafeAreaProvider>
             <GestureHandlerRootView style={[{ flex: 1 }, theme]}>
                 {showMobilePreview ? (
-                    <View style={{ flex: 1, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
+                    <View style={{ flex: 1, backgroundColor: themeColors.background, alignItems: 'center', justifyContent: 'center' }}>
                         <View
                             className="bg-background"
                             style={{
