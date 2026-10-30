@@ -19,7 +19,6 @@ PERUSAHAAN = {
     "telepon": "HP: 087720225244",
 }
 LOGO_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "logo_tpm.png")
-MATERAI_CM = 3.0  # sisi kotak materai Rp10.000 (ditempel dan ditandatangani di atasnya)
 PAGE = landscape(A5)  # 210 x 148,5 mm
 
 
@@ -118,14 +117,9 @@ def build_faktur_pdf(transaksi, mobil) -> bytes:
     c.drawCentredString(cx_pembeli, T(10.6), "Pembeli")
     c.drawCentredString(cx_penjual, T(10.6), "Penjual")
 
-    sisi = MATERAI_CM * cm
-    c.setDash(3, 2)
-    c.setLineWidth(0.6)
-    c.rect(cx_penjual - sisi / 2, T(6.9) - sisi, sisi, sisi)
-    c.setDash()
-    c.setFont("Helvetica", 7)
-    c.drawCentredString(cx_penjual, T(6.9) - sisi / 2 + 0.1 * cm, "MATERAI")
-    c.drawCentredString(cx_penjual, T(6.9) - sisi / 2 - 0.3 * cm, "Rp10.000")
+    # Tempat materai Rp10.000 (ditempel di atas tanda tangan penjual), tanpa bingkai
+    c.setFont("Helvetica", 6)
+    c.drawCentredString(cx_penjual, T(9.4), "Materai Rp10.000")
 
     c.setFont("Helvetica", 9)
     c.drawCentredString(cx_pembeli, T(12.4), "(                          )")
