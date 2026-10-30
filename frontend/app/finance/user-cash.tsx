@@ -38,6 +38,7 @@ import { getErrorMessage } from '../../utils/error';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
 import { Image } from 'react-native';
 import { getFileUrl } from '../../utils/image';
+import { useUIStore } from '../../store/useUIStore';
 
 interface AdjustmentForm {
     type: 'adjust' | 'set';
@@ -48,6 +49,7 @@ interface AdjustmentForm {
 }
 
 export default function UserCashManagementScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
     const insets = useSafeAreaInsets();
@@ -145,12 +147,12 @@ export default function UserCashManagementScreen() {
     );
 
     const renderUserItem = ({ item }: { item: any }) => (
-        <View className="flex-row items-center px-6 py-4 border-b border-slate-50">
+        <View className="flex-row items-center px-6 py-4 border-b border-border">
             <View className="w-12 h-12 bg-background rounded-2xl items-center justify-center mr-4 overflow-hidden">
                 {item.profile_picture ? (
                     <Image source={{ uri: getFileUrl(item.profile_picture) as string }} className="w-full h-full" />
                 ) : (
-                    <User size={24} color="#64748b" />
+                    <User size={24} color={themeColors.textGray} />
                 )}
             </View>
             <View className="flex-1">
@@ -174,8 +176,8 @@ export default function UserCashManagementScreen() {
                             onPress={() => handleOpenForm(item, 'set')}
                             className="bg-background px-3 py-1.5 rounded-lg flex-row items-center"
                         >
-                            <Edit3 size={12} color="#64748b" />
-                            <Typography weight="bold" className="text-slate-600 text-[10px] ml-1">Set</Typography>
+                            <Edit3 size={12} color={themeColors.textGray} />
+                            <Typography weight="bold" className="text-textGray text-[10px] ml-1">Set</Typography>
                         </Pressable>
                     </View>
                 )}
@@ -186,7 +188,7 @@ export default function UserCashManagementScreen() {
     const renderHistoryItem = ({ item }: { item: any }) => {
         const isPositive = item.nominal > 0;
         return (
-            <View className="px-6 py-4 border-b border-slate-50 flex-row items-start">
+            <View className="px-6 py-4 border-b border-border flex-row items-start">
                 <View className={`p-2 rounded-full mr-4 ${isPositive ? 'bg-green-50' : 'bg-red-50'}`}>
                     {isPositive ? <ArrowUpCircle size={20} color="#10b981" /> : <ArrowDownCircle size={20} color="#ef4444" />}
                 </View>
@@ -206,7 +208,7 @@ export default function UserCashManagementScreen() {
                         {item.keterangan || 'Tanpa keterangan'}
                     </Typography>
                     <View className="flex-row items-center mt-2">
-                        <Shield size={10} color="#94a3b8" />
+                        <Shield size={10} color={themeColors.textGray} />
                         <Typography variant="caption" className="text-text-disabled ml-1 text-[10px]">
                             Oleh: {item.admin_name || `Admin ID: ${item.admin_id}`}
                         </Typography>
@@ -241,14 +243,14 @@ export default function UserCashManagementScreen() {
                         onPress={() => setActiveTab('list')}
                         className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'list' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
                     >
-                        <User size={18} color={activeTab === 'list' ? 'white' : '#9CA3AF'} />
+                        <User size={18} color={activeTab === 'list' ? 'white' : themeColors.textGray} />
                         <Typography className={`ml-2 text-sm font-bold ${activeTab === 'list' ? 'text-white' : 'text-textGray'}`}>Daftar User</Typography>
                     </Pressable>
                     <Pressable 
                         onPress={() => setActiveTab('history')}
                         className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'history' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
                     >
-                        <History size={18} color={activeTab === 'history' ? 'white' : '#9CA3AF'} />
+                        <History size={18} color={activeTab === 'history' ? 'white' : themeColors.textGray} />
                         <Typography className={`ml-2 text-sm font-bold ${activeTab === 'history' ? 'text-white' : 'text-textGray'}`}>Riwayat</Typography>
                     </Pressable>
                 </View>
@@ -350,7 +352,7 @@ export default function UserCashManagementScreen() {
                                             setForm(f => f ? { ...f, nominal: isNegative ? `-${formatted}` : formatted } : null);
                                         }}
                                         keyboardType="numeric"
-                                        startIcon={<Wallet size={20} color="#94a3b8" />}
+                                        startIcon={<Wallet size={20} color={themeColors.textGray} />}
                                     />
                                 </View>
 

@@ -15,7 +15,7 @@ import X from 'lucide-react-native/dist/esm/icons/x.js';
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { router } from 'expo-router';
-import { useUIStore, colorPalettes, findPaletteId, ColorPalette, ThemeColors, defaultColors } from '../../store/useUIStore';
+import { useUIStore, colorPalettes, findPaletteId, ColorPalette, ThemeColors, defaultColors, findPaletteBorder } from '../../store/useUIStore';
 import { settingsService } from '../../services/settings';
 import * as ImagePicker from 'expo-image-picker';
 import { authService } from '../../services/auth';
@@ -214,7 +214,7 @@ export default function ThemeSettingsScreen() {
                                     }}
                                     className="w-[48%] mb-4 rounded-[28px] overflow-hidden border shadow-sm"
                                     style={{
-                                        borderColor: selected ? palette.colors.primary : '#E5E7EB',
+                                        borderColor: selected ? palette.colors.primary : findPaletteBorder(themeColors),
                                         borderWidth: selected ? 2 : 1,
                                         backgroundColor: palette.colors.surface,
                                     }}
@@ -262,7 +262,7 @@ export default function ThemeSettingsScreen() {
                                             style={{
                                                 backgroundColor: selected ? palette.colors.primary : 'transparent',
                                                 borderWidth: selected ? 0 : 1.5,
-                                                borderColor: '#D1D5DB',
+                                                borderColor: findPaletteBorder(themeColors),
                                             }}
                                         >
                                             {selected && <Check size={12} color="#FFFFFF" />}

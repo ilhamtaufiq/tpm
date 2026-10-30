@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
     View,
     Text,
@@ -22,7 +22,7 @@ import {
     retryOne,
 } from '../services/offlineQueue';
 import { onlineManager } from '@tanstack/react-query';
-import { useUIStore } from '../store/useUIStore';
+import { useUIStore, findPaletteBorder, ThemeColors } from '../store/useUIStore';
 
 function statusLabel(status: string) {
     switch (status) {
@@ -39,7 +39,7 @@ function statusLabel(status: string) {
     }
 }
 
-function statusColor(status: string) {
+function statusColor(status: string, themeColors: ThemeColors) {
     switch (status) {
         case 'failed':
             return '#dc2626';
@@ -48,11 +48,13 @@ function statusColor(status: string) {
         case 'pending':
             return '#d97706';
         default:
-            return '#6b7280';
+            return themeColors.textGray;
     }
 }
 
 function OfflineQueueSheetInner() {
+    const themeColors = useUIStore((s) => s.themeColors);
+    const styles = useMemo(() => makeStyles(themeColors), [themeColors]);
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const sheetOpen = useOfflineQueueStore((s) => s.sheetOpen);
     const setSheetOpen = useOfflineQueueStore((s) => s.setSheetOpen);
@@ -129,7 +131,7 @@ function OfflineQueueSheetInner() {
                     <ScrollView style={styles.list} contentContainerStyle={{ paddingBottom: 32 }}>
                         {visible.length === 0 ? (
                             <View style={styles.empty}>
-                                <Clock size={28} color="#9ca3af" />
+                                <Clock size={28} color={themeColors.textGray} />
                                 <Text style={styles.emptyText}>Tidak ada antrean</Text>
                             </View>
                         ) : (
@@ -142,7 +144,7 @@ function OfflineQueueSheetInner() {
                                         <Text
                                             style={[
                                                 styles.badge,
-                                                { color: statusColor(item.status) },
+                                                { color: statusColor(item.status, themeColors) },
                                             ]}
                                         >
                                             {statusLabel(item.status)}
@@ -195,7 +197,7 @@ function OfflineQueueSheetInner() {
 
 export const OfflineQueueSheet = React.memo(OfflineQueueSheetInner);
 
-const styles = StyleSheet.create({
+const makeStyles = (themeColors: ThemeColors) => StyleSheet.create({
     backdrop: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
@@ -223,17 +225,17 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 17,
         fontWeight: '700',
-        color: '#111827',
+        color: themeColors.text,
     },
     subtitle: {
         fontSize: 12,
-        color: '#6b7280',
+        color: themeColors.textGray,
         marginBottom: 8,
         lineHeight: 17,
     },
     flushHint: {
         fontSize: 11,
-        color: '#9ca3af',
+        color: themeColors.textGray,
         marginBottom: 8,
     },
     actions: {
@@ -250,7 +252,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     btnPrimary: {
-        backgroundColor: '#023C69',
+        backgroundColor: themeColors.primary,
         flex: 1,
         justifyContent: 'center',
     },
@@ -260,7 +262,7 @@ const styles = StyleSheet.create({
         fontSize: 13,
     },
     btnSecondary: {
-        backgroundColor: '#f3f4f6',
+        backgroundColor: themeColors.background,
         paddingHorizontal: 14,
     },
     btnSecondaryText: {
@@ -280,12 +282,12 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     emptyText: {
-        color: '#9ca3af',
+        color: themeColors.textGray,
         fontSize: 13,
     },
     card: {
         borderWidth: 1,
-        borderColor: '#e5e7eb',
+        borderColor: findPaletteBorder(themeColors),
         borderRadius: 12,
         padding: 12,
         marginBottom: 10,
@@ -301,7 +303,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 14,
         fontWeight: '600',
-        color: '#111827',
+        color: themeColors.text,
     },
     badge: {
         fontSize: 11,
@@ -310,12 +312,12 @@ const styles = StyleSheet.create({
     },
     cardDesc: {
         fontSize: 12,
-        color: '#6b7280',
+        color: themeColors.textGray,
         marginBottom: 4,
     },
     meta: {
         fontSize: 11,
-        color: '#9ca3af',
+        color: themeColors.textGray,
     },
     errorRow: {
         flexDirection: 'row',

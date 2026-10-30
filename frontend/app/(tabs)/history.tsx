@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, FlatList, Platform, Pressable, RefreshControl, ActivityIndicator, TextInput, Image, StatusBar, Modal } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
-import { useUIStore } from '../../store/useUIStore';
+import { useUIStore, ThemeColors } from '../../store/useUIStore';
 import { getFileUrl } from '../../utils/image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
@@ -38,7 +38,7 @@ import { formatCurrency } from '../../utils/format';
 import { TransactionDetailModal } from '../../components/TransactionDetailModal';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
-const getSourceConfig = (source: string, title?: string) => {
+const getSourceConfig = (source: string, title: string | undefined, themeColors: ThemeColors) => {
     const s = source?.toLowerCase() || '';
     const t = title?.toLowerCase() || '';
 
@@ -87,7 +87,7 @@ const getSourceConfig = (source: string, title?: string) => {
         case 'prive':
             return { icon: Wallet, color: '#DC2626', label: 'Prive' };
         default:
-            return { icon: HelpCircle, color: '#6B7280', label: 'Sistem' };
+            return { icon: HelpCircle, color: themeColors.textGray, label: 'Sistem' };
     }
 };
 
@@ -118,7 +118,8 @@ const FILTER_TYPES = [
 // Baris di-memo + FlatList (virtualized): sebelumnya ScrollView + map me-mount
 // sampai 100 baris sekaligus dan render ulang semua tiap state layar berubah.
 const HistoryRow = React.memo(function HistoryRow({ item, onSelect }: { item: ActivityItem; onSelect: (item: ActivityItem) => void }) {
-        const config = getSourceConfig(item.source, item.title);
+    const themeColors = useUIStore((s) => s.themeColors);
+        const config = getSourceConfig(item.source, item.title, themeColors);
         const Icon = config.icon;
         const badge = getStatusBadge(item.status);
 
@@ -156,7 +157,7 @@ const HistoryRow = React.memo(function HistoryRow({ item, onSelect }: { item: Ac
                             className="px-1.5 py-0.5 h-auto"
                             textClassName="text-[8px]"
                         />
-                        <View className="w-1 h-1 rounded-full bg-gray-200 mx-1.5" />
+                        <View className="w-1 h-1 rounded-full bg-border mx-1.5" />
                         <Typography className="text-[10px] text-textGray font-medium">
                             {format(new Date(item.timestamp), 'dd MMM, HH:mm', { locale: localeID })}
                         </Typography>
@@ -422,10 +423,10 @@ export default function HistoryTab() {
             <View className="px-6 mt-4">
                 <View className="bg-surface p-2 rounded-[24px] flex-row items-center border border-transparent shadow-sm">
                     <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-background">
-                        <Search size={18} color="#9CA3AF" />
+                        <Search size={18} color={themeColors.textGray} />
                         <TextInput
                             placeholder="Cari transaksi, ref, unit, atau kategori..."
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                             className="flex-1 ml-3 text-sm font-semibold text-textMain"
                             value={search}
                             onChangeText={setSearch}
@@ -465,7 +466,7 @@ export default function HistoryTab() {
                                 onPress={handlePrevDate}
                                 className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-transparent active:scale-95"
                             >
-                                <ChevronLeft size={18} color="#1C1C1C" />
+                                <ChevronLeft size={18} color={themeColors.text} />
                             </Pressable>
 
                             <Pressable
@@ -476,14 +477,14 @@ export default function HistoryTab() {
                                 <Typography variant="body2" weight="bold" className="text-textMain ml-2 text-xs">
                                     {getFormattedDateText()}
                                 </Typography>
-                                <ChevronRight size={14} color="#9CA3AF" className="ml-1" />
+                                <ChevronRight size={14} color={themeColors.textGray} className="ml-1" />
                             </Pressable>
 
                             <Pressable
                                 onPress={handleNextDate}
                                 className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-transparent active:scale-95"
                             >
-                                <ChevronRight size={18} color="#1C1C1C" />
+                                <ChevronRight size={18} color={themeColors.text} />
                             </Pressable>
                         </View>
                     </View>
@@ -546,7 +547,7 @@ export default function HistoryTab() {
                 ) : (
                     <View className="items-center justify-center py-20 bg-surface rounded-[24px] border border-dashed border-transparent mx-6">
                         <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
-                            <Calendar size={40} color="#9CA3AF" />
+                            <Calendar size={40} color={themeColors.textGray} />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[6px]">Spiii...</Typography>
                         <Typography variant="caption" className="text-textGray mt-2 text-center px-10">Tidak ditemukan aktivitas yang sesuai dengan kriteria pencarian Anda.</Typography>
@@ -574,7 +575,7 @@ export default function HistoryTab() {
                         <View className="flex-row justify-between items-center mb-4">
                             <Typography variant="h3" weight="bold">Filter Tanggal & Periode</Typography>
                             <Pressable onPress={() => setDatePickerModalOpen(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                                <X size={18} color="#4B5563" />
+                                <X size={18} color={themeColors.textGray} />
                             </Pressable>
                         </View>
 

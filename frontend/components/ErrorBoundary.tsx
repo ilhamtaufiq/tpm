@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
 import Repeat from 'lucide-react-native/dist/esm/icons/repeat.js';
 import { useMonitorStore } from '../store/useMonitorStore';
-import { useUIStore } from '../store/useUIStore';
+import { useUIStore, findPaletteBorder } from '../store/useUIStore';
 
 interface ErrorBoundaryState {
     hasError: boolean;
@@ -52,7 +52,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
     render() {
         if (this.state.hasError) {
-            const primaryColor = useUIStore.getState().themeColors?.primary || '#023C69';
+            const primaryColor = useUIStore.getState().themeColors?.primary || useUIStore.getState().themeColors.primary;
             return (
                 <View style={{
                     flex: 1,
@@ -91,7 +91,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                     {/* Error Description */}
                     <Text style={{
                         fontSize: 14,
-                        color: '#6B7280',
+                        color: useUIStore.getState().themeColors.textGray,
                         textAlign: 'center',
                         marginBottom: 32,
                         paddingHorizontal: 16
@@ -137,7 +137,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                                     this.handleReset();
                                 }}
                                 style={({ pressed }) => ({
-                                    backgroundColor: '#F3F4F6',
+                                    backgroundColor: useUIStore.getState().themeColors.background,
                                     paddingVertical: 16,
                                     borderRadius: 16,
                                     alignItems: 'center',
@@ -145,7 +145,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                                     opacity: pressed ? 0.7 : 1
                                 })}
                             >
-                                <Text style={{ color: '#4B5563', fontWeight: '600' }}>Bersihkan Log & Reset</Text>
+                                <Text style={{ color: useUIStore.getState().themeColors.textGray, fontWeight: '600' }}>Bersihkan Log & Reset</Text>
                             </Pressable>
                         )}
                     </View>
@@ -157,11 +157,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                                 width: '100%',
                                 maxHeight: 200,
                                 marginTop: 40,
-                                backgroundColor: '#F9FAFB',
+                                backgroundColor: useUIStore.getState().themeColors.background,
                                 borderRadius: 12,
                                 padding: 16,
                                 borderWidth: 1,
-                                borderColor: '#E5E7EB'
+                                borderColor: findPaletteBorder(useUIStore.getState().themeColors)
                             }}
                         >
                             <Text style={{
@@ -175,7 +175,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                             {this.state.error.stack && (
                                 <Text style={{
                                     fontSize: 10,
-                                    color: '#6B7280',
+                                    color: useUIStore.getState().themeColors.textGray,
                                     lineHeight: 14
                                 }}>
                                     {this.state.error.stack}

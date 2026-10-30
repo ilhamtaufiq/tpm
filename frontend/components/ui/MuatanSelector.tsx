@@ -27,6 +27,7 @@ export const MuatanSelector = ({
     label,
     placeholder
 }: MuatanSelectorProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const [searchQuery, setSearchQuery] = useState('');
@@ -64,7 +65,7 @@ export const MuatanSelector = ({
 
             <Pressable onPress={handleOpen}>
                 <View className="bg-background rounded-2xl px-4 py-4 border border-transparent flex-row items-center">
-                    <MapPin size={20} color={value ? '#F59E0B' : '#9CA3AF'} />
+                    <MapPin size={20} color={value ? '#F59E0B' : themeColors.textGray} />
 
                     <View className="flex-1 ml-3">
                         {value ? (
@@ -86,7 +87,7 @@ export const MuatanSelector = ({
 
                     {value && (
                         <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
-                            <X size={18} color="#9CA3AF" />
+                            <X size={18} color={themeColors.textGray} />
                         </Pressable>
                     )}
                 </View>
@@ -97,25 +98,25 @@ export const MuatanSelector = ({
                 <View className="bg-surface" style={[StyleSheet.absoluteFill, { zIndex: 9999 }]}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-4">
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full" />
+                            <View className="w-12 h-1.5 bg-border rounded-full" />
                         </View>
 
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold" className="text-primary tracking-tight text-xl">Cari Muatan</Typography>
                             <Pressable onPress={handleClose} hitSlop={12} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                                <X size={20} color="#6B7280" />
+                                <X size={20} color={themeColors.textGray} />
                             </Pressable>
                         </View>
 
                         <View className="flex-row items-center bg-background border border-transparent rounded-2xl px-4 py-3.5 mb-6 shadow-sm">
-                            <Search size={22} color="#9CA3AF" />
+                            <Search size={22} color={themeColors.textGray} />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-textMain font-medium"
                                 placeholder="Ketik rute atau nomor transaksi..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                                 autoFocus
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={themeColors.textGray}
                                 autoCapitalize="characters"
                             />
                         </View>

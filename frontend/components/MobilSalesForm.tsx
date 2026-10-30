@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, ScrollView, TextInput, ActivityIndicator, Platform, StyleSheet, Pressable } from 'react-native';
 // import { Pressable } from '@gorhom/bottom-sheet'; // Reverted for web compatibility
 import { Typography } from './ui/Typography';
@@ -22,7 +22,7 @@ import { getErrorMessage } from '../utils/error';
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../services/offlineQueue';
-import { useUIStore } from '../store/useUIStore';
+import { useUIStore, ThemeColors } from '../store/useUIStore';
 
 interface MobilSalesFormProps {
     unit: any;
@@ -30,6 +30,8 @@ interface MobilSalesFormProps {
 }
 
 export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
+    const styles = useMemo(() => makeStyles(themeColors), [themeColors]);
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const queryClient = useQueryClient();
     const { data: detailUnit, isLoading: isDetailLoading } = useMobilDetail(unit?.id);
@@ -643,7 +645,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (themeColors: ThemeColors) => StyleSheet.create({
     flex1: {
         flex: 1,
     },
@@ -658,6 +660,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: themeColors.background,
     },
 });

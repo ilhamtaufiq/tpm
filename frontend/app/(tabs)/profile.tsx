@@ -27,7 +27,7 @@ import * as Updates from 'expo-updates';
 
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
-import { useUIStore } from '../../store/useUIStore';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 import { useResetTransactions } from '../../hooks/useMaintenance';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -341,7 +341,7 @@ export default function ProfileScreen() {
                                 }}
                             >
                                 <View className={`w-10 h-10 ${useBiometrics ? 'bg-blue-50' : 'bg-background'} rounded-[14px] items-center justify-center mb-3`}>
-                                    <Fingerprint size={20} color={useBiometrics ? '#3B82F6' : '#9CA3AF'} />
+                                    <Fingerprint size={20} color={useBiometrics ? '#3B82F6' : themeColors.textGray} />
                                 </View>
                                 <View>
                                     <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Biometrik</Typography>
@@ -439,8 +439,8 @@ export default function ProfileScreen() {
                             <Switch
                                 value={protectedFeatures.disable_web_access}
                                 onValueChange={handleToggleWebAccess}
-                                trackColor={{ false: "#E2E8F0", true: "#FDA4AF" }}
-                                thumbColor={protectedFeatures.disable_web_access ? "#F43F5E" : "#94A3B8"}
+                                trackColor={{ false: findPaletteBorder(themeColors), true: "#FDA4AF" }}
+                                thumbColor={protectedFeatures.disable_web_access ? "#F43F5E" : themeColors.textGray}
                                 disabled={updateSettingsMutation.isPending}
                             />
                         </View>
@@ -539,7 +539,7 @@ export default function ProfileScreen() {
                         <Typography variant="body1" weight="bold" className="text-text">Keluar Akun</Typography>
                         <Typography variant="caption" className="text-textGray">Akhiri sesi aplikasi</Typography>
                     </View>
-                    <ChevronRight size={18} color="#9CA3AF" />
+                    <ChevronRight size={18} color={themeColors.textGray} />
                 </Pressable>
 
                 <Pressable
@@ -554,7 +554,7 @@ export default function ProfileScreen() {
                         <Typography variant="body1" weight="bold" className="text-text">Cek Update Sistem</Typography>
                         <Typography variant="caption" className="text-textGray">Paksa update manual ke server</Typography>
                     </View>
-                    <ChevronRight size={18} color="#9CA3AF" />
+                    <ChevronRight size={18} color={themeColors.textGray} />
                 </Pressable>
 
                 <View className="items-center pb-24">

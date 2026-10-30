@@ -66,7 +66,7 @@ export default function DataImportScreen() {
             <View className="flex-1 bg-surface">
                 <Header title="Import Data" showBackButton />
                 <View className="flex-1 items-center justify-center p-8">
-                    <AlertTriangle size={40} color="#9CA3AF" />
+                    <AlertTriangle size={40} color={themeColors.textGray} />
                     <Typography weight="bold" className="mt-4 text-center">
                         Hanya Admin yang dapat mengimpor data.
                     </Typography>
@@ -414,14 +414,14 @@ export default function DataImportScreen() {
                                                 {preview.neraca_verification.computed.total_mobil?.toLocaleString('id-ID') ?? '-'}
                                             </Typography>
                                         </View>
-                                        <View className="h-[1px] bg-gray-200 my-1.5" />
+                                        <View className="h-[1px] bg-border my-1.5" />
                                         <View className="flex-row justify-between items-center py-1">
                                             <Typography className="text-[11px] text-text font-bold">Aktiva</Typography>
                                             <Typography className="text-[11px] text-text font-bold">
                                                 {preview.neraca_verification.computed.total_aktiva?.toLocaleString('id-ID') ?? '-'}
                                             </Typography>
                                         </View>
-                                        <View className="h-[1px] bg-gray-200 my-1.5" />
+                                        <View className="h-[1px] bg-border my-1.5" />
                                         <View className="flex-row justify-between items-center py-1">
                                             <Typography className="text-[11px] text-textGray">Hutang</Typography>
                                             <Typography className="text-[11px] text-text font-semibold">

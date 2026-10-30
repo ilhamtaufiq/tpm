@@ -109,6 +109,7 @@ type MobilCardHandlers = {
 // Kartu di-memo + dirender via FlatList (virtualized): sebelumnya ScrollView + map
 // me-mount semua kartu sekaligus dan render ulang semuanya tiap state layar berubah.
 const MobilListCard = React.memo(function MobilListCard({ item, handlers }: { item: any; handlers: MobilCardHandlers }) {
+    const themeColors = useUIStore((s) => s.themeColors);
     const status = String(item.status || '').toLowerCase();
     return (
         <Pressable
@@ -171,11 +172,11 @@ const MobilListCard = React.memo(function MobilListCard({ item, handlers }: { it
 
                         <View className="flex-row flex-wrap gap-2 mb-2">
                             <View className="flex-row items-center bg-background px-2 py-1 rounded-md border border-transparent">
-                                <GaugeCircle size={10} color="#6B7280" />
+                                <GaugeCircle size={10} color={themeColors.textGray} />
                                 <Typography className="text-textGray text-[9px] font-medium ml-1.5">{(item.kilometer || 0).toLocaleString()} km</Typography>
                             </View>
                             <View className="flex-row items-center bg-background px-2 py-1 rounded-md border border-transparent">
-                                <Settings size={10} color="#6B7280" />
+                                <Settings size={10} color={themeColors.textGray} />
                                 <Typography className="text-textGray text-[9px] font-medium ml-1.5">{item.transmisi || 'AT'}</Typography>
                             </View>
                         </View>
@@ -203,7 +204,7 @@ const MobilListCard = React.memo(function MobilListCard({ item, handlers }: { it
                             <TrendingUp size={14} color="#3B82F6" />
                         </Pressable>
                         <Pressable
-                            className="w-8 h-8 bg-background rounded-lg items-center justify-center border border-transparent active:bg-gray-200"
+                            className="w-8 h-8 bg-background rounded-lg items-center justify-center border border-transparent active:bg-border"
                             onPress={() => handlers.onDelete(item)}
                         >
                             <Trash2 size={14} color="#EF4444" />
@@ -697,7 +698,7 @@ export default function MobilInventoryScreen() {
                     onPress={handleCloseWallet}
                     className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent"
                 >
-                    <X size={20} color="#6B7280" />
+                    <X size={20} color={themeColors.textGray} />
                 </Pressable>
             </View>
 
@@ -744,7 +745,7 @@ export default function MobilInventoryScreen() {
                                 <View className="flex-1 items-end">
                                     <View className="flex-row items-center mb-1 text-right">
                                         <Typography variant="caption" className="text-white/30 font-bold uppercase tracking-[1px] text-[7px]">Omzet (via Transfer)</Typography>
-                                        <View className="w-1 h-1 rounded-full bg-gray-500 ml-2" />
+                                        <View className="w-1 h-1 rounded-full bg-textMain ml-2" />
                                     </View>
                                     <Typography className="text-white/40 text-[10px] font-bold italic">{formatCurrency(summaryData?.total_transfer || 0)}</Typography>
                                 </View>
@@ -955,7 +956,7 @@ export default function MobilInventoryScreen() {
                             className="mr-3"
                         >
                             <View className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                                <ChevronLeft size={18} color="#6B7280" />
+                                <ChevronLeft size={18} color={themeColors.textGray} />
                             </View>
                         </Pressable>
                         <Typography variant="h3" weight="bold" className={`${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} tracking-tight`}>
@@ -1059,7 +1060,7 @@ export default function MobilInventoryScreen() {
                                                     onPress={() => setExpensePaymentMethod(opt.id)}
                                                     className={`p-3 rounded-2xl border items-center justify-center ${active
                                                         ? 'bg-amber-600 border-amber-600 shadow-sm'
-                                                        : 'bg-surface border-gray-100'
+                                                        : 'bg-surface border-border'
                                                         }`}
                                                 >
                                                     <OptIcon size={20} color={active ? 'white' : opt.color} />
@@ -1089,7 +1090,7 @@ export default function MobilInventoryScreen() {
                                                 onPress={() => { setExpensePaymentMethod(opt.id); setExpenseNote(prev => (isSetoranAutoNote(prev) ? labelSetoran(opt.id) : prev)); }}
                                                 className={`p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
                                                     ? 'bg-blue-600 border-blue-600 shadow-sm'
-                                                    : 'bg-surface border-gray-100'
+                                                    : 'bg-surface border-border'
                                                     }`}
                                             >
                                                 <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${expensePaymentMethod === opt.id ? 'text-white' : 'text-textGray'}`}>
@@ -1255,21 +1256,21 @@ export default function MobilInventoryScreen() {
                     <View className="flex-row items-center space-x-2 mb-3">
                         <View className="flex-1 relative">
                             <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                                <Search size={18} color="#9CA3AF" />
+                                <Search size={18} color={themeColors.textGray} />
                             </View>
                             <TextInput
                                 className="w-full h-11 pl-11 pr-10 bg-background border border-transparent rounded-2xl text-textMain font-medium text-xs"
                                 placeholder="Cari mobil impian Anda..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={themeColors.textGray}
                                 autoCorrect={false}
                                 autoCapitalize="none"
                                 returnKeyType="search"
                             />
                             {searchQuery.length > 0 && (
                                 <Pressable onPress={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
-                                    <X size={16} color="#9CA3AF" />
+                                    <X size={16} color={themeColors.textGray} />
                                 </Pressable>
                             )}
                         </View>
@@ -1308,7 +1309,7 @@ export default function MobilInventoryScreen() {
                                 <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${isActive ? 'text-white font-bold' : 'text-textGray'}`}>
                                     {chip.label}
                                 </Typography>
-                                <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-border'}`}>
                                     <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : 'text-textGray'}`}>
                                         {formatNumber(count)}
                                     </Typography>
@@ -1405,7 +1406,7 @@ export default function MobilInventoryScreen() {
                                 <Pressable className="absolute inset-0" onPress={() => setWebModal(null)} />
                                 <View className={`bg-surface rounded-t-[48px] w-full max-w-[640px] self-center p-0 overflow-hidden shadow-2xl relative ${webModal === 'detail' ? 'rounded-none h-full' : 'h-[90%]'}`}>
                                     {webModal !== 'detail' && (
-                                        <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
+                                        <View className="w-12 h-1.5 bg-border rounded-full self-center my-4" />
                                     )}
                                     {webModal === 'new' && <MobilForm onSuccess={() => { setWebModal(null); refetch(); }} />}
                                     {webModal === 'edit' && editingUnit && <MobilForm initialData={editingUnit} onSuccess={() => { setWebModal(null); refetch(); }} />}
@@ -1433,7 +1434,7 @@ export default function MobilInventoryScreen() {
                                     <View className="p-6 border-b border-transparent flex-row justify-between items-center">
                                         <Typography variant="h3" weight="bold">Riwayat Kas & Setoran</Typography>
                                         <Pressable onPress={() => setShowHistoryModal(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                                            <X size={18} color="#64748B" />
+                                            <X size={18} color={themeColors.textGray} />
                                         </Pressable>
                                     </View>
                                     <ScrollView style={{ flex: 1 }} className="p-6" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
@@ -1614,7 +1615,7 @@ export default function MobilInventoryScreen() {
                                             <Typography variant="caption" className="text-textGray">20 transaksi keuangan terbaru</Typography>
                                         </View>
                                         <Pressable onPress={() => setShowHistoryModal(false)} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                                            <X size={20} color="#64748B" />
+                                            <X size={20} color={themeColors.textGray} />
                                         </Pressable>
                                     </View>
                                     <ScrollView style={{ flex: 1 }} className="p-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
@@ -1662,7 +1663,7 @@ export default function MobilInventoryScreen() {
                                 <View className="flex-row justify-between items-center mb-6">
                                     <Typography variant="h2" weight="bold">Pilih Periode</Typography>
                                     <Pressable onPress={() => setIsDateModalVisible(false)}>
-                                        <X size={24} color="#6B7280" />
+                                        <X size={24} color={themeColors.textGray} />
                                     </Pressable>
                                 </View>
                                 {renderDateContent()}

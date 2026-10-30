@@ -364,7 +364,7 @@ export default function AssetScreen() {
                     <Typography weight="bold" className="text-primary text-sm">{formatCurrency(item.harga_beli)}</Typography>
                 </View>
                 <View className="ml-2 w-8 h-8 rounded-full bg-background items-center justify-center">
-                    <MoreVertical size={16} color="#9CA3AF" />
+                    <MoreVertical size={16} color={themeColors.textGray} />
                 </View>
             </View>
         </Pressable>
@@ -532,7 +532,7 @@ export default function AssetScreen() {
                     <View className="flex-row justify-between items-center mb-6">
                         <Typography variant="h2" weight="bold">Detail Aset</Typography>
                         <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                            <X size={20} color="#6B7280" />
+                            <X size={20} color={themeColors.textGray} />
                         </Pressable>
                     </View>
 
@@ -561,7 +561,7 @@ export default function AssetScreen() {
                         <View className="flex-row space-x-3 mb-4">
                             <View className="flex-1 flex-row items-center bg-background p-3 rounded-2xl">
                                 <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
-                                    <Calendar size={20} color="#6B7280" />
+                                    <Calendar size={20} color={themeColors.textGray} />
                                 </View>
                                 <View>
                                     <Typography className="text-xs text-textGray font-bold uppercase">Tanggal Beli</Typography>
@@ -570,7 +570,7 @@ export default function AssetScreen() {
                             </View>
                             <View className="flex-1 flex-row items-center bg-background p-3 rounded-2xl">
                                 <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
-                                    <Clock size={20} color="#6B7280" />
+                                    <Clock size={20} color={themeColors.textGray} />
                                 </View>
                                 <View>
                                     <Typography className="text-xs text-textGray font-bold uppercase">Umur</Typography>
@@ -581,7 +581,7 @@ export default function AssetScreen() {
 
                         <View className="flex-row items-center bg-background p-3 rounded-2xl">
                             <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
-                                <MapPin size={20} color="#6B7280" />
+                                <MapPin size={20} color={themeColors.textGray} />
                             </View>
                             <View className="flex-1">
                                 <Typography className="text-xs text-textGray font-bold uppercase">Lokasi / Kategori</Typography>
@@ -591,7 +591,7 @@ export default function AssetScreen() {
 
                         <View className="flex-row items-center bg-background p-3 rounded-2xl mt-4">
                             <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
-                                <Wallet size={20} color="#6B7280" />
+                                <Wallet size={20} color={themeColors.textGray} />
                             </View>
                             <View className="flex-1">
                                 <Typography className="text-xs text-textGray font-bold uppercase">Sumber Dana</Typography>
@@ -622,7 +622,7 @@ export default function AssetScreen() {
                 <View className="flex-row justify-between items-center mb-6">
                     <Typography variant="h2" weight="bold">{selectedAsset ? 'Edit Aset' : 'Pembelian Aset Tetap'}</Typography>
                     <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                        <X size={20} color="#6B7280" />
+                        <X size={20} color={themeColors.textGray} />
                     </Pressable>
                 </View>
 
@@ -742,13 +742,13 @@ export default function AssetScreen() {
             >
                 {!sheetVisible && (
                     <View className="flex-row items-center bg-background h-11 rounded-2xl border border-transparent">
-                        <Search size={18} color="#9CA3AF" className="ml-4" />
+                        <Search size={18} color={themeColors.textGray} className="ml-4" />
                         <TextInput
                             placeholder="Cari nama atau kode..."
                             className="flex-1 ml-3 text-sm font-medium text-textMain"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                         />
                     </View>
                 )}
@@ -770,7 +770,7 @@ export default function AssetScreen() {
                                         {filter.label}
                                     </Typography>
                                     {count !== undefined && (
-                                        <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                        <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-border'}`}>
                                             <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : 'text-textGray'}`}>
                                                 {count}
                                             </Typography>
@@ -803,7 +803,7 @@ export default function AssetScreen() {
                     <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
                         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleCloseSheet} />
                         <View className="bg-surface rounded-t-[32px] shadow-2xl h-[90%] max-w-[640px] self-center w-full">
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
+                            <View className="w-12 h-1.5 bg-border rounded-full self-center my-4" />
                             <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">{renderSheetContent()}</ScrollView>
                         </View>
                     </View>

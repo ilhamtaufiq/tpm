@@ -4,7 +4,7 @@ import BottomSheetBase, { BottomSheetScrollView, BottomSheetBackdrop } from '@go
 import BottomSheet from '../../../components/ui/BottomSheetWithBack';
 import { appAlert } from '../../../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useUIStore } from '../../../store/useUIStore';
+import { useUIStore, findPaletteBorder, ThemeColors } from '../../../store/useUIStore';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
@@ -48,18 +48,18 @@ import { SparePartSelector } from '../../../components/ui/SparePartSelector';
 import { getCustomTabBarBottomPadding } from '../../../components/ui/CustomTabBar';
 import { useSheetChrome } from '../../../utils/themeStyles';
 
-const CATEGORIES = [
+const make_CATEGORIES = (themeColors: ThemeColors) => ([
     { label: 'Prive', value: 'PRIVE', icon: Wallet, color: '#F59E0B' },
     { label: 'Biaya Operasional', value: 'BIAYA_OPERASIONAL', icon: Wrench, color: 'themeColors.primary' },
-    { label: 'Biaya Lainnya', value: 'BIAYA_LAINNYA', icon: Info, color: '#6B7280' },
-];
+    { label: 'Biaya Lainnya', value: 'BIAYA_LAINNYA', icon: Info, color: themeColors.textGray },
+]);
 
-const BISNIS_KATEGORI = [
-    { label: 'Umum', value: 'umum', icon: Info, color: '#6B7280' },
+const make_BISNIS_KATEGORI = (themeColors: ThemeColors) => ([
+    { label: 'Umum', value: 'umum', icon: Info, color: themeColors.textGray },
     { label: 'Bengkel', value: 'bengkel', icon: Wrench, color: '#F59E0B' },
     { label: 'Jasa Angkut', value: 'jasa_angkut', icon: Truck, color: '#10B981' },
     { label: 'Jual Beli Mobil', value: 'jual_beli_mobil', icon: Car, color: '#3B82F6' },
-];
+]);
 
 
 const PERIODS = [
@@ -71,6 +71,8 @@ const PERIODS = [
 
 export default function ExpensesScreen() {
     const themeColors = useUIStore((s) => s.themeColors);
+    const BISNIS_KATEGORI = useMemo(() => make_BISNIS_KATEGORI(themeColors), [themeColors]);
+    const CATEGORIES = useMemo(() => make_CATEGORIES(themeColors), [themeColors]);
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const chrome = useSheetChrome();
@@ -293,10 +295,10 @@ export default function ExpensesScreen() {
                                                 onPress={() => setKategori(cat.value)}
                                                 className={`flex-1 p-3 rounded-2xl border items-center ${kategori === cat.value
                                                     ? 'bg-primary/5 border-primary shadow-sm'
-                                                    : 'bg-surface border-gray-100'
+                                                    : 'bg-surface border-border'
                                                     }`}
                                             >
-                                                <cat.icon size={18} color={kategori === cat.value ? 'themeColors.primary' : '#9CA3AF'} />
+                                                <cat.icon size={18} color={kategori === cat.value ? 'themeColors.primary' : themeColors.textGray} />
                                                 <Typography
                                                     weight={kategori === cat.value ? 'bold' : 'medium'}
                                                     className={`text-[9px] mt-2 tracking-tighter ${kategori === cat.value ? 'text-primary' : 'text-textGray'}`}
@@ -333,10 +335,10 @@ export default function ExpensesScreen() {
                                                 }}
                                                 className={`flex-1 p-3 rounded-2xl border items-center ${bisnisKategori === cat.value
                                                     ? 'bg-primary border-primary shadow-sm'
-                                                    : 'bg-surface border-gray-100'
+                                                    : 'bg-surface border-border'
                                                     }`}
                                             >
-                                                <cat.icon size={18} color={bisnisKategori === cat.value ? '#FFFFFF' : '#9CA3AF'} />
+                                                <cat.icon size={18} color={bisnisKategori === cat.value ? '#FFFFFF' : themeColors.textGray} />
                                                 <Typography
                                                     weight={bisnisKategori === cat.value ? 'bold' : 'medium'}
                                                     className={`text-[9px] mt-2 tracking-tighter ${bisnisKategori === cat.value ? 'text-white' : 'text-textGray'}`}
@@ -399,7 +401,7 @@ export default function ExpensesScreen() {
                                                         }}
                                                         className={`mr-2 mb-2 px-4 py-3 rounded-2xl border items-center ${kasJenis === opt.value
                                                             ? 'bg-primary border-primary shadow-sm'
-                                                            : isRelevant ? 'bg-primary/5 border-primary/20' : 'bg-surface border-gray-100'
+                                                            : isRelevant ? 'bg-primary/5 border-primary/20' : 'bg-surface border-border'
                                                             }`}
                                                     >
                                                         <Typography
@@ -453,10 +455,10 @@ export default function ExpensesScreen() {
                                     onPress={() => setPayMetode(payMetode === 'SPLIT' ? metodeDariAkun(kasJenis) : 'SPLIT')}
                                     className={`flex-row items-center justify-center py-4 rounded-3xl border ${payMetode === 'SPLIT'
                                         ? 'bg-primary border-primary shadow-2xl shadow-primary/20'
-                                        : 'bg-surface border-gray-100'
+                                        : 'bg-surface border-border'
                                         }`}
                                 >
-                                    <Split size={14} color={payMetode === 'SPLIT' ? 'white' : '#9CA3AF'} className="mr-2" />
+                                    <Split size={14} color={payMetode === 'SPLIT' ? 'white' : themeColors.textGray} className="mr-2" />
                                     <Typography weight="bold" className={payMetode === 'SPLIT' ? 'text-white text-[10px]' : 'text-textGray text-[10px]'}>
                                         {payMetode === 'SPLIT' ? 'SPLIT AKTIF — ketuk untuk batal' : 'BAYAR SPLIT (opsional)'}
                                     </Typography>
@@ -489,7 +491,7 @@ export default function ExpensesScreen() {
                                                             }}
                                                             className={`mr-1 mb-1 px-2 py-1.5 rounded-lg border ${split.kas_jenis === opt.value
                                                                 ? 'bg-primary border-primary'
-                                                                : 'bg-surface border-gray-200'
+                                                                : 'bg-surface border-border'
                                                                 }`}
                                                         >
                                                             <Typography
@@ -625,7 +627,7 @@ export default function ExpensesScreen() {
                                 onPress={() => shiftDate(-1)}
                                 className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-transparent active:scale-95"
                             >
-                                <ChevronLeft size={18} color="#1C1C1C" />
+                                <ChevronLeft size={18} color={themeColors.text} />
                             </Pressable>
 
                             <Pressable
@@ -636,14 +638,14 @@ export default function ExpensesScreen() {
                                 <Typography variant="body2" weight="bold" className="text-textMain ml-2 text-xs">
                                     {periodLabel}
                                 </Typography>
-                                <ChevronRight size={14} color="#9CA3AF" className="ml-1" />
+                                <ChevronRight size={14} color={themeColors.textGray} className="ml-1" />
                             </Pressable>
 
                             <Pressable
                                 onPress={() => shiftDate(1)}
                                 className="w-9 h-9 bg-background rounded-xl items-center justify-center border border-transparent active:scale-95"
                             >
-                                <ChevronRight size={18} color="#1C1C1C" />
+                                <ChevronRight size={18} color={themeColors.text} />
                             </Pressable>
                         </View>
                     </View>
@@ -666,10 +668,10 @@ export default function ExpensesScreen() {
                     ) : filteredExpenses.length === 0 ? (
                         <View className="py-20 items-center bg-surface rounded-[32px] border border-transparent shadow-sm p-6">
                             <View className="w-16 h-16 bg-background rounded-[28px] items-center justify-center mb-6">
-                                <Receipt size={32} color="#D1D5DB" />
+                                <Receipt size={32} color={findPaletteBorder(themeColors)} />
                             </View>
                             <Typography className="text-textGray font-bold text-center">Belum ada aktivitas</Typography>
-                            <Typography className="text-gray-300 text-xs text-center mt-1">Data pengeluaran akan muncul di sini</Typography>
+                            <Typography className="text-textGray text-xs text-center mt-1">Data pengeluaran akan muncul di sini</Typography>
                         </View>
                     ) : (
                         filteredExpenses.map((item: any) => {
@@ -737,7 +739,7 @@ export default function ExpensesScreen() {
                     <View className="flex-1 justify-end bg-black/40">
                         <Pressable className="absolute inset-0" onPress={closeForm} />
                         <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[95%] self-center overflow-hidden shadow-2xl relative">
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                             <ScrollView style={{ flex: 1 }} className="px-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {renderFormContent()}
                             </ScrollView>

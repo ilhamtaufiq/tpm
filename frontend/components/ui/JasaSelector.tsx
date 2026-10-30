@@ -12,6 +12,7 @@ import { jasaServisService } from '../../services/jasaServis';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency, parseNumber } from '../../utils/format';
+import { useUIStore } from '../../store/useUIStore';
 
 interface JasaSelectorProps {
     value?: any; // Selected object or null
@@ -26,6 +27,7 @@ export const JasaSelector = ({
     label,
     placeholder
 }: JasaSelectorProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const [searchQuery, setSearchQuery] = useState('');
     // Debounce: tanpa ini tiap ketikan = query baru + render ulang layar penuh (lag di Android).
@@ -62,7 +64,7 @@ export const JasaSelector = ({
 
             <Pressable onPress={handleOpen} hitSlop={8}>
                 <View className="bg-background rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
-                    <Wrench size={20} color={value ? '#8B5CF6' : '#9CA3AF'} />
+                    <Wrench size={20} color={value ? '#8B5CF6' : themeColors.textGray} />
 
                     <View className="flex-1 ml-3">
                         {value ? (
@@ -79,7 +81,7 @@ export const JasaSelector = ({
 
                     {value && (
                         <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
-                            <X size={18} color="#9CA3AF" />
+                            <X size={18} color={themeColors.textGray} />
                         </Pressable>
                     )}
                 </View>
@@ -96,25 +98,25 @@ export const JasaSelector = ({
                 <View className="bg-surface" style={{ flex: 1 }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
-                            <View className="w-10 h-1 bg-gray-300 rounded-full" />
+                            <View className="w-10 h-1 bg-border rounded-full" />
                         </View>
 
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold">Cari Jasa Servis</Typography>
                             <Pressable onPress={handleClose} hitSlop={12}>
-                                <X size={24} color="#6B7280" />
+                                <X size={24} color={themeColors.textGray} />
                             </Pressable>
                         </View>
 
                         <View className="flex-row items-center bg-background rounded-xl px-4 py-3 mb-4">
-                            <Search size={20} color="#9CA3AF" />
+                            <Search size={20} color={themeColors.textGray} />
                             <TextInput
                                 className="flex-1 ml-3 text-base text-text font-outfit"
                                 placeholder="Ketik nama jasa..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                                 autoFocus
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={themeColors.textGray}
                             />
                         </View>
 

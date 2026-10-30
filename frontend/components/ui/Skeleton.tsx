@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, ViewStyle, DimensionValue } from 'react-native';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 
 interface SkeletonProps {
     width?: DimensionValue;
@@ -14,6 +15,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     borderRadius = 8,
     style,
 }) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const opacity = useRef(new Animated.Value(0.3)).current;
 
     useEffect(() => {
@@ -42,7 +44,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
                     width,
                     height,
                     borderRadius,
-                    backgroundColor: '#E5E7EB',
+                    backgroundColor: findPaletteBorder(themeColors),
                     opacity,
                 },
                 style,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Modal, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CheckCircle from 'lucide-react-native/dist/esm/icons/circle-check-big.js';
@@ -7,7 +7,7 @@ import AlertCircle from 'lucide-react-native/dist/esm/icons/circle-alert.js';
 import Info from 'lucide-react-native/dist/esm/icons/info.js';
 import { CenterModalContainer } from './BottomSheetContainer';
 import { Button } from './Button';
-import { useUIStore } from '../../store/useUIStore';
+import { useUIStore, findPaletteBorder, ThemeColors } from '../../store/useUIStore';
 
 interface AlertDialogProps {
     visible: boolean;
@@ -22,12 +22,12 @@ interface AlertDialogProps {
     loading?: boolean;
 }
 
-const VARIANT_UI = {
+const make_VARIANT_UI = (themeColors: ThemeColors) => ({
     success: { color: '#10B981', bg: '#F0FDF4', icon: CheckCircle },
     error: { color: '#E11D48', bg: '#FFF1F2', icon: XCircle },
     warning: { color: '#F59E0B', bg: '#FFFBEB', icon: AlertCircle },
-    info: { color: '#023C69', bg: '#F8FAFC', icon: Info },
-} as const;
+    info: { color: themeColors.primary, bg: '#F8FAFC', icon: Info },
+} as const);
 
 export const AlertDialog = ({
     visible,
@@ -41,6 +41,9 @@ export const AlertDialog = ({
     type = 'alert',
     loading = false,
 }: AlertDialogProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
+    const VARIANT_UI = useMemo(() => make_VARIANT_UI(themeColors), [themeColors]);
+    const styles = useMemo(() => makeStyles(themeColors), [themeColors]);
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
     const primaryColor = useUIStore((s) => s.themeColors.primary);
 
@@ -144,7 +147,7 @@ export const AlertDialog = ({
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (themeColors: ThemeColors) => StyleSheet.create({
     bodyContent: {
         paddingHorizontal: 24,
         paddingTop: 24,
@@ -170,7 +173,7 @@ const styles = StyleSheet.create({
     },
     messageText: {
         fontSize: 15,
-        color: '#64748B',
+        color: themeColors.textGray,
         textAlign: 'center',
         lineHeight: 22,
         width: '100%',
@@ -182,7 +185,7 @@ const styles = StyleSheet.create({
         paddingTop: 16,
         paddingBottom: 20,
         borderTopWidth: StyleSheet.hairlineWidth,
-        borderTopColor: '#E2E8F0',
+        borderTopColor: findPaletteBorder(themeColors),
     },
     actionButton: {
         width: '100%',

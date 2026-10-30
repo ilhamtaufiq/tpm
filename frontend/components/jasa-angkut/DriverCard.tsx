@@ -8,12 +8,14 @@ import Phone from 'lucide-react-native/dist/esm/icons/phone.js';
 import FileText from 'lucide-react-native/dist/esm/icons/file-text.js';
 
 import { tanggalLokal } from '../../utils/format';
+import { useUIStore } from '../../store/useUIStore';
 interface DriverCardProps {
     supir: Supir;
     onPress?: () => void;
 }
 
 export const DriverCard = ({ supir, onPress }: DriverCardProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     return (
         <Pressable 
             onPress={onPress} 
@@ -69,13 +71,13 @@ export const DriverCard = ({ supir, onPress }: DriverCardProps) => {
 
                 <View className="flex-row mt-4 pt-4 border-t border-transparent">
                     <View className="flex-row items-center mr-4">
-                        <Phone size={14} color="#6B7280" />
+                        <Phone size={14} color={themeColors.textGray} />
                         <Typography variant="caption" className="text-textGray ml-1.5">
                             {supir.telepon || '-'}
                         </Typography>
                     </View>
                     <View className="flex-row items-center">
-                        <FileText size={14} color="#6B7280" />
+                        <FileText size={14} color={themeColors.textGray} />
                         <Typography variant="caption" className="text-textGray ml-1.5">
                             SIM: {supir.jenis_sim || '-'}
                         </Typography>

@@ -20,16 +20,17 @@ import { useQueryClient } from '@tanstack/react-query';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { Header } from '../../components/ui/Header';
 import { AbsensiPerTanggal } from '../../components/sdm/AbsensiPerTanggal';
+import { useUIStore, findPaletteBorder, ThemeColors } from '../../store/useUIStore';
 
-const STATUS_META: Record<AttendanceStatus, { label: string; color: string; bg: string; text: string }> = {
-    HADIR: { label: 'Hadir', color: '#023C69', bg: 'bg-blue-50', text: 'text-blue-700' },
+const make_STATUS_META = (themeColors: ThemeColors): Record<AttendanceStatus, { label: string; color: string; bg: string; text: string }> => ({
+    HADIR: { label: 'Hadir', color: themeColors.primary, bg: 'bg-blue-50', text: 'text-blue-700' },
     SETENGAH_HARI: { label: 'Setengah Hari', color: '#F59E0B', bg: 'bg-amber-50', text: 'text-amber-700' },
     IZIN: { label: 'Izin', color: '#06B6D4', bg: 'bg-cyan-50', text: 'text-cyan-700' },
     SAKIT: { label: 'Sakit', color: '#8B5CF6', bg: 'bg-violet-50', text: 'text-violet-700' },
     ALPHA: { label: 'Alpha', color: '#EF4444', bg: 'bg-rose-50', text: 'text-rose-700' },
     CUTI: { label: 'Cuti', color: '#10B981', bg: 'bg-emerald-50', text: 'text-emerald-700' },
-    LIBUR: { label: 'Libur', color: '#6B7280', bg: 'bg-surface', text: 'text-text' },
-};
+    LIBUR: { label: 'Libur', color: themeColors.textGray, bg: 'bg-surface', text: 'text-text' },
+});
 
 const getLocalDateString = (d = new Date()) => {
     const year = d.getFullYear();
@@ -39,6 +40,8 @@ const getLocalDateString = (d = new Date()) => {
 };
 
 export default function AbsensiScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
+    const STATUS_META = useMemo(() => make_STATUS_META(themeColors), [themeColors]);
     const router = useRouter();
     const queryClient = useQueryClient();
     const [refreshing, setRefreshing] = useState(false);
@@ -299,7 +302,7 @@ export default function AbsensiScreen() {
                 },
                 text: {
                     ...(todayEntry?.customStyles?.text || {}),
-                    color: todayEntry?.customStyles?.text?.color || '#023C69',
+                    color: todayEntry?.customStyles?.text?.color || themeColors.primary,
                     fontWeight: '800',
                 }
             }
@@ -357,7 +360,7 @@ export default function AbsensiScreen() {
                                 className="bg-surface p-5 rounded-[32px] mb-4 border border-transparent shadow-sm flex-row items-center"
                             >
                                 <View className="w-14 h-14 bg-background rounded-2xl items-center justify-center mr-4 border border-transparent shadow-inner">
-                                    <User size={28} color="#023C69" />
+                                    <User size={28} color={themeColors.primary} />
                                 </View>
                                 <View className="flex-1 mr-3">
                                     <Typography variant="body1" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
@@ -368,16 +371,16 @@ export default function AbsensiScreen() {
                                     </Typography>
                                 </View>
                                 <View className="w-10 h-10 bg-background rounded-xl items-center justify-center border border-transparent">
-                                    <CalendarIcon size={18} color="#D1D5DB" />
+                                    <CalendarIcon size={18} color={findPaletteBorder(themeColors)} />
                                 </View>
                             </Pressable>
                         )}
                         keyExtractor={(item) => item.id.toString()}
                         contentContainerStyle={{ paddingTop: 10, paddingBottom: 120 }}
-                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                         ListEmptyComponent={
                             isLoadingKaryawan ? (
-                                <View className="py-20"><ActivityIndicator size="large" color="#023C69" /></View>
+                                <View className="py-20"><ActivityIndicator size="large" color={themeColors.primary} /></View>
                             ) : (
                                 <View className="items-center py-20">
                                     <Typography className="text-textGray font-medium text-center">Tidak ada karyawan aktif</Typography>
@@ -393,7 +396,7 @@ export default function AbsensiScreen() {
                         <Card className="rounded-[32px] overflow-hidden border border-transparent shadow-xl mb-6">
                             <View className="p-5 border-b border-transparent bg-surface/50 flex-row items-center justify-between">
                                 <View className="flex-row items-center">
-                                    <CalendarIcon size={20} color="#023C69" className="mr-2" />
+                                    <CalendarIcon size={20} color={themeColors.primary} className="mr-2" />
                                     <Typography weight="bold" className="text-textMain">Seleksi Tanggal Masuk</Typography>
                                 </View>
                                 <Badge label={`${Object.keys(selectedDates).length} Hari`} variant="success" />
@@ -408,14 +411,14 @@ export default function AbsensiScreen() {
                                 theme={{
                                     calendarBackground: '#ffffff',
                                     textSectionTitleColor: '#b6c1cd',
-                                    selectedDayBackgroundColor: '#023C69',
+                                    selectedDayBackgroundColor: themeColors.primary,
                                     selectedDayTextColor: '#ffffff',
                                     todayTextColor: '#10B981',
                                     dayTextColor: '#2d4150',
                                     textDisabledColor: '#d9e1e8',
-                                    arrowColor: '#023C69',
-                                    monthTextColor: '#023C69',
-                                    indicatorColor: '#023C69',
+                                    arrowColor: themeColors.primary,
+                                    monthTextColor: themeColors.primary,
+                                    indicatorColor: themeColors.primary,
                                     textDayFontWeight: '500',
                                     textMonthFontWeight: 'bold',
                                     textDayHeaderFontWeight: 'bold',

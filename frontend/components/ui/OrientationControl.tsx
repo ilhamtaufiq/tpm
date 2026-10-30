@@ -4,7 +4,7 @@ import Smartphone from 'lucide-react-native/dist/esm/icons/smartphone.js';
 import MonitorSmartphone from 'lucide-react-native/dist/esm/icons/monitor-smartphone.js';
 import RotateCw from 'lucide-react-native/dist/esm/icons/rotate-cw.js';
 import { Typography } from './Typography';
-import { type OrientationLockMode } from '../../store/useUIStore';
+import { type OrientationLockMode, useUIStore } from '../../store/useUIStore';
 import { useOrientationLock } from '../../hooks/useOrientationLock';
 import { useResponsive } from '../../hooks/useResponsive';
 
@@ -19,6 +19,7 @@ interface OrientationControlProps {
 }
 
 export const OrientationControl = ({ compact = false }: OrientationControlProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const { orientationLock, setOrientationLock, cycleOrientation } = useOrientationLock();
     const { orientation, isLandscape } = useResponsive();
 
@@ -67,11 +68,11 @@ export const OrientationControl = ({ compact = false }: OrientationControlProps)
                             key={option.id}
                             onPress={() => setOrientationLock(option.id)}
                             className={`flex-1 rounded-2xl px-3 py-3 border items-center ${
-                                active ? 'bg-indigo-50 border-indigo-200' : 'bg-surface border-gray-100'
+                                active ? 'bg-indigo-50 border-indigo-200' : 'bg-surface border-border'
                             }`}
                         >
                             <View style={option.id === 'landscape' ? { transform: [{ rotate: '90deg' }] } : undefined}>
-                                <Smartphone size={18} color={active ? '#6366F1' : '#9CA3AF'} />
+                                <Smartphone size={18} color={active ? '#6366F1' : themeColors.textGray} />
                             </View>
                             <Typography
                                 variant="caption"

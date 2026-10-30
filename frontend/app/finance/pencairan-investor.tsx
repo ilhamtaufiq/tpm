@@ -48,10 +48,12 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { printReportHTML } from '../../utils/printReport';
 import { usePlaceholderColor, useSheetChrome } from '../../utils/themeStyles';
+import { useUIStore } from '../../store/useUIStore';
 
 const escapeHtml = (str: any) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
 
 export default function PencairanInvestorScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const chrome = useSheetChrome();
     const placeholder = usePlaceholderColor();
@@ -422,7 +424,7 @@ export default function PencairanInvestorScreen() {
                 <Card variant="outlined" className="p-6 mb-8 border-primary/20 bg-primary/5 rounded-[32px]">
                     <View className="flex-row items-center mb-3">
                         <View className="w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center mr-4">
-                            <Banknote size={24} color="#023C69" />
+                            <Banknote size={24} color={themeColors.primary} />
                         </View>
                         <View>
                             <Typography className="text-primary/60 text-[10px] uppercase font-bold tracking-widest mb-1">
@@ -473,7 +475,7 @@ export default function PencairanInvestorScreen() {
                                 onPress={handleAddPaymentRow}
                                 className="bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/10 flex-row items-center"
                             >
-                                <Plus size={14} color="#023C69" />
+                                <Plus size={14} color={themeColors.primary} />
                                 <Typography weight="bold" className="text-primary text-[10px] ml-1 uppercase">Tambah</Typography>
                             </Pressable>
                         </View>
@@ -548,7 +550,7 @@ export default function PencairanInvestorScreen() {
                         keyboardType="numeric"
                         value={payments[0]?.nominal || ''}
                         onChangeText={(text) => handleUpdatePayment(0, 'nominal', formatNumber(text))}
-                        startIcon={<CircleDollarSign size={18} color="#9CA3AF" />}
+                        startIcon={<CircleDollarSign size={18} color={themeColors.textGray} />}
                         containerClassName="mb-6"
                     />
                 )}
@@ -598,7 +600,7 @@ export default function PencairanInvestorScreen() {
                     onChangeText={(text) => setCatatan(text)}
                     multiline
                     numberOfLines={2}
-                    startIcon={<FileText size={18} color="#9CA3AF" />}
+                    startIcon={<FileText size={18} color={themeColors.textGray} />}
                     style={{ height: 60, textAlignVertical: 'top' }}
                     containerClassName="mb-8"
                 />
@@ -648,13 +650,13 @@ export default function PencairanInvestorScreen() {
                             disabled={printing}
                             className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background mr-2"
                         >
-                            {printing ? <ActivityIndicator size="small" color="#1F2937" /> : <Download size={20} color="#1F2937" />}
+                            {printing ? <ActivityIndicator size="small" color={themeColors.text} /> : <Download size={20} color={themeColors.text} />}
                         </Pressable>
                         <Pressable
                             onPress={onRefresh}
                             className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                         >
-                            <RefreshCw size={20} color="#1F2937" />
+                            <RefreshCw size={20} color={themeColors.text} />
                         </Pressable>
                     </View>
                 }
@@ -686,21 +688,21 @@ export default function PencairanInvestorScreen() {
                         onPress={() => setActiveTab('PENDING')}
                         className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'PENDING' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
                     >
-                        <CircleDollarSign size={18} color={activeTab === 'PENDING' ? 'white' : '#9CA3AF'} />
+                        <CircleDollarSign size={18} color={activeTab === 'PENDING' ? 'white' : themeColors.textGray} />
                         <Typography className={`ml-2 text-sm font-bold ${activeTab === 'PENDING' ? 'text-white' : 'text-textGray'}`}>Tunggu Bayar</Typography>
                     </Pressable>
                     <Pressable
                         onPress={() => setActiveTab('BELUM_TERJUAL')}
                         className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'BELUM_TERJUAL' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
                     >
-                        <Car size={18} color={activeTab === 'BELUM_TERJUAL' ? 'white' : '#9CA3AF'} />
+                        <Car size={18} color={activeTab === 'BELUM_TERJUAL' ? 'white' : themeColors.textGray} />
                         <Typography className={`ml-2 text-[11px] font-bold ${activeTab === 'BELUM_TERJUAL' ? 'text-white' : 'text-textGray'}`}>Belum Terjual</Typography>
                     </Pressable>
                     <Pressable
                         onPress={() => setActiveTab('HISTORY')}
                         className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'HISTORY' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
                     >
-                        <History size={18} color={activeTab === 'HISTORY' ? 'white' : '#9CA3AF'} />
+                        <History size={18} color={activeTab === 'HISTORY' ? 'white' : themeColors.textGray} />
                         <Typography className={`ml-2 text-sm font-bold ${activeTab === 'HISTORY' ? 'text-white' : 'text-textGray'}`}>Riwayat</Typography>
                     </Pressable>
                 </View>
@@ -725,7 +727,7 @@ export default function PencairanInvestorScreen() {
             <ScrollView
                 className="flex-1 px-6"
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
             >
                 {activeTab === 'PENDING' ? (
                     <>
@@ -748,11 +750,11 @@ export default function PencairanInvestorScreen() {
                                     <View className="flex-row justify-between items-start mb-4">
                                         <View className="flex-1 mr-3">
                                             <View className="flex-row items-center mb-1">
-                                                <Car size={14} color="#023C69" className="mr-1.5" />
+                                                <Car size={14} color={themeColors.primary} className="mr-1.5" />
                                                 <Typography variant="body1" weight="bold" numberOfLines={1}>{item.mobil}</Typography>
                                             </View>
                                             <View className="flex-row items-center">
-                                                <User size={12} color="#9CA3AF" className="mr-1.5" />
+                                                <User size={12} color={themeColors.textGray} className="mr-1.5" />
                                                 <Typography variant="caption" className="text-textGray">{item.nama_investor}</Typography>
                                             </View>
                                         </View>
@@ -761,7 +763,7 @@ export default function PencairanInvestorScreen() {
                                         </View>
                                     </View>
 
-                                    <View className="bg-surface/50 rounded-3xl p-4 mb-4 border border-gray-100/50">
+                                    <View className="bg-surface/50 rounded-3xl p-4 mb-4 border border-border">
                                         <View className="flex-row justify-between mb-2">
                                             <Typography className="text-textGray text-[10px] font-bold">MODAL INVESTOR</Typography>
                                             <Typography variant="caption" weight="semibold" className="text-textGray">{formatCurrency(item.nominal_investor)}</Typography>
@@ -770,7 +772,7 @@ export default function PencairanInvestorScreen() {
                                             <Typography className="text-textGray text-[10px] font-bold">BAGIAN LABA</Typography>
                                             <Typography variant="caption" weight="bold" className="text-emerald-600">+{formatCurrency(item.laba_investor)}</Typography>
                                         </View>
-                                        <View className="h-[1px] bg-gray-200 my-2 border-dashed" />
+                                        <View className="h-[1px] bg-border my-2 border-dashed" />
                                         <View className="flex-row justify-between">
                                             <Typography className="text-textMain text-[11px] font-bold">TOTAL PENCAIRAN</Typography>
                                             <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(item.total_pencairan)}</Typography>
@@ -779,7 +781,7 @@ export default function PencairanInvestorScreen() {
 
                                     <View className="flex-row items-center justify-between">
                                         <View className="flex-row items-center">
-                                            <Calendar size={12} color="#9CA3AF" />
+                                            <Calendar size={12} color={themeColors.textGray} />
                                             <Typography variant="caption" className="text-textGray ml-1.5">Terjual: {formatDate(item.tanggal_jual)}</Typography>
                                         </View>
                                         <Button 
@@ -819,11 +821,11 @@ export default function PencairanInvestorScreen() {
                                     <View className="flex-row justify-between items-start mb-4">
                                         <View className="flex-1 mr-3">
                                             <View className="flex-row items-center mb-1">
-                                                <Car size={14} color="#023C69" className="mr-1.5" />
+                                                <Car size={14} color={themeColors.primary} className="mr-1.5" />
                                                 <Typography variant="body1" weight="bold" numberOfLines={1}>{item.mobil}</Typography>
                                             </View>
                                             <View className="flex-row items-center">
-                                                <User size={12} color="#9CA3AF" className="mr-1.5" />
+                                                <User size={12} color={themeColors.textGray} className="mr-1.5" />
                                                 <Typography variant="caption" className="text-textGray">
                                                     {item.nama_investor} • {item.persentase_investor}%
                                                 </Typography>
@@ -834,7 +836,7 @@ export default function PencairanInvestorScreen() {
                                         </View>
                                     </View>
 
-                                    <View className="bg-surface/50 rounded-3xl p-4 mb-4 border border-gray-100/50">
+                                    <View className="bg-surface/50 rounded-3xl p-4 mb-4 border border-border">
                                         <View className="flex-row justify-between mb-2">
                                             <Typography className="text-textGray text-[10px] font-bold">DANA INVESTOR</Typography>
                                             <Typography variant="caption" weight="semibold" className="text-textGray">{formatCurrency(item.nominal_investor)}</Typography>
@@ -843,7 +845,7 @@ export default function PencairanInvestorScreen() {
                                             <Typography className="text-textGray text-[10px] font-bold">SUDAH DITARIK</Typography>
                                             <Typography variant="caption" weight="bold" className="text-rose-600">-{formatCurrency(item.total_ditarik)}</Typography>
                                         </View>
-                                        <View className="h-[1px] bg-gray-200 my-2 border-dashed" />
+                                        <View className="h-[1px] bg-border my-2 border-dashed" />
                                         <View className="flex-row justify-between">
                                             <Typography className="text-textMain text-[11px] font-bold">SISA BISA DITARIK</Typography>
                                             <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(item.sisa_bisa_ditarik)}</Typography>
@@ -852,7 +854,7 @@ export default function PencairanInvestorScreen() {
 
                                     <View className="flex-row items-center justify-between">
                                         <View className="flex-row items-center">
-                                            <Calendar size={12} color="#9CA3AF" />
+                                            <Calendar size={12} color={themeColors.textGray} />
                                             <Typography variant="caption" className="text-textGray ml-1.5">Masuk: {formatDate(item.tanggal_masuk || '')}</Typography>
                                         </View>
                                         <Button
@@ -905,7 +907,7 @@ export default function PencairanInvestorScreen() {
                                     <View className="h-[1px] bg-background my-2" />
 
                                     <View className="flex-row items-center">
-                                        <Car size={12} color="#9CA3AF" className="mr-1.5" />
+                                        <Car size={12} color={themeColors.textGray} className="mr-1.5" />
                                         <Typography variant="caption" className="text-textGray" numberOfLines={1}>
                                             {item.mobil || '-'} • {item.nama_investor || '-'}
                                         </Typography>
@@ -973,7 +975,7 @@ export default function PencairanInvestorScreen() {
                                     <View className="h-[1px] bg-background my-2" />
                                     
                                     <View className="flex-row items-center">
-                                        <Car size={12} color="#9CA3AF" className="mr-1.5" />
+                                        <Car size={12} color={themeColors.textGray} className="mr-1.5" />
                                         <Typography variant="caption" className="text-textGray">Ref: {item.transaksi?.nomor_transaksi || '-'}</Typography>
                                     </View>
 
@@ -1016,7 +1018,7 @@ export default function PencairanInvestorScreen() {
                             setIsSheetOpen(false);
                         }} />
                         <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                             <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {renderProcessDisbursementContent()}
                             </ScrollView>

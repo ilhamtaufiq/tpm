@@ -21,7 +21,7 @@ import {
 } from '../../hooks';
 import { formatNumber, parseNumber } from '../../utils/format';
 import { useQueryClient } from '@tanstack/react-query';
-import { useUIStore } from '../../store/useUIStore';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 import { offlineAwareWrite } from '../../services/offlineQueue';
 import { appAlert } from '../../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -236,7 +236,7 @@ export default function JasaServisScreen() {
                     {isEditing ? 'Edit Jasa' : 'Tambah Jasa'}
                 </Typography>
                 <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                    <X size={20} color="#6B7280" />
+                    <X size={20} color={themeColors.textGray} />
                 </Pressable>
             </View>
 
@@ -246,7 +246,7 @@ export default function JasaServisScreen() {
                     <TextInput
                         className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                         placeholder="Contoh: Ganti Oli"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={themeColors.textGray}
                         value={form.nama}
                         onChangeText={(t) => setForm({ ...form, nama: t })}
                     />
@@ -258,7 +258,7 @@ export default function JasaServisScreen() {
                         <TextInput
                             className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="0"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                             keyboardType="numeric"
                             value={form.harga}
                             onChangeText={(t) => setForm({ ...form, harga: formatNumber(t) })}
@@ -269,7 +269,7 @@ export default function JasaServisScreen() {
                         <TextInput
                             className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="Servis"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                             value={form.kategori}
                             onChangeText={(t) => setForm({ ...form, kategori: t })}
                         />
@@ -281,7 +281,7 @@ export default function JasaServisScreen() {
                     <TextInput
                         className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]"
                         placeholder="Keterangan tambahan jasa..."
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={themeColors.textGray}
                         value={form.deskripsi}
                         onChangeText={(t) => setForm({ ...form, deskripsi: t })}
                         multiline
@@ -325,13 +325,13 @@ export default function JasaServisScreen() {
             >
                 {!sheetVisible && (
                     <View className="flex-row items-center bg-background h-11 rounded-2xl border border-transparent">
-                        <Search size={18} color="#9CA3AF" className="ml-4" />
+                        <Search size={18} color={themeColors.textGray} className="ml-4" />
                         <TextInput
                             placeholder="Cari jasa..."
                             className="flex-1 ml-3 text-sm font-medium text-textMain"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                         />
                     </View>
                 )}
@@ -355,7 +355,7 @@ export default function JasaServisScreen() {
                         ListEmptyComponent={
                             <View className="items-center justify-center py-20 mt-10">
                                 <View className="w-20 h-20 bg-background rounded-full items-center justify-center mb-4">
-                                    <Tag size={32} color="#D1D5DB" />
+                                    <Tag size={32} color={findPaletteBorder(themeColors)} />
                                 </View>
                                 <Typography className="text-textGray text-center font-medium">
                                     Belum ada data jasa servis.{'\n'}Tap + untuk menambah.
@@ -397,7 +397,7 @@ export default function JasaServisScreen() {
                                 alignSelf: 'center',
                             }}
                         >
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
+                            <View className="w-12 h-1.5 bg-border rounded-full self-center my-4" />
                             <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {renderFormContent()}
                             </ScrollView>

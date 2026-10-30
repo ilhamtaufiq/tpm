@@ -935,7 +935,7 @@ export default function BengkelScreen() {
                         </View>
                     ) : null}
 
-                    <View className="h-[1px] bg-gray-200 my-3" />
+                    <View className="h-[1px] bg-border my-3" />
 
                     <View className="space-y-0.5 mb-1">
                         <View className="flex-row justify-between items-center">
@@ -954,7 +954,7 @@ export default function BengkelScreen() {
                         </View>
                     </View>
 
-                    <View className="h-[1px] bg-gray-200 my-3" />
+                    <View className="h-[1px] bg-border my-3" />
                     <View className="flex-row justify-between items-center">
                         <View className="flex-1 mr-3">
                             <Typography variant="caption" className="text-textGray uppercase tracking-widest font-bold">Total</Typography>
@@ -1162,22 +1162,22 @@ export default function BengkelScreen() {
                         onPress={() => setQueueSearchOpen(prev => !prev)}
                         className={`w-10 h-10 rounded-full items-center justify-center border mr-2 ${queueSearchOpen ? 'bg-primary border-primary' : 'bg-background border-transparent'}`}
                     >
-                        <Search size={18} color={queueSearchOpen ? 'white' : '#6B7280'} />
+                        <Search size={18} color={queueSearchOpen ? 'white' : themeColors.textGray} />
                     </Pressable>
                     <Pressable onPress={closeQueueSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent">
-                        <X size={20} color="#6B7280" />
+                        <X size={20} color={themeColors.textGray} />
                     </Pressable>
                 </View>
             </View>
 
             {queueSearchOpen && (
                 <View className="flex-row items-center mb-3 bg-background border border-transparent rounded-2xl px-3 h-11">
-                    <Search size={16} color="#9CA3AF" />
+                    <Search size={16} color={themeColors.textGray} />
                     <TextInput
                         value={queueSearchQuery}
                         onChangeText={setQueueSearchQuery}
                         placeholder="Cari plat, customer, nomor transaksi..."
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={themeColors.textGray}
                         className="flex-1 ml-2 text-xs font-semibold text-textMain"
                         autoCorrect={false}
                         autoCapitalize="none"
@@ -1186,7 +1186,7 @@ export default function BengkelScreen() {
                     />
                     {queueSearchQuery.length > 0 && (
                         <Pressable onPress={() => setQueueSearchQuery('')} className="w-7 h-7 items-center justify-center">
-                            <X size={15} color="#9CA3AF" />
+                            <X size={15} color={themeColors.textGray} />
                         </Pressable>
                     )}
                 </View>
@@ -1207,12 +1207,12 @@ export default function BengkelScreen() {
                         </Typography>
                     </View>
                 </View>
-                <ChevronLeft size={18} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />
+                <ChevronLeft size={18} color={themeColors.textGray} style={{ transform: [{ rotate: '180deg' }] }} />
             </Pressable>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
                 {[
-                    { id: 'ALL', label: 'Semua', count: queueWorkStatusStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-gray-200', text: 'text-gray-600' },
+                    { id: 'ALL', label: 'Semua', count: queueWorkStatusStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-border', text: 'text-textGray' },
                     { id: 'antre', label: 'Antre', count: queueWorkStatusStats.antre, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                     { id: 'proses', label: 'Proses', count: queueWorkStatusStats.proses, active: 'bg-blue-500 border-blue-500', inactive: 'bg-blue-50 border-blue-100', text: 'text-blue-700' },
                     { id: 'selesai', label: 'Selesai', count: queueWorkStatusStats.selesai, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
@@ -1238,7 +1238,7 @@ export default function BengkelScreen() {
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
                 {[
-                    { id: 'ALL', label: 'Semua', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-gray-200', text: 'text-gray-600' },
+                    { id: 'ALL', label: 'Semua', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-surface border-border', text: 'text-textGray' },
                     { id: 'LUNAS', label: 'Lunas', count: queuePaymentStats.LUNAS, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
                     { id: 'BELUM_LUNAS', label: 'Belum Lunas', count: queuePaymentStats.BELUM_LUNAS, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                     { id: 'BELUM_BAYAR', label: 'Belum Bayar', count: queuePaymentStats.BELUM_BAYAR, active: 'bg-orange-500 border-orange-500', inactive: 'bg-orange-50 border-orange-100', text: 'text-orange-700' },
@@ -1368,7 +1368,7 @@ export default function BengkelScreen() {
                     onPress={handleCloseWallet}
                     className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent"
                 >
-                    <X size={20} color="#6B7280" />
+                    <X size={20} color={themeColors.textGray} />
                 </Pressable>
             </View>
 
@@ -1415,7 +1415,7 @@ export default function BengkelScreen() {
                                 <View className="flex-1 items-end">
                                     <View className="flex-row items-center mb-1 text-right">
                                         <Typography variant="caption" className="text-white/30 font-bold uppercase tracking-[1px] text-[7px]">Omzet (via Transfer)</Typography>
-                                        <View className="w-1 h-1 rounded-full bg-gray-500 ml-2" />
+                                        <View className="w-1 h-1 rounded-full bg-textMain ml-2" />
                                     </View>
                                     <Typography className="text-white/40 text-[10px] font-bold italic">{formatCurrency(summary?.total_transfer || 0)}</Typography>
                                 </View>
@@ -1598,7 +1598,7 @@ export default function BengkelScreen() {
                             className="mr-3"
                         >
                             <View className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                                <ChevronLeft size={18} color="#6B7280" />
+                                <ChevronLeft size={18} color={themeColors.textGray} />
                             </View>
                         </Pressable>
                         <Typography variant="h3" weight="bold" className={`${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} tracking-tight`}>
@@ -1701,7 +1701,7 @@ export default function BengkelScreen() {
                                                     onPress={() => setExpensePaymentMethod(opt.id)}
                                                     className={`p-3 rounded-2xl border items-center justify-center ${active
                                                         ? 'bg-amber-600 border-amber-600 shadow-sm'
-                                                        : 'bg-surface border-gray-100'
+                                                        : 'bg-surface border-border'
                                                         }`}
                                                 >
                                                     <OptIcon size={20} color={active ? 'white' : opt.color} />
@@ -1729,7 +1729,7 @@ export default function BengkelScreen() {
                                                 onPress={() => { setExpensePaymentMethod(opt.id); setExpenseNote(prev => (isSetoranAutoNote(prev) ? labelSetoran(opt.id) : prev)); }}
                                                 className={`p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
                                                     ? 'bg-blue-600 border-blue-600 shadow-sm'
-                                                    : 'bg-surface border-gray-100'
+                                                    : 'bg-surface border-border'
                                                     }`}
                                             >
                                                 <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${expensePaymentMethod === opt.id ? 'text-white' : 'text-textGray'}`}>
@@ -1940,20 +1940,20 @@ export default function BengkelScreen() {
 
                     <View className="flex-row items-center">
                         <View className="flex-1 flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
-                            <Search size={16} color="#9CA3AF" />
+                            <Search size={16} color={themeColors.textGray} />
                             <TextInput
                                 className="flex-1 ml-3 text-xs font-semibold text-textMain"
                                 placeholder="Cari antrian (Plat, Customer)..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={themeColors.textGray}
                                 autoCorrect={false}
                                 autoCapitalize="none"
                                 returnKeyType="search"
                             />
                             {searchQuery.length > 0 && (
                                 <Pressable onPress={() => setSearchQuery('')} className="ml-1">
-                                    <X size={16} color="#9CA3AF" />
+                                    <X size={16} color={themeColors.textGray} />
                                 </Pressable>
                             )}
                         </View>
@@ -1997,7 +1997,7 @@ export default function BengkelScreen() {
                         </View>
                         <View className="flex-row flex-wrap">
                             {[
-                                { key: 'ALL', label: 'Semua', count: stats.total, active: 'bg-slate-900 border-slate-900', inactive: 'bg-surface border-gray-200 text-gray-600' },
+                                { key: 'ALL', label: 'Semua', count: stats.total, active: 'bg-textMain border-textMain', inactive: 'bg-surface border-border text-textGray' },
                                             { key: 'PARTIAL', label: 'Belum Lunas', count: stats.partial, active: 'bg-blue-600 border-blue-600', inactive: 'bg-blue-50 border-blue-100 text-blue-700' },
                                 { key: 'UNPAID', label: 'Belum Bayar', count: stats.unpaid, active: 'bg-amber-600 border-amber-600', inactive: 'bg-amber-50 border-amber-100 text-amber-700' },
                     { key: 'LUNAS', label: 'Lunas', count: stats.lunas, active: 'bg-emerald-600 border-emerald-600', inactive: 'bg-emerald-50 border-emerald-100 text-emerald-700' },
@@ -2085,7 +2085,7 @@ export default function BengkelScreen() {
                     <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
                         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleClosePress} />
                         <View className="bg-surface rounded-t-[48px] shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: 640, height: '85%', alignSelf: 'center' }}>
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                             {renderBottomSheetContent()}
                         </View>
                     </View>
@@ -2177,7 +2177,7 @@ export default function BengkelScreen() {
                             <View className="flex-row justify-between items-center mb-6">
                                 <Typography variant="h2" weight="bold">Pilih Periode</Typography>
                                 <Pressable onPress={() => setIsDateModalVisible(false)}>
-                                    <X size={24} color="#6B7280" />
+                                    <X size={24} color={themeColors.textGray} />
                                 </Pressable>
                             </View>
                             {renderDateContent()}
@@ -2250,14 +2250,14 @@ export default function BengkelScreen() {
                 <View className="bg-surface" style={{ flex: 1 }}>
                     <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
                         <View className="items-center mb-2">
-                            <View className="w-10 h-1 bg-gray-300 rounded-full" />
+                            <View className="w-10 h-1 bg-border rounded-full" />
                         </View>
 
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h2" weight="bold">History Lengkap</Typography>
                             <Pressable onPress={() => setShowHistoryModal(false)} hitSlop={12}>
                                 <View className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                                    <X size={18} color="#6B7280" />
+                                    <X size={18} color={themeColors.textGray} />
                                 </View>
                             </Pressable>
                         </View>

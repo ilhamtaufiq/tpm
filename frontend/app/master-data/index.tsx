@@ -16,8 +16,10 @@ import CheckCircle2 from 'lucide-react-native/dist/esm/icons/circle-check.js';
 import { useRouter } from 'expo-router';
 import { masterDataService } from '../../services/masterData';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useUIStore } from '../../store/useUIStore';
 
 export default function MasterDataScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
     const user = useAuthStore((s) => s.user);
     const insets = useSafeAreaInsets();
@@ -63,7 +65,7 @@ export default function MasterDataScreen() {
     if (loading) {
         return (
             <View className="flex-1 bg-surface items-center justify-center">
-                <ActivityIndicator size="large" color="#023C69" />
+                <ActivityIndicator size="large" color={themeColors.primary} />
             </View>
         );
     }
@@ -89,7 +91,7 @@ export default function MasterDataScreen() {
 
             <ScrollView
                 className="flex-1 px-6 mt-4"
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Stats Pills (Bengkel-style) */}
@@ -134,7 +136,7 @@ export default function MasterDataScreen() {
                                 </Typography>
                             </View>
                             <View className="ml-2 w-8 h-8 rounded-full bg-background items-center justify-center">
-                                <ChevronRight size={16} color="#9CA3AF" />
+                                <ChevronRight size={16} color={themeColors.textGray} />
                             </View>
                         </View>
                     </Pressable>
@@ -156,7 +158,7 @@ export default function MasterDataScreen() {
                                 </Typography>
                             </View>
                             <View className="ml-2 w-8 h-8 rounded-full bg-background items-center justify-center">
-                                <ChevronRight size={16} color="#9CA3AF" />
+                                <ChevronRight size={16} color={themeColors.textGray} />
                             </View>
                         </View>
                     </Pressable>
@@ -178,7 +180,7 @@ export default function MasterDataScreen() {
                                 </Typography>
                             </View>
                             <View className="ml-2 w-8 h-8 rounded-full bg-background items-center justify-center">
-                                <ChevronRight size={16} color="#9CA3AF" />
+                                <ChevronRight size={16} color={themeColors.textGray} />
                             </View>
                         </View>
                     </Pressable>
@@ -200,7 +202,7 @@ export default function MasterDataScreen() {
                                 </Typography>
                             </View>
                             <View className="ml-2 w-8 h-8 rounded-full bg-background items-center justify-center">
-                                <ChevronRight size={16} color="#9CA3AF" />
+                                <ChevronRight size={16} color={themeColors.textGray} />
                             </View>
                         </View>
                     </Pressable>
@@ -223,7 +225,7 @@ export default function MasterDataScreen() {
                                     </Typography>
                                 </View>
                                 <View className="ml-2 w-8 h-8 rounded-full bg-background items-center justify-center">
-                                    <ChevronRight size={16} color="#9CA3AF" />
+                                    <ChevronRight size={16} color={themeColors.textGray} />
                                 </View>
                             </View>
                         </Pressable>

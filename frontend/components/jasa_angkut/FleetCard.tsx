@@ -6,6 +6,7 @@ import { Badge } from '../ui/Badge';
 import { Armada } from '../../services/jasaAngkut';
 import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
 import Info from 'lucide-react-native/dist/esm/icons/info.js';
+import { useUIStore } from '../../store/useUIStore';
 
 interface FleetCardProps {
     armada: Armada;
@@ -13,6 +14,7 @@ interface FleetCardProps {
 }
 
 export const FleetCard = ({ armada, onPress }: FleetCardProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     return (
         <Pressable 
             onPress={onPress} 
@@ -47,13 +49,13 @@ export const FleetCard = ({ armada, onPress }: FleetCardProps) => {
                         </View>
                     </View>
                     <View className="w-10 h-10 bg-background rounded-xl items-center justify-center">
-                        <Truck size={20} color="#6B7280" />
+                        <Truck size={20} color={themeColors.textGray} />
                     </View>
                 </View>
 
                 {armada.catatan && (
                     <View className="mt-4 pt-3 border-t border-transparent flex-row items-start">
-                        <Info size={14} color="#9CA3AF" className="mt-0.5" />
+                        <Info size={14} color={themeColors.textGray} className="mt-0.5" />
                         <Typography variant="caption" className="text-textGray ml-2 italic flex-1">
                             {armada.catatan}
                         </Typography>

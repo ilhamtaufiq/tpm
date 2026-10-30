@@ -1,7 +1,9 @@
 import { Stack, Redirect } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useUIStore } from '../../store/useUIStore';
 
 export default function JasaAngkutLayout() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const user = useAuthStore((s) => s.user);
     
     // Role-based access control (RBAC) at layout level
@@ -15,11 +17,11 @@ export default function JasaAngkutLayout() {
     return (
         <Stack
             screenOptions={{
-                headerStyle: { backgroundColor: '#F9FAFB' },
+                headerStyle: { backgroundColor: themeColors.background },
                 headerShadowVisible: false,
-                headerTintColor: '#111827',
+                headerTintColor: themeColors.text,
                 headerTitleStyle: { fontWeight: 'bold' },
-                contentStyle: { backgroundColor: '#F9FAFB' },
+                contentStyle: { backgroundColor: themeColors.background },
                 freezeOnBlur: true,
             }}
         >

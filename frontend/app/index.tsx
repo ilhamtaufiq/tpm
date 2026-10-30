@@ -115,7 +115,7 @@ export default function Index() {
                     style={{
                         marginTop: 8,
                         fontSize: 12,
-                        color: '#9CA3AF',
+                        color: themeColors.textGray,
                     }}
                 >
                     Mohon tunggu sebentar...
@@ -127,11 +127,11 @@ export default function Index() {
                         marginTop: 32,
                         paddingHorizontal: 20,
                         paddingVertical: 10,
-                        backgroundColor: '#F3F4F6',
+                        backgroundColor: themeColors.background,
                         borderRadius: 8,
                     }}
                 >
-                    <Text style={{ fontSize: 12, color: '#6B7280' }}>Tap if stuck (Debug)</Text>
+                    <Text style={{ fontSize: 12, color: themeColors.textGray }}>Tap if stuck (Debug)</Text>
                 </Pressable>
             </View>
         );

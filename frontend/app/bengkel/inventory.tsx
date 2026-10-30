@@ -319,10 +319,10 @@ export default function InventoryScreen() {
             </View>
 
             <View className="flex-row items-center bg-background border border-transparent rounded-2xl px-4 h-12 mb-3">
-                <Search size={18} color="#9CA3AF" />
+                <Search size={18} color={themeColors.textGray} />
                 <TextInput
                     placeholder="Cari nama, kode, atau kategori..."
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={themeColors.textGray}
                     className="flex-1 ml-3 text-sm font-medium text-textMain"
                     value={search}
                     onChangeText={setSearch}
@@ -331,20 +331,20 @@ export default function InventoryScreen() {
                 />
                 {search.length > 0 && (
                     <Pressable onPress={() => setSearch('')} className="p-1 mr-1">
-                        <X size={16} color="#9CA3AF" />
+                        <X size={16} color={themeColors.textGray} />
                     </Pressable>
                 )}
                 <Pressable
                     onPress={handlePresentSortSheet}
                     className={`w-9 h-9 rounded-xl items-center justify-center ${sortBy !== 'nama' || sortOrder !== 'asc' ? 'bg-primary/10' : 'bg-surface border border-transparent'}`}
                 >
-                    <ArrowUpDown size={16} color={sortBy !== 'nama' || sortOrder !== 'asc' ? 'themeColors.primary' : '#6B7280'} />
+                    <ArrowUpDown size={16} color={sortBy !== 'nama' || sortOrder !== 'asc' ? 'themeColors.primary' : themeColors.textGray} />
                 </Pressable>
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3 -mx-1">
                 {([
-                    { id: 'ALL' as StockFilter, label: 'Semua', count: totalProducts, active: 'bg-primary border-primary', inactive: 'bg-surface border-gray-200', text: 'text-gray-600' },
+                    { id: 'ALL' as StockFilter, label: 'Semua', count: totalProducts, active: 'bg-primary border-primary', inactive: 'bg-surface border-border', text: 'text-textGray' },
                     { id: 'low' as StockFilter, label: 'Menipis', count: lowStockCount, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                     { id: 'available' as StockFilter, label: 'Tersedia', count: stockFilterStats.available, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
                     { id: 'empty' as StockFilter, label: 'Habis', count: stockFilterStats.empty, active: 'bg-rose-500 border-rose-500', inactive: 'bg-rose-50 border-rose-100', text: 'text-rose-700' },
@@ -607,7 +607,7 @@ export default function InventoryScreen() {
                                     }}
                                     className="w-8 h-8 bg-background rounded-full items-center justify-center"
                                 >
-                                    <X size={18} color="#4B5563" />
+                                    <X size={18} color={themeColors.textGray} />
                                 </Pressable>
                             </View>
 
@@ -626,7 +626,7 @@ export default function InventoryScreen() {
                                                 resizeMode="cover"
                                             />
                                         ) : (
-                                            <Package size={40} color="#9CA3AF" strokeWidth={1} />
+                                            <Package size={40} color={themeColors.textGray} strokeWidth={1} />
                                         )}
                                     </View>
                                     {!isEditing && selectedPart && (
@@ -732,7 +732,7 @@ export default function InventoryScreen() {
                                                 variant="outline-neutral"
                                                 className="bg-background border-0"
                                                 onPress={() => setIsEditing(true)}
-                                                icon={<Edit3 size={16} color="#4B5563" style={{ marginRight: 8 }} />}
+                                                icon={<Edit3 size={16} color={themeColors.textGray} style={{ marginRight: 8 }} />}
                                             />
                                         )}
                                     </View>
@@ -761,14 +761,14 @@ export default function InventoryScreen() {
                             onPress={() => setStockOp('add')}
                             className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'add' ? 'bg-emerald-50 border-emerald-500' : 'bg-surface border-transparent'}`}
                         >
-                            <Plus size={20} color={stockOp === 'add' ? '#10B981' : '#94A3B8'} />
+                            <Plus size={20} color={stockOp === 'add' ? '#10B981' : themeColors.textGray} />
                             <Typography className={`ml-2 font-bold ${stockOp === 'add' ? 'text-emerald-700' : 'text-textGray'}`}>Tambah</Typography>
                         </Pressable>
                         <Pressable
                             onPress={() => setStockOp('subtract')}
                             className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'subtract' ? 'bg-rose-50 border-rose-500' : 'bg-surface border-transparent'}`}
                         >
-                            <Minus size={20} color={stockOp === 'subtract' ? '#F43F5E' : '#94A3B8'} />
+                            <Minus size={20} color={stockOp === 'subtract' ? '#F43F5E' : themeColors.textGray} />
                             <Typography className={`ml-2 font-bold ${stockOp === 'subtract' ? 'text-rose-700' : 'text-textGray'}`}>Kurang</Typography>
                         </Pressable>
                     </View>
@@ -779,7 +779,7 @@ export default function InventoryScreen() {
                             onPress={() => setStockChange(prev => Math.max(0, parseInt(prev) - 1).toString())}
                             className="w-12 h-12 bg-background rounded-xl items-center justify-center"
                         >
-                            <Minus size={20} color="#4B5563" />
+                            <Minus size={20} color={themeColors.textGray} />
                         </Pressable>
                         <View className="flex-1">
                             <TextInput
@@ -793,7 +793,7 @@ export default function InventoryScreen() {
                             onPress={() => setStockChange(prev => (parseInt(prev || '0') + 1).toString())}
                             className="w-12 h-12 bg-background rounded-xl items-center justify-center"
                         >
-                            <Plus size={20} color="#4B5563" />
+                            <Plus size={20} color={themeColors.textGray} />
                         </Pressable>
                     </View>
 
@@ -895,7 +895,7 @@ export default function InventoryScreen() {
                             bottomInset={insets.bottom}
                             style={{ maxWidth: 640, alignSelf: 'center' }}
                         >
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                             <BoundedSheetScrollView
                                 maxHeightRatio={0.8}
                                 headerReserve={48}
@@ -950,7 +950,7 @@ export default function InventoryScreen() {
                         onPress={onClose}
                         className="bg-background p-2 rounded-full"
                     >
-                        <X size={20} color="#4B5563" />
+                        <X size={20} color={themeColors.textGray} />
                     </Pressable>
                 </View>
 
@@ -984,11 +984,11 @@ export default function InventoryScreen() {
                                         borderColor: sortBy === option.id ? 'rgba(2, 60, 105, 0.2)' : 'rgba(249, 250, 251, 1)',
                                         opacity: pressed ? 0.7 : 1
                                     })}
-                                    className="shadow-sm shadow-gray-200"
+                                    className="shadow-sm shadow-border"
                                 >
                                     <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${sortBy === option.id ? 'bg-primary/10' : 'bg-background'}`}>
                                         <View>
-                                            {React.createElement(option.icon, { size: 22, color: sortBy === option.id ? 'themeColors.primary' : '#94A3B8' })}
+                                            {React.createElement(option.icon, { size: 22, color: sortBy === option.id ? 'themeColors.primary' : themeColors.textGray })}
                                         </View>
                                     </View>
                                     <View className="flex-1">

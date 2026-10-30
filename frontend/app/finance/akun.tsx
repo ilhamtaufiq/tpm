@@ -240,14 +240,14 @@ export default function AkunKeuanganScreen() {
                             {formatCurrency(accountData?.total_masuk_bulan_ini || 0)}
                         </Typography>
                     </View>
-                    <View className="w-[1px] h-7 bg-gray-200" />
+                    <View className="w-[1px] h-7 bg-border" />
                     <View className="flex-1 items-center">
                         <Typography className="text-rose-600 text-[10px] font-bold uppercase mb-0.5">Keluar</Typography>
                         <Typography weight="bold" className="text-rose-700 text-xs">
                             {formatCurrency(accountData?.total_keluar_bulan_ini || 0)}
                         </Typography>
                     </View>
-                    <View className="w-[1px] h-7 bg-gray-200" />
+                    <View className="w-[1px] h-7 bg-border" />
                     <View className="flex-1 items-center">
                         <Typography className="text-primary text-[10px] font-bold uppercase mb-0.5">Saldo</Typography>
                         <Typography weight="bold" className="text-primary text-xs">
@@ -318,7 +318,7 @@ export default function AkunKeuanganScreen() {
                 value={adjustmentDate}
                 onChangeText={setAdjustmentDate}
                 placeholder="YYYY-MM-DD"
-                startIcon={<Calendar size={18} color="#9CA3AF" />}
+                startIcon={<Calendar size={18} color={themeColors.textGray} />}
             />
 
             <Input
@@ -329,7 +329,7 @@ export default function AkunKeuanganScreen() {
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
-                startIcon={<FileText size={18} color="#9CA3AF" />}
+                startIcon={<FileText size={18} color={themeColors.textGray} />}
             />
 
             <View className="flex-row mt-4 space-x-3 pb-8">
@@ -464,7 +464,7 @@ export default function AkunKeuanganScreen() {
                         {!roleAccount && showAllAccounts && (
                             <View className="mt-4 pt-4 border-t border-transparent">
                                 <View className="flex-row items-center mb-4 px-1">
-                                    <History size={14} color="#9CA3AF" />
+                                    <History size={14} color={themeColors.textGray} />
                                     <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest ml-2">Rekening Legacy / Lama</Typography>
                                 </View>
                                 {LEGACY_ACCOUNTS.map(renderAccountItem)}
@@ -485,7 +485,7 @@ export default function AkunKeuanganScreen() {
                             <View className="flex-row justify-between items-center mb-6">
                                 <Typography variant="h2" weight="bold">Penyesuaian Saldo</Typography>
                                 <Pressable onPress={() => setIsAdjustModalVisible(false)}>
-                                    <X size={24} color="#6B7280" />
+                                    <X size={24} color={themeColors.textGray} />
                                 </Pressable>
                             </View>
                             <ScrollView

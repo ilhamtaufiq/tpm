@@ -430,7 +430,7 @@ export default function PembelianSparepartReportScreen() {
                 ) : purchases.length === 0 ? (
                     <View className="items-center justify-center py-20 bg-surface rounded-[40px] border border-dashed border-transparent">
                         <View className="w-24 h-24 bg-background rounded-full items-center justify-center mb-6 opacity-30">
-                            <ShoppingCart size={40} color="#9CA3AF" />
+                            <ShoppingCart size={40} color={themeColors.textGray} />
                         </View>
                         <Typography className="text-textGray font-bold uppercase tracking-[6px]">Belum Ada Data</Typography>
                         <Typography variant="caption" className="text-textGray mt-2">Tidak ditemukan transaksi pada periode ini</Typography>
@@ -463,10 +463,10 @@ export default function PembelianSparepartReportScreen() {
                                 </View>
                             </View>
 
-                            <View className="flex-row justify-between items-end pt-4 border-t border-gray-50/50">
+                            <View className="flex-row justify-between items-end pt-4 border-t border-border">
                                 <View>
                                     <View className="flex-row items-center mb-1">
-                                        <ClipboardList size={12} color="#9CA3AF" className="mr-1.5" />
+                                        <ClipboardList size={12} color={themeColors.textGray} className="mr-1.5" />
                                         <Typography variant="caption" className="text-textGray font-medium">Items: {item.detail?.length || 0} Barang</Typography>
                                     </View>
                                     <Typography variant="caption" className="text-primary font-bold uppercase text-[9px] tracking-widest">

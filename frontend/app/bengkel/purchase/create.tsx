@@ -33,6 +33,7 @@ import { findSparePartByBarcode } from '../../../utils/barcodeScan';
 import { bengkelService } from '../../../services/bengkel';
 import { useDebounce } from '../../../hooks';
 import { isAlwaysReadyStock } from '../../../utils/sparepartStock';
+import { useUIStore } from '../../../store/useUIStore';
 
 type NoticeType = 'error' | 'success' | 'info';
 
@@ -51,6 +52,7 @@ const isValidDateString = (value: string) => {
 };
 
 export default function PurchaseScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
     const params = useLocalSearchParams<{ id?: string }>();
     const insets = useSafeAreaInsets();
@@ -508,7 +510,7 @@ export default function PurchaseScreen() {
                     <View className="flex-row items-center justify-between">
                         <ActionIcon
                             active={showPartSearch}
-                            icon={<Search size={20} color={showPartSearch ? 'white' : '#023C69'} />}
+                            icon={<Search size={20} color={showPartSearch ? 'white' : themeColors.primary} />}
                             label="Search"
                             onPress={() => {
                                 setShowPartSearch(prev => !prev);
@@ -516,7 +518,7 @@ export default function PurchaseScreen() {
                             }}
                         />
                         <ActionIcon
-                            icon={<BarcodeIcon size={20} color="#023C69" />}
+                            icon={<BarcodeIcon size={20} color={themeColors.primary} />}
                             label="Scan"
                             onPress={() => { setScanLog([]); setScannerOpen(true); }}
                         />
@@ -539,7 +541,7 @@ export default function PurchaseScreen() {
 
             {isLoadingDetail && (
                 <View className="py-10 items-center justify-center">
-                    <ActivityIndicator color="#023C69" />
+                    <ActivityIndicator color={themeColors.primary} />
                     <Typography className="text-textGray mt-3">Memuat data pembelian...</Typography>
                 </View>
             )}
@@ -599,14 +601,14 @@ export default function PurchaseScreen() {
                         <View className="w-full">
                             <View className="flex-row items-center justify-between mb-3 px-1">
                                 <View className="flex-row items-center">
-                                    <Package size={18} color="#023C69" />
+                                    <Package size={18} color={themeColors.primary} />
                                     <Typography weight="bold" className="ml-2 text-primary uppercase">Katalog Sparepart</Typography>
                                 </View>
                                 {items.length > 0 && <Typography className="text-textGray text-xs font-bold">{items.length} item dipilih</Typography>}
                             </View>
 
                             {isLoadingParts ? (
-                                <ActivityIndicator color="#023C69" />
+                                <ActivityIndicator color={themeColors.primary} />
                             ) : (
                                 spareParts.map((part: any) => (
                                     <PurchasePartRow
@@ -621,7 +623,7 @@ export default function PurchaseScreen() {
                             )}
                             {isFetchingNextPage && (
                                 <View className="py-4">
-                                    <ActivityIndicator color="#023C69" />
+                                    <ActivityIndicator color={themeColors.primary} />
                                 </View>
                             )}
                         </View>
@@ -682,11 +684,11 @@ export default function PurchaseScreen() {
                     <View>
                         <Typography variant="body1" weight="bold" className="text-textMain mb-4">Review Transaksi</Typography>
 
-                        <View className="bg-background p-5 rounded-3xl border border-slate-100 mb-5">
+                        <View className="bg-background p-5 rounded-3xl border border-border mb-5">
                             <SummaryRow label="Supplier" value={selectedSupplier?.nama || '-'} />
                             {nomorFaktur && <SummaryRow label="Faktur" value={nomorFaktur} />}
                             <SummaryRow label="Tanggal" value={tanggalText} />
-                            <View className="h-[1px] bg-slate-200 my-3" />
+                            <View className="h-[1px] bg-border my-3" />
                             <SummaryRow label="Sparepart" value={`${items.length} item`} />
                             {items.map(item => (
                                 <SummaryRow
@@ -696,7 +698,7 @@ export default function PurchaseScreen() {
                                     muted
                                 />
                             ))}
-                            <View className="h-[1px] bg-slate-200 my-1 mx-2" />
+                            <View className="h-[1px] bg-border my-1 mx-2" />
                             {items.map(item => (
                                 <SummaryRow
                                     key={`review-subtotal-${item.id}`}
@@ -706,7 +708,7 @@ export default function PurchaseScreen() {
                                 />
                             ))}
                             {catatan && <SummaryRow label="Catatan" value={catatan} />}
-                            <View className="h-[1px] bg-slate-200 my-3" />
+                            <View className="h-[1px] bg-border my-3" />
                             <View className="flex-row justify-between items-center">
                                 <Typography weight="bold" className="text-textMain">Total</Typography>
                                 <Typography variant="h3" weight="bold" className="text-primary">{formatCurrency(total)}</Typography>
@@ -774,7 +776,7 @@ export default function PurchaseScreen() {
                                 if (tanggalError) setTanggalError('');
                             }}
                             placeholder="YYYY-MM-DD"
-                            placeholderTextColor="#94A3B8"
+                            placeholderTextColor={themeColors.textGray}
                             autoCapitalize="none"
                             keyboardType="numbers-and-punctuation"
                             className="bg-background rounded-2xl px-4 h-11 text-sm text-textMain border border-transparent"
@@ -805,7 +807,7 @@ export default function PurchaseScreen() {
                         />
                     }
                 >
-                        <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center mb-5" />
+                        <View className="w-12 h-1.5 bg-border rounded-full self-center mb-5" />
                         <View className="flex-row items-center justify-between mb-4">
                             <View>
                                 <Typography variant="h3" weight="bold">Pembayaran</Typography>
@@ -867,7 +869,7 @@ export default function PurchaseScreen() {
                                             setStatusBayar(nominal >= total ? 'LUNAS' : 'BELUM_LUNAS');
                                         }}
                                         placeholder="0"
-                                        placeholderTextColor="#94A3B8"
+                                        placeholderTextColor={themeColors.textGray}
                                         keyboardType="number-pad"
                                         inputMode="numeric"
                                         className="bg-surface rounded-2xl px-4 h-12 text-base text-textMain border border-primary/20"
@@ -946,7 +948,7 @@ export default function PurchaseScreen() {
                                                         value={p.nominal}
                                                         onChangeText={(v) => handleUpdatePaymentRow(p.id, 'nominal', v)}
                                                         placeholder="0"
-                                                        placeholderTextColor="#94A3B8"
+                                                        placeholderTextColor={themeColors.textGray}
                                                         keyboardType="number-pad"
                                                         inputMode="numeric"
                                                         className="bg-surface rounded-xl px-3 h-10 text-sm text-textMain border border-transparent"
@@ -965,7 +967,7 @@ export default function PurchaseScreen() {
                                         onPress={handleAddPaymentRow}
                                         className="flex-row items-center justify-center py-2.5 bg-surface border border-dashed border-primary/30 rounded-xl"
                                     >
-                                        <Plus size={14} color="#023C69" />
+                                        <Plus size={14} color={themeColors.primary} />
                                         <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah Metode</Typography>
                                     </Pressable>
                                 </View>
@@ -1007,7 +1009,7 @@ export default function PurchaseScreen() {
                         contentContainerStyle={{ padding: 20, paddingBottom: 12 }}
                     >
                         <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-4">
-                            <Wallet size={22} color="#023C69" />
+                            <Wallet size={22} color={themeColors.primary} />
                         </View>
                         <Typography variant="h3" weight="bold" className="text-textMain">{isEditMode ? 'Simpan Perubahan?' : 'Simpan Pembelian?'}</Typography>
                         <Typography className="text-textGray text-sm mt-2">
@@ -1015,11 +1017,11 @@ export default function PurchaseScreen() {
                                 ? 'Pastikan detail barang, supplier, dan pembayaran sudah benar.'
                                 : 'Transaksi akan disimpan tanpa memproses pembayaran.'}
                         </Typography>
-                        <View className="bg-background rounded-2xl p-4 mt-4 border border-slate-100">
+                        <View className="bg-background rounded-2xl p-4 mt-4 border border-border">
                             <SummaryRow label="Sparepart" value={`${items.length} item`} />
                             <SummaryRow label="Supplier" value={selectedSupplier?.nama || '-'} />
                             <SummaryRow label="Metode" value={submitWithPayment ? (metodeBayar === 'KREDIT' ? 'Hutang' : (metodeBayar || '-')) : 'Belum diproses'} />
-                            <View className="h-[1px] bg-slate-200 my-2" />
+                            <View className="h-[1px] bg-border my-2" />
                             <SummaryRow label="Total" value={formatCurrency(total)} />
                         </View>
                     </BoundedSheetScrollView>
@@ -1077,13 +1079,14 @@ export default function PurchaseScreen() {
 // --- Helper Components ---
 
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
+    const themeColors = useUIStore((s) => s.themeColors);
     return (
         <View className="flex-row items-center bg-background rounded-2xl px-3 h-11 mb-3 border border-transparent">
-            <Search size={16} color="#94A3B8" />
-            <TextInput placeholder={placeholder} placeholderTextColor="#94A3B8" className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} />
+            <Search size={16} color={themeColors.textGray} />
+            <TextInput placeholder={placeholder} placeholderTextColor={themeColors.textGray} className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} />
             {value.length > 0 && (
                 <Pressable onPress={() => onChange('')}>
-                    <X size={16} color="#94A3B8" />
+                    <X size={16} color={themeColors.textGray} />
                 </Pressable>
             )}
         </View>
@@ -1141,6 +1144,7 @@ const PurchasePartRow = React.memo(function PurchasePartRow({
     onQtyChange: (itemId: number, qty: number) => void;
     onPriceChange: (itemId: number, val: string) => void;
 }) {
+    const themeColors = useUIStore((s) => s.themeColors);
     const selected = selectedItem !== null;
 
     return (
@@ -1151,7 +1155,7 @@ const PurchasePartRow = React.memo(function PurchasePartRow({
                 </View>
                 <View className="flex-1">
                     <View className="flex-row items-center">
-                        <Package size={18} color={selected ? '#2563EB' : '#94A3B8'} />
+                        <Package size={18} color={selected ? '#2563EB' : themeColors.textGray} />
                         <Typography weight="bold" className="text-sm ml-2 flex-1 text-textMain" numberOfLines={1}>
                             {part.nama}
                         </Typography>

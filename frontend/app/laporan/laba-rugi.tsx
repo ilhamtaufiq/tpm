@@ -181,7 +181,7 @@ export default function LabaRugiScreen() {
     };
 
     const renderBengkelSection = () => (
-        <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
+        <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-border bg-surface rounded-2xl w-full">
             <View className="bg-blue-600 px-5 py-4 flex-row items-center justify-between w-full">
                 <View className="flex-row items-center">
                     <View className="w-8 h-8 rounded-xl bg-surface/20 items-center justify-center mr-3 border border-white/10">
@@ -200,10 +200,10 @@ export default function LabaRugiScreen() {
                     <FinancialRow label="Penjualan Sparepart (Retail)" value={reportData?.bengkel_details?.total_parts || 0} small indent />
                     <FinancialRow label="Jasa Servis" value={reportData?.bengkel_details?.total_jasa || 0} small indent />
                     <FinancialRow label="Diskon Penjualan" value={reportData?.bengkel_details?.total_diskon || 0} small indent isNegative color="text-rose-500" />
-                    <FinancialRow label="Penjualan Bersih Sparepart & Jasa" value={bengkelData.penjualan} bold large color="text-slate-800" />
+                    <FinancialRow label="Penjualan Bersih Sparepart & Jasa" value={bengkelData.penjualan} bold large color="text-textMain" />
                 </View>
 
-                <View className="bg-slate-50/80 p-3 rounded-xl mb-4 border border-slate-100">
+                <View className="bg-background p-3 rounded-xl mb-4 border border-border">
                     <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-widest text-[10px]">II. Beban Pokok Penjualan (HPP)</Typography>
                     <FinancialRow label="HPP Sparepart Terjual" value={bengkelData.hpp} isNegative color="text-rose-600" />
                 </View>
@@ -212,7 +212,7 @@ export default function LabaRugiScreen() {
                     <FinancialRow label="Laba Kotor Bengkel" value={bengkelData.laba_kotor} bold large color="text-blue-800" />
                 </View>
 
-                <View className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 w-full mb-4">
+                <View className="bg-background p-4 rounded-xl border border-border w-full mb-4">
                     <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-widest text-[10px]">III. Beban Operasional Unit</Typography>
                     <FinancialRow label="Beban Gaji Karyawan" value={bengkelData.biayaGaji} isNegative />
                     <FinancialRow label="Beban Lembur Karyawan" value={bengkelData.biayaLembur} isNegative />
@@ -235,7 +235,7 @@ export default function LabaRugiScreen() {
     const renderJasaAngkutSection = () => {
         const unit = reportData?.units?.jasa_angkut || {} as any;
         return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-border bg-surface rounded-2xl w-full">
                 <View className="bg-emerald-600 px-5 py-4 flex-row items-center justify-between w-full">
                     <View className="flex-row items-center">
                         <View className="w-8 h-8 rounded-xl bg-surface/20 items-center justify-center mr-3 border border-white/10">
@@ -250,9 +250,9 @@ export default function LabaRugiScreen() {
 
                 <View className="p-5 w-full">
                     <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest text-[10px]">I. Pendapatan Operasional</Typography>
-                    <FinancialRow label="Pendapatan Jasa (Kotor Unit)" value={unit.revenue} bold large color="text-slate-800" />
+                    <FinancialRow label="Pendapatan Jasa (Kotor Unit)" value={unit.revenue} bold large color="text-textMain" />
                     
-                    <View className="bg-slate-50/80 p-3 rounded-xl mb-4 mt-4 border border-slate-100">
+                    <View className="bg-background p-3 rounded-xl mb-4 mt-4 border border-border">
                         <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-widest text-[10px]">II. Biaya Armada & Maintenance</Typography>
                         <FinancialRow label="Pemeliharaan (Bengkel)" value={unit.maintenance} isNegative color="text-rose-600" />
                         <FinancialRow label="Operasional (BBM, Tol, dll)" value={unit.beban_operasional} isNegative color="text-rose-600" />
@@ -280,7 +280,7 @@ export default function LabaRugiScreen() {
     const renderMobilSection = () => {
         const unit = reportData?.units?.mobil || {} as any;
         return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-border bg-surface rounded-2xl w-full">
                 <View className="bg-amber-500 px-5 py-4 flex-row items-center justify-between w-full">
                     <View className="flex-row items-center">
                         <View className="w-8 h-8 rounded-xl bg-surface/20 items-center justify-center mr-3 border border-white/10">
@@ -295,7 +295,7 @@ export default function LabaRugiScreen() {
 
                 <View className="p-5 w-full">
                     <Typography variant="caption" weight="bold" className="text-amber-600 mb-2 uppercase tracking-widest text-[10px]">I. Pendapatan Penjualan</Typography>
-                    <FinancialRow label="Total Penjualan Unit (Gross)" value={unit.revenue} bold large color="text-slate-800" />
+                    <FinancialRow label="Total Penjualan Unit (Gross)" value={unit.revenue} bold large color="text-textMain" />
 
                     {(unit.dana_penalti ?? unit.pendapatan_lainnya ?? 0) > 0 && (
                         <View className="bg-amber-50/80 p-3 rounded-xl mb-4 mt-4 border border-amber-100">
@@ -309,7 +309,7 @@ export default function LabaRugiScreen() {
                         </View>
                     )}
 
-                    <View className="bg-slate-50/80 p-3 rounded-xl mb-4 mt-4 border border-slate-100">
+                    <View className="bg-background p-3 rounded-xl mb-4 mt-4 border border-border">
                         <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-widest text-[10px]">II. Beban Pokok Penjualan (HPP)</Typography>
                         <FinancialRow label="Harga Beli Unit" value={unit.hpp} isNegative color="text-rose-600" />
                         <FinancialRow label="Biaya Persiapan - Mobil Terjual" value={mobilPrepData.sold} isNegative color="text-rose-600" />
@@ -317,7 +317,7 @@ export default function LabaRugiScreen() {
                     </View>
 
                     {mobilPrepData.all > mobilPrepData.sold && (
-                        <Typography variant="caption" className="text-slate-400 text-[11px] mb-2 px-1">Info: persiapan semua stok {formatCurrency(mobilPrepData.all)} (belum terjual {formatCurrency(mobilPrepData.all - mobilPrepData.sold)}).</Typography>
+                        <Typography variant="caption" className="text-textGray text-[11px] mb-2 px-1">Info: persiapan semua stok {formatCurrency(mobilPrepData.all)} (belum terjual {formatCurrency(mobilPrepData.all - mobilPrepData.sold)}).</Typography>
                     )}
 
                     <View className="p-1 px-3 mb-4">
@@ -343,8 +343,8 @@ export default function LabaRugiScreen() {
     };
 
     const renderOverheadSection = () => (
-        <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
-            <View className="bg-slate-700 px-5 py-4 flex-row items-center justify-between w-full">
+        <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-border bg-surface rounded-2xl w-full">
+            <View className="bg-textMain px-5 py-4 flex-row items-center justify-between w-full">
                 <View className="flex-row items-center">
                     <View className="w-8 h-8 rounded-xl bg-surface/20 items-center justify-center mr-3 border border-white/10">
                         <ArrowDownLeft size={18} color="white" />
@@ -357,7 +357,7 @@ export default function LabaRugiScreen() {
             </View>
 
             <View className="p-5 w-full">
-                <FinancialRow label="Total Beban Operasional Pusat" value={reportData?.summary?.total_beban_umum || 0} isNegative bold large color="text-slate-800" />
+                <FinancialRow label="Total Beban Operasional Pusat" value={reportData?.summary?.total_beban_umum || 0} isNegative bold large color="text-textMain" />
                 {(reportData?.summary?.internal_profit_elimination || 0) > 0 && (
                     <FinancialRow
                         label="Info Laba Internal Mobil Belum Terjual"
@@ -454,7 +454,7 @@ export default function LabaRugiScreen() {
                     <>
                         <View className="flex-row justify-between items-center mb-4 px-2 w-full">
                             <Typography variant="h4" weight="bold" className="text-text">Perincian Laba</Typography>
-                            <Typography variant="caption" className="text-slate-400">Total 3 Unit Bisnis</Typography>
+                            <Typography variant="caption" className="text-textGray">Total 3 Unit Bisnis</Typography>
                         </View>
 
                         {renderBengkelSection()}
@@ -479,7 +479,7 @@ export default function LabaRugiScreen() {
             {/* Preview Modal */}
             <Modal onRequestClose={() => setShowPdfPreview(false)} visible={showPdfPreview} animationType="slide">
                 <SafeAreaView className="flex-1 bg-surface">
-                    <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-surface">
+                    <View className="flex-row items-center justify-between px-4 py-3 border-b border-border bg-surface">
                         <Pressable onPress={() => setShowPdfPreview(false)} className="w-10 h-10 items-center justify-center rounded-full bg-background"><X size={20} color="#1e293b" /></Pressable>
                         <Typography variant="body1" weight="bold" className="text-text">Preview Laba Rugi</Typography>
                         <Pressable

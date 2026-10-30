@@ -23,6 +23,7 @@ interface RelatedBengkelTransactionsProps {
 }
 
 export const RelatedBengkelTransactions = ({ muatan_id, mobil_id, onClose }: RelatedBengkelTransactionsProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const queryClient = useQueryClient();
@@ -100,7 +101,7 @@ export const RelatedBengkelTransactions = ({ muatan_id, mobil_id, onClose }: Rel
                                     <View>
                                         <View className="flex-row items-center">
                                             <Typography variant="body2" weight="bold">{item.nomor_transaksi}</Typography>
-                                            <View className="ml-2 px-1.5 py-0.5 rounded-md bg-gray-200/50">
+                                            <View className="ml-2 px-1.5 py-0.5 rounded-md bg-border">
                                                 <Typography className="text-[8px] font-bold text-textGray uppercase">
                                                     {categoryMap[item.kategori] || item.kategori}
                                                 </Typography>
@@ -115,7 +116,7 @@ export const RelatedBengkelTransactions = ({ muatan_id, mobil_id, onClose }: Rel
                             </View>
 
                             {/* Details List */}
-                            <View className="ml-1 mr-2 mt-3 p-3 bg-surface/50 rounded-2xl border border-gray-100/50">
+                            <View className="ml-1 mr-2 mt-3 p-3 bg-surface/50 rounded-2xl border border-border">
                                 {(item.detail_services || []).map((s: any, idx: number) => (
                                     <View key={`s-${idx}`} className="flex-row items-center mb-1.5">
                                         <View className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2.5" />
@@ -138,10 +139,10 @@ export const RelatedBengkelTransactions = ({ muatan_id, mobil_id, onClose }: Rel
                                 ))}
                             </View>
 
-                            <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-100/50">
+                            <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-border">
                                 {item.mekanik_nama ? (
                                     <View className="flex-row items-center">
-                                        <User size={12} color="#9CA3AF" />
+                                        <User size={12} color={themeColors.textGray} />
                                         <Typography variant="caption" className="ml-1.5 text-textGray font-medium">Mekanik: {item.mekanik_nama}</Typography>
                                     </View>
                                 ) : <View />}

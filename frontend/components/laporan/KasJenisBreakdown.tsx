@@ -26,7 +26,7 @@ export function KasJenisBreakdown({ details }: { details?: KasJenisDetail[] }) {
     if (rows.length === 0) return null;
     return (
         <View className="w-full pl-3 mt-1">
-            <Typography variant="caption" weight="bold" className="text-slate-400 uppercase tracking-widest text-[10px] mb-1">
+            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest text-[10px] mb-1">
                 Per Akun Keuangan
             </Typography>
             {rows.map((d, i) => (

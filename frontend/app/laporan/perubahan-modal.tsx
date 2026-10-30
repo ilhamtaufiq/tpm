@@ -316,7 +316,7 @@ export default function LaporanPerubahanModalScreen() {
                     </View>
                 ) : !report ? (
                     <View className="py-12 items-center justify-center">
-                        <AlertTriangle size={48} color="#94a3b8" />
+                        <AlertTriangle size={48} color={themeColors.textGray} />
                         <Typography variant="body1" className="text-textGray mt-4">Data tidak tersedia</Typography>
                     </View>
                 ) : (
@@ -368,25 +368,25 @@ export default function LaporanPerubahanModalScreen() {
                             <StatCard label="PRIVE" value={equity.prive} icon={ArrowDownLeft} bgColor="#e11d48" subLabel="Penarikan pemilik" />
                         </View>
 
-                        <Card className="p-6 bg-surface rounded-[24px] border border-slate-100 shadow-sm mt-2">
+                        <Card className="p-6 bg-surface rounded-[24px] border border-border shadow-sm mt-2">
                             <Typography variant="body1" weight="bold" className="text-text mb-5">Rincian Perubahan Ekuitas</Typography>
 
-                            <FinancialRow label="Modal Awal" value={equity.modalAwal} bold color="text-slate-900" />
+                            <FinancialRow label="Modal Awal" value={equity.modalAwal} bold color="text-textMain" />
                             {(report.modal_awal_penyesuaian || 0) !== 0 && (
                                 <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">
                                     · sudah bersih dari aktivitas hari saldo awal ({formatCurrency(report.modal_awal_penyesuaian || 0)} dipindah ke baris mutasi di bawah)
                                 </Typography>
                             )}
-                            <FinancialRow label="Penyesuaian Harga Beli Spare Part" value={equity.penyesuaianHargaBeli || 0} color={(equity.penyesuaianHargaBeli || 0) < 0 ? undefined : 'text-slate-700'} />
+                            <FinancialRow label="Penyesuaian Harga Beli Spare Part" value={equity.penyesuaianHargaBeli || 0} color={(equity.penyesuaianHargaBeli || 0) < 0 ? undefined : 'text-textMain'} />
                             <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* Selisih harga beli stok lama saat harga beli berubah: positif = laba, negatif = rugi. Persediaan dinilai harga beli terbaru. Ikut dijumlah ke Modal Akhir.</Typography>
                             {equity.koreksiStok !== 0 && (
                                 <>
-                                    <FinancialRow label="Koreksi Stok Opname Spare Part" value={equity.koreksiStok} isNegative={equity.koreksiStok < 0} color="text-slate-700" />
+                                    <FinancialRow label="Koreksi Stok Opname Spare Part" value={equity.koreksiStok} isNegative={equity.koreksiStok < 0} color="text-textMain" />
                                     <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* selisih stok fisik vs sistem dari edit stok di Master Data (Δqty × harga beli)</Typography>
                                 </>
                             )}
 
-                            <View className="mt-4 pt-4 border-t border-slate-50">
+                            <View className="mt-4 pt-4 border-t border-border">
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest">Penambahan</Typography>
                                 <FinancialRow label="Penambahan Modal" value={equity.setoranKas + equity.modalNonKas} color="text-emerald-700" />
                                 <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* di isi ketika pemilik menambahkan modal nya dalam bentuk uang/barang</Typography>
@@ -418,7 +418,7 @@ export default function LaporanPerubahanModalScreen() {
                                 )}
                             </View>
 
-                            <View className="mt-4 pt-4 border-t border-slate-50">
+                            <View className="mt-4 pt-4 border-t border-border">
                                 <Typography variant="caption" weight="bold" className="text-rose-600 mb-2 uppercase tracking-widest">Pengurangan</Typography>
                                 <FinancialRow label="Prive/ Pengambilan Pemilik" value={equity.prive} isNegative />
                                 <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">* pengambilan pemilik dan akun ini hanya muncul di laporan perubahan modal saja, karena sifat nya mengurangi kumulatif antar modal dan laba/rugi</Typography>
@@ -436,17 +436,17 @@ export default function LaporanPerubahanModalScreen() {
                                     </>
                                 )}
                                 {equity.labaInvestor !== 0 && (
-                                    <FinancialRow label="Info: Laba Investor Jual Beli Mobil" value={equity.labaInvestor} isNegative={equity.labaInvestor > 0} color="text-slate-400" />
+                                    <FinancialRow label="Info: Laba Investor Jual Beli Mobil" value={equity.labaInvestor} isNegative={equity.labaInvestor > 0} color="text-textGray" />
                                 )}
                                 {equity.labaInvestor !== 0 && (
                                     <Typography variant="caption" className="text-textGray text-[11px] mb-2 pl-1">· sudah dipotong di laba operasional (investor = hutang, bukan baris ekuitas)</Typography>
                                 )}
                             </View>
 
-                            <View className="mt-4 pt-5 border-t-2 border-slate-100">
-                                <FinancialRow label="Perubahan Bersih Modal (Aliran)" value={equity.perubahanBersih} bold color="text-slate-700" />
+                            <View className="mt-4 pt-5 border-t-2 border-border">
+                                <FinancialRow label="Perubahan Bersih Modal (Aliran)" value={equity.perubahanBersih} bold color="text-textMain" />
                                 <FinancialRow label="Modal Akhir Periode (Teoritis)" value={equity.expectedModalAkhir} bold color="text-indigo-700" />
-                                <Typography variant="caption" className="text-slate-400 text-[10px] mt-1">
+                                <Typography variant="caption" className="text-textGray text-[10px] mt-1">
                                     * akun beku: modal awal = (total aktiva − total hutang) pada posisi pembuka{report.modal_awal_as_of ? ` (${report.modal_awal_as_of})` : ''}, tidak berubah oleh transaksi setelahnya — perubahan aset/hutang masuk ke Modal Akhir.
                                 </Typography>
                                 {equity.coversBeforeOpening && (
@@ -516,8 +516,8 @@ export default function LaporanPerubahanModalScreen() {
             {showPdfPreview && (
                 <Modal onRequestClose={() => setShowPdfPreview(false)} visible={showPdfPreview} animationType="slide">
                     <SafeAreaView className="flex-1 bg-surface">
-                        <View className="flex-row items-center justify-between p-4 border-b border-slate-100">
-                            <Pressable onPress={() => setShowPdfPreview(false)} className="p-2"><X size={24} color="#64748b" /></Pressable>
+                        <View className="flex-row items-center justify-between p-4 border-b border-border">
+                            <Pressable onPress={() => setShowPdfPreview(false)} className="p-2"><X size={24} color={themeColors.textGray} /></Pressable>
                             <Typography variant="body1" weight="bold">Pratinjau Laporan</Typography>
                             <Pressable onPress={() => handleExportPDF('print')} className="p-2"><Printer size={24} color="#4f46e5" /></Pressable>
                         </View>

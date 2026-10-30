@@ -211,7 +211,7 @@ export default function FinanceTab() {
                         onPress={onRefresh}
                         className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
-                        <RefreshCw size={20} color="#1F2937" />
+                        <RefreshCw size={20} color={themeColors.text} />
                     </Pressable>
                 }
             />
@@ -256,7 +256,7 @@ export default function FinanceTab() {
                                 onPress={handlePrev}
                                 className="w-9 h-9 bg-background rounded-full items-center justify-center border border-transparent active:bg-background"
                             >
-                                <ChevronLeft size={18} color="#1C1C1C" />
+                                <ChevronLeft size={18} color={themeColors.text} />
                             </Pressable>
 
                             <View className="flex-row items-center">
@@ -270,7 +270,7 @@ export default function FinanceTab() {
                                 onPress={handleNext}
                                 className="w-9 h-9 bg-background rounded-full items-center justify-center border border-transparent active:bg-background"
                             >
-                                <ChevronRight size={18} color="#1C1C1C" />
+                                <ChevronRight size={18} color={themeColors.text} />
                             </Pressable>
                         </View>
                     ) : (
@@ -346,7 +346,7 @@ export default function FinanceTab() {
                 </View>
 
                 {/* Physical Cashflow Realization Banner (Bento Dark Style) */}
-                <View className="bg-slate-900 p-6 rounded-[32px] shadow-lg mb-10 border border-slate-800">
+                <View className="bg-textMain p-6 rounded-[32px] shadow-lg mb-10 border border-textMain">
                     <View className="mb-4">
                         <View className="flex-row items-center mb-2">
                             <View className="w-8 h-8 bg-sky-500/10 rounded-xl items-center justify-center mr-3 border border-sky-500/20">
@@ -363,9 +363,9 @@ export default function FinanceTab() {
                         </View>
                     </View>
 
-                    <View className="flex-row justify-between pt-4 border-t border-slate-800">
+                    <View className="flex-row justify-between pt-4 border-t border-textMain">
                         <View className="flex-1">
-                            <Text style={{ color: '#94A3B8', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', marginBottom: 6 }}>
+                            <Text style={{ color: themeColors.textGray, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', marginBottom: 6 }}>
                                 Uang Masuk Fisik
                             </Text>
                             <View className="flex-row items-center">
@@ -377,8 +377,8 @@ export default function FinanceTab() {
                                 </Text>
                             </View>
                         </View>
-                        <View className="flex-1 ml-4 pl-4 border-l border-slate-800">
-                            <Text style={{ color: '#94A3B8', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', marginBottom: 6 }}>
+                        <View className="flex-1 ml-4 pl-4 border-l border-textMain">
+                            <Text style={{ color: themeColors.textGray, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', marginBottom: 6 }}>
                                 Uang Keluar Fisik
                             </Text>
                             <View className="flex-row items-center">
@@ -392,9 +392,9 @@ export default function FinanceTab() {
                         </View>
                     </View>
 
-                    <View className="mt-4 pt-3 border-t border-slate-800/80 flex-row items-center">
-                        <AlertTriangle size={13} color="#94A3B8" />
-                        <Text style={{ color: '#94A3B8', fontSize: 9, fontWeight: '500', marginLeft: 8, flex: 1 }}>
+                    <View className="mt-4 pt-3 border-t border-textMain flex-row items-center">
+                        <AlertTriangle size={13} color={themeColors.textGray} />
+                        <Text style={{ color: themeColors.textGray, fontSize: 9, fontWeight: '500', marginLeft: 8, flex: 1 }}>
                             Pencairan Kasbon masuk Arus Kas Keluar & Piutang SDM (tidak memotong Laba Rugi).
                         </Text>
                     </View>

@@ -650,7 +650,7 @@ export default function JasaAngkutScreen() {
                     onPress={handleCloseWallet}
                     className="w-10 h-10 bg-background rounded-full items-center justify-center border border-transparent"
                 >
-                    <X size={20} color="#6B7280" />
+                    <X size={20} color={themeColors.textGray} />
                 </Pressable>
             </View>
 
@@ -697,7 +697,7 @@ export default function JasaAngkutScreen() {
                                 <View className="flex-1 items-end">
                                     <View className="flex-row items-center mb-1 text-right">
                                         <Typography variant="caption" className="text-white/30 font-bold uppercase tracking-[1px] text-[7px]">Omzet (via Transfer)</Typography>
-                                        <View className="w-1 h-1 rounded-full bg-gray-500 ml-2" />
+                                        <View className="w-1 h-1 rounded-full bg-textMain ml-2" />
                                     </View>
                                     <Typography className="text-white/40 text-[10px] font-bold italic">{formatCurrency(summaryData?.total_transfer || 0)}</Typography>
                                 </View>
@@ -879,7 +879,7 @@ export default function JasaAngkutScreen() {
                             className="mr-3"
                         >
                             <View className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                                <ChevronLeft size={18} color="#6B7280" />
+                                <ChevronLeft size={18} color={themeColors.textGray} />
                             </View>
                         </Pressable>
                         <Typography variant="h3" weight="bold" className={`${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} tracking-tight`}>
@@ -983,7 +983,7 @@ export default function JasaAngkutScreen() {
                                                     onPress={() => setExpensePaymentMethod(opt.id)}
                                                     className={`p-3 rounded-2xl border items-center justify-center ${active
                                                         ? 'bg-amber-600 border-amber-600 shadow-sm'
-                                                        : 'bg-surface border-gray-100'
+                                                        : 'bg-surface border-border'
                                                         }`}
                                                 >
                                                     <OptIcon size={20} color={active ? 'white' : opt.color} />
@@ -1013,7 +1013,7 @@ export default function JasaAngkutScreen() {
                                                 onPress={() => { setExpensePaymentMethod(opt.id); setExpenseNote(prev => (isSetoranAutoNote(prev) ? labelSetoran(opt.id) : prev)); }}
                                                 className={`p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
                                                     ? 'bg-blue-600 border-blue-600 shadow-sm'
-                                                    : 'bg-surface border-gray-100'
+                                                    : 'bg-surface border-border'
                                                     }`}
                                             >
                                                 <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${expensePaymentMethod === opt.id ? 'text-white' : 'text-textGray'}`}>
@@ -1342,7 +1342,7 @@ export default function JasaAngkutScreen() {
                                 <Typography weight="bold" className="text-textMain">{trip.asal}</Typography>
                             </View>
                         </View>
-                        <View className="w-[1px] h-6 bg-gray-200 ml-5 my-1" />
+                        <View className="w-[1px] h-6 bg-border ml-5 my-1" />
                         <View className="flex-row items-center">
                             <View className="w-10 h-10 bg-secondary/10 rounded-xl items-center justify-center mr-4">
                                 <MapPin size={20} color="#3B82F6" />
@@ -1553,20 +1553,20 @@ export default function JasaAngkutScreen() {
                     <View className="bg-surface p-3 rounded-[24px] border border-transparent shadow-sm flex-col">
                         <View className="flex-row items-center">
                             <View className="flex-1 flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
-                                <Search size={16} color="#9CA3AF" />
+                                <Search size={16} color={themeColors.textGray} />
                                 <TextInput
                                     className="flex-1 ml-3 text-xs font-semibold text-textMain"
                                     placeholder="Cari Ritase (Rute, Supir)..."
                                     value={searchQuery}
                                     onChangeText={setSearchQuery}
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={themeColors.textGray}
                                     autoCorrect={false}
                                     autoCapitalize="none"
                                     returnKeyType="search"
                                 />
                                 {searchQuery.length > 0 && (
                                     <Pressable onPress={() => setSearchQuery('')} className="ml-1">
-                                        <X size={16} color="#9CA3AF" />
+                                        <X size={16} color={themeColors.textGray} />
                                     </Pressable>
                                 )}
                             </View>
@@ -1734,7 +1734,7 @@ export default function JasaAngkutScreen() {
                         <Pressable
                             key={mode.key}
                             onPress={() => setGroupBy(mode.key as any)}
-                            className={`flex-1 py-3.5 rounded-[20px] items-center ${groupBy === mode.key ? 'bg-surface shadow-sm shadow-black/5 border border-gray-200/50' : ''}`}
+                            className={`flex-1 py-3.5 rounded-[20px] items-center ${groupBy === mode.key ? 'bg-surface shadow-sm shadow-black/5 border border-border' : ''}`}
                         >
                             <Typography weight="bold" className={`text-xs ${groupBy === mode.key ? 'text-primary' : 'text-textGray'}`}>
                                 {mode.label}
@@ -1791,7 +1791,7 @@ export default function JasaAngkutScreen() {
                                     >
                                         <View className="flex-row items-center flex-1">
                                             <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 border ${groupBy === 'armada' ? (group.trips.length > 0 ? 'bg-primary/10 border-primary/10' : 'bg-background border-transparent') : 'bg-orange-100 border-orange-200'}`}>
-                                                {groupBy === 'armada' ? <Truck size={22} color={!isCollapsed ? 'themeColors.primary' : '#94A3B8'} /> : <Users size={22} color="#C2410C" />}
+                                                {groupBy === 'armada' ? <Truck size={22} color={!isCollapsed ? 'themeColors.primary' : themeColors.textGray} /> : <Users size={22} color="#C2410C" />}
                                             </View>
                                             <View className="flex-1">
                                                 <Typography weight="bold" className={`text-base tracking-tight ${!isCollapsed ? 'text-primary' : 'text-textMain'}`}>
@@ -1820,7 +1820,7 @@ export default function JasaAngkutScreen() {
                                             )}
                                             <ChevronLeft
                                                 size={20}
-                                                color={!isCollapsed ? themeColors.primary : "#9CA3AF"}
+                                                color={!isCollapsed ? themeColors.primary : themeColors.textGray}
                                                 style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '90deg' }] }}
                                             />
                                         </View>
@@ -1842,7 +1842,7 @@ export default function JasaAngkutScreen() {
                                                     >
                                                         {/* Visual ID Slot - Smaller for nested items */}
                                                         <View className="w-12 h-12 bg-background rounded-[16px] items-center justify-center mr-4 border border-transparent">
-                                                            <MapPin size={20} color="#6B7280" />
+                                                            <MapPin size={20} color={themeColors.textGray} />
                                                         </View>
 
                                                         <View className="flex-1">
@@ -1852,7 +1852,7 @@ export default function JasaAngkutScreen() {
                                                                     <Typography variant="body2" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
                                                                         {trip.asal} → {trip.tujuan}
                                                                     </Typography>
-                                                                    <View className="mx-2 w-1 h-1 bg-gray-300 rounded-full" />
+                                                                    <View className="mx-2 w-1 h-1 bg-border rounded-full" />
                                                                     <Typography variant="caption" weight="bold" className="text-primary italic">
                                                                         {trip.ritase} Rit
                                                                     </Typography>
@@ -1877,9 +1877,9 @@ export default function JasaAngkutScreen() {
                                                             </Typography>
 
                                                             {/* Footer Row */}
-                                                            <View className="flex-row items-center justify-between pt-2 border-t border-gray-50/50">
+                                                            <View className="flex-row items-center justify-between pt-2 border-t border-border">
                                                                 <View className="flex-row items-center">
-                                                                    <Clock size={10} color="#9CA3AF" />
+                                                                    <Clock size={10} color={themeColors.textGray} />
                                                                     <Typography className="text-textGray text-[9px] ml-1 font-bold uppercase tracking-widest">
                                                                         {formatDate(trip.tanggal)}
                                                                     </Typography>
@@ -1924,7 +1924,7 @@ export default function JasaAngkutScreen() {
                         <View className="flex-1 justify-end bg-black/40">
                             <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                             <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
-                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                                <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                                 {mountMuatanForm ? (
                                     <React.Suspense fallback={<View className="p-8 items-center"><SkeletonCard /></View>}>
                                         <MuatanForm onSuccess={handleFormSuccess} initialData={editData} />
@@ -1938,7 +1938,7 @@ export default function JasaAngkutScreen() {
                         <View className="flex-1 justify-end bg-black/40">
                             <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                             <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
-                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                                <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                                 {selectedTrip && renderDetailContent(selectedTrip)}
                             </View>
                         </View>
@@ -1961,7 +1961,7 @@ export default function JasaAngkutScreen() {
                                 <View className="p-6 border-b border-transparent flex-row justify-between items-center">
                                     <Typography variant="h3" weight="bold">Riwayat Kas & Setoran</Typography>
                                     <Pressable onPress={() => setShowHistoryModal(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                                        <X size={18} color="#64748B" />
+                                        <X size={18} color={themeColors.textGray} />
                                     </Pressable>
                                 </View>
                                 <ScrollView style={{ flex: 1 }} className="p-6" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
@@ -2042,7 +2042,7 @@ export default function JasaAngkutScreen() {
                                         <Typography variant="caption" className="text-textGray">Jasa Angkut • {dateRange.dari} s/d {dateRange.sampai}</Typography>
                                     </View>
                                     <Pressable onPress={() => setShowHistoryModal(false)} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                                        <X size={20} color="#64748B" />
+                                        <X size={20} color={themeColors.textGray} />
                                     </Pressable>
                                 </View>
                                 <ScrollView style={{ flex: 1 }} className="p-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
@@ -2079,7 +2079,7 @@ export default function JasaAngkutScreen() {
                             <View className="flex-row justify-between items-center mb-6">
                                 <Typography variant="h2" weight="bold">Pilih Periode</Typography>
                                 <Pressable onPress={() => setIsDateModalVisible(false)}>
-                                    <X size={24} color="#6B7280" />
+                                    <X size={24} color={themeColors.textGray} />
                                 </Pressable>
                             </View>
                             {renderDateContent()}

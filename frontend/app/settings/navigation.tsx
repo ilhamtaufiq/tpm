@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, ScrollView, Pressable, Modal } from 'react-native';
 import { appAlert, appConfirm } from '../../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,43 +21,47 @@ import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { BoundedSheetPanel, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 import { router } from 'expo-router';
-import { useUIStore } from '../../store/useUIStore';
+import { useUIStore, ThemeColors } from '../../store/useUIStore';
 import { PageFabSettingId, useNavigationStore, defaultPageFabSlots } from '../../store/useNavigationStore';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
-const CATEGORY_STYLE: Record<string, { color: string; bgColor: string }> = {
+const make_CATEGORY_STYLE = (themeColors: ThemeColors): Record<string, { color: string; bgColor: string }> => ({
     Utama: { color: '#3B82F6', bgColor: '#E8F0FE' },
-    Bengkel: { color: '#023C69', bgColor: '#E2EFFC' },
+    Bengkel: { color: themeColors.primary, bgColor: '#E2EFFC' },
     'Jasa Angkut': { color: '#6366F1', bgColor: '#E0E7FF' },
     Mobil: { color: '#F43F5E', bgColor: '#FFE4E6' },
     Master: { color: '#0F766E', bgColor: '#CCFBF1' },
     SDM: { color: '#10B981', bgColor: '#E6F4EA' },
     Laporan: { color: '#8B5CF6', bgColor: '#EDE9FE' },
     Finance: { color: '#F59E0B', bgColor: '#FEF3C7' },
-    Sistem: { color: '#374151', bgColor: '#F3F4F6' },
-};
+    Sistem: { color: '#374151', bgColor: themeColors.background },
+});
 
-const NAV_OPTIONS = [
-    ...APP_ROUTES.map((route) => {
-        const style = CATEGORY_STYLE[route.category] || CATEGORY_STYLE.Sistem;
-        return {
-            id: route.id,
-            label: route.label,
-            description: route.description,
-            icon: route.icon,
-            color: style.color,
-            bgColor: style.bgColor,
-            path: route.path,
-        };
-    }),
-    { id: 'fab-plus', label: 'FAB+ (Tambah)', description: 'Floating Button aksi cepat', icon: Plus, color: '#EE2737', bgColor: '#FEE2E2', path: '#fab' },
-];
+const makeNavOptions = (themeColors: ThemeColors) => {
+    const CATEGORY_STYLE = make_CATEGORY_STYLE(themeColors);
+    return [
+        ...APP_ROUTES.map((route) => {
+            const style = CATEGORY_STYLE[route.category] || CATEGORY_STYLE.Sistem;
+            return {
+                id: route.id,
+                label: route.label,
+                description: route.description,
+                icon: route.icon,
+                color: style.color,
+                bgColor: style.bgColor,
+                path: route.path,
+            };
+        }),
+        { id: 'fab-plus', label: 'FAB+ (Tambah)', description: 'Floating Button aksi cepat', icon: Plus, color: '#EE2737', bgColor: '#FEE2E2', path: '#fab' },
+    ];
+};
 
 export default function NavigationSettingsScreen() {
     const insets = useSafeAreaInsets();
     const themeColors = useUIStore((s) => s.themeColors);
+    const NAV_OPTIONS = useMemo(() => makeNavOptions(themeColors), [themeColors]);
     const user = useAuthStore(state => state.user);
     const activeSlots = useNavigationStore((s) => s.activeSlots);
     const fabSlots = useNavigationStore((s) => s.fabSlots);
@@ -207,7 +211,7 @@ export default function NavigationSettingsScreen() {
                                 return (
                                     <View key={index} className="flex-1 items-center justify-center">
                                         <View className="opacity-60 mb-0.5">
-                                            <PreviewIcon size={16} color={index === 0 ? themeColors.primary : '#6B7280'} strokeWidth={index === 0 ? 2.5 : 2} />
+                                            <PreviewIcon size={16} color={index === 0 ? themeColors.primary : themeColors.textGray} strokeWidth={index === 0 ? 2.5 : 2} />
                                         </View>
                                         <Typography weight={index === 0 ? "bold" : "medium"} className={`text-[8px] uppercase tracking-tighter ${index === 0 ? 'text-primary' : 'text-textGray'}`} numberOfLines={1}>
                                             {details.label.split(' ')[0]}
@@ -262,7 +266,7 @@ export default function NavigationSettingsScreen() {
                                             </View>
                                         )}
                                         <View className="w-8 h-8 rounded-xl bg-background border border-transparent justify-center items-center shadow-sm">
-                                            <ChevronRight size={14} color="#9CA3AF" />
+                                            <ChevronRight size={14} color={themeColors.textGray} />
                                         </View>
                                     </View>
                                 </Pressable>
@@ -324,7 +328,7 @@ export default function NavigationSettingsScreen() {
                                                         <Typography variant="caption" className="text-textGray uppercase font-bold tracking-widest text-[8px]">{positionLabels[index]}</Typography>
                                                         <Typography weight="bold" className="text-text text-sm" numberOfLines={1}>{details.label}</Typography>
                                                     </View>
-                                                    <ChevronRight size={14} color="#9CA3AF" />
+                                                    <ChevronRight size={14} color={themeColors.textGray} />
                                                 </Pressable>
                                             );
                                         })}
@@ -349,7 +353,7 @@ export default function NavigationSettingsScreen() {
                 animationType="fade"
                 onRequestClose={() => setPickerVisible(false)}
             >
-                <View className="flex-1 justify-end bg-slate-900/30">
+                <View className="flex-1 justify-end bg-textMain">
                     <BoundedSheetPanel
                         maxHeightRatio={0.85}
                         bottomInset={insets.bottom}
@@ -358,7 +362,7 @@ export default function NavigationSettingsScreen() {
                     >
                         {/* Drag Handle */}
                         <View className="items-center pt-4 pb-2">
-                            <View className="w-12 h-1 bg-gray-200 rounded-full" />
+                            <View className="w-12 h-1 bg-border rounded-full" />
                         </View>
 
                         {/* Title */}
@@ -388,7 +392,7 @@ export default function NavigationSettingsScreen() {
                                 onPress={() => setPickerVisible(false)}
                                 className="w-10 h-10 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                             >
-                                <X size={18} color="#6B7280" />
+                                <X size={18} color={themeColors.textGray} />
                             </Pressable>
                         </View>
 
@@ -417,7 +421,7 @@ export default function NavigationSettingsScreen() {
                                             onPress={() => handleSelectOption(option.id)}
                                             style={{
                                                 backgroundColor: isSelected ? themeColors.primary + '08' : 'white',
-                                                borderColor: isSelected ? themeColors.primary + '20' : '#F3F4F6'
+                                                borderColor: isSelected ? themeColors.primary + '20' : themeColors.background
                                             }}
                                             className="p-4 rounded-[24px] border flex-row items-center justify-between active:bg-background"
                                         >

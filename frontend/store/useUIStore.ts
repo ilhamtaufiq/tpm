@@ -37,7 +37,7 @@ interface UIState {
 // Ciri khas TPM: tiga warna — biru (primary), abu (secondary & teks sekunder), putih (permukaan).
 export const defaultColors: ThemeColors = {
     primary: "#023C69",
-    secondary: "#64748B",
+    secondary: "#475569",
     background: "#F4F6F8",
     surface: "#FFFFFF",
     text: "#111827",

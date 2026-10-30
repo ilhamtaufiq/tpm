@@ -233,7 +233,7 @@ export default function LaporanKeuanganScreen() {
                 value={setupForm.tanggal}
                 onChangeText={(v) => setSetupForm({ ...setupForm, tanggal: v })}
                 placeholder="YYYY-MM-DD"
-                startIcon={<Calendar size={18} color="#9CA3AF" />}
+                startIcon={<Calendar size={18} color={themeColors.textGray} />}
             />
 
             <Typography className="text-textGray text-[10px] uppercase font-bold mb-4 mt-2 ml-1">Modal & Ekuitas</Typography>
@@ -269,7 +269,7 @@ export default function LaporanKeuanganScreen() {
                 value={setupForm.keterangan}
                 onChangeText={(v) => setSetupForm({ ...setupForm, keterangan: v })}
                 placeholder="Contoh: Migrasi pembukuan manual 2024"
-                startIcon={<FileText size={18} color="#9CA3AF" />}
+                startIcon={<FileText size={18} color={themeColors.textGray} />}
             />
 
             <View className="flex-row mt-4 space-x-3 pb-8">
@@ -300,14 +300,14 @@ export default function LaporanKeuanganScreen() {
                 value={tempDateRange.dari}
                 onChangeText={(v) => setTempDateRange({ ...tempDateRange, dari: v })}
                 placeholder="YYYY-MM-DD"
-                startIcon={<Calendar size={18} color="#9CA3AF" />}
+                startIcon={<Calendar size={18} color={themeColors.textGray} />}
             />
             <Input
                 label="SAMPAI TANGGAL"
                 value={tempDateRange.sampai}
                 onChangeText={(v) => setTempDateRange({ ...tempDateRange, sampai: v })}
                 placeholder="YYYY-MM-DD"
-                startIcon={<Calendar size={18} color="#9CA3AF" />}
+                startIcon={<Calendar size={18} color={themeColors.textGray} />}
             />
 
             <View className="flex-row mt-6 space-x-3 pb-8">
@@ -641,7 +641,7 @@ export default function LaporanKeuanganScreen() {
                         onPress={() => setIsSetupModalVisible(true)}
                         className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
-                        <Settings size={20} color="#1F2937" />
+                        <Settings size={20} color={themeColors.text} />
                     </Pressable>
                 }
             />
@@ -714,7 +714,7 @@ export default function LaporanKeuanganScreen() {
                                 <View className="flex-row justify-between items-center mb-6">
                                     <Typography variant="h2" weight="bold">Migrasi Data Awal</Typography>
                                     <Pressable onPress={() => setIsSetupModalVisible(false)}>
-                                        <X size={24} color="#6B7280" />
+                                        <X size={24} color={themeColors.textGray} />
                                     </Pressable>
                                 </View>
                                 <ScrollView
@@ -737,7 +737,7 @@ export default function LaporanKeuanganScreen() {
                                 <View className="flex-row justify-between items-center mb-6">
                                     <Typography variant="h2" weight="bold">Pilih Periode Laporan</Typography>
                                     <Pressable onPress={() => setIsDateModalVisible(false)}>
-                                        <X size={24} color="#6B7280" />
+                                        <X size={24} color={themeColors.textGray} />
                                     </Pressable>
                                 </View>
                                 {renderDateContent()}

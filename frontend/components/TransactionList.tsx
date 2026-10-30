@@ -17,7 +17,7 @@ import { ActivityItem } from '../services/keuangan';
 import { router } from 'expo-router';
 import { formatCurrency } from '../utils/format';
 import { TransactionDetailModal } from './TransactionDetailModal';
-import { useUIStore } from '../store/useUIStore';
+import { useUIStore, ThemeColors } from '../store/useUIStore';
 
 /** True for empty / dash placeholders stored as plate/customer defaults. */
 const isPlaceholderText = (value?: string | null) => {
@@ -25,7 +25,7 @@ const isPlaceholderText = (value?: string | null) => {
     return !text || text === '-' || text === '—' || text === '–' || text.toLowerCase() === 'n/a';
 };
 
-const getSourceConfig = (source: string, title?: string) => {
+const getSourceConfig = (source: string, title: string | undefined, themeColors: ThemeColors) => {
     const s = source?.toLowerCase() || '';
     const t = title?.toLowerCase() || '';
 
@@ -77,7 +77,7 @@ const getSourceConfig = (source: string, title?: string) => {
         case 'prive':
             return { icon: Wallet, color: '#DC2626', label: 'Prive' };
         default:
-            return { icon: HelpCircle, color: '#6B7280', label: 'Sistem' };
+            return { icon: HelpCircle, color: themeColors.textGray, label: 'Sistem' };
     }
 };
 
@@ -91,6 +91,7 @@ const getStatusBadge = (status: string): { variant: 'success' | 'warning' | 'inf
 };
 
 function TransactionListInner() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const { data: transactions, isLoading } = useRecentActivity(5);
     const [selectedItem, setSelectedItem] = useState<ActivityItem | null>(null);
@@ -126,7 +127,7 @@ function TransactionListInner() {
                 </View>
             ) : (
                 list.map((item: ActivityItem) => {
-                    const config = getSourceConfig(item.source, item.title);
+                    const config = getSourceConfig(item.source, item.title, themeColors);
                     const Icon = config.icon;
 
                     return (
@@ -135,7 +136,7 @@ function TransactionListInner() {
                             style={({ pressed }) => ({
                                 opacity: pressed ? 0.8 : 1
                             })}
-                            className="flex-row items-center bg-surface p-4 rounded-[24px] mb-3 shadow-sm shadow-gray-100 border border-transparent"
+                            className="flex-row items-center bg-surface p-4 rounded-[24px] mb-3 shadow-sm shadow-border border border-transparent"
                             onPress={() => handleItemPress(item)}
                         >
                             <View

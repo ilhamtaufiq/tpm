@@ -42,8 +42,10 @@ import {
     KasArusJenisBreakdown,
     KasJenisBreakdown,
 } from '../../components/laporan';
+import { useUIStore } from '../../store/useUIStore';
 
 export default function ArusKasAkunScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const navigation = useNavigation();
@@ -202,10 +204,10 @@ export default function ArusKasAkunScreen() {
                             const badgeText = isPositive ? 'text-teal-400' : 'text-rose-400';
                             const statusNetText = isPositive ? 'text-emerald-400' : 'text-rose-400';
                             const statusIconColor = isPositive ? '#34D399' : '#F87171';
-                            const cardBorder = isPositive ? 'border-slate-800' : 'border-rose-900/40';
+                            const cardBorder = isPositive ? 'border-textMain' : 'border-rose-900/40';
 
                             return (
-                                <View className={`bg-slate-900 p-6 rounded-[32px] shadow-xl shadow-slate-900/20 mb-8 mt-2 w-full border ${cardBorder}`}>
+                                <View className={`bg-textMain p-6 rounded-[32px] shadow-xl shadow-slate-900/20 mb-8 mt-2 w-full border ${cardBorder}`}>
                                     <View className="flex-row justify-between items-center mb-6">
                                         <View className={`${badgeBg} px-3 py-1.5 rounded-full border`}>
                                             <Typography style={{ color: isPositive ? '#2DD4BF' : '#F87171' }} className="text-[10px] font-bold uppercase tracking-widest">
@@ -221,16 +223,16 @@ export default function ArusKasAkunScreen() {
                                     </View>
                                     <View className="flex-row justify-between pt-1">
                                         <View className="flex-1">
-                                            <Typography style={{ color: '#94A3B8' }} className="text-[9px] uppercase font-bold mb-1 tracking-widest">
+                                            <Typography style={{ color: themeColors.textGray }} className="text-[9px] uppercase font-bold mb-1 tracking-widest">
                                                 Total Uang Masuk
                                             </Typography>
                                             <Typography style={{ color: '#34D399' }} weight="bold" numberOfLines={1} adjustsFontSizeToFit>
                                                 {formatCurrencyDisplay(totals.masuk)}
                                             </Typography>
                                         </View>
-                                        <View className="w-[1px] bg-slate-700/50 mx-4" />
+                                        <View className="w-[1px] bg-textMain mx-4" />
                                         <View className="flex-1 items-end">
-                                            <Typography style={{ color: '#94A3B8' }} className="text-[9px] uppercase font-bold mb-1 tracking-widest">
+                                            <Typography style={{ color: themeColors.textGray }} className="text-[9px] uppercase font-bold mb-1 tracking-widest">
                                                 Total Uang Keluar
                                             </Typography>
                                             <Typography style={{ color: '#F87171' }} weight="bold" numberOfLines={1} adjustsFontSizeToFit>
@@ -252,7 +254,7 @@ export default function ArusKasAkunScreen() {
                         </View>
 
                         {/* Breakdown per Account Card */}
-                        <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
+                        <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-border bg-surface rounded-2xl w-full">
                             <View className="bg-teal-50/70 px-5 py-4 flex-row justify-between items-center border-b border-teal-100/50 w-full">
                                 <View className="flex-row items-center flex-1 mr-2">
                                     <View className="w-10 h-10 rounded-full bg-teal-100/80 items-center justify-center mr-3 flex-shrink-0">
@@ -269,7 +271,7 @@ export default function ArusKasAkunScreen() {
                             </View>
 
                             <View className="p-5 w-full">
-                                <Typography variant="caption" className="text-slate-400 text-[11px] mb-4">
+                                <Typography variant="caption" className="text-textGray text-[11px] mb-4">
                                     Rincian mutasi fisik arus kas per rekening/dompet selama periode {formattedDate}.
                                 </Typography>
                                 {flows.length === 0 ? (
@@ -289,7 +291,7 @@ export default function ArusKasAkunScreen() {
                             const totalSaldoKas = details.reduce((acc: number, item: any) => acc + Number(item.saldo || 0), 0);
 
                             return (
-                                <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-surface rounded-2xl w-full">
+                                <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-border bg-surface rounded-2xl w-full">
                                     <View className="bg-indigo-50/70 px-5 py-4 flex-row justify-between items-center border-b border-indigo-100/50 w-full">
                                         <View className="flex-row items-center flex-1 mr-2">
                                             <View className="w-10 h-10 rounded-full bg-indigo-100/80 items-center justify-center mr-3 flex-shrink-0">
@@ -308,7 +310,7 @@ export default function ArusKasAkunScreen() {
                                     </View>
 
                                     <View className="p-5 w-full">
-                                        <Typography variant="caption" className="text-slate-400 text-[11px] mb-3">
+                                        <Typography variant="caption" className="text-textGray text-[11px] mb-3">
                                             Saldo posisi kas & bank per akun pada akhir periode {formattedDate}.
                                         </Typography>
                                         <KasJenisBreakdown details={details} />
@@ -333,9 +335,9 @@ export default function ArusKasAkunScreen() {
             {showPdfPreview && (
                 <Modal onRequestClose={() => setShowPdfPreview(false)} visible={showPdfPreview} animationType="slide">
                     <SafeAreaView className="flex-1 bg-surface">
-                        <View className="flex-row items-center justify-between p-4 border-b border-slate-100 bg-surface">
+                        <View className="flex-row items-center justify-between p-4 border-b border-border bg-surface">
                             <Pressable onPress={() => setShowPdfPreview(false)} className="p-2">
-                                <X size={24} color="#64748b" />
+                                <X size={24} color={themeColors.textGray} />
                             </Pressable>
                             <Typography variant="body1" weight="bold">Pratinjau Laporan Arus Kas</Typography>
                             <Pressable onPress={() => handleExportPDF('print')} className="p-2">

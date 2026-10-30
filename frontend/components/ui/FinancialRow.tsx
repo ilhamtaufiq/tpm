@@ -38,7 +38,7 @@ export const FinancialRow = React.memo(({
         if (isNeg) {
             textClass = isDark ? 'text-red-400' : 'text-red-600';
         } else {
-            textClass = isDark ? 'text-white' : 'text-slate-800';
+            textClass = isDark ? 'text-white' : 'text-textMain';
         }
     }
 
@@ -47,7 +47,7 @@ export const FinancialRow = React.memo(({
             <View className="flex-1 pr-2">
                 <Typography
                     variant={small ? 'caption' : 'body2'}
-                    className={`${isDark ? 'text-white/70' : small ? 'text-textGray' : 'text-slate-600'}`}
+                    className={`${isDark ? 'text-white/70' : small ? 'text-textGray' : 'text-textGray'}`}
                 >
                     {label}
                 </Typography>

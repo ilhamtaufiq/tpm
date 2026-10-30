@@ -539,7 +539,7 @@ export default function MutasiKasScreen() {
                         onPress={onRefresh}
                         className="w-11 h-11 bg-background rounded-2xl items-center justify-center border border-transparent active:bg-background"
                     >
-                        <RefreshCw size={20} color="#1F2937" />
+                        <RefreshCw size={20} color={themeColors.text} />
                     </Pressable>
                 }
             />
@@ -560,7 +560,7 @@ export default function MutasiKasScreen() {
                         )}
 
                         <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
-                            <Search size={16} color="#9CA3AF" />
+                            <Search size={16} color={themeColors.textGray} />
                             <Typography className="ml-3 text-xs text-textGray font-semibold">Cari riwayat transaksi...</Typography>
                         </View>
                     </View>
@@ -590,7 +590,7 @@ export default function MutasiKasScreen() {
                                 borderRadius: 32,
                                 marginBottom: 24,
                                 borderWidth: 1,
-                                borderColor: '#F9FAFB',
+                                borderColor: themeColors.background,
                                 opacity: pressed ? 0.9 : 1,
                                 flexDirection: 'row',
                                 alignItems: 'center'
@@ -635,7 +635,7 @@ export default function MutasiKasScreen() {
                                 {/* Footer Financial Row */}
                                 <View className="flex-row items-center justify-between pt-3 border-t border-transparent">
                                     <View className="flex-row items-center">
-                                        <Calendar size={12} color="#9CA3AF" />
+                                        <Calendar size={12} color={themeColors.textGray} />
                                         <Typography className="text-textGray text-[10px] ml-1.5 font-bold uppercase tracking-widest">
                                             {tanggalLokal(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </Typography>
@@ -660,9 +660,9 @@ export default function MutasiKasScreen() {
                     <View className="mb-6">
                         <Pressable
                             onPress={() => router.push('/finance/pembatalan')}
-                            className="flex-row items-center self-end mb-4 px-4 py-2 rounded-xl border border-gray-200"
+                            className="flex-row items-center self-end mb-4 px-4 py-2 rounded-xl border border-border"
                         >
-                            <History size={14} color="#6B7280" />
+                            <History size={14} color={themeColors.textGray} />
                             <Typography className="text-textGray text-xs font-bold ml-2">Riwayat Pembatalan</Typography>
                         </Pressable>
 

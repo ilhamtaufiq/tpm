@@ -242,13 +242,13 @@ export default function SupplierScreen() {
 
                     {item.telepon && (
                         <View className="flex-row items-center mt-2 pt-2 border-t border-transparent">
-                            <Phone size={12} color="#9CA3AF" />
+                            <Phone size={12} color={themeColors.textGray} />
                             <Typography variant="caption" className="text-textGray ml-1.5">{item.telepon}</Typography>
                         </View>
                     )}
                 </View>
                 <View className="ml-2 w-8 h-8 rounded-full bg-background items-center justify-center">
-                    <MoreVertical size={16} color="#9CA3AF" />
+                    <MoreVertical size={16} color={themeColors.textGray} />
                 </View>
             </View>
         </Pressable>
@@ -261,7 +261,7 @@ export default function SupplierScreen() {
                     <View className="flex-row justify-between items-center mb-6">
                         <Typography variant="h2" weight="bold">Detail Supplier</Typography>
                         <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                            <X size={20} color="#6B7280" />
+                            <X size={20} color={themeColors.textGray} />
                         </Pressable>
                     </View>
 
@@ -279,7 +279,7 @@ export default function SupplierScreen() {
                         {selectedSupplier.telepon && (
                             <View className="flex-row items-center mb-4 bg-background p-3 rounded-2xl">
                                 <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
-                                    <Phone size={20} color="#6B7280" />
+                                    <Phone size={20} color={themeColors.textGray} />
                                 </View>
                                 <View>
                                     <Typography className="text-xs text-textGray font-bold uppercase">Telepon</Typography>
@@ -291,7 +291,7 @@ export default function SupplierScreen() {
                         {selectedSupplier.email && (
                             <View className="flex-row items-center mb-4 bg-background p-3 rounded-2xl">
                                 <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
-                                    <Mail size={20} color="#6B7280" />
+                                    <Mail size={20} color={themeColors.textGray} />
                                 </View>
                                 <View>
                                     <Typography className="text-xs text-textGray font-bold uppercase">Email</Typography>
@@ -303,7 +303,7 @@ export default function SupplierScreen() {
                         {(selectedSupplier.alamat || selectedSupplier.kota) && (
                             <View className="flex-row items-center mb-4 bg-background p-3 rounded-2xl">
                                 <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
-                                    <MapPin size={20} color="#6B7280" />
+                                    <MapPin size={20} color={themeColors.textGray} />
                                 </View>
                                 <View className="flex-1">
                                     <Typography className="text-xs text-textGray font-bold uppercase">Alamat</Typography>
@@ -317,7 +317,7 @@ export default function SupplierScreen() {
                         {selectedSupplier.bank && selectedSupplier.rekening && (
                             <View className="flex-row items-center bg-background p-3 rounded-2xl">
                                 <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center shadow-sm mr-3">
-                                    <CreditCard size={20} color="#6B7280" />
+                                    <CreditCard size={20} color={themeColors.textGray} />
                                 </View>
                                 <View>
                                     <Typography className="text-xs text-textGray font-bold uppercase">Rekening Bank</Typography>
@@ -352,7 +352,7 @@ export default function SupplierScreen() {
                         {selectedSupplier ? 'Edit Supplier' : 'Tambah Supplier'}
                     </Typography>
                     <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                        <X size={20} color="#6B7280" />
+                        <X size={20} color={themeColors.textGray} />
                     </Pressable>
                 </View>
 
@@ -362,7 +362,7 @@ export default function SupplierScreen() {
                         <TextInput
                             className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="Contoh: Toko Sparepart Jaya"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                             value={formData.nama}
                             onChangeText={(text) => setFormData({ ...formData, nama: text })}
                         />
@@ -373,7 +373,7 @@ export default function SupplierScreen() {
                         <TextInput
                             className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="08xxxxxxxxxx"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                             value={formData.telepon}
                             onChangeText={(text) => setFormData({ ...formData, telepon: text })}
                             keyboardType="phone-pad"
@@ -385,7 +385,7 @@ export default function SupplierScreen() {
                         <TextInput
                             className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="email@example.com"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                             value={formData.email}
                             onChangeText={(text) => setFormData({ ...formData, email: text })}
                             keyboardType="email-address"
@@ -397,7 +397,7 @@ export default function SupplierScreen() {
                         <TextInput
                             className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                             placeholder="Contoh: Surabaya"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                             value={formData.kota}
                             onChangeText={(text) => setFormData({ ...formData, kota: text })}
                         />
@@ -408,7 +408,7 @@ export default function SupplierScreen() {
                         <TextInput
                             className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 min-h-[80px]"
                             placeholder="Masukan alamat lengkap..."
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                             value={formData.alamat}
                             onChangeText={(text) => setFormData({ ...formData, alamat: text })}
                             multiline
@@ -422,7 +422,7 @@ export default function SupplierScreen() {
                             <TextInput
                                 className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                 placeholder="BCA"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={themeColors.textGray}
                                 value={formData.bank}
                                 onChangeText={(text) => setFormData({ ...formData, bank: text })}
                             />
@@ -432,7 +432,7 @@ export default function SupplierScreen() {
                             <TextInput
                                 className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
                                 placeholder="1234567890"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={themeColors.textGray}
                                 value={formData.rekening}
                                 onChangeText={(text) => setFormData({ ...formData, rekening: text })}
                                 keyboardType="numeric"
@@ -465,13 +465,13 @@ export default function SupplierScreen() {
             >
                 {!sheetVisible && (
                     <View className="flex-row items-center bg-background h-11 rounded-2xl border border-transparent">
-                        <Search size={18} color="#9CA3AF" className="ml-4" />
+                        <Search size={18} color={themeColors.textGray} className="ml-4" />
                         <TextInput
                             placeholder="Cari nama supplier..."
                             className="flex-1 ml-3 text-sm font-medium text-textMain"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                         />
                     </View>
                 )}
@@ -527,7 +527,7 @@ export default function SupplierScreen() {
                                 alignSelf: 'center',
                             }}
                         >
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
+                            <View className="w-12 h-1.5 bg-border rounded-full self-center my-4" />
                             <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {renderSheetContent()}
                             </ScrollView>

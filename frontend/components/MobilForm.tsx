@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, ScrollView, TextInput, ActivityIndicator, Platform, StyleSheet, Pressable } from 'react-native';
 import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
@@ -29,9 +29,11 @@ interface MobilFormProps {
 
 
 import { Badge } from './ui/Badge';
-import { useUIStore } from '../store/useUIStore';
+import { useUIStore, ThemeColors } from '../store/useUIStore';
 
 export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
+    const styles = useMemo(() => makeStyles(themeColors), [themeColors]);
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const isEdit = !!initialData;
     const queryClient = useQueryClient();
@@ -420,7 +422,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                         {!isEdit && (
                             <View className="flex-1">
                                 <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-tight">Status Bayar</Typography>
-                                <View className="flex-row bg-background rounded-2xl p-1 border border-gray-200/50 space-x-1">
+                                <View className="flex-row bg-background rounded-2xl p-1 border border-border space-x-1">
                                     {[
                                         { label: 'Lunas', value: 'LUNAS' },
                                         { label: 'Hutang', value: 'BELUM_LUNAS' }
@@ -740,7 +742,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (themeColors: ThemeColors) => StyleSheet.create({
     flex1: {
         flex: 1,
     },
@@ -755,6 +757,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: themeColors.background,
     },
 });

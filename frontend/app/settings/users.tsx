@@ -35,12 +35,12 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { Header } from '../../components/ui/Header';
 import { authService, User as UserType, UserCreateData, UserUpdateData } from '../../services/auth';
 import { useUserList, useCreateUser, useUpdateUser, useDeleteUser, useDeleteCheck } from '../../hooks/useUsers';
-import { useUIStore } from '../../store/useUIStore';
+import { useUIStore, findPaletteBorder, ThemeColors, defaultColors } from '../../store/useUIStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getErrorMessage } from '../../utils/error';
 import { usePlaceholderColor } from '../../utils/themeStyles';
 
-const ROLE_META: Record<string, { label: string; color: string; icon: any }> = {
+const make_ROLE_META = (themeColors: ThemeColors): Record<string, { label: string; color: string; icon: any }> => ({
     ADMIN: { label: 'Admin', color: '#EF4444', icon: Shield },
     MANAGER: { label: 'Manager', color: '#F59E0B', icon: UserCircle2 },
     KASIR: { label: 'Kasir', color: '#10B981', icon: Wallet },
@@ -48,10 +48,10 @@ const ROLE_META: Record<string, { label: string; color: string; icon: any }> = {
     BENGKEL: { label: 'Bengkel', color: '#8B5CF6', icon: Warehouse },
     JASA_ANGKUT: { label: 'Jasa Angkut', color: '#F97316', icon: Truck },
     MOBIL: { label: 'Mobil', color: '#06B6D4', icon: Car },
-    STAFF: { label: 'Staff', color: '#6B7280', icon: UserSquare2 },
-    VIEWER: { label: 'Viewer', color: '#94A3B8', icon: Eye },
-};
-const ROLE_ORDER = Object.keys(ROLE_META);
+    STAFF: { label: 'Staff', color: themeColors.textGray, icon: UserSquare2 },
+    VIEWER: { label: 'Viewer', color: themeColors.textGray, icon: Eye },
+});
+const ROLE_ORDER = Object.keys(make_ROLE_META(defaultColors));
 
 // Nama tampilan untuk tabel yang masih menunjuk ke user (ringkasan hapus permanen).
 const LABEL_TABEL: Record<string, string> = {
@@ -100,6 +100,7 @@ export default function UsersScreen() {
     const currentUser = useAuthStore((s) => s.user);
     const startImpersonation = useAuthStore((s) => s.startImpersonation);
     const themeColors = useUIStore((s) => s.themeColors);
+    const ROLE_META = useMemo(() => make_ROLE_META(themeColors), [themeColors]);
     const placeholder = usePlaceholderColor();
 
     const [search, setSearch] = useState('');
@@ -323,8 +324,8 @@ export default function UsersScreen() {
                         <View className="flex-row items-center mt-1.5">
                             <RoleIcon size={12} color={meta.color} />
                             <Typography className="ml-1 text-[11px] font-bold" style={{ color: meta.color }}>{meta.label}</Typography>
-                            <View className="mx-2 w-1 h-1 rounded-full bg-gray-300" />
-                            <View style={{ backgroundColor: item.is_active ? '#10B981' : '#9CA3AF' }} className="w-1.5 h-1.5 rounded-full mr-1" />
+                            <View className="mx-2 w-1 h-1 rounded-full bg-border" />
+                            <View style={{ backgroundColor: item.is_active ? '#10B981' : themeColors.textGray }} className="w-1.5 h-1.5 rounded-full mr-1" />
                             <Typography className="text-[11px] font-semibold text-textGray">{item.is_active ? 'Aktif' : 'Nonaktif'}</Typography>
                         </View>
                     </View>
@@ -352,7 +353,7 @@ export default function UsersScreen() {
                             <RoleIcon size={12} color={meta.color} />
                             <Typography className="ml-1 text-xs font-bold" style={{ color: meta.color }}>{meta.label}</Typography>
                             <Typography className="mx-2 text-textGray">·</Typography>
-                            <Typography className={`text-xs font-bold ${selected.is_active ? 'text-emerald-600' : 'text-gray-500'}`}>
+                            <Typography className={`text-xs font-bold ${selected.is_active ? 'text-emerald-600' : 'text-textGray'}`}>
                                 {selected.is_active ? 'Aktif' : 'Nonaktif'}
                             </Typography>
                         </View>
@@ -361,22 +362,22 @@ export default function UsersScreen() {
 
                 <View className="bg-background rounded-[20px] p-4 mb-5">
                     <View className="flex-row items-center mb-3">
-                        <Mail size={15} color="#6B7280" />
+                        <Mail size={15} color={themeColors.textGray} />
                         <Typography className="ml-2 text-sm text-textMain flex-1" numberOfLines={1}>{selected.email}</Typography>
                     </View>
                     <View className="flex-row items-center mb-3">
-                        <Phone size={15} color="#6B7280" />
+                        <Phone size={15} color={themeColors.textGray} />
                         <Typography className="ml-2 text-sm text-textMain">{selected.phone || 'Tidak diisi'}</Typography>
                     </View>
                     <View className="flex-row items-center">
-                        <Clock size={15} color="#6B7280" />
+                        <Clock size={15} color={themeColors.textGray} />
                         <Typography className="ml-2 text-sm text-textMain">Login terakhir: {formatWaktu(selected.last_login)}</Typography>
                     </View>
                 </View>
 
                 {isSelf ? (
                     <View className="bg-primary/5 rounded-[20px] p-4 mb-4 flex-row">
-                        <ShieldCheck size={16} color="#023C69" />
+                        <ShieldCheck size={16} color={themeColors.primary} />
                         <Typography className="flex-1 ml-2 text-xs text-primary">Ini akun Anda sendiri. Status dan penghapusannya tidak bisa diubah dari sini.</Typography>
                     </View>
                 ) : null}
@@ -477,7 +478,7 @@ export default function UsersScreen() {
                             <Typography weight="bold" className="text-white text-sm">{saving ? 'Menyimpan…' : 'Simpan'}</Typography>
                         </Pressable>
                         <Pressable onPress={tutupSheet} className="w-10 h-10 bg-background rounded-full items-center justify-center">
-                            <X size={18} color="#6B7280" />
+                            <X size={18} color={themeColors.textGray} />
                         </Pressable>
                     </View>
                 </View>
@@ -526,7 +527,7 @@ export default function UsersScreen() {
                             value={form.is_active}
                             disabled={lockStatus}
                             onValueChange={(v) => setForm((prev) => ({ ...prev, is_active: v }))}
-                            trackColor={{ true: themeColors.primary, false: '#D1D5DB' }}
+                            trackColor={{ true: themeColors.primary, false: findPaletteBorder(themeColors) }}
                         />
                     </View>
                 ) : null}
@@ -545,7 +546,7 @@ export default function UsersScreen() {
                 showBackButton
                 rightElement={
                     <Pressable onPress={onRefresh} className="w-11 h-11 bg-surface rounded-2xl items-center justify-center">
-                        {refreshing ? <ActivityIndicator size="small" color="#1F2937" /> : <Users size={20} color="#1F2937" />}
+                        {refreshing ? <ActivityIndicator size="small" color={themeColors.text} /> : <Users size={20} color={themeColors.text} />}
                     </Pressable>
                 }
             />
@@ -553,9 +554,9 @@ export default function UsersScreen() {
             {/* Ringkasan: tap untuk memfilter status */}
             <View className="flex-row px-5 gap-x-3 mt-2 mb-4">
                 {([
-                    { key: 'ALL' as StatusFilter, label: 'Total', value: stats.total, color: '#023C69' },
+                    { key: 'ALL' as StatusFilter, label: 'Total', value: stats.total, color: themeColors.primary },
                     { key: 'AKTIF' as StatusFilter, label: 'Aktif', value: stats.aktif, color: '#10B981' },
-                    { key: 'NONAKTIF' as StatusFilter, label: 'Nonaktif', value: stats.nonaktif, color: '#9CA3AF' },
+                    { key: 'NONAKTIF' as StatusFilter, label: 'Nonaktif', value: stats.nonaktif, color: themeColors.textGray },
                 ]).map((s) => {
                     const aktif = statusFilter === s.key;
                     return (
@@ -574,7 +575,7 @@ export default function UsersScreen() {
 
             <View className="px-5">
                 <View className="flex-row items-center bg-surface rounded-2xl px-4 h-12 mb-3">
-                    <Search size={18} color="#9CA3AF" />
+                    <Search size={18} color={themeColors.textGray} />
                     <TextInput
                         className="flex-1 ml-3 text-sm font-medium text-textMain"
                         placeholder="Cari nama, username, atau email"
@@ -586,7 +587,7 @@ export default function UsersScreen() {
                     />
                     {search.length > 0 ? (
                         <Pressable onPress={() => setSearch('')} className="p-1">
-                            <X size={16} color="#9CA3AF" />
+                            <X size={16} color={themeColors.textGray} />
                         </Pressable>
                     ) : null}
                 </View>

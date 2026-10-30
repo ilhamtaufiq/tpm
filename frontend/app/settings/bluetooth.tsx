@@ -20,6 +20,7 @@ import {
     scanBLEPrinters,
 } from '../../utils/blePrinter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUIStore } from '../../store/useUIStore';
 
 interface BluetoothDevice {
     device_name: string;
@@ -27,6 +28,7 @@ interface BluetoothDevice {
 }
 
 export default function BluetoothSettingsScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const [devices, setDevices] = useState<BluetoothDevice[]>([]);
     const [scanning, setScanning] = useState(false);
     const [connecting, setConnecting] = useState<string | null>(null);
@@ -269,7 +271,7 @@ export default function BluetoothSettingsScreen() {
 
                 {devices.length === 0 && !scanning ? (
                     <View className="items-center justify-center py-12 opacity-50">
-                        <Bluetooth size={48} color="#9CA3AF" />
+                        <Bluetooth size={48} color={themeColors.textGray} />
                         <Typography className="text-textGray mt-4 text-center">
                             Belum ada perangkat ditemukan.{'\n'}Pastikan printer menyala dan bluetooth aktif.
                         </Typography>
@@ -285,7 +287,7 @@ export default function BluetoothSettingsScreen() {
                             >
                                 <View className="flex-row items-center">
                                     <View className="w-10 h-10 bg-background rounded-full items-center justify-center mr-3">
-                                        <Bluetooth size={20} color="#6B7280" />
+                                        <Bluetooth size={20} color={themeColors.textGray} />
                                     </View>
                                     <View>
                                         <Typography weight="semibold" className="text-text">{device.device_name || 'Unknown Device'}</Typography>

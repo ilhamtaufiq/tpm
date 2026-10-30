@@ -69,6 +69,7 @@ interface MobilDetailProps {
 }
 
 export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: MobilDetailProps) => {
+    const themeColors = useUIStore((s) => s.themeColors);
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     const queryClient = useQueryClient();
     const { data: unit, isLoading: isRefetching } = useMobilDetail(initialUnit?.id);
@@ -534,7 +535,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 </View>
                             ) : (
                                 <View className="py-6 items-center bg-background rounded-2xl border border-dashed border-transparent">
-                                    <ImageIcon size={32} color="#9CA3AF" opacity={0.4} />
+                                    <ImageIcon size={32} color={themeColors.textGray} opacity={0.4} />
                                     <Typography className="text-textGray text-xs mt-2 italic">Belum ada foto/video unit ini</Typography>
                                 </View>
                             )}
@@ -1083,7 +1084,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                             onPress={() => setCancelSaleKas(opt.key)}
                                             className={`flex-row items-center p-3 rounded-xl border mb-2 ${active ? 'bg-emerald-50 border-emerald-300' : 'bg-background border-transparent'}`}
                                         >
-                                            <View className={`w-4 h-4 rounded-full border mr-3 ${active ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`} />
+                                            <View className={`w-4 h-4 rounded-full border mr-3 ${active ? 'bg-emerald-500 border-emerald-500' : 'border-border'}`} />
                                             <Typography weight="bold" className="text-xs text-textMain">{opt.label}</Typography>
                                         </Pressable>
                                     );
@@ -1096,7 +1097,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             value={cancelSaleAlasan}
                             onChangeText={setCancelSaleAlasan}
                             placeholder="Contoh: pembeli membatalkan pembelian"
-                            placeholderTextColor="#94A3B8"
+                            placeholderTextColor={themeColors.textGray}
                             multiline
                             className="bg-background rounded-2xl px-4 py-3 text-sm text-textMain mb-4"
                         />
@@ -1134,7 +1135,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                     },
                                 );
                             }}
-                            className={`py-5 rounded-2xl items-center ${(cancelSaleMutation.isPending || !activeTx) ? 'bg-gray-300' : 'bg-red-600'}`}
+                            className={`py-5 rounded-2xl items-center ${(cancelSaleMutation.isPending || !activeTx) ? 'bg-border' : 'bg-red-600'}`}
                         >
                             <Typography weight="bold" className="text-white">
                                 {cancelSaleMutation.isPending ? 'Memproses...' : 'Ya, Batalkan Penjualan'}
@@ -1166,7 +1167,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 }}
                                 className="w-10 h-10 bg-background rounded-2xl items-center justify-center"
                             >
-                                <X size={18} color="#6B7280" />
+                                <X size={18} color={themeColors.textGray} />
                             </Pressable>
                         </View>
 
@@ -1189,7 +1190,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                         setShowCancelModal(false);
                                         setCancelSuccess(false);
                                     }}
-                                    className="mt-6 bg-gray-800 px-8 py-4 rounded-2xl"
+                                    className="mt-6 bg-textMain px-8 py-4 rounded-2xl"
                                 >
                                     <Typography weight="bold" className="text-white">Tutup</Typography>
                                 </Pressable>
@@ -1308,7 +1309,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                             onPress={() => setCancelRefundKas(opt.key)}
                                                             className={`flex-row items-center p-3 rounded-xl border mb-2 ${active ? 'bg-emerald-50 border-emerald-300' : 'bg-background border-transparent'}`}
                                                         >
-                                                            <View className={`w-4 h-4 rounded-full border mr-3 ${active ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`} />
+                                                            <View className={`w-4 h-4 rounded-full border mr-3 ${active ? 'bg-emerald-500 border-emerald-500' : 'border-border'}`} />
                                                             <Typography weight="bold" className="text-xs text-textMain">{opt.label}</Typography>
                                                         </Pressable>
                                                     );
@@ -1415,7 +1416,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                 setCancelError(`Terjadi kesalahan sistem: ${e.message || 'Unknown error'}`);
                                             }
                                         }}
-                                        className={`flex-row items-center justify-center py-5 rounded-2xl shadow-lg ${(cancelMutation.isPending || !activeTx) ? 'bg-gray-300' : 'bg-red-600 shadow-red-900/20'}`}
+                                        className={`flex-row items-center justify-center py-5 rounded-2xl shadow-lg ${(cancelMutation.isPending || !activeTx) ? 'bg-border' : 'bg-red-600 shadow-red-900/20'}`}
                                     >
                                         {cancelMutation.isPending ? (
                                             <ActivityIndicator size="small" color="white" />
@@ -1488,7 +1489,7 @@ const SpecCard = ({ icon: Icon, label, value, color }: any) => (
 const DetailRow = ({ icon: Icon, label, value, last }: { icon: any, label: string, value?: string | number, last?: boolean }) => (
     <View className={`flex-row justify-between items-center px-6 py-5 ${!last ? 'border-b border-transparent' : ''}`}>
         <View className="flex-row items-center">
-            <Icon size={18} color="#9CA3AF" />
+            <Icon size={18} color={useUIStore.getState().themeColors.textGray} />
             <Typography className="text-textGray font-medium ml-3">{label}</Typography>
         </View>
         <Typography weight="bold" className="text-textMain">{value || '-'}</Typography>

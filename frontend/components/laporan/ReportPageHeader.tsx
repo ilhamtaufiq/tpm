@@ -19,12 +19,13 @@ export function ReportPageHeader({
     onExport,
     isExporting,
 }: ReportPageHeaderProps) {
+    const themeColors = useUIStore((s) => s.themeColors);
     const primaryColor = useUIStore((s) => s.themeColors.primary);
     return (
         <View className="px-6 py-4 flex-row items-center justify-between border-b border-transparent bg-surface">
             <View className="flex-row items-center flex-1 mr-3">
                 <Pressable onPress={onBack} className="mr-4">
-                    <ChevronLeft size={24} color="#1C1C1C" />
+                    <ChevronLeft size={24} color={themeColors.text} />
                 </Pressable>
                 <View className="flex-1">
                     <Typography variant="h2" weight="bold" numberOfLines={1}>

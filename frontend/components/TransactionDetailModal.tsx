@@ -83,7 +83,7 @@ interface TransactionDetailModalProps {
     onClose: () => void;
 }
 
-const DetailRow = ({ label, value, icon: Icon, color = '#6B7280' }: { label: string, value: string, icon?: any, color?: string }) => (
+const DetailRow = ({ label, value, icon: Icon, color = useUIStore.getState().themeColors.textGray }: { label: string, value: string, icon?: any, color?: string }) => (
     <View className="flex-row items-center justify-between py-4 border-b border-transparent">
         <View className="flex-row items-center space-x-3">
             {Icon && (
@@ -405,8 +405,8 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                             <DetailRow label="Unit" value={`${subDetails.merek || subDetails.merk} ${subDetails.model} (${subDetails.tahun})`} icon={Car} color="#3B82F6" />
                             <DetailRow label="Plat" value={subDetails.nomor_plat || '-'} icon={Hash} color="#6366F1" />
                             <DetailRow label="Warna" value={subDetails.warna || '-'} color="#8B5CF6" />
-                            <DetailRow label="Mesin" value={subDetails.nomor_mesin || '-'} icon={Hash} color="#6B7280" />
-                            <DetailRow label="Rangka" value={subDetails.nomor_rangka || '-'} icon={Hash} color="#6B7280" />
+                            <DetailRow label="Mesin" value={subDetails.nomor_mesin || '-'} icon={Hash} color={themeColors.textGray} />
+                            <DetailRow label="Rangka" value={subDetails.nomor_rangka || '-'} icon={Hash} color={themeColors.textGray} />
                             <DetailRow label="Harga Beli" value={formatCurrency(subDetails.harga_beli)} color="#EF4444" />
                         </BentoSection>
                     );
@@ -626,7 +626,7 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
         if (s.includes('BELUM') || s === 'PENDING' || s === 'KELUAR') {
             return { color: '#F59E0B', icon: AlertCircle, label: s };
         }
-        return { color: '#6B7280', icon: Info, label: s };
+        return { color: themeColors.textGray, icon: Info, label: s };
     };
 
     const statusConfig = getStatusConfig(item.status);

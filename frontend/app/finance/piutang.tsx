@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, TextInput, Platform, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useUIStore } from '../../store/useUIStore';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -514,7 +514,7 @@ export default function PiutangUsahaScreen() {
                             onPress={() => setCreatePayments([...createPayments, { id: Date.now() + Math.random() + Math.random(), metode: '', nominal: '', catatan: '' }])}
                             className="flex-row items-center justify-center p-4 border border-dashed border-transparent rounded-[24px] bg-surface"
                         >
-                            <Plus size={18} color="#64748B" className="mr-2" />
+                            <Plus size={18} color={themeColors.textGray} className="mr-2" />
                             <Typography weight="bold" className="text-textGray text-xs text-center">Tambah Metode Pencairan</Typography>
                         </Pressable>
                     </View>
@@ -766,7 +766,7 @@ export default function PiutangUsahaScreen() {
                                             {filter.label}
                                         </Typography>
                                         {count !== undefined && (
-                                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-gray-200/70'}`}>
+                                            <View className={`ml-1.5 px-1.5 min-w-[18px] rounded-full items-center justify-center ${isActive ? 'bg-white/25' : 'bg-border'}`}>
                                                 <Typography className={`text-[9px] font-bold ${isActive ? 'text-white' : 'text-textGray'}`}>
                                                     {formatNumber(count)}
                                                 </Typography>
@@ -811,7 +811,7 @@ export default function PiutangUsahaScreen() {
                                     </Typography>
                                     <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">{grup.jumlah_struk} struk</Typography>
                                 </View>
-                                <View className="bg-background p-4 rounded-2xl flex-row justify-between mb-4 border border-gray-100/50">
+                                <View className="bg-background p-4 rounded-2xl flex-row justify-between mb-4 border border-border">
                                     <View>
                                         <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest mb-1">Total</Typography>
                                         <Typography weight="semibold" className="text-textMain text-sm">{formatCurrency(grup.total_nominal)}</Typography>
@@ -823,7 +823,7 @@ export default function PiutangUsahaScreen() {
                                 </View>
                                 <View className="flex-row items-center justify-between pt-2">
                                     <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">{grup.belum_lunas} belum lunas</Typography>
-                                    <ChevronRight size={16} color="#D1D5DB" />
+                                    <ChevronRight size={16} color={findPaletteBorder(themeColors)} />
                                 </View>
                             </Pressable>
                         );
@@ -853,7 +853,7 @@ export default function PiutangUsahaScreen() {
                             </View>
 
                             {/* Financial Bento Inner Grid */}
-                            <View className="bg-background p-4 rounded-2xl flex-row justify-between mb-4 border border-gray-100/50">
+                            <View className="bg-background p-4 rounded-2xl flex-row justify-between mb-4 border border-border">
                                 <View>
                                     <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest mb-1">Total</Typography>
                                     <Typography weight="semibold" className="text-textMain text-sm">{formatCurrency(item.nominal_piutang)}</Typography>
@@ -870,7 +870,7 @@ export default function PiutangUsahaScreen() {
                                     <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest">Progress Pelunasan</Typography>
                                     <Typography className="text-primary text-[10px] font-bold">{Math.round(progressPercent || 0)}%</Typography>
                                 </View>
-                                <View className="h-2 bg-background rounded-full overflow-hidden border border-gray-200/20">
+                                <View className="h-2 bg-background rounded-full overflow-hidden border border-border">
                                     <View
                                         className="h-full bg-primary rounded-full"
                                         style={{ width: `${progressPercent}%` }}
@@ -881,12 +881,12 @@ export default function PiutangUsahaScreen() {
                             {/* Footer Utility Row */}
                             <View className="flex-row items-center justify-between pt-4 border-t border-transparent">
                                 <View className="flex-row items-center">
-                                    <Clock size={12} color={isOverdue ? "#EF4444" : "#9CA3AF"} />
+                                    <Clock size={12} color={isOverdue ? "#EF4444" : themeColors.textGray} />
                                     <Typography className={`${isOverdue ? 'text-rose-600' : 'text-textGray'} text-[10px] ml-1.5 font-bold uppercase tracking-widest`}>
                                         {isOverdue ? 'MELEWATI BATAS' : 'TEMPO'}: {formatDate(item.tanggal_jatuh_tempo || item.tanggal)}
                                     </Typography>
                                 </View>
-                                <ChevronRight size={16} color="#D1D5DB" />
+                                <ChevronRight size={16} color={findPaletteBorder(themeColors)} />
                             </View>
                         </Pressable>
                     );
@@ -985,7 +985,7 @@ export default function PiutangUsahaScreen() {
                             setIsSheetOpen(false);
                         }} />
                         <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                             <ScrollView style={{ flex: 1 }} className="px-8" showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {renderCreateContent()}
                             </ScrollView>
@@ -1030,7 +1030,7 @@ export default function PiutangUsahaScreen() {
                             setIsSheetOpen(false);
                         }} />
                         <View className="bg-surface rounded-t-[48px] w-full max-w-[640px] h-[80%] self-center p-0 overflow-hidden shadow-2xl relative">
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <View className="w-12 h-1.5 bg-border rounded-full self-center my-6" />
                             <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                 {renderDetailContent()}
                             </ScrollView>

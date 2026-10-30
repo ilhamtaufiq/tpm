@@ -12,8 +12,10 @@ import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 
 export default function ScannerSettingsScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const [isEnabled, setIsEnabled] = useState(true);
     const [testResult, setTestResult] = useState<string[]>([]);
     const [isKeyboardMode, setIsKeyboardMode] = useState(true);
@@ -88,7 +90,7 @@ export default function ScannerSettingsScreen() {
                         <Switch
                             value={isEnabled}
                             onValueChange={toggleEnabled}
-                            trackColor={{ false: '#D1D5DB', true: '#4F46E5' }}
+                            trackColor={{ false: findPaletteBorder(themeColors), true: '#4F46E5' }}
                         />
                     </View>
 
@@ -112,7 +114,7 @@ export default function ScannerSettingsScreen() {
                             ref={testInputRef}
                             className="bg-background border border-transparent rounded-2xl px-4 py-4 text-center font-bold text-lg text-primary"
                             placeholder="Klik di sini sblm scan"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={themeColors.textGray}
                             showSoftInputOnFocus={false} // Prevent soft keyboard from popping up
                             onSubmitEditing={(e) => handleTestScan(e.nativeEvent.text)}
                         />
@@ -152,9 +154,9 @@ export default function ScannerSettingsScreen() {
                 <Typography variant="h4" weight="bold" className="mb-4">Panduan Penggunaan</Typography>
                 <View className="space-y-3 mb-8">
                     {[
-                        { icon: <RefreshCw size={18} color="#6B7280" />, text: "Gunakan mode 'HID' atau 'Keyboard Mode' pada scanner Anda." },
-                        { icon: <Keyboard size={18} color="#6B7280" />, text: "App akan mendeteksi scanner sebagai input eksternal." },
-                        { icon: <CheckCircle2 size={18} color="#6B7280" />, text: "Scanner harus mengirimkan 'Enter' (Carriage Return) setelah setiap scan." }
+                        { icon: <RefreshCw size={18} color={themeColors.textGray} />, text: "Gunakan mode 'HID' atau 'Keyboard Mode' pada scanner Anda." },
+                        { icon: <Keyboard size={18} color={themeColors.textGray} />, text: "App akan mendeteksi scanner sebagai input eksternal." },
+                        { icon: <CheckCircle2 size={18} color={themeColors.textGray} />, text: "Scanner harus mengirimkan 'Enter' (Carriage Return) setelah setiap scan." }
                     ].map((item, i) => (
                         <View key={i} className="flex-row items-center space-x-3 bg-surface p-4 rounded-2xl border border-transparent">
                             {item.icon}

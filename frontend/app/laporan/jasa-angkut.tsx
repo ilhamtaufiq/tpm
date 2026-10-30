@@ -49,10 +49,12 @@ import {
     ReportExportSheet,
     ReportFilterType,
 } from '../../components/laporan';
+import { useUIStore } from '../../store/useUIStore';
 
 const escapeHtml = (str: any) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
 
 export default function JasaAngkutReportScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const chrome = useSheetChrome({ borderRadius: 32 });
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -379,7 +381,7 @@ export default function JasaAngkutReportScreen() {
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />
                 }
             >
                 <View className="px-6 pt-4">
@@ -405,14 +407,14 @@ export default function JasaAngkutReportScreen() {
                                 onPress={() => setGroupBy('armada')}
                                 className={`flex-1 py-2 rounded-xl flex-row items-center justify-center ${groupBy === 'armada' ? 'bg-surface shadow-sm' : ''}`}
                             >
-                                <Truck size={14} color={groupBy === 'armada' ? '#023C69' : '#6B7280'} />
+                                <Truck size={14} color={groupBy === 'armada' ? themeColors.primary : themeColors.textGray} />
                                 <Typography variant="caption" weight={groupBy === 'armada' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'armada' ? 'text-primary' : 'text-textGray'}`}>Armada</Typography>
                             </Pressable>
                             <Pressable
                                 onPress={() => setGroupBy('supir')}
                                 className={`flex-1 py-2 rounded-xl flex-row items-center justify-center ${groupBy === 'supir' ? 'bg-surface shadow-sm' : ''}`}
                             >
-                                <Users size={14} color={groupBy === 'supir' ? '#023C69' : '#6B7280'} />
+                                <Users size={14} color={groupBy === 'supir' ? themeColors.primary : themeColors.textGray} />
                                 <Typography variant="caption" weight={groupBy === 'supir' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'supir' ? 'text-primary' : 'text-textGray'}`}>Supir</Typography>
                             </Pressable>
                         </View>
@@ -449,7 +451,7 @@ export default function JasaAngkutReportScreen() {
                                 >
                                     <View className="flex-row items-center flex-1">
                                         <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 border ${groupBy === 'armada' ? (group.trips.length > 0 ? 'bg-primary/10 border-primary/10' : 'bg-background border-transparent') : 'bg-orange-100 border-orange-200'}`}>
-                                            {groupBy === 'armada' ? <Truck size={22} color={!isCollapsed ? '#023C69' : '#94A3B8'} /> : <Users size={22} color="#C2410C" />}
+                                            {groupBy === 'armada' ? <Truck size={22} color={!isCollapsed ? themeColors.primary : themeColors.textGray} /> : <Users size={22} color="#C2410C" />}
                                         </View>
                                         <View className="flex-1">
                                             <Typography weight="bold" className={`text-base tracking-tight ${!isCollapsed ? 'text-primary' : 'text-textMain'}`}>
@@ -470,7 +472,7 @@ export default function JasaAngkutReportScreen() {
                                         )}
                                         <ChevronLeft
                                             size={20}
-                                            color={!isCollapsed ? "#023C69" : "#9CA3AF"}
+                                            color={!isCollapsed ? themeColors.primary : themeColors.textGray}
                                             style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '90deg' }] }}
                                         />
                                     </View>
@@ -513,16 +515,16 @@ export default function JasaAngkutReportScreen() {
 
                                                     <View className="flex-row items-center mb-3 px-1">
                                                         <View className="flex-row items-center flex-1">
-                                                            <User size={12} color="#9CA3AF" />
+                                                            <User size={12} color={themeColors.textGray} />
                                                             <Typography variant="caption" weight="medium" className="text-textGray ml-1 text-[11px]" numberOfLines={1}>{item.supir_nama}</Typography>
                                                         </View>
                                                         <View className="flex-row items-center flex-1">
-                                                            <MapPin size={12} color="#9CA3AF" />
+                                                            <MapPin size={12} color={themeColors.textGray} />
                                                             <Typography variant="caption" weight="medium" className="text-textGray ml-1 text-[11px]" numberOfLines={1}>{item.asal}</Typography>
                                                         </View>
                                                     </View>
 
-                                                    <View className="flex-row justify-between items-end pt-2 border-t border-gray-50/50">
+                                                    <View className="flex-row justify-between items-end pt-2 border-t border-border">
                                                         <View>
                                                             <Typography className="text-textGray text-[8px] uppercase font-bold">Laba TPM</Typography>
                                                             <Typography variant="caption" weight="bold" className="text-emerald-600">
@@ -559,13 +561,13 @@ export default function JasaAngkutReportScreen() {
                             <Typography className="text-textGray text-xs mt-1">Informasi lengkap pengangkutan</Typography>
                         </View>
                         <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-background rounded-full items-center justify-center">
-                            <X size={16} color="#4B5563" />
+                            <X size={16} color={themeColors.textGray} />
                         </Pressable>
                     </View>
 
                     {detailLoading ? (
                         <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="#023C69" />
+                            <ActivityIndicator size="large" color={themeColors.primary} />
                             <Typography className="mt-4 text-textGray">Memuat detail...</Typography>
                         </View>
                     ) : selectedTrip ? (
@@ -577,7 +579,7 @@ export default function JasaAngkutReportScreen() {
                                         <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Rute</Typography>
                                         <View className="flex-row items-center">
                                             <Typography weight="bold" className="text-lg">{selectedTrip.asal}</Typography>
-                                            <ArrowRight size={16} color="#9CA3AF" className="mx-2" />
+                                            <ArrowRight size={16} color={themeColors.textGray} className="mx-2" />
                                             <Typography weight="bold" className="text-lg">{selectedTrip.tujuan}</Typography>
                                         </View>
                                     </View>
@@ -664,7 +666,7 @@ export default function JasaAngkutReportScreen() {
                                         <View className="flex-row justify-between items-center py-2 border-b border-transparent">
                                             <View className="flex-row items-center">
                                                 <View className="w-6 h-6 bg-background rounded-md items-center justify-center mr-2">
-                                                    <MoreHorizontal size={12} color="#6B7280" />
+                                                    <MoreHorizontal size={12} color={themeColors.textGray} />
                                                 </View>
                                                 <Typography className="text-textGray text-sm">Lainnya</Typography>
                                             </View>

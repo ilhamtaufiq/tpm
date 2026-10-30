@@ -12,8 +12,10 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { authService } from '../../services/auth';
 import { getErrorMessage } from '../../utils/error';
+import { useUIStore } from '../../store/useUIStore';
 
 export default function ChangePasswordScreen() {
+    const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
 
     // Form States
@@ -131,7 +133,7 @@ export default function ChangePasswordScreen() {
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-textGray mb-2 ml-1">Kata Sandi Saat Ini</Typography>
                                 <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
-                                    <Lock size={18} color="#9CA3AF" />
+                                    <Lock size={18} color={themeColors.textGray} />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
                                         placeholder="••••••••"
@@ -140,7 +142,7 @@ export default function ChangePasswordScreen() {
                                         onChangeText={setCurrentPassword}
                                     />
                                     <Pressable onPress={() => setShowCurrent(!showCurrent)}>
-                                        {showCurrent ? <EyeOff size={18} color="#9CA3AF" /> : <Eye size={18} color="#9CA3AF" />}
+                                        {showCurrent ? <EyeOff size={18} color={themeColors.textGray} /> : <Eye size={18} color={themeColors.textGray} />}
                                     </Pressable>
                                 </View>
                             </View>
@@ -151,7 +153,7 @@ export default function ChangePasswordScreen() {
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-textGray mb-2 ml-1">Kata Sandi Baru</Typography>
                                 <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
-                                    <Lock size={18} color="#9CA3AF" />
+                                    <Lock size={18} color={themeColors.textGray} />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
                                         placeholder="Minimal 6 karakter"
@@ -160,7 +162,7 @@ export default function ChangePasswordScreen() {
                                         onChangeText={setNewPassword}
                                     />
                                     <Pressable onPress={() => setShowNew(!showNew)}>
-                                        {showNew ? <EyeOff size={18} color="#9CA3AF" /> : <Eye size={18} color="#9CA3AF" />}
+                                        {showNew ? <EyeOff size={18} color={themeColors.textGray} /> : <Eye size={18} color={themeColors.textGray} />}
                                     </Pressable>
                                 </View>
                             </View>
@@ -169,7 +171,7 @@ export default function ChangePasswordScreen() {
                             <View>
                                 <Typography variant="caption" className="text-textGray mb-2 ml-1">Konfirmasi Kata Sandi Baru</Typography>
                                 <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-transparent">
-                                    <Lock size={18} color="#9CA3AF" />
+                                    <Lock size={18} color={themeColors.textGray} />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
                                         placeholder="Ulangi kata sandi baru"
@@ -178,7 +180,7 @@ export default function ChangePasswordScreen() {
                                         onChangeText={setConfirmPassword}
                                     />
                                     <Pressable onPress={() => setShowConfirm(!showConfirm)}>
-                                        {showConfirm ? <EyeOff size={18} color="#9CA3AF" /> : <Eye size={18} color="#9CA3AF" />}
+                                        {showConfirm ? <EyeOff size={18} color={themeColors.textGray} /> : <Eye size={18} color={themeColors.textGray} />}
                                     </Pressable>
                                 </View>
                             </View>
@@ -208,7 +210,7 @@ export default function ChangePasswordScreen() {
                         flexDirection: 'row',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: isSaving ? 'rgba(2, 60, 105, 0.6)' : '#023C69',
+                        backgroundColor: isSaving ? 'rgba(2, 60, 105, 0.6)' : themeColors.primary,
                         opacity: pressed ? 0.8 : 1
                     })}
                     className="shadow-xl"
