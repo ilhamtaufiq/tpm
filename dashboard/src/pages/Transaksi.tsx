@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Download, Search } from 'lucide-react';
-import { financeService } from '../api/services';
+import { ambilSemua, financeService } from '../api/services';
 import { downloadCSV } from './Domains';
 import { formatCurrency, formatDateTime } from '../utils/format';
 import { Badge, Card, DataTable, Loading, Modal, PageHeader, Stat } from '../components/ui';
@@ -44,9 +44,9 @@ export default function Transaksi() {
   });
   const q = useQuery({
     queryKey: ['kas_bank_list', sumber, tipe],
+    // Semua halaman diambil supaya pencarian di bawah mencari di seluruh daftar.
     queryFn: () =>
-      financeService.kasBankList({
-        limit: 100,
+      ambilSemua('/kas-bank', {
         sort_by: 'created_at',
         sort_order: 'desc',
         ...(sumber ? { sumber } : {}),

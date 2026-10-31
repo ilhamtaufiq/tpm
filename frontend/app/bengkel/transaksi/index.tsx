@@ -98,6 +98,9 @@ export default function BengkelTransaksiScreen() {
     const [guestName, setGuestName] = useState('');
     const [manualPlate, setManualPlate] = useState('');
     const [manualVehicleType, setManualVehicleType] = useState('');
+    // Kendaraan dari pelanggan terdaftar yang dipilih (bukan tamu).
+    const [pelangganPlate, setPelangganPlate] = useState('');
+    const [pelangganJenis, setPelangganJenis] = useState('');
     const [customerTransactionSearch, setCustomerTransactionSearch] = useState('');
     const [selectedArmada, setSelectedArmada] = useState<any>(null);
     const [selectedMobil, setSelectedMobil] = useState<any>(null);
@@ -901,14 +904,18 @@ export default function BengkelTransaksiScreen() {
             : isMobil
                 ? (selectedMobil?.nomor_plat || editingTransaction?.nomor_plat || '-')
                 : customerSource === 'customer'
-                    ? (guestName.trim() ? manualPlate : '-')
+                    ? (selectedCustomer
+                        ? (pelangganPlate || editingTransaction?.nomor_plat || '-')
+                        : (guestName.trim() ? manualPlate : '-'))
                     : (selectedCustomerTransaction?.nomor_plat || editingTransaction?.nomor_plat || '-');
         const jenisKendaraan = isJA
             ? 'Armada Jasa Angkut'
             : isMobil
                 ? `${selectedMobil?.merek || ''} ${selectedMobil?.model || ''}`.trim() || editingTransaction?.jenis_kendaraan || 'Mobil'
                 : customerSource === 'customer'
-                    ? (guestName.trim() ? (manualVehicleType || 'Umum') : 'Umum')
+                    ? (selectedCustomer
+                        ? (pelangganJenis || editingTransaction?.jenis_kendaraan || 'Umum')
+                        : (guestName.trim() ? (manualVehicleType || 'Umum') : 'Umum'))
                     : (selectedCustomerTransaction?.jenis_kendaraan || editingTransaction?.jenis_kendaraan || 'Umum');
 
         try {
@@ -1410,14 +1417,25 @@ export default function BengkelTransaksiScreen() {
                                             value={selectedCustomer}
                                             onSelect={(customer) => {
                                                 setSelectedCustomer(customer);
+                                                setPelangganPlate('');
+                                                setPelangganJenis('');
                                                 if (customer) {
                                                     setGuestName('');
                                                     setManualPlate('');
                                                     setManualVehicleType('');
+                                                    const kendaraan: { plat_nomor: string; jenis_unit: string }[] = customer.vehicles ?? [];
+                                                    if (kendaraan.length === 1) {
+                                                        setPelangganPlate(kendaraan[0].plat_nomor);
+                                                        setPelangganJenis(kendaraan[0].jenis_unit);
+                                                    }
                                                 }
                                             }}
                                             allowGuest
                                             placeholder="Pilih Customer atau ketik guest"
+                                            onVehicleSelect={(_customer, vehicle) => {
+                                                setPelangganPlate(vehicle.plat_nomor);
+                                                setPelangganJenis(vehicle.jenis_unit);
+                                            }}
                                             inlineMode
                                             inlineLimit={10}
                                             hideTrigger
@@ -1426,6 +1444,49 @@ export default function BengkelTransaksiScreen() {
                                                 setSelectedCustomer(null);
                                             }}
                                         />
+                                        {selectedCustomer ? (
+                                            <View className="mt-3">
+                                                <Typography className="text-textGray text-xs font-bold uppercase mb-2">Kendaraan</Typography>
+                                                {(selectedCustomer.vehicles ?? []).length > 0 ? (
+                                                    <View className="flex-row flex-wrap">
+                                                        {(selectedCustomer.vehicles as { id?: number; plat_nomor: string; jenis_unit: string }[]).map((v, idx) => {
+                                                            const aktif = pelangganPlate === v.plat_nomor;
+                                                            return (
+                                                                <Pressable
+                                                                    key={v.id ?? idx}
+                                                                    onPress={() => {
+                                                                        setPelangganPlate(v.plat_nomor);
+                                                                        setPelangganJenis(v.jenis_unit);
+                                                                    }}
+                                                                    className={`px-3 py-2 rounded-2xl border mr-2 mb-2 ${aktif ? 'bg-primary/10 border-primary/40' : 'bg-surface border-transparent'}`}
+                                                                >
+                                                                    <Typography weight="bold" className={aktif ? 'text-primary text-xs' : 'text-textMain text-xs'}>{v.plat_nomor}</Typography>
+                                                                    <Typography className="text-textGray text-[10px]">{v.jenis_unit}</Typography>
+                                                                </Pressable>
+                                                            );
+                                                        })}
+                                                    </View>
+                                                ) : (
+                                                    <View className="flex-row space-x-3">
+                                                        <TextInput
+                                                            value={pelangganPlate}
+                                                            onChangeText={(value) => setPelangganPlate(value.toUpperCase())}
+                                                            placeholder="Nomor plat"
+                                                            placeholderTextColor={themeColors.textGray}
+                                                            autoCapitalize="characters"
+                                                            className="flex-1 bg-background rounded-2xl px-4 h-11 text-sm text-textMain border border-transparent"
+                                                        />
+                                                        <TextInput
+                                                            value={pelangganJenis}
+                                                            onChangeText={setPelangganJenis}
+                                                            placeholder="Jenis unit"
+                                                            placeholderTextColor={themeColors.textGray}
+                                                            className="flex-1 bg-background rounded-2xl px-4 h-11 text-sm text-textMain border border-transparent"
+                                                        />
+                                                    </View>
+                                                )}
+                                            </View>
+                                        ) : null}
                                         {guestName.trim().length > 0 && !selectedCustomer ? (
                                             <View className="flex-row space-x-3">
                                                 <TextInput

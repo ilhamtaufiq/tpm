@@ -1,4 +1,4 @@
-import { drillService, reportService, stockService } from '../api/services';
+import { drillService, reportService, stockService, ambilSemua } from '../api/services';
 import type { PeriodParams } from '../api/services';
 import { formatCurrency } from '../utils/format';
 import type { NeracaReport } from '../types/reports';
@@ -293,7 +293,7 @@ export const drillInvestorSaldo = (): DrillSpec => ({
   // saldo awal impor (IMP-*, unit=MODAL).
   fetch: async () => {
     const [units, pending, hutang] = await Promise.all([
-      stockService.mobilList({ tipe_kepemilikan: 'INVESTOR', limit: 100 }),
+      ambilSemua('/mobil', { tipe_kepemilikan: 'INVESTOR' }),
       drillService.investorPending(),
       drillService.hutangFiltered({ tanggal_dari: '2024-01-01', tanggal_sampai: '2099-12-31' }),
     ]);

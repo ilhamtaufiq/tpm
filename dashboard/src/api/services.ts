@@ -11,6 +11,39 @@ const get = async <T>(url: string, params?: Record<string, unknown>): Promise<T>
   return data as T;
 };
 
+// Backend membatasi 100 baris per request. Untuk drill-down dan Neraca, semua halaman
+// diambil berurutan sampai `total` tercapai, supaya Σ dan daftar tidak terpotong.
+// Batas BATAS_DRILL mencegah ribuan request bila periode sangat besar.
+const BATAS_DRILL = 5000;
+const UKURAN_HALAMAN = 100;
+
+export const ambilSemua = async (
+  url: string,
+  params: Record<string, unknown>,
+  opts: { page?: boolean } = {},
+): Promise<{ data: Record<string, unknown>[]; total: number; [extra: string]: unknown }> => {
+  const semua: Record<string, unknown>[] = [];
+  let total = Infinity;
+  let ekstra: Record<string, unknown> = {};
+  let skip = 0;
+  let halaman = 1;
+  while (semua.length < total && semua.length < BATAS_DRILL) {
+    const query = opts.page
+      ? { ...params, page: halaman, size: UKURAN_HALAMAN }
+      : { ...params, skip, limit: UKURAN_HALAMAN };
+    const r = await get<Record<string, unknown>>(url, query);
+    const { data: potongan, ...sisa } = r as { data?: Record<string, unknown>[]; total?: number };
+    if (halaman === 1) ekstra = sisa;
+    const baris = potongan ?? [];
+    total = typeof r.total === 'number' ? (r.total as number) : baris.length;
+    semua.push(...baris);
+    if (baris.length === 0) break;
+    skip += UKURAN_HALAMAN;
+    halaman += 1;
+  }
+  return { ...ekstra, data: semua, total };
+};
+
 export const authService = {
   login: async (username: string, password: string) => {
     const { data } = await client.post('/auth/login/json', { username, password });
@@ -107,81 +140,72 @@ export interface PageResponse<T> {
 // Drill-down: daftar transaksi sumber per angka laporan (read-only, limit 100).
 export const drillService = {
   kasMasukModal: (p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/kas-bank', {
+    ambilSemua('/kas-bank', {
       sumber: 'MODAL',
       tipe: 'MASUK',
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
   kasJenis: (jenis: string, p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/kas-bank', {
+    ambilSemua('/kas-bank', {
       jenis,
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
   bengkel: (p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/transaksi-bengkel', {
+    ambilSemua('/transaksi-bengkel', {
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
   pengeluaran: (p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/pengeluaran', {
+    ambilSemua('/pengeluaran', {
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
   penjualanMobil: (p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/penjualan-mobil', {
+    ambilSemua('/penjualan-mobil', {
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
   mobilMasuk: (p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/mobil', {
+    ambilSemua('/mobil', {
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal_masuk',
       sort_order: 'asc',
     }),
   muatan: (p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/muatan', {
+    ambilSemua('/muatan', {
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
   piutang: (p: PeriodParams) => drillService.piutangFiltered(p),
   piutangFiltered: (p: PeriodParams, sumber?: string) =>
-    get<PageResponse<Record<string, unknown>>>('/piutang', {
+    ambilSemua('/piutang', {
       ...(sumber ? { sumber } : {}),
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
   hutang: (p: PeriodParams) => drillService.hutangFiltered(p),
   hutangFiltered: (p: PeriodParams, sumber?: string) =>
-    get<PageResponse<Record<string, unknown>>>('/hutang', {
+    ambilSemua('/hutang', {
       ...(sumber ? { sumber } : {}),
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
@@ -193,73 +217,67 @@ export const drillService = {
   investorPending: () =>
     get<Record<string, unknown>[]>('/penjualan-mobil/investor/pending-disbursements'),
   pembelianPart: (p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/pembelian-parts', {
+    ambilSemua('/pembelian-parts', {
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
   // Slip gaji LUNAS per tanggal bayar — amountKey 'gaji_pokok' | 'uang_lembur'.
   slipGajiRange: (p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/slip-gaji', {
+    ambilSemua('/slip-gaji', {
       status: 'LUNAS',
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal_bayar',
       sort_order: 'asc',
     }),
   slipGaji: (p: PeriodParams, _amountKey: string) => drillService.slipGajiRange(p),
   // Pengeluaran ledger per unit bisnis (filter bisnis_kategori backend).
   pengeluaranUnit: (unit: string, p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/pengeluaran', {
+    ambilSemua('/pengeluaran', {
       bisnis_kategori: unit,
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
   // Kas-bank per sumber + tipe (mis. PRIVE/KELUAR).
   kasSumber: (sumber: string, tipe: string, p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/kas-bank', {
+    ambilSemua('/kas-bank', {
       sumber,
       tipe,
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
   // Kasbon karyawan (posisi outstanding s.d. tanggal_sampai).
   kasbon: (p: PeriodParams) =>
-    get<PageResponse<Record<string, unknown>>>('/kasbon', {
+    ambilSemua('/kasbon', {
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
       sort_by: 'tanggal',
       sort_order: 'asc',
     }),
   // Aset tetap aktif (snapshot).
   aset: () =>
-    get<PageResponse<Record<string, unknown>>>('/assets', { status: 'AKTIF', limit: 100 }),
+    ambilSemua('/assets', { status: 'AKTIF' }, { page: true }),
   // Revaluasi harga beli sparepart + release (drill Penyesuaian).
   revaluasi: (p: PeriodParams) =>
-    get<{ data: Record<string, unknown>[]; total: number; total_amount: number; total_released: number }>('/pembelian-parts/revaluasi', {
+    ambilSemua('/pembelian-parts/revaluasi', {
       tanggal_dari: p.tanggal_dari,
       tanggal_sampai: p.tanggal_sampai,
-      limit: 100,
-    }),
+    }) as Promise<{ data: Record<string, unknown>[]; total: number; total_amount: number; total_released: number }>,
 };
 
 export const domainService = {
   mobilSummary: (p?: PeriodParams) => get('/penjualan-mobil/summary', p),
   muatanSummary: (p?: PeriodParams) => get('/muatan/summary', p),
-  muatanList: (params?: Record<string, unknown>) => get('/muatan', params),
-  kasbonOutstanding: (params?: Record<string, unknown>) => get('/kasbon', { status: 'BELUM_LUNAS', limit: 50, ...params }),
+  muatanList: (params?: Record<string, unknown>) => ambilSemua('/muatan', params ?? {}),
+  kasbonOutstanding: (params?: Record<string, unknown>) => ambilSemua('/kasbon', { status: 'BELUM_LUNAS', ...params }),
   kasbonSummary: () => get('/kasbon/summary'),
   absensiToday: (tanggal: string) => get(`/absensi/daily/${tanggal}`),
-  slipGajiStatus: (params?: Record<string, unknown>) => get('/slip-gaji', params),
+  slipGajiStatus: (params?: Record<string, unknown>) => ambilSemua('/slip-gaji', params ?? {}),
 };
 
 // ── Pengaturan (Admin): import data + reset database ─────────────────────────

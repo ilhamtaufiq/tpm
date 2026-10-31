@@ -12,7 +12,7 @@ import {
   Truck,
   Users,
 } from 'lucide-react';
-import { domainService, stockService } from '../api/services';
+import { ambilSemua, domainService, stockService } from '../api/services';
 import { monthStartISO, todayISO } from '../hooks/useDashboard';
 import { formatCurrency } from '../utils/format';
 import { Badge, Card, DataTable, Empty, Loading, PageHeader, ProgressBar, Stat } from '../components/ui';
@@ -105,7 +105,7 @@ export function Mobil() {
     queryKey: ['mobil_sum'],
     queryFn: () => domainService.mobilSummary({ tanggal_dari: monthStartISO(), tanggal_sampai: todayISO() }),
   });
-  const list = useQuery({ queryKey: ['mobil_list'], queryFn: () => stockService.mobilList({ limit: 100 }) });
+  const list = useQuery({ queryKey: ['mobil_list'], queryFn: () => ambilSemua('/mobil', {}) });
   const units = (((list.data as Row | undefined)?.data ?? list.data ?? []) as Row[]).map((m) => ({
     key: str(m.id ?? m.kode),
     label: `${str(m.merek)} ${str(m.model)} ${str(m.tahun)}`,
@@ -187,7 +187,7 @@ export function Angkut() {
 
   const list = useQuery({
     queryKey: ['muatan_list', mode, pval],
-    queryFn: () => domainService.muatanList({ limit: 50, ...(dari && sampai ? { tanggal_dari: dari, tanggal_sampai: sampai } : {}) }),
+    queryFn: () => domainService.muatanList(dari && sampai ? { tanggal_dari: dari, tanggal_sampai: sampai } : {}),
   });
 
   const d = (sum.data ?? {}) as Row;
@@ -385,7 +385,7 @@ export function Sdm() {
   });
   const slip = useQuery({
     queryKey: ['slip', mode, pval],
-    queryFn: () => domainService.slipGajiStatus({ limit: 50, ...(year ? { periode_tahun: year } : {}) }),
+    queryFn: () => domainService.slipGajiStatus(year ? { periode_tahun: year } : {}),
   });
 
   const daily = (absensi.data ?? {}) as { summary?: Record<string, number> };

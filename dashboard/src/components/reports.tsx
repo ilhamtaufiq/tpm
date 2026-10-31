@@ -273,7 +273,8 @@ export function Drill({
   const raw = q.data as { data?: Record<string, unknown>[]; total?: number } | Record<string, unknown>[] | undefined;
   const allRows = Array.isArray(raw) ? raw : (raw?.data ?? []);
   // Backend cap per halaman = 100 baris — Σ bisa palsu bila data terpotong.
-  const capped = !Array.isArray(raw) && typeof raw?.total === 'number' ? raw.total > allRows.length : allRows.length >= 100;
+  // Daftar diambil semua halaman (ambilSemua); terpotong hanya bila melewati batas aman.
+  const capped = !Array.isArray(raw) && typeof raw?.total === 'number' ? raw.total > allRows.length : false;
   const units = groupKey
     ? Array.from(new Set([...(unitOptions ?? []), ...allRows.map((r) => String(r[groupKey] ?? ''))].filter(Boolean))).sort()
     : [];
@@ -356,7 +357,7 @@ export function Drill({
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2 text-xs">
                 <span className="text-slate-500">
-                  {rows.length} baris{capped ? ' (maks 100 — Σ tak lengkap)' : ''} · Σ <b className="font-mono tabular-nums">{formatCurrency(sum)}</b>
+                  {rows.length} baris{capped ? ' (dibatasi — Σ tak lengkap)' : ''} · Σ <b className="font-mono tabular-nums">{formatCurrency(sum)}</b>
                 </span>
                 {!hideDiff && !capped && (
                   <span className={`rounded-full px-2 py-0.5 font-bold ${Math.abs(diff) < 100 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
