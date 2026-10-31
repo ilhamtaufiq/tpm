@@ -273,11 +273,11 @@ export const drillService = {
 export const domainService = {
   mobilSummary: (p?: PeriodParams) => get('/penjualan-mobil/summary', p),
   muatanSummary: (p?: PeriodParams) => get('/muatan/summary', p),
-  muatanList: (params?: Record<string, unknown>) => get('/muatan', params),
-  kasbonOutstanding: (params?: Record<string, unknown>) => get('/kasbon', { status: 'BELUM_LUNAS', limit: 50, ...params }),
+  muatanList: (params?: Record<string, unknown>) => ambilSemua('/muatan', params ?? {}),
+  kasbonOutstanding: (params?: Record<string, unknown>) => ambilSemua('/kasbon', { status: 'BELUM_LUNAS', ...params }),
   kasbonSummary: () => get('/kasbon/summary'),
   absensiToday: (tanggal: string) => get(`/absensi/daily/${tanggal}`),
-  slipGajiStatus: (params?: Record<string, unknown>) => get('/slip-gaji', params),
+  slipGajiStatus: (params?: Record<string, unknown>) => ambilSemua('/slip-gaji', params ?? {}),
 };
 
 // ── Pengaturan (Admin): import data + reset database ─────────────────────────
