@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Banknote, Download } from 'lucide-react';
 import { financeService } from '../api/services';
 import { downloadCSV } from './Domains';
 import { formatCurrency } from '../utils/format';
-import { Badge, Card, DataTable, Empty, Loading, PageHeader, Stat } from '../components/ui';
+import { Badge, Card, DataTable, Empty, Loading, PAGE_SIZE, PageHeader, Pager, Stat } from '../components/ui';
 import { Drill, kasJenisLabel } from '../components/reports';
 import { drillKasJenis } from '../components/drills';
 
@@ -24,30 +24,76 @@ const periodRange = (mode: 'harian' | 'bulanan' | 'tahunan', val: string) => {
   return { dari: `${val}-01`, sampai: `${val}-${last}` };
 };
 
+const petakanBaris = (r: Row) => ({
+  tanggal: str(r.tanggal).slice(0, 10),
+  referensi: str(r.nomor_transaksi ?? r.nomor_referensi),
+  akun: kasJenisLabel(str(r.jenis)),
+  tipe: str(r.tipe),
+  keterangan: str(r.keterangan),
+  nominal: num(r.nominal),
+  key: str(r.id ?? r.nomor_transaksi),
+});
+
 export default function Kas() {
   const [mode, setMode] = useState<'harian' | 'bulanan' | 'tahunan'>('bulanan');
   const [pval, setPval] = useState(() => monthISO(new Date()));
   const [jenis, setJenis] = useState('');
+  // Paging dari server: setiap halaman mengambil PAGE_SIZE baris dengan skip.
+  const [halaman, setHalaman] = useState(0);
   const { dari, sampai } = periodRange(mode, pval);
+
+  const ubahPval = (v: string) => {
+    setPval(v);
+    setHalaman(0);
+  };
+  const ubahJenis = (v: string) => {
+    setJenis(v);
+    setHalaman(0);
+  };
 
   const pickPeriod = (m: 'harian' | 'bulanan' | 'tahunan') => {
     setMode(m);
+    setHalaman(0);
     const now = new Date();
     setPval(m === 'harian' ? todayISO() : m === 'tahunan' ? String(now.getFullYear()) : monthISO(now));
   };
 
+  const paramsMutasi = (skip: number, limit: number) => ({
+    tanggal_dari: dari,
+    tanggal_sampai: sampai,
+    skip,
+    limit,
+    sort_by: 'tanggal',
+    sort_order: 'desc',
+    ...(jenis ? { jenis } : {}),
+  });
+
+  // Ekspor mengambil SEMUA baris periode (per 100, batas maksimal backend), bukan hanya halaman ini.
+  const exportCsv = async () => {
+    const semua: Row[] = [];
+    let skip = 0;
+    let total = Infinity;
+    while (skip < total) {
+      const r = (await financeService.kasBankList(paramsMutasi(skip, 100))) as { data?: Row[]; total?: number };
+      const potongan = r.data ?? [];
+      total = num(r.total);
+      semua.push(...potongan);
+      if (potongan.length === 0) break;
+      skip += 100;
+    }
+    const baris = semua.map(petakanBaris);
+    downloadCSV(
+      `kas-${pval}.csv`,
+      ['Tanggal', 'Referensi', 'Akun', 'Tipe', 'Keterangan', 'Nominal'],
+      baris.map((r) => [r.tanggal, r.referensi, r.akun, r.tipe, r.keterangan, r.nominal]),
+    );
+  };
+
   const balances = useQuery({ queryKey: ['kas_balances'], queryFn: financeService.kasBankBalances });
   const mutasi = useQuery({
-    queryKey: ['kas_mutasi', mode, pval, jenis],
-    queryFn: () =>
-      financeService.kasBankList({
-        tanggal_dari: dari,
-        tanggal_sampai: sampai,
-        limit: 100,
-        sort_by: 'tanggal',
-        sort_order: 'desc',
-        ...(jenis ? { jenis } : {}),
-      }),
+    queryKey: ['kas_mutasi', mode, pval, jenis, halaman],
+    queryFn: () => financeService.kasBankList(paramsMutasi(halaman * PAGE_SIZE, PAGE_SIZE)),
+    placeholderData: keepPreviousData,
   });
 
   const b = (balances.data ?? {}) as Row;
@@ -68,17 +114,13 @@ export default function Kas() {
   }, [b]);
 
   const totalSaldo = accounts.reduce((a, r) => a + r.saldo, 0);
-  const rows = (((mutasi.data as { data?: Row[] } | undefined)?.data ?? []) as Row[]).map((r) => ({
-    tanggal: str(r.tanggal).slice(0, 10),
-    referensi: str(r.nomor_transaksi ?? r.nomor_referensi),
-    akun: kasJenisLabel(str(r.jenis)),
-    tipe: str(r.tipe),
-    keterangan: str(r.keterangan),
-    nominal: num(r.nominal),
-    key: str(r.id ?? r.nomor_transaksi),
-  }));
-  const masuk = rows.filter((r) => r.tipe === 'MASUK').reduce((a, r) => a + r.nominal, 0);
-  const keluar = rows.filter((r) => r.tipe === 'KELUAR').reduce((a, r) => a + r.nominal, 0);
+  const resp = mutasi.data as { data?: Row[]; total?: number; pages?: number; total_masuk?: number; total_keluar?: number } | undefined;
+  const rows = (resp?.data ?? []).map(petakanBaris);
+  const totalBaris = num(resp?.total);
+  const totalHalaman = num(resp?.pages);
+  // Angka periode dihitung backend dari seluruh periode, bukan dari baris halaman ini.
+  const masuk = num(resp?.total_masuk);
+  const keluar = num(resp?.total_keluar);
 
   const selectCls =
     'rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-indigo-400';
@@ -89,15 +131,9 @@ export default function Kas() {
         title="Kas per Akun"
         sub="Saldo & mutasi tiap akun keuangan"
         right={
-          rows.length > 0 ? (
+          totalBaris > 0 ? (
             <button
-              onClick={() =>
-                downloadCSV(
-                  `kas-${pval}.csv`,
-                  ['Tanggal', 'Referensi', 'Akun', 'Tipe', 'Keterangan', 'Nominal'],
-                  rows.map((r) => [r.tanggal, r.referensi, r.akun, r.tipe, r.keterangan, r.nominal]),
-                )
-              }
+              onClick={exportCsv}
               className="flex items-center gap-2 rounded-xl bg-[#0B1F3A] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#14305a]"
             >
               <Download size={15} /> Export CSV
@@ -157,10 +193,10 @@ export default function Kas() {
               <option value="bulanan">Bulanan</option>
               <option value="tahunan">Tahunan</option>
             </select>
-            {mode === 'harian' && <input type="date" value={pval} onChange={(e) => setPval(e.target.value)} className={selectCls} />}
-            {mode === 'bulanan' && <input type="month" value={pval} onChange={(e) => setPval(e.target.value)} className={selectCls} />}
-            {mode === 'tahunan' && <input type="number" value={pval} onChange={(e) => setPval(e.target.value)} className={selectCls} min={2020} max={2100} />}
-            <select value={jenis} onChange={(e) => setJenis(e.target.value)} className={selectCls}>
+            {mode === 'harian' && <input type="date" value={pval} onChange={(e) => ubahPval(e.target.value)} className={selectCls} />}
+            {mode === 'bulanan' && <input type="month" value={pval} onChange={(e) => ubahPval(e.target.value)} className={selectCls} />}
+            {mode === 'tahunan' && <input type="number" value={pval} onChange={(e) => ubahPval(e.target.value)} className={selectCls} min={2020} max={2100} />}
+            <select value={jenis} onChange={(e) => ubahJenis(e.target.value)} className={selectCls}>
               <option value="">Semua akun</option>
               {accounts.map((a) => (
                 <option key={a.jenis} value={a.jenis}>
@@ -173,14 +209,17 @@ export default function Kas() {
       >
         {mutasi.isLoading ? (
           <Loading />
-        ) : rows.length === 0 ? (
+        ) : totalBaris === 0 ? (
           <Empty text="Tidak ada mutasi pada periode ini." icon={Banknote} />
         ) : (
-          <DataTable
-            headers={['Tanggal', 'Referensi', 'Akun', 'Tipe', 'Keterangan', 'Nominal']}
-            rows={rows.map((r) => [r.tanggal, r.referensi, r.akun, r.tipe, r.keterangan, formatCurrency(r.nominal)])}
-            rightAlignFrom={5}
-          />
+          <div>
+            <DataTable
+              headers={['Tanggal', 'Referensi', 'Akun', 'Tipe', 'Keterangan', 'Nominal']}
+              rows={rows.map((r) => [r.tanggal, r.referensi, r.akun, r.tipe, r.keterangan, formatCurrency(r.nominal)])}
+              rightAlignFrom={5}
+            />
+            <Pager page={halaman} pages={totalHalaman} total={totalBaris} onPage={setHalaman} />
+          </div>
         )}
       </Card>
     </div>
