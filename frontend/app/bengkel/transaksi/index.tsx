@@ -1432,6 +1432,10 @@ export default function BengkelTransaksiScreen() {
                                             }}
                                             allowGuest
                                             placeholder="Pilih Customer atau ketik guest"
+                                            onVehicleSelect={(_customer, vehicle) => {
+                                                setPelangganPlate(vehicle.plat_nomor);
+                                                setPelangganJenis(vehicle.jenis_unit);
+                                            }}
                                             inlineMode
                                             inlineLimit={10}
                                             hideTrigger

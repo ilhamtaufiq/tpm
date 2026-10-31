@@ -32,6 +32,8 @@ interface MasterDataSelectorProps {
     allowGuest?: boolean;
     onGuestNameChange?: (name: string) => void;
     onAddNew?: (item: any) => void;
+    /** Dipanggil saat chip kendaraan milik customer diketuk (customer dipilih sekaligus kendaraannya). */
+    onVehicleSelect?: (customer: any, vehicle: any) => void;
     inlineMode?: boolean;
     inlineLimit?: number;
     hideTrigger?: boolean;
@@ -46,6 +48,7 @@ export const MasterDataSelector = ({
     allowGuest = false,
     onGuestNameChange,
     onAddNew,
+    onVehicleSelect,
     inlineMode = false,
     inlineLimit = 5,
     hideTrigger = false
@@ -102,6 +105,13 @@ export const MasterDataSelector = ({
             onSelect(null); // Clear ID
             handleClose();
         }
+    };
+
+    const handleVehicleSelect = (item: any, vehicle: any) => {
+        setSelectedGuestName('');
+        onSelect(item);
+        onVehicleSelect?.(item, vehicle);
+        handleClose();
     };
 
     const handleAddNew = (item: any) => {
@@ -213,11 +223,16 @@ export const MasterDataSelector = ({
                                             {type === 'customer' && item.vehicles && item.vehicles.length > 0 && (
                                                 <View className="flex-row flex-wrap mt-1">
                                                     {item.vehicles.map((v: any, idx: number) => (
-                                                        <View key={v.id || idx} className="bg-blue-500/15 px-1.5 py-0.5 rounded mr-1 mb-1 border border-blue-500/30">
+                                                        <Pressable
+                                                            key={v.id || idx}
+                                                            onPress={(e) => { e.stopPropagation?.(); handleVehicleSelect(item, v); }}
+                                                            hitSlop={6}
+                                                            className="bg-blue-500/15 px-1.5 py-0.5 rounded mr-1 mb-1 border border-blue-500/30"
+                                                        >
                                                             <Typography className="text-blue-700 text-[10px] font-bold">
                                                                 {v.plat_nomor}
                                                             </Typography>
-                                                        </View>
+                                                        </Pressable>
                                                     ))}
                                                 </View>
                                             )}
@@ -329,11 +344,16 @@ export const MasterDataSelector = ({
                                                 {type === 'customer' && item.vehicles && item.vehicles.length > 0 && (
                                                     <View className="flex-row flex-wrap mt-1">
                                                         {item.vehicles.map((v: any, idx: number) => (
-                                                            <View key={v.id || idx} className="bg-blue-50 px-1.5 py-0.5 rounded mr-1 mb-1 border border-blue-100">
+                                                            <Pressable
+                                                                key={v.id || idx}
+                                                                onPress={(e) => { e.stopPropagation?.(); handleVehicleSelect(item, v); }}
+                                                                hitSlop={6}
+                                                                className="bg-blue-50 px-1.5 py-0.5 rounded mr-1 mb-1 border border-blue-100"
+                                                            >
                                                                 <Typography className="text-blue-700 text-[10px] font-bold">
                                                                     {v.plat_nomor}
                                                                 </Typography>
-                                                            </View>
+                                                            </Pressable>
                                                         ))}
                                                     </View>
                                                 )}
