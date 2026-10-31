@@ -133,8 +133,14 @@ class KasBankService:
         data: KasBankCreate,
         user_id: Optional[int] = None,
         commit: bool = True,
+        cek_duplikat: bool = True,
     ) -> KasBank:
-        """Create a new cash/bank transaction."""
+        """Create a new cash/bank transaction.
+
+        `cek_duplikat=False` dipakai untuk kaki transfer antar akun: transfer yang
+        nominal dan tanggalnya sama dengan transfer sebelumnya adalah transaksi baru,
+        bukan duplikat.
+        """
         # Kas bertanggal besok tidak terhitung di saldo/Neraca hari ini ->
         # saldo sistem diam-diam beda dengan real. Tolak di sumbernya.
         pesan_tanggal = pesan_tanggal_masa_depan(data.tanggal)
@@ -147,7 +153,7 @@ class KasBankService:
         # sudah tercatat, menggeser saldo Kas/Bank dari target.
         # Baris reversal ([VOID]) sengaja identik -> dikecualikan.
         is_reversal = (data.keterangan or "").startswith("[VOID]")
-        if not is_reversal:
+        if not is_reversal and cek_duplikat:
             # Guard anti-duplikat: nominal + tanggal bisa sama untuk transaksi berbeda
             # (mis. "Ojeg Juri ke-2" Rp40.000 nominal & tanggal sama dengan ke-1).
             # Gunakan nomor_referensi sebagai unique key jika tersedia.
@@ -574,6 +580,7 @@ class KasBankService:
                 allow_negative=allow_negative,
             ),
             user_id,
+            cek_duplikat=False,
         )
 
         # Record the transfer in
@@ -587,6 +594,7 @@ class KasBankService:
                 keterangan=f"Transfer dari {dari.value}: {keterangan}",
             ),
             user_id,
+            cek_duplikat=False,
         )
 
         # Kedua kaki diberi nomor grup yang sama, supaya pembatalan membalik keduanya.

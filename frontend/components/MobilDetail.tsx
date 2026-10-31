@@ -667,7 +667,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                             )}
                                             {activeTx.id && (
                                                 <Button
-                                                    title="Faktur PDF"
+                                                    title="Kwitansi PDF"
                                                     variant="outline"
                                                     className="mt-3"
                                                     onPress={async () => {
