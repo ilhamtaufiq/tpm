@@ -568,40 +568,49 @@ class KasBankService:
                 detail="Tidak dapat transfer ke akun yang sama",
             )
 
-        # Record the transfer out
-        kas_keluar = self.create(
-            KasBankCreate(
-                tanggal=tanggal,
-                jenis=dari,
-                tipe=KasBankType.KELUAR,
-                nominal=nominal,
-                sumber=KasBankSource.LAINNYA,
-                keterangan=f"Transfer ke {ke.value}: {keterangan}",
-                allow_negative=allow_negative,
-            ),
-            user_id,
-            cek_duplikat=False,
-        )
+        # Kedua kaki dibuat dalam SATU transaksi database. Dulu setiap kaki
+        # di-commit sendiri, sehingga kaki keluar bisa tersimpan sementara kaki masuk
+        # gagal: kas berkurang, bank tidak bertambah (selisih di Neraca).
+        try:
+            # Record the transfer out
+            kas_keluar = self.create(
+                KasBankCreate(
+                    tanggal=tanggal,
+                    jenis=dari,
+                    tipe=KasBankType.KELUAR,
+                    nominal=nominal,
+                    sumber=KasBankSource.LAINNYA,
+                    keterangan=f"Transfer ke {ke.value}: {keterangan}",
+                    allow_negative=allow_negative,
+                ),
+                user_id,
+                commit=False,
+                cek_duplikat=False,
+            )
 
-        # Record the transfer in
-        kas_masuk = self.create(
-            KasBankCreate(
-                tanggal=tanggal,
-                jenis=ke,
-                tipe=KasBankType.MASUK,
-                nominal=nominal,
-                sumber=KasBankSource.LAINNYA,
-                keterangan=f"Transfer dari {dari.value}: {keterangan}",
-            ),
-            user_id,
-            cek_duplikat=False,
-        )
+            # Record the transfer in
+            kas_masuk = self.create(
+                KasBankCreate(
+                    tanggal=tanggal,
+                    jenis=ke,
+                    tipe=KasBankType.MASUK,
+                    nominal=nominal,
+                    sumber=KasBankSource.LAINNYA,
+                    keterangan=f"Transfer dari {dari.value}: {keterangan}",
+                ),
+                user_id,
+                commit=False,
+                cek_duplikat=False,
+            )
 
-        # Kedua kaki diberi nomor grup yang sama, supaya pembatalan membalik keduanya.
-        grup = f"TRF-{kas_keluar.nomor_transaksi}"
-        kas_keluar.nomor_referensi = grup
-        kas_masuk.nomor_referensi = grup
-        self.db.commit()
+            # Kedua kaki diberi nomor grup yang sama, supaya pembatalan membalik keduanya.
+            grup = f"TRF-{kas_keluar.nomor_transaksi}"
+            kas_keluar.nomor_referensi = grup
+            kas_masuk.nomor_referensi = grup
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
         publish_realtime_event(
             event="finance.kas.updated",
             scope="finance",

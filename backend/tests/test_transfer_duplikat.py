@@ -40,3 +40,41 @@ def test_transfer_kedua_dengan_nominal_dan_tanggal_sama_tetap_bisa(db):
     kaki = db.query(KasBank).filter(KasBank.keterangan.like(f"%{MARKER}%")).all()
     assert len(kaki) == 4
     assert len({k.nomor_referensi for k in kaki}) == 2
+
+
+def test_kaki_masuk_gagal_membatalkan_kaki_keluar(db, monkeypatch):
+    """Transfer harus atomik: kaki keluar tidak boleh tertinggal jika kaki masuk gagal."""
+    from fastapi import HTTPException
+
+    service = KasBankService(db)
+    asli = service.create
+    panggilan = {"n": 0}
+
+    def gagal_di_kaki_kedua(data, *args, **kwargs):
+        panggilan["n"] += 1
+        if panggilan["n"] == 2:
+            raise HTTPException(status_code=500, detail="simulasi gagal")
+        return asli(data, *args, **kwargs)
+
+    monkeypatch.setattr(service, "create", gagal_di_kaki_kedua)
+    with pytest.raises(HTTPException):
+        service.transfer(
+            dari=KasBankJenis.KAS_UNIT_BENGKEL, ke=KasBankJenis.BANK_BCA,
+            nominal=Decimal("777000"), tanggal=date.today(),
+            keterangan=f"ATOMIK {MARKER}", user_id=None, allow_negative=True,
+        )
+    db.rollback()
+    sisa = db.query(KasBank).filter(KasBank.keterangan.like(f"%ATOMIK {MARKER}%")).all()
+    assert sisa == []
+
+
+def test_transfer_normal_menyimpan_dua_kaki_dengan_grup_sama(db):
+    KasBankService(db).transfer(
+        dari=KasBankJenis.KAS_UNIT_BENGKEL, ke=KasBankJenis.BANK_BCA,
+        nominal=Decimal("888000"), tanggal=date.today(),
+        keterangan=f"GRUP {MARKER}", user_id=None, allow_negative=True,
+    )
+    kaki = db.query(KasBank).filter(KasBank.keterangan.like(f"%GRUP {MARKER}%")).all()
+    assert len(kaki) == 2
+    assert len({k.nomor_referensi for k in kaki}) == 1
+    assert kaki[0].nomor_referensi.startswith("TRF-")
