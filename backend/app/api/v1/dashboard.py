@@ -490,14 +490,14 @@ def get_recent_activity(
             ref_code = (sg.nomor_slip or "").lower()
             if ref_code not in kas_ref_set:
                 emp_name = sg.karyawan.nama if getattr(sg, "karyawan", None) else "Karyawan"
-                ts = sg.created_at.isoformat() if sg.created_at else sg.tanggal.isoformat()
+                ts = sg.created_at.isoformat() if sg.created_at else sg.tanggal_akhir.isoformat()
                 activities.append({
                     "type": "financial",
                     "id": f"gaji_{sg.id}",
                     "original_id": sg.id,
                     "title": f"Gaji karyawan {emp_name} ({sg.nomor_slip})",
                     "subtitle": sg.nomor_slip,
-                    "amount": float(sg.thp or sg.total_gaji or 0),
+                    "amount": float(sg.gaji_bersih or 0),
                     "is_incoming": False,
                     "status": "LUNAS",
                     "timestamp": ts,
