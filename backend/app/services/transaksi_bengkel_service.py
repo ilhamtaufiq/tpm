@@ -4,7 +4,7 @@ from decimal import Decimal
 import secrets
 from typing import Optional, Dict, Any, List
 
-from sqlalchemy import func, or_, case
+from sqlalchemy import and_, case, func, not_, or_
 from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 
@@ -40,6 +40,88 @@ from app.utils.constants import (
     CarStatus,
 )
 from app.services.kas_bank_integration import create_kas_entry
+
+
+# Filter Antrian bengkel di sisi server. Aturannya sama dengan utils/bengkelTransaction.ts
+# (getBengkelQueuePaymentStatus): INTERNAL dicek dulu, lalu BATAL, LUNAS, sisa bayar.
+_KATEGORI_INTERNAL_ANTRIAN = ("jasa_angkut", "jual_beli_mobil")
+
+
+def _kondisi_pembayaran_antrian():
+    T = TransaksiPenjualanBengkel
+    st = func.coalesce(T.status_bayar, "")
+    kat = func.coalesce(T.kategori, "umum")
+    dibayar = func.coalesce(T.jumlah_bayar, 0)
+    internal = or_(st == "INTERNAL", kat.in_(_KATEGORI_INTERNAL_ANTRIAN))
+    bukan_internal = not_(internal)
+    belum = and_(bukan_internal, st != "LUNAS", st != "BATAL")
+    return {
+        "INTERNAL": internal,
+        "BATAL": and_(bukan_internal, st == "BATAL"),
+        "LUNAS": and_(bukan_internal, st == "LUNAS"),
+        "BELUM_LUNAS": and_(belum, dibayar > 0),
+        "BELUM_BAYAR": and_(belum, dibayar <= 0),
+    }
+
+
+def _kondisi_pengerjaan_antrian():
+    T = TransaksiPenjualanBengkel
+    wst = func.upper(func.coalesce(T.status_pengerjaan, "ANTRE"))
+    return {
+        "ANTRE": wst == "ANTRE",
+        "PROSES": wst == "PROSES",
+        "SELESAI": wst == "SELESAI",
+        "BATAL": wst == "BATAL",
+        "ALL": wst != "BATAL",
+    }
+
+
+def _hitung_counts_antrian(query) -> Dict[str, Any]:
+    """Jumlah per status untuk chip. Total 'Semua' ikut menghitung BATAL (seperti sebelumnya)."""
+    pembayaran = _kondisi_pembayaran_antrian()
+    pengerjaan = _kondisi_pengerjaan_antrian()
+    T = TransaksiPenjualanBengkel
+    kolom = [func.count(T.id)]
+    kunci = ["total"]
+    for k, cond in pengerjaan.items():
+        if k == "ALL":
+            continue
+        kolom.append(func.sum(case((cond, 1), else_=0)))
+        kunci.append(f"w_{k}")
+    for k, cond in pembayaran.items():
+        kolom.append(func.sum(case((cond, 1), else_=0)))
+        kunci.append(f"p_{k}")
+    nilai = query.with_entities(*kolom).one()
+    hasil = {kk: int(v or 0) for kk, v in zip(kunci, nilai)}
+    return {
+        "work": {
+            "total": hasil["total"],
+            "antre": hasil["w_ANTRE"],
+            "proses": hasil["w_PROSES"],
+            "selesai": hasil["w_SELESAI"],
+            "batal": hasil["w_BATAL"],
+        },
+        "payment": {
+            "total": hasil["total"],
+            "LUNAS": hasil["p_LUNAS"],
+            "BELUM_LUNAS": hasil["p_BELUM_LUNAS"],
+            "BELUM_BAYAR": hasil["p_BELUM_BAYAR"],
+            "BATAL": hasil["p_BATAL"],
+            "INTERNAL": hasil["p_INTERNAL"],
+        },
+    }
+
+
+def _terapkan_filter_antrian(query, status_pengerjaan: Optional[str], pembayaran: Optional[str]):
+    if status_pengerjaan:
+        cond = _kondisi_pengerjaan_antrian().get(status_pengerjaan.upper())
+        if cond is not None:
+            query = query.filter(cond)
+    if pembayaran and pembayaran.upper() != "ALL":
+        cond = _kondisi_pembayaran_antrian().get(pembayaran.upper())
+        if cond is not None:
+            query = query.filter(cond)
+    return query
 
 
 class TransaksiBengkelService:
@@ -1298,8 +1380,15 @@ class TransaksiBengkelService:
         tanggal_sampai: Optional[date] = None,
         sort_by: str = "tanggal",
         sort_order: str = "desc",
+        status_pengerjaan: Optional[str] = None,
+        pembayaran: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Get list of transactions with pagination and filters."""
+        """Get list of transactions with pagination and filters.
+
+        status_pengerjaan: ALL (kecuali BATAL), ANTRE, PROSES, SELESAI, BATAL.
+        pembayaran: ALL, LUNAS, BELUM_LUNAS, BELUM_BAYAR, BATAL, INTERNAL.
+        Keduanya memakai aturan yang sama dengan layar Antrian di aplikasi.
+        """
         if skip == 0:
             from app.services.penjualan_mobil_service import PenjualanMobilService
 
@@ -1359,6 +1448,10 @@ class TransaksiBengkelService:
         if tanggal_sampai:
             query = query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
 
+        # Hitungan chip dihitung dari basis ini (tanggal & pencarian), sebelum filter status.
+        counts = _hitung_counts_antrian(query)
+        query = _terapkan_filter_antrian(query, status_pengerjaan, pembayaran)
+
         # Count total
         total = query.count()
 
@@ -1403,6 +1496,7 @@ class TransaksiBengkelService:
             "page": (skip // limit) + 1 if limit > 0 else 1,
             "size": limit,
             "pages": pages,
+            "counts": counts,
         }
 
     def get_summary(

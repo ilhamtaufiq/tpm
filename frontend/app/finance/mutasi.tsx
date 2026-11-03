@@ -31,6 +31,7 @@ import { offlineAwareWrite } from '../../services/offlineQueue';
 import { KasBankTransaction, KasBankAllBalances, KasBankJenis } from '../../services/keuangan';
 import { User } from '../../services/auth';
 import { formatCurrency, formatNumber, parseNumber, getTodayString, tanggalLokal } from '../../utils/format';
+import { DatePicker } from '../../components/ui/DatePicker';
 import { useKasBankList, useKasBankBalances, useTransfer, useCreateTransaction } from '../../hooks/useKeuangan';
 import { useBatalkanKas } from '../../hooks/usePembatalan';
 import { BatalkanKasModal } from '../../components/finance/BatalkanKasModal';
@@ -160,6 +161,7 @@ export default function MutasiKasScreen() {
 
     const [modalForm, setModalForm] = useState({
         jenis: (jenis as KasBankJenis) || 'KAS_UTAMA',
+        tanggal: getTodayString(),
         nominal: '',
         keterangan: 'Setoran Modal',
     });
@@ -296,7 +298,7 @@ export default function MutasiKasScreen() {
         if (!modalForm.nominal || !modalForm.keterangan) return;
         try {
             const modalPayloadBase = {
-                tanggal: getTodayString(),
+                tanggal: modalForm.tanggal,
                 jenis: modalForm.jenis,
                 tipe: 'MASUK' as const,
                 nominal: parseNumber(modalForm.nominal),
@@ -311,7 +313,7 @@ export default function MutasiKasScreen() {
                 onlineFn: () => createTxMutation.mutateAsync(modalPayloadBase),
             });
             handleCloseSheet();
-            setModalForm({ jenis: 'KAS_UTAMA', nominal: '', keterangan: 'Setoran Modal' });
+            setModalForm({ jenis: 'KAS_UTAMA', tanggal: getTodayString(), nominal: '', keterangan: 'Setoran Modal' });
             setTimeout(() => {
                 setDialogConfig({
                     visible: true,
@@ -491,6 +493,15 @@ export default function MutasiKasScreen() {
                             </Pressable>
                         ))}
                     </View>
+
+                    <DatePicker
+                        autoToday
+                        label="Tanggal Setoran"
+                        placeholder="Pilih Tanggal (YYYY-MM-DD)"
+                        value={modalForm.tanggal}
+                        onChange={(v) => setModalForm((p) => ({ ...p, tanggal: v }))}
+                        required
+                    />
 
                     <Input
                         label="Nominal Modal (Rp)"

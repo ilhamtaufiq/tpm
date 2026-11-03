@@ -89,8 +89,8 @@ export default function BengkelTransaksiScreen() {
     const [existingDateError, setExistingDateError] = useState('');
     const [showDiscountInput, setShowDiscountInput] = useState(false);
     const [showDiscountInReceipt, setShowDiscountInReceipt] = useState(true);
-    const [selectedParts, setSelectedParts] = useState<Record<number, { item: any; qty: number }>>({});
-    const [selectedServices, setSelectedServices] = useState<Record<string, { item: any; qty: number }>>({});
+    const [selectedParts, setSelectedParts] = useState<Record<number, { item: any; qty: number; urutan?: number }>>({});
+    const [selectedServices, setSelectedServices] = useState<Record<string, { item: any; qty: number; urutan?: number }>>({});
     const [kategori, setKategori] = useState<BengkelKategori>('umum');
     const [customerSource, setCustomerSource] = useState<'antrian' | 'customer'>('antrian');
     const [selectedCustomerTransaction, setSelectedCustomerTransaction] = useState<any>(null);
@@ -105,6 +105,8 @@ export default function BengkelTransaksiScreen() {
     const [selectedArmada, setSelectedArmada] = useState<any>(null);
     const [selectedMobil, setSelectedMobil] = useState<any>(null);
     const [paymentMode, setPaymentMode] = useState<PaymentMode>('TUNAI');
+    // Laci kas tempat uang tunai masuk: kas unit bengkel (default) atau kas utama (pusat).
+    const [tunaiKas, setTunaiKas] = useState<'KAS_UNIT_BENGKEL' | 'KAS_UTAMA'>('KAS_UNIT_BENGKEL');
     const [paymentAmount, setPaymentAmount] = useState('');
     const [splitTunai, setSplitTunai] = useState('');
     const [splitTransfer, setSplitTransfer] = useState('');
@@ -254,8 +256,9 @@ export default function BengkelTransaksiScreen() {
         return mobilStatusById.get(String(activeMobilId)) === 'TERJUAL';
     }, [activeMobilId, selectedMobil?.status, mobilStatusById]);
 
-    const selectedPartList = useMemo(() => Object.values(selectedParts), [selectedParts]);
-    const selectedServiceList = useMemo(() => Object.values(selectedServices), [selectedServices]);
+    // Urutan tampil = urutan input (bukan abjad, bukan urutan kunci objek).
+    const selectedPartList = useMemo(() => Object.values(selectedParts).sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0)), [selectedParts]);
+    const selectedServiceList = useMemo(() => Object.values(selectedServices).sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0)), [selectedServices]);
     const hasItems = selectedPartList.length > 0 || selectedServiceList.length > 0;
     const openBillPartList = useMemo(() => {
         if (editTransactionId || !selectedOpenTransactionDetail) return [];
@@ -398,7 +401,7 @@ export default function BengkelTransaksiScreen() {
             });
         }
 
-        const existingParts = (editingTransaction.detail_parts || []).reduce((acc: any, detail: any) => {
+        const existingParts = (editingTransaction.detail_parts || []).reduce((acc: any, detail: any, idx: number) => {
             const partId = detail.spare_part_id || detail.spare_part?.id;
             if (!partId) return acc;
             acc[partId] = {
@@ -410,12 +413,13 @@ export default function BengkelTransaksiScreen() {
                     stok: detail.spare_part?.stok ?? 999,
                 },
                 qty: Number(detail.qty || 1),
+                urutan: idx + 1,
             };
             return acc;
         }, {});
         setSelectedParts(existingParts);
 
-        const existingServices = existingServiceDetails.reduce((acc: any, detail: any) => {
+        const existingServices = existingServiceDetails.reduce((acc: any, detail: any, idx: number) => {
             const matchedService = services.find((service: any) => {
                 const sameName = String(service.nama || '').toLowerCase() === String(detail.nama_jasa || detail.nama || '').toLowerCase();
                 const samePrice = Number(service.harga || 0) === Number(detail.harga || 0);
@@ -433,6 +437,7 @@ export default function BengkelTransaksiScreen() {
                     deskripsi: matchedService?.deskripsi || detail.deskripsi,
                 },
                 qty: Number(detail.qty || 1),
+                urutan: idx + 1,
             };
             return acc;
         }, {});
@@ -596,7 +601,7 @@ export default function BengkelTransaksiScreen() {
         setSelectedParts(prev => {
             const next = { ...prev };
             if (next[part.id]) delete next[part.id];
-            else next[part.id] = { item: part, qty: 1 };
+            else next[part.id] = { item: part, qty: 1, urutan: ++urutanItemSeq };
             return next;
         });
     }, []);
@@ -612,7 +617,7 @@ export default function BengkelTransaksiScreen() {
             const next = { ...prev };
             const key = String(service.id);
             if (next[key]) delete next[key];
-            else next[key] = { item: service, qty: 1 };
+            else next[key] = { item: service, qty: 1, urutan: ++urutanItemSeq };
             return next;
         });
     }, []);
@@ -640,7 +645,8 @@ export default function BengkelTransaksiScreen() {
                 ...prev,
                 [key]: {
                     item: { ...fallbackItem, harga: parseNumber(priceStr) },
-                    qty: 1
+                    qty: 1,
+                    urutan: ++urutanItemSeq
                 }
             };
         });
@@ -653,7 +659,7 @@ export default function BengkelTransaksiScreen() {
         }
         setSelectedParts(prev => {
             const existing = prev[part.id];
-            return { ...prev, [part.id]: { item: part, qty: existing ? existing.qty + 1 : 1 } };
+            return { ...prev, [part.id]: { item: part, qty: existing ? existing.qty + 1 : 1, urutan: existing?.urutan ?? ++urutanItemSeq } };
         });
         setScanLog(prev => [{
             id: Math.random().toString(),
@@ -969,12 +975,12 @@ export default function BengkelTransaksiScreen() {
                             : paymentMode === 'SPLIT'
                                 ? [
                                     ...(existingDp > 0 ? [{ metode: 'TUNAI', jumlah: existingDp }] : []),
-                                    ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
+                                    ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount, kas_jenis: tunaiKas }] : []),
                                     ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
                                 ]
                                 : [
                                     ...(existingDp > 0 ? [{ metode: 'TUNAI', jumlah: existingDp }] : []),
-                                    ...(receivedAmount > 0 ? [{ metode: paymentMode, jumlah: receivedAmount }] : []),
+                                    ...(receivedAmount > 0 ? [{ metode: paymentMode, jumlah: receivedAmount, ...(paymentMode === 'TUNAI' ? { kas_jenis: tunaiKas } : {}) }] : []),
                                 ],
                 catatan: note || selectedOpenTransactionDetail?.catatan || editingTransaction?.catatan || '',
             };
@@ -989,7 +995,7 @@ export default function BengkelTransaksiScreen() {
                 const splitPayments =
                     paymentMode === 'SPLIT'
                         ? [
-                            ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
+                            ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount, kas_jenis: tunaiKas }] : []),
                             ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
                         ]
                         : undefined;
@@ -998,6 +1004,7 @@ export default function BengkelTransaksiScreen() {
                         ? {
                             jumlah_bayar: incrementalPayment,
                             metode_bayar: paymentMode,
+                            kas_jenis: paymentMode === 'TUNAI' ? tunaiKas : undefined,
                             payments: splitPayments,
                             // Backend also auto-SELESAI when LUNAS; send explicitly for clarity.
                             status_pengerjaan: willBeLunas ? 'SELESAI' : undefined,
@@ -1130,6 +1137,7 @@ export default function BengkelTransaksiScreen() {
                                 value={transaksiMode === 'servis' ? serviceSearch : partSearch}
                                 onChange={transaksiMode === 'servis' ? setServiceSearch : setPartSearch}
                                 placeholder={transaksiMode === 'servis' ? 'Cari servis...' : 'Cari sparepart...'}
+                                autoFocus
                             />
                         </View>
                     )}
@@ -1797,6 +1805,21 @@ export default function BengkelTransaksiScreen() {
                                             </Pressable>
                                         ))}
                                     </View>
+                                    {(paymentMode === 'TUNAI' || paymentMode === 'SPLIT') && (
+                                        <View className="mt-3">
+                                            <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase">Uang tunai masuk ke</Typography>
+                                            <View className="flex-row space-x-2">
+                                                {[
+                                                    { id: 'KAS_UNIT_BENGKEL', label: 'Kas Bengkel' },
+                                                    { id: 'KAS_UTAMA', label: 'Kas Pusat' },
+                                                ].map(opt => (
+                                                    <Pressable key={opt.id} onPress={() => setTunaiKas(opt.id as 'KAS_UNIT_BENGKEL' | 'KAS_UTAMA')} className={`flex-1 py-3 rounded-2xl border items-center ${tunaiKas === opt.id ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}>
+                                                        <Typography weight="bold" className={tunaiKas === opt.id ? 'text-white' : 'text-textGray'}>{opt.label}</Typography>
+                                                    </Pressable>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    )}
                                     {paymentMode === 'SPLIT' && (
                                         <View className="mt-4 bg-background border border-border rounded-2xl p-4">
                                             <View className="flex-row space-x-3">
@@ -2192,12 +2215,22 @@ export default function BengkelTransaksiScreen() {
     );
 }
 
+// Penomoran urutan input item transaksi (sparepart dan servis).
+let urutanItemSeq = 0;
+
 function SearchBox({ value, onChange, placeholder, autoFocus = false }: { value: string; onChange: (value: string) => void; placeholder: string; autoFocus?: boolean }) {
     const textGray = useUIStore((s) => s.themeColors.textGray);
+    const inputRef = useRef<TextInput>(null);
+    // Di web, autoFocus saja sering tidak berpindah fokus saat sheet baru dibuka (animasi masih berjalan).
+    useEffect(() => {
+        if (!autoFocus) return;
+        const timer = setTimeout(() => inputRef.current?.focus(), 350);
+        return () => clearTimeout(timer);
+    }, [autoFocus]);
     return (
         <View className="flex-row items-center bg-background rounded-2xl px-3 h-11 mb-3 border border-transparent">
             <Search size={16} color={textGray} />
-            <TextInput placeholder={placeholder} placeholderTextColor={textGray} className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} autoFocus={autoFocus} />
+            <TextInput ref={inputRef} placeholder={placeholder} placeholderTextColor={textGray} className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} autoFocus={autoFocus} />
             {value.length > 0 && (
                 <Pressable onPress={() => onChange('')}>
                     <X size={16} color={textGray} />

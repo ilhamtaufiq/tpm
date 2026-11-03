@@ -278,13 +278,16 @@ class TransaksiPenjualanBengkel(Base, TimestampMixin):
     customer: Mapped[Optional["Customer"]] = relationship(
         back_populates="transaksi_bengkel"
     )
+    # Urutan = urutan input (id ascending), dipakai di form, detail, dan struk.
     detail_parts: Mapped[List["DetailTransaksiSpareParts"]] = relationship(
         back_populates="transaksi",
         cascade="all, delete-orphan",
+        order_by="DetailTransaksiSpareParts.id",
     )
     detail_services: Mapped[List["DetailTransaksiServices"]] = relationship(
         back_populates="transaksi",
         cascade="all, delete-orphan",
+        order_by="DetailTransaksiServices.id",
     )
     muatan: Mapped[Optional["MuatanJasaAngkut"]] = relationship()
     armada: Mapped[Optional["ArmadaJasaAngkut"]] = relationship()

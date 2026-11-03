@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal, Optional, List
+from typing import Dict, Any, Literal, Optional, List
 
 from pydantic import BaseModel, Field
 from app.schemas.tanggal import TanggalTransaksi, OptionalTanggalTransaksi
@@ -415,6 +415,8 @@ class TransaksiBengkelList(BaseModel):
     page: int
     size: int
     pages: int
+    # Hitungan per status untuk chip filter (dihitung dari tanggal & pencarian, sebelum filter status).
+    counts: Optional[Dict[str, Any]] = None
 
 
 class PaymentUpdate(BaseModel):

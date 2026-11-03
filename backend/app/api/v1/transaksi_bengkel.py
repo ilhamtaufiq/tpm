@@ -44,6 +44,8 @@ def list_transaksi(
     tanggal_sampai: Optional[date] = None,
     sort_by: str = "id",
     sort_order: str = "desc",
+    status_pengerjaan: Optional[str] = None,
+    pembayaran: Optional[str] = None,
 ):
 
     """Get list of workshop transactions with pagination and filters."""
@@ -60,6 +62,8 @@ def list_transaksi(
         tanggal_sampai=tanggal_sampai,
         sort_by=sort_by,
         sort_order=sort_order,
+        status_pengerjaan=status_pengerjaan,
+        pembayaran=pembayaran,
     )
 
 
