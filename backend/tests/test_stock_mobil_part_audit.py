@@ -92,10 +92,11 @@ def test_persediaan_part_neraca_sama_dengan_daftar_stok(db):
     """Persediaan Sparepart di Neraca hari ini = daftar stok (stok x harga beli
     terbaru), sama dengan hitungan stok di Excel."""
     from app.utils.helpers import get_jakarta_date
+    from app.utils.sparepart_stock import is_always_ready_stock
     al = NeracaService(db).get_report(get_jakarta_date())["aktiva_lancar"]
     daftar = sum(
         float(sp.stok or 0) * float(sp.harga_beli or 0)
         for sp in db.query(SparePart).filter(SparePart.deleted_at.is_(None)).all()
-        if float(sp.stok or 0) > 0
+        if float(sp.stok or 0) > 0 and not is_always_ready_stock(sp.stok)
     )
     assert abs(al["persediaan_sparepart"] - daftar) < TOL

@@ -17,9 +17,23 @@ from app.utils.constants import KasBankJenis, KasBankSource, PaymentMethod, Work
 NAMA = "UJI TUNAI KAS PILIHAN"
 
 
+def _bersihkan_piutang_yatim(session):
+    """Piutang bengkel sisa tes (nomor_referensi tanpa transaksi) bisa tertukar dengan nomor baru.
+    Hanya baris yatim yang dihapus, data yang masih punya transaksi tidak disentuh."""
+    from app.models.keuangan import PembayaranPiutang, PiutangUsaha
+    nomor_ada = {t[0] for t in session.query(TransaksiPenjualanBengkel.nomor_transaksi).all()}
+    yatim = [p for p in session.query(PiutangUsaha).filter(PiutangUsaha.sumber == "BENGKEL").all()
+             if p.nomor_referensi and p.nomor_referensi not in nomor_ada]
+    for p in yatim:
+        session.query(PembayaranPiutang).filter(PembayaranPiutang.piutang_id == p.id).delete(synchronize_session=False)
+        session.query(PiutangUsaha).filter(PiutangUsaha.id == p.id).delete(synchronize_session=False)
+    session.commit()
+
+
 @pytest.fixture
 def db():
     session = SessionLocal()
+    _bersihkan_piutang_yatim(session)
     session.info["ids"] = []
     yield session
     session.rollback()

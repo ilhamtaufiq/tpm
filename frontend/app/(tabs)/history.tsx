@@ -171,13 +171,13 @@ const HistoryRow = React.memo(function HistoryRow({ item, onSelect }: { item: Ac
                         className={`text-[13px] mb-1 ${item.type === 'financial' ? (item.is_incoming ? "text-emerald-600" : "text-rose-500") : "text-textMain"}`}
                         numberOfLines={1}
                     >
-                        {item.type === 'financial' ? (item.is_incoming ? '+' : '-') : ''} {formatCurrency(item.amount)}
+                        {item.source === 'ABSENSI' ? '—' : `${item.type === 'financial' ? (item.is_incoming ? '+' : '-') : ''} ${formatCurrency(item.amount)}`}
                     </Typography>
 
                     <View className="flex-row items-center">
                         <View className={`px-1.5 py-0.5 rounded-md mr-1.5 ${item.type === 'financial' ? (item.is_incoming ? "bg-emerald-50" : "bg-rose-50") : "bg-blue-50"}`}>
                             <Typography weight="bold" className={item.type === 'financial' ? (item.is_incoming ? "text-emerald-600 text-[8px]" : "text-rose-600 text-[8px]") : "text-blue-600 text-[8px]"}>
-                                {item.type === 'financial' ? (item.is_incoming ? 'IN' : 'OUT') : 'TRX'}
+                                {item.source === 'ABSENSI' ? 'ABSEN' : item.type === 'financial' ? (item.is_incoming ? 'IN' : 'OUT') : 'TRX'}
                             </Typography>
                         </View>
                         <Typography className="text-[8px] text-textGray uppercase font-black tracking-tighter">
