@@ -149,6 +149,7 @@ export const useProcessPayment = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang-nama'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
@@ -163,6 +164,7 @@ export const useProcessPaymentSplit = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang-nama'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
@@ -181,6 +183,7 @@ export const useCreatePiutang = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang-nama'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
@@ -214,6 +217,7 @@ export const useProcessHutangPayment = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['hutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['hutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang-nama'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
@@ -228,6 +232,7 @@ export const useProcessHutangPaymentSplit = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['hutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['hutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang-nama'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
@@ -242,6 +247,7 @@ export const useCreateHutang = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['hutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['hutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang-nama'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
