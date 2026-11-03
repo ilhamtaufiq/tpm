@@ -1134,6 +1134,7 @@ export default function BengkelTransaksiScreen() {
                                 value={transaksiMode === 'servis' ? serviceSearch : partSearch}
                                 onChange={transaksiMode === 'servis' ? setServiceSearch : setPartSearch}
                                 placeholder={transaksiMode === 'servis' ? 'Cari servis...' : 'Cari sparepart...'}
+                                autoFocus
                             />
                         </View>
                     )}
@@ -2201,10 +2202,17 @@ let urutanItemSeq = 0;
 
 function SearchBox({ value, onChange, placeholder, autoFocus = false }: { value: string; onChange: (value: string) => void; placeholder: string; autoFocus?: boolean }) {
     const textGray = useUIStore((s) => s.themeColors.textGray);
+    const inputRef = useRef<TextInput>(null);
+    // Di web, autoFocus saja sering tidak berpindah fokus saat sheet baru dibuka (animasi masih berjalan).
+    useEffect(() => {
+        if (!autoFocus) return;
+        const timer = setTimeout(() => inputRef.current?.focus(), 350);
+        return () => clearTimeout(timer);
+    }, [autoFocus]);
     return (
         <View className="flex-row items-center bg-background rounded-2xl px-3 h-11 mb-3 border border-transparent">
             <Search size={16} color={textGray} />
-            <TextInput placeholder={placeholder} placeholderTextColor={textGray} className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} autoFocus={autoFocus} />
+            <TextInput ref={inputRef} placeholder={placeholder} placeholderTextColor={textGray} className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} autoFocus={autoFocus} />
             {value.length > 0 && (
                 <Pressable onPress={() => onChange('')}>
                     <X size={16} color={textGray} />
