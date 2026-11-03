@@ -681,7 +681,9 @@ class TransaksiBengkelService:
                 sumber=piutang_sumber,
                 unit=KasBankSource.BENGKEL,
                 is_internal=is_internal_mobil or is_internal_jasa_angkut,
-                referensi_id=None,
+                # Piutang diikat ke transaksi asal sejak dibuat, supaya pelunasan dari
+                # menu Piutang ikut memperbarui status transaksi bengkel.
+                referensi_id=transaksi.id,
                 nomor_referensi=nomor_transaksi,
                 total_dibayar=Decimal("0"),
                 sisa_piutang=out_amount,
