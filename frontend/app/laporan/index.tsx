@@ -68,8 +68,8 @@ const make_REPORT_GROUPS = (themeColors: ThemeColors): ReportGroup[] => ([
         name: 'Bengkel & Jasa Angkut',
         accent: '#2563EB',
         reports: [
-            { title: 'Penjualan Bengkel', icon: Wrench, path: '/laporan/penjualan-bengkel', size: 'large', color: themeColors.primary, desc: 'Rekap transaksi & penjualan unit bengkel' },
-            { title: 'Laporan Jasa Angkut', icon: Truck, path: '/laporan/jasa-angkut', size: 'large', color: '#6366F1', desc: 'Performa muatan & pendapatan jasa angkut' },
+            { title: 'Bengkel', icon: Wrench, path: '/laporan/penjualan-bengkel', size: 'large', color: themeColors.primary, desc: 'Rekap transaksi & penjualan unit bengkel' },
+            { title: 'Jasa Angkut', icon: Truck, path: '/laporan/jasa-angkut', size: 'large', color: '#6366F1', desc: 'Performa muatan & pendapatan jasa angkut' },
         ],
     },
     {

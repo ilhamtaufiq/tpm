@@ -1526,14 +1526,6 @@ export default function BengkelScreen() {
                             ))}
                         </View>
 
-                        <View className="flex-row items-center bg-blue-50/50 p-4 rounded-3xl border-dashed border border-blue-100">
-                            <View className="flex-1">
-                                <Typography className="text-blue-700 text-[9px] font-black uppercase tracking-wider mb-1">Akses cepat keuangan bengkel:</Typography>
-                                <Typography className="text-blue-600/60 text-[8px] font-bold leading-tight">
-                                    Gunakan kartu Hutang dan Piutang untuk melihat transaksi kategori bengkel, serta tombol penyesuaian untuk mutasi uang tunai unit.
-                                </Typography>
-                            </View>
-                        </View>
                     </View>
                     {/* Cash Activity History */}
                     <View className="mb-8">

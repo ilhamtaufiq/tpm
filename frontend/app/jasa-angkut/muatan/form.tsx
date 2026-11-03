@@ -20,6 +20,7 @@ interface MuatanFormState {
     jenis_muatan: string;
     pendapatan_kotor: string;
     metode_bayar: PaymentMethod;
+    kas_jenis: 'KAS_UNIT_JASA_ANGKUT' | 'KAS_UTAMA';
     catatan: string;
 }
 
@@ -40,6 +41,7 @@ export default function MuatanFormScreen() {
         jenis_muatan: '',
         pendapatan_kotor: '',
         metode_bayar: 'TUNAI',
+        kas_jenis: 'KAS_UNIT_JASA_ANGKUT',
         catatan: ''
     });
 
@@ -200,6 +202,28 @@ export default function MuatanFormScreen() {
                             </Pressable>
                         ))}
                     </View>
+
+                    {formData.metode_bayar === 'TUNAI' && (
+                        <View className="mt-3">
+                            <Typography variant="caption" className="text-textGray mb-2">Uang tunai masuk ke</Typography>
+                            <View className="flex-row space-x-2">
+                                {([
+                                    { id: 'KAS_UNIT_JASA_ANGKUT', label: 'Kas Jasa Angkut' },
+                                    { id: 'KAS_UTAMA', label: 'Kas Pusat' },
+                                ] as const).map((opt) => (
+                                    <Pressable
+                                        key={opt.id}
+                                        onPress={() => updateField('kas_jenis', opt.id)}
+                                        className={`flex-1 py-3 items-center rounded-xl border ${formData.kas_jenis === opt.id ? 'border-sky-500 bg-sky-50' : 'border-transparent bg-surface'}`}
+                                    >
+                                        <Text className={formData.kas_jenis === opt.id ? 'text-sky-700 font-bold' : 'text-textGray'}>
+                                            {opt.label}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                        </View>
+                    )}
 
                     <Typography variant="caption" className="text-textGray mt-4 italic">Biaya operasional sekarang diinput melalui menu Detail Armada.</Typography>
                 </Card>

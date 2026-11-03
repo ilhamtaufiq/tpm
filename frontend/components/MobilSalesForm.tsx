@@ -44,6 +44,8 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
     const [hargaJual, setHargaJual] = useState('');
     const [dp, setDp] = useState('0');
     const [metodeBayar, setMetodeBayar] = useState<string | null>(null);
+    // Laci kas tempat uang tunai masuk: kas unit mobil (default) atau kas utama (pusat).
+    const [tunaiKasMobil, setTunaiKasMobil] = useState<'KAS_UNIT_MOBIL' | 'KAS_UTAMA'>('KAS_UNIT_MOBIL');
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; jumlah: string }[]>([]);
     const [catatan, setCatatan] = useState('');
@@ -209,11 +211,11 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 payments: isSplitPayment ? payments.map(p => ({
                     metode: p.metode.toUpperCase(),
                     nominal: parseNumber(p.jumlah),
-                    kas_jenis: p.metode.toUpperCase() === 'TUNAI' ? 'KAS_UNIT_MOBIL' : undefined
+                    kas_jenis: p.metode.toUpperCase() === 'TUNAI' ? tunaiKasMobil : undefined
                 })).filter(p => p.nominal > 0) : (finalDp > 0 ? [{
                     metode: (metodeBayar || '').toUpperCase(),
                     nominal: finalDp,
-                    kas_jenis: (metodeBayar || '').toUpperCase() === 'TUNAI' ? 'KAS_UNIT_MOBIL' : undefined
+                    kas_jenis: (metodeBayar || '').toUpperCase() === 'TUNAI' ? tunaiKasMobil : undefined
                 }] : []),
                 catatan: catatan || null,
                 biaya_operasional: operationalCosts
@@ -430,6 +432,26 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                                 <Typography weight="bold" className={`uppercase ${metodeBayar === 'TRANSFER' ? 'text-primary' : 'text-textGray'}`}>Transfer</Typography>
                             </Pressable>
                         </View>
+
+                        {(metodeBayar === 'TUNAI' || isSplitPayment) && (
+                            <View className="mb-4">
+                                <Typography variant="body2" className="text-textGray mb-2 font-medium pl-1">Uang tunai masuk ke</Typography>
+                                <View className="flex-row space-x-2">
+                                    {([
+                                        { id: 'KAS_UNIT_MOBIL', label: 'Kas Unit Mobil' },
+                                        { id: 'KAS_UTAMA', label: 'Kas Pusat' },
+                                    ] as const).map((opt) => (
+                                        <Pressable
+                                            key={opt.id}
+                                            onPress={() => setTunaiKasMobil(opt.id)}
+                                            className={`flex-1 py-3 items-center rounded-2xl border-2 ${tunaiKasMobil === opt.id ? 'border-primary bg-primary/10' : 'border-transparent'}`}
+                                        >
+                                            <Typography weight="bold" className={tunaiKasMobil === opt.id ? 'text-primary' : 'text-textGray'}>{opt.label}</Typography>
+                                        </Pressable>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
 
                         {sisaBayar > 0 && (
                             <View className="p-4 bg-amber-50 rounded-[24px] border border-amber-100 mb-6 flex-row items-center">

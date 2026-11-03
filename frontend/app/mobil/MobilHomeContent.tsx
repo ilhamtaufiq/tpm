@@ -931,14 +931,6 @@ export default function MobilInventoryScreen() {
                             ))}
                         </View>
 
-                        <View className="flex-row items-center bg-blue-50/50 p-4 rounded-3xl border-dashed border border-blue-100">
-                            <View className="flex-1">
-                                <Typography className="text-blue-700 text-[9px] font-black uppercase tracking-wider mb-1">Akses cepat keuangan mobil:</Typography>
-                                <Typography className="text-blue-600/60 text-[8px] font-bold leading-tight">
-                                    Gunakan kartu Hutang dan Piutang untuk melihat transaksi unit mobil tanpa membuka data unit lain.
-                                </Typography>
-                            </View>
-                        </View>
                     </View>
                 </View>
             )}

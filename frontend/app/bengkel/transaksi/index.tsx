@@ -105,6 +105,8 @@ export default function BengkelTransaksiScreen() {
     const [selectedArmada, setSelectedArmada] = useState<any>(null);
     const [selectedMobil, setSelectedMobil] = useState<any>(null);
     const [paymentMode, setPaymentMode] = useState<PaymentMode>('TUNAI');
+    // Laci kas tempat uang tunai masuk: kas unit bengkel (default) atau kas utama (pusat).
+    const [tunaiKas, setTunaiKas] = useState<'KAS_UNIT_BENGKEL' | 'KAS_UTAMA'>('KAS_UNIT_BENGKEL');
     const [paymentAmount, setPaymentAmount] = useState('');
     const [splitTunai, setSplitTunai] = useState('');
     const [splitTransfer, setSplitTransfer] = useState('');
@@ -973,12 +975,12 @@ export default function BengkelTransaksiScreen() {
                             : paymentMode === 'SPLIT'
                                 ? [
                                     ...(existingDp > 0 ? [{ metode: 'TUNAI', jumlah: existingDp }] : []),
-                                    ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
+                                    ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount, kas_jenis: tunaiKas }] : []),
                                     ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
                                 ]
                                 : [
                                     ...(existingDp > 0 ? [{ metode: 'TUNAI', jumlah: existingDp }] : []),
-                                    ...(receivedAmount > 0 ? [{ metode: paymentMode, jumlah: receivedAmount }] : []),
+                                    ...(receivedAmount > 0 ? [{ metode: paymentMode, jumlah: receivedAmount, ...(paymentMode === 'TUNAI' ? { kas_jenis: tunaiKas } : {}) }] : []),
                                 ],
                 catatan: note || selectedOpenTransactionDetail?.catatan || editingTransaction?.catatan || '',
             };
@@ -993,7 +995,7 @@ export default function BengkelTransaksiScreen() {
                 const splitPayments =
                     paymentMode === 'SPLIT'
                         ? [
-                            ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
+                            ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount, kas_jenis: tunaiKas }] : []),
                             ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
                         ]
                         : undefined;
@@ -1002,6 +1004,7 @@ export default function BengkelTransaksiScreen() {
                         ? {
                             jumlah_bayar: incrementalPayment,
                             metode_bayar: paymentMode,
+                            kas_jenis: paymentMode === 'TUNAI' ? tunaiKas : undefined,
                             payments: splitPayments,
                             // Backend also auto-SELESAI when LUNAS; send explicitly for clarity.
                             status_pengerjaan: willBeLunas ? 'SELESAI' : undefined,
@@ -1802,6 +1805,21 @@ export default function BengkelTransaksiScreen() {
                                             </Pressable>
                                         ))}
                                     </View>
+                                    {(paymentMode === 'TUNAI' || paymentMode === 'SPLIT') && (
+                                        <View className="mt-3">
+                                            <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase">Uang tunai masuk ke</Typography>
+                                            <View className="flex-row space-x-2">
+                                                {[
+                                                    { id: 'KAS_UNIT_BENGKEL', label: 'Kas Bengkel' },
+                                                    { id: 'KAS_UTAMA', label: 'Kas Pusat' },
+                                                ].map(opt => (
+                                                    <Pressable key={opt.id} onPress={() => setTunaiKas(opt.id as 'KAS_UNIT_BENGKEL' | 'KAS_UTAMA')} className={`flex-1 py-3 rounded-2xl border items-center ${tunaiKas === opt.id ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}>
+                                                        <Typography weight="bold" className={tunaiKas === opt.id ? 'text-white' : 'text-textGray'}>{opt.label}</Typography>
+                                                    </Pressable>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    )}
                                     {paymentMode === 'SPLIT' && (
                                         <View className="mt-4 bg-background border border-border rounded-2xl p-4">
                                             <View className="flex-row space-x-3">
