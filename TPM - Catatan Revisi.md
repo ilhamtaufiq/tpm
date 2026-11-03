@@ -83,6 +83,8 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - **Pencarian part:** fokus otomatis ke kolom "Cari sparepart..." sudah diuji di web (`SearchBox` dengan `focus()`). Mengetik beberapa huruf di web tidak kehilangan fokus. Perilaku keyboard di perangkat belum diuji.
 - **Filter aktif/non-aktif supir dan armada:** urutan Semua, Aktif, Non-Aktif sudah sesuai di kode (`frontend/app/jasa-angkut/supir/index.tsx`, `armada/index.tsx`).
 - **Ekspor PDF laporan:** opsi PDF muncul di 10 laporan hub (laba rugi, neraca, perubahan modal, pembelian sparepart, penjualan bengkel, pembelian mobil, penjualan mobil, jasa angkut, arus kas akun, stok sparepart). Isi file PDF belum diperiksa satu per satu.
+- **Riwayat dashboard "Semua" (`backend/app/api/v1/dashboard.py`, `/dashboard/recent-activity`):** sebelumnya 100 item teratas dari gabungan semua sumber, sehingga kas Jasa Angkut yang ramai mendorong keluar transaksi bengkel. Sekarang tiap grup (bengkel, jasa angkut, mobil, SDM, pusat) dapat jatah `limit` item terbaru, lalu digabung dan diurutkan. Absensi karyawan ditambahkan ke "Semua" (sumber `ABSENSI`, nominal 0). Slip gaji dan kasbon yang belum punya entri kas juga ikut di "Semua". Hanya laporan riwayat, tidak mengubah jurnal kas. Tes: `tests/test_riwayat_semua_grup.py`. Catatan: absensi tampil dengan nominal "- Rp0" karena tipe item finansial. Perlu tampilan khusus bila diinginkan.
+- **Riwayat per menu unit:** sudah memuat pengeluaran unit dan entri kas per sumber unit (`useUnitWalletHistory`). Koreksi dari pengecekan sebelumnya: bagian ini tidak gagal.
 - **Poin 10 (nama piutang JB mobil):** belum diubah. Dokumen hanya memberi contoh `AKAS ALAM-BENGKEL`. Bentuk nama untuk JB Mobil perlu contoh dari pengguna.
 
 ## Perbaikan Lanjutan (di luar 22 poin)

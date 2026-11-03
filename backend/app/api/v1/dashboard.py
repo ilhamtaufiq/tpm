@@ -302,6 +302,20 @@ def get_hr_summary(
 
 
 
+def _grup_aktivitas(source: str) -> str:
+    """Grup unit untuk jatah daftar 'Semua' (tiap grup dapat porsi sendiri)."""
+    s = (source or "").lower()
+    if s in ("bengkel", "pembelian_part"):
+        return "bengkel"
+    if s in ("jasa_angkut", "transport"):
+        return "jasa_angkut"
+    if s in ("jual_beli_mobil", "pembelian_mobil", "mobil"):
+        return "mobil"
+    if s in ("gaji", "kasbon", "absensi", "sdm"):
+        return "sdm"
+    return "pusat"
+
+
 @router.get("/recent-activity")
 def get_recent_activity(
     db: DBSession,
@@ -427,8 +441,8 @@ def get_recent_activity(
             "ref_number": item.nomor_referensi,
         })
 
-    # Direct fallback for KasbonKaryawan & SlipGaji if source is SDM
-    if source_clean in ("gaji", "sdm", "kasbon"):
+    # Direct fallback for KasbonKaryawan & SlipGaji (SDM, dan 'Semua' agar penggajian ikut tampil)
+    if source_clean in ("all", "gaji", "sdm", "kasbon"):
         from app.models.karyawan import KasbonKaryawan, SlipGaji
         from sqlalchemy.orm import joinedload
 
@@ -491,6 +505,36 @@ def get_recent_activity(
                     "ref_number": sg.nomor_slip,
                 })
 
+    # Absensi karyawan tidak punya entri kas, jadi diambil langsung dari tabel absensi
+    if source_clean in ("all", "sdm", "gaji"):
+        from app.models.karyawan import Absensi
+        from sqlalchemy.orm import joinedload
+
+        absensi_rows = (
+            db.query(Absensi)
+            .options(joinedload(Absensi.karyawan))
+            .order_by(Absensi.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        for ab in absensi_rows:
+            nama = ab.karyawan.nama if getattr(ab, "karyawan", None) else "Karyawan"
+            status_txt = ab.status.value if hasattr(ab.status, "value") else str(ab.status)
+            ts = ab.created_at.isoformat() if ab.created_at else ab.tanggal.isoformat()
+            activities.append({
+                "type": "financial",
+                "id": f"absensi_{ab.id}",
+                "original_id": ab.id,
+                "title": f"Absensi {nama}: {status_txt}",
+                "subtitle": ab.tanggal.strftime("%d-%m-%Y") if ab.tanggal else "",
+                "amount": 0.0,
+                "is_incoming": False,
+                "status": status_txt,
+                "timestamp": ts,
+                "source": "ABSENSI",
+                "ref_number": None,
+            })
+
     for item in bengkel_data:
         title, subtitle = _workshop_activity_labels(item)
         activity_ts = getattr(item, "updated_at", None) or item.created_at
@@ -543,7 +587,18 @@ def get_recent_activity(
 
     # 5. Sort and Slice
     activities.sort(key=lambda x: x["timestamp"], reverse=True)
-    result = activities[:limit]
+    if source_clean == "all":
+        # Tiap grup (bengkel, jasa angkut, mobil, sdm, pusat) dapat jatah `limit` item terbaru.
+        # Tanpa ini, unit yang paling ramai mendorong keluar transaksi unit lain dari daftar.
+        per_grup: dict = {}
+        for act in activities:
+            bucket = per_grup.setdefault(_grup_aktivitas(act["source"]), [])
+            if len(bucket) < limit:
+                bucket.append(act)
+        result = sorted((a for bucket in per_grup.values() for a in bucket),
+                        key=lambda x: x["timestamp"], reverse=True)
+    else:
+        result = activities[:limit]
     set_cached(_cache_key, result)
     return result
 
