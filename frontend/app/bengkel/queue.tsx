@@ -48,7 +48,7 @@ import { BengkelPaymentModal, PaymentItem } from '../../components/BengkelPaymen
 import { id as localeID } from 'date-fns/locale/id';
 import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import {
-    useTransaksiBengkelList,
+    useTransaksiBengkelAntrian,
     useTransaksiBengkelSummary,
     useUpdateTransaksiBengkelStatus,
     useUpdateTransaksiBengkelPayment,
@@ -145,11 +145,19 @@ export default function QueueScreen() {
 
     // Data fetching
     // Saat kata cari berganti, hasil lama tetap tampil (bukan skeleton) supaya input tidak ter-unmount dan keyboard tidak tertutup.
-    const { data: queueData, isLoading, refetch } = useTransaksiBengkelList({
+    const {
+        data: queueData,
+        isLoading,
+        refetch,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useTransaksiBengkelAntrian({
         tanggal_dari,
         tanggal_sampai,
         search: debouncedSearch || undefined,
-        limit: 100,
+        status_pengerjaan: queueWorkStatusFilter === 'ALL' ? 'ALL' : queueWorkStatusFilter.toUpperCase(),
+        pembayaran: queuePaymentFilter,
     }, { placeholderData: keepPreviousData });
 
     const { data: summary, refetch: refetchSummary } = useTransaksiBengkelSummary({
@@ -213,8 +221,11 @@ export default function QueueScreen() {
         return buildSoldMobilIdSet(rows);
     }, [mobilData]);
 
-    const queue = queueData?.data || [];
+    // Baris yang sudah dimuat dari server (sudah difilter di server). Hitungan chip & total dari backend.
+    const queue = useMemo(() => (queueData?.pages ?? []).flatMap((p: any) => p?.data ?? []), [queueData]);
     const todayQueue = queue;
+    const queueTotal = Number(queueData?.pages?.[0]?.total ?? 0);
+    const queueCounts = queueData?.pages?.[0]?.counts;
 
     const getQueuePaymentStatus = useCallback((item: any) => {
         return getBengkelQueuePaymentStatus(item, soldCars);
@@ -236,50 +247,18 @@ export default function QueueScreen() {
         };
     }, [soldCars]);
 
-    const queuePaymentStats = useMemo(() => {
-        return todayQueue.reduce((acc: any, item: any) => {
-            const status = getQueuePaymentStatus(item);
-            acc.total += 1;
-            if (status === 'BATAL') acc.BATAL += 1;
-            else if (status === 'INTERNAL') acc.INTERNAL += 1;
-            else if (status === 'LUNAS') acc.LUNAS += 1;
-            else if (status === 'BELUM_LUNAS') acc.BELUM_LUNAS += 1;
-            else acc.BELUM_BAYAR += 1;
-            return acc;
-        }, { total: 0, LUNAS: 0, BELUM_LUNAS: 0, BELUM_BAYAR: 0, BATAL: 0, INTERNAL: 0 });
-    }, [getQueuePaymentStatus, todayQueue]);
+    const queuePaymentStats = useMemo(
+        () => queueCounts?.payment ?? { total: 0, LUNAS: 0, BELUM_LUNAS: 0, BELUM_BAYAR: 0, BATAL: 0, INTERNAL: 0 },
+        [queueCounts],
+    );
 
-    const queueWorkStatusStats = useMemo(() => {
-        return todayQueue.reduce((acc: any, item: any) => {
-            const status = String(item.status_pengerjaan || 'antre').toLowerCase();
-            acc.total += 1;
-            if (status === 'proses') acc.proses += 1;
-            else if (status === 'selesai') acc.selesai += 1;
-            else if (status === 'batal') acc.batal += 1;
-            else acc.antre += 1;
-            return acc;
-        }, { total: 0, antre: 0, proses: 0, selesai: 0, batal: 0 });
-    }, [todayQueue]);
+    const queueWorkStatusStats = useMemo(
+        () => queueCounts?.work ?? { total: 0, antre: 0, proses: 0, selesai: 0, batal: 0 },
+        [queueCounts],
+    );
 
-    const queueSheetItems = useMemo(() => {
-        return todayQueue.filter((item: any) => {
-            const matchesPayment = queuePaymentFilter === 'ALL' || getQueuePaymentStatus(item) === queuePaymentFilter;
-            const workStatus = String(item.status_pengerjaan || 'antre').toLowerCase();
-            // ALL filter excludes batal; only show batal when explicitly selected
-            const matchesWorkStatus = queueWorkStatusFilter === 'ALL'
-                ? workStatus !== 'batal'
-                : workStatus === queueWorkStatusFilter;
-            const q = debouncedSearch.toLowerCase();
-            const matchesSearch = !q || [
-                item.nomor_transaksi,
-                item.nomor_plat,
-                item.nama_customer,
-                item.customer_nama,
-                item.jenis_kendaraan,
-            ].some((value) => String(value || '').toLowerCase().includes(q));
-            return matchesPayment && matchesWorkStatus && matchesSearch;
-        });
-    }, [getQueuePaymentStatus, queuePaymentFilter, debouncedSearch, queueWorkStatusFilter, todayQueue]);
+    // Filter status dan pencarian sudah dijalankan di server (lihat useTransaksiBengkelAntrian).
+    const queueSheetItems = todayQueue;
 
     // Waktu relatif per row dihitung sekali per perubahan list — bukan per render.
     // formatDistanceToNow + locale di Hermes mahal; dipanggil per row per render
@@ -772,7 +751,7 @@ export default function QueueScreen() {
                     Daftar Antrian
                 </Typography>
                 <Typography className="text-[10px] font-bold text-primary">
-                    {queueSheetItems.length} order
+                    {queueTotal} order
                 </Typography>
             </View>
         </View>
@@ -809,6 +788,11 @@ export default function QueueScreen() {
             ) : (
                 <FlatList
                     data={queueSheetItems}
+                    onEndReached={() => {
+                        if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+                    }}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={isFetchingNextPage ? <ActivityIndicator className="my-4" color={themeColors.primary} /> : null}
                     keyExtractor={(item: any) => String(item.id)}
                     initialNumToRender={12}
                     maxToRenderPerBatch={12}

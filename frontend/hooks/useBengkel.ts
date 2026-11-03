@@ -12,6 +12,24 @@ export const useTransaksiBengkelList = (params?: any, options?: any) => {
     });
 };
 
+// Daftar Antrian dipaginasi dari server. Filter status & pencarian dikirim ke backend,
+// sehingga "Semua" dan chip tidak lagi hanya melihat 100 baris teratas.
+const ANTRIAN_PAGE_SIZE = 25;
+
+export const useTransaksiBengkelAntrian = (params?: any, options?: any) => {
+    return useInfiniteQuery<any, Error, any, any[], number>({
+        queryKey: ['transaksi_bengkel', 'antrian', params],
+        queryFn: ({ pageParam }) =>
+            bengkelService.getTransaksi({ ...params, skip: pageParam, limit: ANTRIAN_PAGE_SIZE }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, allPages) => {
+            const loaded = allPages.reduce((n, p) => n + (p?.data?.length ?? 0), 0);
+            return loaded < Number(lastPage?.total ?? 0) ? loaded : undefined;
+        },
+        ...options,
+    });
+};
+
 export const useTransaksiBengkelSummary = (params?: any, options?: any) => {
     return useQuery<any>({
         queryKey: ['transaksi_bengkel_summary', params],
