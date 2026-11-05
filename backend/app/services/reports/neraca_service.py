@@ -109,9 +109,10 @@ class NeracaService(BaseReportService):
         total_stock_mobil_raw = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
         total_stock_mobil = total_stock_mobil_raw
         total_stock_parts = hist["assets"]["persediaan_part"]
-        # Bulan yang belum terjadi (setelah hari ini) tidak punya persediaan: nilainya 0.
+        # Bulan yang belum dimulai (tanggal 1-nya setelah hari ini) tidak punya persediaan: nilainya 0.
+        # Bulan berjalan tetap memakai nilai hari ini, karena layar mengirim akhir bulan (EOM).
         # Sisi modal (modal_persediaan) memakai variabel yang sama, jadi neraca tetap seimbang.
-        if as_of_date > get_jakarta_date():
+        if as_of_date.replace(day=1) > get_jakarta_date():
             total_stock_parts = 0
         total_fixed_assets = hist["assets"]["tetap"]
         
