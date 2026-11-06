@@ -17,6 +17,9 @@ def test_beban_periode_depan_nol():
         akhir = depan
         m = ModalService(db).get_report(awal, akhir)
         assert m["pengurangan"]["beban_operasional"]["total"] == 0
+        # Penyesuaian spare part juga per periode (sisanya masuk mutasi_modal_sebelumnya).
+        assert m["penambahan"]["koreksi_stok_sparepart"] == 0
+        assert m["penambahan"]["penyesuaian_harga_beli_sparepart"] == 0
         assert m["is_balanced"] is True
     finally:
         db.close()

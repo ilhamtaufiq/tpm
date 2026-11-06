@@ -536,6 +536,24 @@ class ModalService(BaseReportService):
             - pengembalian_modal_sebelumnya
         )
 
+        # Penyesuaian harga beli dan koreksi stok spare part dipisah seperti setoran: baris
+        # penambahan hanya berisi periode ini, sisa kumulatifnya masuk mutasi_modal_sebelumnya.
+        # Jumlah keduanya tetap = reval_reserve, jadi raw_theoretical tidak berubah.
+        from app.models.bengkel import SparePartRevaluation
+
+        def _reval_rentang(dari, sampai, koreksi_qty):
+            return float(self.db.query(func.sum(SparePartRevaluation.amount)).filter(
+                SparePartRevaluation.is_qty_correction == koreksi_qty,
+                SparePartRevaluation.tanggal >= dari,
+                SparePartRevaluation.tanggal <= sampai,
+            ).scalar() or 0)
+
+        qty_correction_periode = _reval_rentang(period_dari, tanggal_sampai, True)
+        reval_reserve_periode = _reval_rentang(period_dari, tanggal_sampai, False) + qty_correction_periode
+        mutasi_modal_sebelumnya += reval_reserve - reval_reserve_periode
+        reval_reserve = reval_reserve_periode
+        qty_correction = qty_correction_periode
+
         # Beban per PERIODE (bukan kumulatif sejak anchor). Saldo ekuitas kumulatif tetap
         # dijaga lewat laba_ditahan_sebelumnya; di sini hanya arus beban periode ini.
         bp = data_period["units"].get("bengkel", {})
