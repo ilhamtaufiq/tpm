@@ -412,11 +412,12 @@ class MobilService:
         if tahun:
             query = query.filter(Mobil.tahun == tahun)
             
-        # Date range filter
+        # Date range filter. Unit terjual difilter menurut tanggal jual, bukan tanggal masuk.
+        kolom_tanggal = Mobil.tanggal_terjual if status == CarStatus.TERJUAL else Mobil.tanggal_masuk
         if tanggal_dari:
-            query = query.filter(Mobil.tanggal_masuk >= tanggal_dari)
+            query = query.filter(kolom_tanggal >= tanggal_dari)
         if tanggal_sampai:
-            query = query.filter(Mobil.tanggal_masuk <= tanggal_sampai)
+            query = query.filter(kolom_tanggal <= tanggal_sampai)
 
         # Payment Filter (Joined logic)
         if payment_filter and payment_filter != 'ALL':
