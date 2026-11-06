@@ -64,18 +64,19 @@ def _buat_lunas_tunai(db, payments):
     return tx
 
 
-def _jenis_kas_tunai(db, tx_id):
-    rows = db.query(KasBank).filter(KasBank.referensi_id == tx_id, KasBank.sumber == KasBankSource.BENGKEL, KasBank.tipe == "MASUK").all()
+def _jenis_kas_tunai(db, tx):
+    # Hanya baris dari transaksi uji ini (nomor unik), karena referensi_id bisa dipakai data lain.
+    rows = db.query(KasBank).filter(KasBank.nomor_referensi == tx.nomor_transaksi, KasBank.sumber == KasBankSource.BENGKEL, KasBank.tipe == "MASUK").all()
     return [r.jenis for r in rows]
 
 
 def test_tunai_ke_kas_pusat_bila_dipilih(db):
     tx = _buat_lunas_tunai(db, [PaymentItem(metode=PaymentMethod.TUNAI, jumlah=Decimal("100000"), kas_jenis=KasBankJenis.KAS_UTAMA)])
-    jenis = _jenis_kas_tunai(db, tx.id)
+    jenis = _jenis_kas_tunai(db, tx)
     assert jenis == [KasBankJenis.KAS_UTAMA]
 
 
 def test_tunai_default_tetap_kas_bengkel(db):
     tx = _buat_lunas_tunai(db, [PaymentItem(metode=PaymentMethod.TUNAI, jumlah=Decimal("100000"))])
-    jenis = _jenis_kas_tunai(db, tx.id)
+    jenis = _jenis_kas_tunai(db, tx)
     assert jenis == [KasBankJenis.KAS_UNIT_BENGKEL]

@@ -133,11 +133,15 @@ def test_batalkan_pengeluaran_membalik_kas_dan_keluar_dari_laporan(db):
 
 def test_alasan_wajib_minimal_lima_karakter(db):
     _seed(db, KasBankJenis.KAS_UNIT_BENGKEL, "1000000")
+    saldo_sebelum = _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL)
     pengeluaran = _buat_pengeluaran(db)
+    saldo_setelah_biaya = _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL)
     with pytest.raises(HTTPException) as info:
         PembatalanService(db).batalkan_pengeluaran(pengeluaran.id, "  abc ", None)
     assert info.value.status_code == 400
-    assert _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL) == pytest.approx(700000)
+    # Alasan ditolak: saldo tidak berubah dari kondisi setelah biaya dibuat (DB bersama bisa sudah berisi data).
+    assert _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL) == pytest.approx(saldo_setelah_biaya)
+    assert saldo_setelah_biaya == pytest.approx(saldo_sebelum - 300000)
 
 
 def test_pengeluaran_tidak_bisa_dibatalkan_dua_kali(db):
@@ -170,6 +174,7 @@ def test_batalkan_transfer_membalik_kedua_kaki(db):
     _seed(db, KasBankJenis.KAS_UTAMA, "1000000")
     utama_awal = _saldo(db, KasBankJenis.KAS_UTAMA)
     bengkel_awal = _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL)
+    batas_id = db.query(func.max(KasBank.id)).scalar() or 0
     KasBankService(db).transfer(
         KasBankJenis.KAS_UTAMA,
         KasBankJenis.KAS_UNIT_BENGKEL,
@@ -183,7 +188,7 @@ def test_batalkan_transfer_membalik_kedua_kaki(db):
     kaki_masuk = (
         db.query(KasBank)
         .filter(KasBank.jenis == KasBankJenis.KAS_UNIT_BENGKEL, KasBank.tipe == KasBankType.MASUK,
-                KasBank.nomor_referensi.like("TRF-%"))
+                KasBank.nomor_referensi.like("TRF-%"), KasBank.id > batas_id)
         .one()
     )
 
@@ -198,6 +203,7 @@ def test_transfer_ditolak_bila_saldo_tujuan_sudah_terpakai(db):
     _seed(db, KasBankJenis.KAS_UTAMA, "1000000")
     utama_awal = _saldo(db, KasBankJenis.KAS_UTAMA)
     bengkel_awal = _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL)
+    batas_id = db.query(func.max(KasBank.id)).scalar() or 0
     KasBankService(db).transfer(
         KasBankJenis.KAS_UTAMA, KasBankJenis.KAS_UNIT_BENGKEL,
         Decimal("200000"), get_jakarta_date(), "Modal harian", None,
@@ -207,7 +213,7 @@ def test_transfer_ditolak_bila_saldo_tujuan_sudah_terpakai(db):
     kaki_masuk = (
         db.query(KasBank)
         .filter(KasBank.jenis == KasBankJenis.KAS_UNIT_BENGKEL, KasBank.tipe == KasBankType.MASUK,
-                KasBank.nomor_referensi.like("TRF-%"))
+                KasBank.nomor_referensi.like("TRF-%"), KasBank.id > batas_id)
         .one()
     )
     with pytest.raises(HTTPException) as info:
