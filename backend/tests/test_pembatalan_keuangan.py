@@ -168,6 +168,8 @@ def test_batalkan_dari_kas_mencari_pengeluaran_asal(db):
 
 def test_batalkan_transfer_membalik_kedua_kaki(db):
     _seed(db, KasBankJenis.KAS_UTAMA, "1000000")
+    utama_awal = _saldo(db, KasBankJenis.KAS_UTAMA)
+    bengkel_awal = _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL)
     KasBankService(db).transfer(
         KasBankJenis.KAS_UTAMA,
         KasBankJenis.KAS_UNIT_BENGKEL,
@@ -176,8 +178,8 @@ def test_batalkan_transfer_membalik_kedua_kaki(db):
         "Modal harian",
         None,
     )
-    assert _saldo(db, KasBankJenis.KAS_UTAMA) == pytest.approx(800000)
-    assert _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL) == pytest.approx(200000)
+    assert _saldo(db, KasBankJenis.KAS_UTAMA) == pytest.approx(utama_awal - 200000)
+    assert _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL) == pytest.approx(bengkel_awal + 200000)
     kaki_masuk = (
         db.query(KasBank)
         .filter(KasBank.jenis == KasBankJenis.KAS_UNIT_BENGKEL, KasBank.tipe == KasBankType.MASUK,
@@ -188,17 +190,20 @@ def test_batalkan_transfer_membalik_kedua_kaki(db):
     riwayat = PembatalanService(db).batalkan_dari_kas(kaki_masuk.id, "Transfer salah tujuan", None)
 
     assert riwayat.jenis == "TRANSFER"
-    assert _saldo(db, KasBankJenis.KAS_UTAMA) == pytest.approx(1000000)
-    assert _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL) == pytest.approx(0)
+    assert _saldo(db, KasBankJenis.KAS_UTAMA) == pytest.approx(utama_awal)
+    assert _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL) == pytest.approx(bengkel_awal)
 
 
 def test_transfer_ditolak_bila_saldo_tujuan_sudah_terpakai(db):
     _seed(db, KasBankJenis.KAS_UTAMA, "1000000")
+    utama_awal = _saldo(db, KasBankJenis.KAS_UTAMA)
+    bengkel_awal = _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL)
     KasBankService(db).transfer(
         KasBankJenis.KAS_UTAMA, KasBankJenis.KAS_UNIT_BENGKEL,
         Decimal("200000"), get_jakarta_date(), "Modal harian", None,
     )
-    _buat_pengeluaran(db, jumlah="150000")  # uang unit sudah terpakai
+    # Biaya lebih besar dari saldo unit sebelum transfer: pembalikan kaki masuk akan negatif.
+    _buat_pengeluaran(db, jumlah=str(int(bengkel_awal) + 150000))  # uang unit sudah terpakai
     kaki_masuk = (
         db.query(KasBank)
         .filter(KasBank.jenis == KasBankJenis.KAS_UNIT_BENGKEL, KasBank.tipe == KasBankType.MASUK,
@@ -209,7 +214,7 @@ def test_transfer_ditolak_bila_saldo_tujuan_sudah_terpakai(db):
         PembatalanService(db).batalkan_dari_kas(kaki_masuk.id, "Transfer salah tujuan", None)
     assert info.value.status_code == 400
     assert "menjadi negatif" in info.value.detail
-    assert _saldo(db, KasBankJenis.KAS_UTAMA) == pytest.approx(800000)
+    assert _saldo(db, KasBankJenis.KAS_UTAMA) == pytest.approx(utama_awal - 200000)
 
 
 def _buat_kasbon(db, nominal="200000"):
@@ -274,7 +279,8 @@ def test_laporan_tetap_seimbang_setelah_pembatalan(db):
     anchor = ModalService(db)._saldo_awal_date()
     if anchor:
         laba_modal = _cari(ModalService(db).get_report(anchor, hari_ini), "laba_operasional")
-        assert laba_modal == pytest.approx(laba, abs=TOL)
+        laba_rugi_anchor = _cari(LabaRugiService(db).get_report(anchor, hari_ini), "laba_operasional")
+        assert laba_modal == pytest.approx(laba_rugi_anchor, abs=TOL)
     assert _saldo(db, KasBankJenis.KAS_UNIT_BENGKEL) == pytest.approx(kas_awal)
     # Setelah dibatalkan, laba operasional kembali seperti sebelum biaya dibuat.
     assert laba == pytest.approx(laba_awal, abs=TOL)

@@ -536,31 +536,36 @@ class ModalService(BaseReportService):
             - pengembalian_modal_sebelumnya
         )
 
+        # Beban per PERIODE (bukan kumulatif sejak anchor). Saldo ekuitas kumulatif tetap
+        # dijaga lewat laba_ditahan_sebelumnya; di sini hanya arus beban periode ini.
+        bp = data_period["units"].get("bengkel", {})
+        mp = data_period["units"].get("mobil", {})
+        jap = data_period["units"].get("jasa_angkut", {})
         # Beban Gaji & Lembur
-        gaji = float(b.get("gaji", 0))
-        lembur = float(b.get("lembur", 0))
+        gaji = float(bp.get("gaji", 0))
+        lembur = float(bp.get("lembur", 0))
         
         # Breakdown Beban Operasional
         ops_umum = (
-            float(b.get("common_expenses", 0)) +
-            float(data.get("admin_fees_unrecorded", 0)) +
-            float(data.get("ja_untracked_gap", 0)) +
-            float(data.get("manual_hutang_non_pinjaman", 0))
+            float(bp.get("common_expenses", 0)) +
+            float(data_period.get("admin_fees_unrecorded", 0)) +
+            float(data_period.get("ja_untracked_gap", 0)) +
+            float(data_period.get("manual_hutang_non_pinjaman", 0))
         )
-        ops_bengkel = float(b.get("total_expenses", 0))
+        ops_bengkel = float(bp.get("total_expenses", 0))
         # Mobil Breakdown: Only general overhead.
         # Capitalized costs (prep/repairs) are moved to Stock Allocation.
-        ops_mobil = float(m.get("overhead", 0))
+        ops_mobil = float(mp.get("overhead", 0))
         
         # Jasa Angkut Breakdown: Unit vs Armada vs Trip vs Repairs
         # Note: ja.get("armada_ops", 0) represents trip-level costs.
         # ja.get("armada_ops_ledger", 0) represents armada-level tagged expenses.
         # ja.get("overhead", 0) represents unit-level general overhead.
         # ja.get("repairs", 0) represents internal workshop bills.
-        ops_ja_unit = float(ja.get("overhead", 0))
-        ops_ja_armada = float(ja.get("armada_ops_ledger", 0))
-        ops_ja_trip = float(ja.get("armada_ops", 0))
-        ops_ja_repairs = float(ja.get("repairs", 0))
+        ops_ja_unit = float(jap.get("overhead", 0))
+        ops_ja_armada = float(jap.get("armada_ops_ledger", 0))
+        ops_ja_trip = float(jap.get("armada_ops", 0))
+        ops_ja_repairs = float(jap.get("repairs", 0))
         
         ops_ja = ops_ja_unit + ops_ja_armada + ops_ja_trip + ops_ja_repairs
         
