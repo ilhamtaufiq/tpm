@@ -302,9 +302,10 @@ export default function MobilInventoryScreen() {
         status: activeTab === 'semua' ? undefined : activeTab.toUpperCase(),
         status_bayar: paymentFilter,
         search: debouncedSearch,
-        // Only apply date range for Sold/Booking, show all available inventory
-        tanggal_dari: (activeTab === 'tersedia' || activeTab === 'semua' || useAllTime) ? undefined : dateRange.dari,
-        tanggal_sampai: (activeTab === 'tersedia' || activeTab === 'semua' || useAllTime) ? undefined : dateRange.sampai
+        // Periode hanya berlaku untuk unit Terjual (tanggal jual). Tersedia dan Terbooking adalah status
+        // saat ini, jadi tampil semua seperti hitungan di chip.
+        tanggal_dari: (activeTab !== 'terjual' || useAllTime) ? undefined : dateRange.dari,
+        tanggal_sampai: (activeTab !== 'terjual' || useAllTime) ? undefined : dateRange.sampai
     }, { // Polling every 15 seconds
     });
 
