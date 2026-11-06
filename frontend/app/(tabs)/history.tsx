@@ -93,7 +93,7 @@ const getSourceConfig = (source: string, title: string | undefined, themeColors:
 
 const getStatusBadge = (status: string): { variant: 'success' | 'warning' | 'info' | 'error' | 'neutral', label: string } => {
     const s = status.toUpperCase();
-    if (s.includes('LUNAS') || s === 'SELESAI') return { variant: 'success', label: 'LUNAS' };
+    if ((s.includes('LUNAS') && !s.includes('BELUM')) || s === 'SELESAI') return { variant: 'success', label: 'LUNAS' };
     if (s.includes('PROSES') || s === 'ANTRE') return { variant: 'info', label: 'PROSES' };
     if (s.includes('BELUM') || s === 'PENDING') return { variant: 'warning', label: 'PENDING' };
     if (s === 'BATAL') return { variant: 'error', label: 'BATAL' };

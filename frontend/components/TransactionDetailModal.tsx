@@ -617,7 +617,7 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
 
     const getStatusConfig = (status: string) => {
         const s = status.toUpperCase();
-        if (s.includes('LUNAS') || s === 'SELESAI' || s === 'MASUK') {
+        if ((s.includes('LUNAS') && !s.includes('BELUM')) || s === 'SELESAI' || s === 'MASUK') {
             return { color: '#10B981', icon: CheckCircle2, label: s };
         }
         if (s.includes('PROSES') || s === 'ANTRE') {
