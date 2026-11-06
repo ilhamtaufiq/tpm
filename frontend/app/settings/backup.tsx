@@ -20,6 +20,8 @@ import HardDrive from 'lucide-react-native/dist/esm/icons/hard-drive.js';
 import Shield from 'lucide-react-native/dist/esm/icons/shield.js';
 import Upload from 'lucide-react-native/dist/esm/icons/upload.js';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import * as DocumentPicker from 'expo-document-picker';
 import { useBackupList, useCreateBackup, useDeleteBackup, useRestoreBackup, useUploadBackup } from '../../hooks/useBackups';
 import { backupService, BackupFile } from '../../services/backup';
@@ -116,6 +118,7 @@ function ProgressBar({ progress, color }: { progress: number | null; color: stri
 export default function BackupScreen() {
     const themeColors = useUIStore((s) => s.themeColors);
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [refreshing, setRefreshing] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
     const [selectedBackup, setSelectedBackup] = useState<BackupFile | null>(null);
@@ -385,19 +388,22 @@ export default function BackupScreen() {
             />
 
             <View className="px-6 mt-4 z-10">
-                <View className="bg-surface p-4 rounded-[32px] shadow-xl border border-transparent flex-row items-center">
-                    <View className="w-14 h-14 bg-primary/10 rounded-2xl items-center justify-center mr-4">
-                        <ShieldCheck size={28} color={themeColors.primary} strokeWidth={2} />
+                <View className="bg-surface p-5 rounded-[32px] shadow-xl border border-transparent">
+                    <View className="flex-row items-center mb-5">
+                        <View className="w-14 h-14 bg-primary/10 rounded-2xl items-center justify-center">
+                            <ShieldCheck size={28} color={themeColors.primary} strokeWidth={2} />
+                        </View>
+                        <View className="flex-1 ml-4">
+                            <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">System Backup</Typography>
+                            <Typography variant="caption" className="text-textGray">Amankan data transaksi & file</Typography>
+                        </View>
                     </View>
-                    <View className="flex-1">
-                        <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">System Backup</Typography>
-                        <Typography variant="caption" className="text-textGray">Amankan data transaksi & file</Typography>
-                    </View>
-                    <View className="flex-row items-center space-x-2">
-                        <Pressable 
+                    <View className="flex-row items-center">
+                        <Pressable
                             onPress={handleUploadBackup}
                             disabled={uploadMutation.isPending}
-                            className={`w-12 h-14 rounded-2xl items-center justify-center border border-border ${uploadMutation.isPending ? 'bg-background' : 'bg-surface active:bg-background'}`}
+                            accessibilityLabel="Unggah file backup"
+                            className={`w-14 h-14 rounded-2xl items-center justify-center border border-border mr-3 ${uploadMutation.isPending ? 'bg-background' : 'bg-surface active:bg-background'}`}
                         >
                             {uploadMutation.isPending ? (
                                 <ActivityIndicator size="small" color={themeColors.primary} />
@@ -405,17 +411,17 @@ export default function BackupScreen() {
                                 <Upload size={20} color={themeColors.primary} />
                             )}
                         </Pressable>
-                        <Pressable 
+                        <Pressable
                             onPress={handleCreateBackup}
                             disabled={createMutation.isPending}
-                            className={`px-6 py-4 rounded-2xl shadow-lg shadow-primary/30 flex-row items-center ${createMutation.isPending ? 'bg-primary/50' : 'bg-primary'}`}
+                            className={`flex-1 h-14 rounded-2xl shadow-lg shadow-primary/30 flex-row items-center justify-center ${createMutation.isPending ? 'bg-primary/50' : 'bg-primary'}`}
                         >
                             {createMutation.isPending ? (
                                 <ActivityIndicator size="small" color="white" />
                             ) : (
                                 <>
-                                    <Database size={16} color="white" className="mr-2" />
-                                    <Typography weight="bold" className="text-white text-xs ml-2">BACKUP</Typography>
+                                    <Database size={16} color="white" />
+                                    <Typography weight="bold" className="text-white text-xs ml-2 tracking-wider">BACKUP SEKARANG</Typography>
                                 </>
                             )}
                         </Pressable>
@@ -443,7 +449,8 @@ export default function BackupScreen() {
             )}
 
             <ScrollView
-                className="flex-1 px-6 pt-10"
+                className="flex-1 px-6 pt-6"
+                contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
             >
