@@ -314,8 +314,8 @@ export default function MobilInventoryScreen() {
 
     const { data: summaryData, refetch: refetchSummary } = usePenjualanSummary({
         search: debouncedSearch,
-        tanggal_dari: useAllTime ? undefined : dateRange.dari,
-        tanggal_sampai: useAllTime ? undefined : dateRange.sampai
+        tanggal_dari: (activeTab !== 'terjual' || useAllTime) ? undefined : dateRange.dari,
+        tanggal_sampai: (activeTab !== 'terjual' || useAllTime) ? undefined : dateRange.sampai
     }, { // Polling every 15 seconds
     });
 
@@ -1329,7 +1329,7 @@ export default function MobilInventoryScreen() {
                     ListHeaderComponent={
                         <>
                     {/* Date Filter Selection */}
-                    {(activeTab !== 'tersedia' && activeTab !== 'semua') && (
+                    {activeTab === 'terjual' && (
                         <Pressable
                             onPress={() => {
                                 setTempDateRange(dateRange);
