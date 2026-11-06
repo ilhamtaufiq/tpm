@@ -108,6 +108,8 @@ def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     hutang_sebelum = hutang_gaji_asof(db, HARI_INI_UJI)
 
     svc = SlipGajiService(db)
+    # DB bersama bisa sudah berisi slip minggu ini: dibandingkan selisihnya.
+    awal = svc.get_summary_by_date_range(SENIN, SABTU)
     slip = svc.create(SlipGajiCreate(karyawan_id=kar.id, periode_minggu=42, periode_tahun=2026))
     assert slip.gaji_pokok == Decimal("250000")
     assert slip.jumlah_hadir == Decimal("2.5")
@@ -124,7 +126,7 @@ def test_slip_cair_mengurangi_hutang_bukan_beban(ctx):
     assert hutang_gaji_asof(db, HARI_INI_UJI) == hutang_sebelum - Decimal("250000")
     # Beban gaji periode slip sudah diakui di absensi: tidak dihitung lagi saat cair.
     ringkasan = svc.get_summary_by_date_range(SENIN, SABTU)
-    assert ringkasan["total_gaji_pokok"] == 0.0
+    assert ringkasan["total_gaji_pokok"] == awal["total_gaji_pokok"]
     assert ringkasan["total_gaji_pokok_akrual"] == float(akrual_gaji_periode(db, SENIN, SABTU))
     neraca = NeracaService(db).get_report(SABTU)
     assert neraca["is_balanced"] is True
