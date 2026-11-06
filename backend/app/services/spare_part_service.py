@@ -121,6 +121,8 @@ class SparePartService:
         )
 
         self.db.add(spare_part)
+        self.db.flush()
+        self._catat_stok_awal(spare_part)
         self.db.commit()
         self.db.refresh(spare_part)
         self._emit_change("created", spare_part)
@@ -396,6 +398,15 @@ class SparePartService:
         self._emit_change("price_updated", spare_part)
 
         return spare_part
+
+    def _catat_stok_awal(self, sp: SparePart) -> None:
+        """Stok awal part baru (bukan lewat pembelian) dicatat sebagai koreksi qty bertanggal hari ini.
+
+        Tanpa jejak ini, laporan historis menghitung stok part itu seolah sudah ada sejak awal
+        (rumus stok mundur hanya mengenal pembelian, pemakaian, retur, dan koreksi), sehingga
+        selisihnya muncul sebagai "Penyesuaian Transaksi Backdate" di Perubahan Modal.
+        """
+        self._catat_penyesuaian_persediaan(sp, Decimal("0"), sp.harga_beli)
 
     def _catat_penyesuaian_persediaan(self, sp: SparePart, stok_lama, harga_lama) -> None:
         """Catat edit harga beli / stok manual agar laporan bisa menjelaskannya.
@@ -971,6 +982,8 @@ class SparePartService:
                         catatan=parsed["catatan"],
                     )
                     self.db.add(new_spare_part)
+                    self.db.flush()
+                    self._catat_stok_awal(new_spare_part)
                     results["success"] += 1
 
                 except Exception as e:

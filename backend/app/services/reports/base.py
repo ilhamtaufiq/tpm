@@ -428,6 +428,17 @@ class BaseReportService:
             *workshop_finance_recognized_filters(),
             TransaksiPenjualanBengkel.tanggal > tanggal_sampai
         ).scalar() or 0)
+
+        # Retur pembelian sesudah tanggal_sampai sudah mengurangi stok sekarang, jadi untuk
+        # posisi historis nilainya dikembalikan. Retur hanya diizinkan pada harga beli yang
+        # sama (lihat retur_pembelian_service), jadi subtotal retur = nilai stok yang keluar.
+        from app.models.bengkel import ReturPembelianSparePart, DetailReturPembelianSparePart
+        retur_after = float(self.db.query(func.sum(DetailReturPembelianSparePart.subtotal)).join(
+            ReturPembelianSparePart, DetailReturPembelianSparePart.retur_id == ReturPembelianSparePart.id
+        ).filter(
+            ReturPembelianSparePart.tanggal > tanggal_sampai,
+            ReturPembelianSparePart.dibatalkan == False,  # noqa: E712
+        ).scalar() or 0)
         
         # Persediaan spare part dinilai HARGA BELI TERBARU (stok x harga_beli),
         # sama dengan daftar stok. Selisih harga stok lama saat harga beli berubah
@@ -466,7 +477,7 @@ class BaseReportService:
             SparePartRevaluation.is_qty_correction == True,  # noqa: E712
         ).scalar() or 0)
 
-        part_stock = max(0, current_stock_val - purchases_after + usage_after
+        part_stock = max(0, current_stock_val - purchases_after + usage_after + retur_after
                          - reval_sesudah - koreksi_qty_sesudah)
         # Car Stock (Available as of date: masuk <= sampai AND (keluar is null OR keluar > sampai))
         # Total Capitalized Value = Purchase Price + Prep + Repairs for unsold cars
