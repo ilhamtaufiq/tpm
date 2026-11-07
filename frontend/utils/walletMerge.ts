@@ -71,3 +71,80 @@ export function mergeWalletRows(wallet: any[] = [], central: any[] = [], expense
         return (y.id ?? 0) - (x.id ?? 0);
     });
 }
+
+// Sumber unit pada feed aktivitas (/dashboard/recent-activity), dari sumber kas unit.
+const FEED_SOURCE_BY_UNIT: Record<string, string> = {
+    BENGKEL: 'bengkel',
+    JASA_ANGKUT: 'jasa_angkut',
+    JUAL_BELI_MOBIL: 'jual_beli_mobil',
+};
+
+export const feedSourceForUnit = (unitScope: string): string | undefined => FEED_SOURCE_BY_UNIT[unitScope];
+
+const tanggalLokalIso = (iso: string): string => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+/** Baris transaksi unit dari feed aktivitas → bentuk baris kas_bank. Id berawalan 'bengkel_' / 'muatan_' (tak bentrok dengan id kas). */
+export function activityToWalletRow(a: any): any {
+    return {
+        id: a.id,
+        nomor_transaksi: a.ref_number || a.subtitle,
+        tanggal: tanggalLokalIso(a.timestamp),
+        jenis: a.status,
+        tipe: a.is_incoming ? 'MASUK' : 'KELUAR',
+        nominal: Number(a.amount),
+        sumber: a.source,
+        referensi_id: a.original_id,
+        nomor_referensi: a.ref_number,
+        keterangan: a.title,
+        metode_pembayaran: a.status,
+        created_at: a.timestamp,
+        // Penanda: baris ini milik feed transaksi, bukan kas_bank (tak bisa dibatalkan dari dompet).
+        dari_feed: true,
+    };
+}
+
+/**
+ * Tambahkan transaksi unit (type workshop / transport) ke riwayat dompet.
+ * - Baris kas/pengeluaran yang sudah ada tidak diubah.
+ * - Transaksi yang nomornya sudah tampil sebagai baris kas dilewati (hindari ganda).
+ * - Dibatasi rentang tanggal dompet bila diberikan (format yyyy-MM-dd).
+ */
+export function mergeActivityRows(
+    base: any[] = [],
+    activities: any[] = [],
+    range: { tanggal_dari?: string; tanggal_sampai?: string } = {},
+): any[] {
+    const usedRefs = new Set<string>();
+    base.forEach((row: any) => {
+        if (row?.nomor_referensi) usedRefs.add(String(row.nomor_referensi));
+        if (row?.nomor_transaksi) usedRefs.add(String(row.nomor_transaksi));
+    });
+    const usedIds = new Set<string>();
+    const extra: any[] = [];
+    activities
+        .filter((a: any) => a?.type === 'workshop' || a?.type === 'transport')
+        .map(activityToWalletRow)
+        .forEach((row: any) => {
+            if (usedIds.has(row.id)) return;
+            if (row.nomor_referensi && usedRefs.has(String(row.nomor_referensi))) return;
+            if (!row.tanggal) return;
+            if (range.tanggal_dari && row.tanggal < range.tanggal_dari) return;
+            if (range.tanggal_sampai && row.tanggal > range.tanggal_sampai) return;
+            usedIds.add(row.id);
+            if (row.nomor_referensi) usedRefs.add(String(row.nomor_referensi));
+            extra.push(row);
+        });
+    if (extra.length === 0) return base;
+    return [...base, ...extra].sort((x: any, y: any) => {
+        if (x.tanggal !== y.tanggal) return x.tanggal < y.tanggal ? 1 : -1;
+        const cx = String(x.created_at ?? '');
+        const cy = String(y.created_at ?? '');
+        if (cx !== cy) return cx < cy ? 1 : -1;
+        return 0;
+    });
+}

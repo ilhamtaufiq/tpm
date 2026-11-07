@@ -22,9 +22,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { Tabs } from '../../components/ui/Tabs';
 import { printBleTestReceipt } from '../../utils/printBleReceipt';
 import { getSavedBlePrinterMac } from '../../utils/androidThermalPrint';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function PrintSettingsScreen() {
     const insets = useSafeAreaInsets();
+    const user = useAuthStore((s) => s.user);
+    const isAdmin = user?.role === 'ADMIN';
     const [settings, setSettings] = useState<PrintSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -86,19 +89,8 @@ export default function PrintSettingsScreen() {
     const loadSettings = async () => {
         try {
             setLoading(true);
-            
-            // Try to fetch from backend first for synchronization
-            try {
-                const systemSettings = await settingsService.getSettings();
-                if (systemSettings && systemSettings.print) {
-                    const mapped = printSettingsService.fromSystemSettings(systemSettings);
-                    // Update local storage too so offline works with latest settings
-                    await printSettingsService.saveSettings(mapped);
-                }
-            } catch (syncError) {
-                console.warn('Could not sync with backend, using local settings:', syncError);
-            }
 
+            // getSettings sudah mengambil dari server dan fallback ke cache lokal saat offline.
             const data = await printSettingsService.getSettings();
             setSettings(data);
         } catch (error) {
@@ -115,14 +107,28 @@ export default function PrintSettingsScreen() {
         }
     };
 
+    const showDialog = (title: string, message: string, variant: 'success' | 'error' | 'warning' | 'info') => {
+        setDialogConfig({ visible: true, title, message, variant, type: 'alert' });
+    };
+
     const handleSave = async () => {
         if (!settings) return;
+
+        // Pengaturan cetak untuk semua perangkat hanya bisa diubah admin. Non-admin tidak menyimpan
+        // apa pun di perangkat, karena nilainya akan tertimpa pengaturan dari server.
+        if (!isAdmin) {
+            showDialog(
+                'Hanya Admin',
+                'Pengaturan cetak untuk semua perangkat hanya bisa diubah oleh admin.',
+                'info',
+            );
+            return;
+        }
 
         try {
             setSaving(true);
             await printSettingsService.saveSettings(settings);
-            
-            // Sync to backend for public receipts and other users
+
             try {
                 await settingsService.updateSettings({
                     print: {
@@ -139,16 +145,15 @@ export default function PrintSettingsScreen() {
                 });
             } catch (syncError) {
                 console.warn('Failed to sync settings to backend:', syncError);
-                // We still show success for local save, but maybe log it
+                showDialog(
+                    'Disimpan di Perangkat',
+                    'Pengaturan tersimpan di perangkat ini, tetapi gagal disimpan ke server. Periksa koneksi lalu simpan lagi.',
+                    'warning',
+                );
+                return;
             }
 
-            setDialogConfig({
-                visible: true,
-                title: 'Sukses',
-                message: 'Pengaturan berhasil disimpan',
-                variant: 'success',
-                type: 'alert'
-            });
+            showDialog('Sukses', 'Pengaturan berhasil disimpan', 'success');
         } catch (error) {
             console.error('Error saving settings:', error);
             setDialogConfig({

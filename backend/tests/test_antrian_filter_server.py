@@ -87,7 +87,7 @@ def test_filter_pembayaran_sama_dengan_aturan_browser(data, pembayaran, hasil):
 def test_hitungan_chip_dihitung_sebelum_filter(data):
     hasil = _list(data, status_pengerjaan="PROSES", pembayaran="BELUM_LUNAS")
     assert _nomor(hasil) == ["B"]
-    assert hasil["counts"]["work"] == {"total": 5, "antre": 1, "proses": 1, "selesai": 2, "batal": 1}
+    assert hasil["counts"]["work"] == {"total": 4, "antre": 1, "proses": 1, "selesai": 2, "batal": 1}
     assert hasil["counts"]["payment"] == {
         "total": 5, "LUNAS": 1, "BELUM_LUNAS": 1, "BELUM_BAYAR": 1, "BATAL": 1, "INTERNAL": 1,
     }

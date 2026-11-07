@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { ReceiptTemplate } from './receiptTemplates';
 import { getPaperDimensions, normalizePaperSize } from './paperSize';
 import { normalizeQrCodeBaseUrl } from './publicReceiptUrl';
+import { settingsService } from '../services/settings';
 
 export interface PrintSettings {
     header: string;
@@ -36,8 +37,49 @@ const DEFAULT_SETTINGS: PrintSettings = {
 
 const STORAGE_KEY = '@print_settings';
 
+// Batas tunggu baca dari server. Lewat dari ini, cache lokal yang dipakai.
+const SERVER_READ_TIMEOUT_MS = 3000;
+let serverRefresh: Promise<void> | null = null;
+
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('Timeout membaca pengaturan cetak dari server')), ms);
+        promise.then(
+            (value) => { clearTimeout(timer); resolve(value); },
+            (error) => { clearTimeout(timer); reject(error); },
+        );
+    });
+
 export const printSettingsService = {
+    /**
+     * Pengaturan cetak diambil dari server (berlaku untuk semua perangkat), disimpan ke cache
+     * lokal, lalu cache dikembalikan. Saat server tidak bisa dihubungi, cache lokal dipakai.
+     */
     async getSettings(): Promise<PrintSettings> {
+        await this.refreshFromServer();
+        return this.getLocalSettings();
+    },
+
+    async refreshFromServer(): Promise<void> {
+        if (!serverRefresh) {
+            serverRefresh = (async () => {
+                try {
+                    const systemSettings = await withTimeout(settingsService.getSettings(), SERVER_READ_TIMEOUT_MS);
+                    const mapped = this.fromSystemSettings(systemSettings);
+                    if (Object.keys(mapped).length > 0) {
+                        await this.writeLocalSettings(mapped);
+                    }
+                } catch (error) {
+                    console.warn('Pengaturan cetak dari server tidak tersedia, memakai cache lokal:', error);
+                } finally {
+                    serverRefresh = null;
+                }
+            })();
+        }
+        return serverRefresh;
+    },
+
+    async getLocalSettings(): Promise<PrintSettings> {
         try {
             const data = await AsyncStorage.getItem(STORAGE_KEY);
             if (data) {
@@ -60,11 +102,16 @@ export const printSettingsService = {
         }
     },
 
+    async writeLocalSettings(settings: Partial<PrintSettings>): Promise<void> {
+        const current = await this.getLocalSettings();
+        const updated = { ...current, ...settings };
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    },
+
+    /** Simpan hanya ke perangkat ini. Sinkronisasi ke server dilakukan pemanggil (khusus admin). */
     async saveSettings(settings: Partial<PrintSettings>): Promise<void> {
         try {
-            const current = await this.getSettings();
-            const updated = { ...current, ...settings };
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            await this.writeLocalSettings(settings);
         } catch (error) {
             console.error('Error saving print settings:', error);
             throw error;

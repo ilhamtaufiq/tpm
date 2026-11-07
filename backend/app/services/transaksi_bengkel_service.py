@@ -77,15 +77,17 @@ def _kondisi_pengerjaan_antrian():
 
 
 def _hitung_counts_antrian(query) -> Dict[str, Any]:
-    """Jumlah per status untuk chip. Total 'Semua' ikut menghitung BATAL (seperti sebelumnya)."""
+    """Jumlah per status untuk chip.
+
+    Chip 'Semua' pengerjaan memakai kondisi yang sama dengan filter ALL di list (BATAL tidak ikut),
+    sehingga angkanya sama dengan jumlah baris yang tampil. 'payment.total' tetap menghitung semua baris.
+    """
     pembayaran = _kondisi_pembayaran_antrian()
     pengerjaan = _kondisi_pengerjaan_antrian()
     T = TransaksiPenjualanBengkel
     kolom = [func.count(T.id)]
     kunci = ["total"]
     for k, cond in pengerjaan.items():
-        if k == "ALL":
-            continue
         kolom.append(func.sum(case((cond, 1), else_=0)))
         kunci.append(f"w_{k}")
     for k, cond in pembayaran.items():
@@ -95,7 +97,7 @@ def _hitung_counts_antrian(query) -> Dict[str, Any]:
     hasil = {kk: int(v or 0) for kk, v in zip(kunci, nilai)}
     return {
         "work": {
-            "total": hasil["total"],
+            "total": hasil["w_ALL"],
             "antre": hasil["w_ANTRE"],
             "proses": hasil["w_PROSES"],
             "selesai": hasil["w_SELESAI"],
