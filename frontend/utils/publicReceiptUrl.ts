@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import api, { BASE_URL, FILE_URL } from './api';
 
-export type PublicReceiptType = 'bengkel' | 'jasa_angkut' | 'mobil' | 'piutang' | 'hutang';
+export type PublicReceiptType = 'bengkel' | 'jasa_angkut' | 'mobil' | 'piutang' | 'hutang' | 'rincian_piutang' | 'rincian_hutang';
 
 const PRODUCTION_FALLBACK = 'https://tpm.cianjur.space';
 

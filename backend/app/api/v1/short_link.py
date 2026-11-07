@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
+from app.api.v1.public_receipt import RECEIPT_TYPES
 from app.services.short_link_service import ShortLinkService
 
 router = APIRouter(prefix="/public/short-link", tags=["Public Short Link"])
@@ -46,7 +47,14 @@ def buka_short_link(kode: str, db: Session = Depends(get_db)):
     if link is None:
         raise HTTPException(status_code=404, detail="Link tidak ditemukan")
     tujuan = f"{VIEW_BASE_URL}/{link.tipe}/{link.target}"
-    gambar = f"{PUBLIC_BASE_URL}/api/v1/public/receipt/image/{link.tipe}/{link.target}"
+    # Hanya struk yang punya gambar OG. Halaman rincian per nama tidak punya gambar.
+    tag_gambar = ""
+    if link.tipe in RECEIPT_TYPES:
+        gambar = f"{PUBLIC_BASE_URL}/api/v1/public/receipt/image/{link.tipe}/{link.target}"
+        tag_gambar = f"""
+  <meta property="og:image" content="{gambar}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="{gambar}">"""
     return f"""<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -57,9 +65,7 @@ def buka_short_link(kode: str, db: Session = Depends(get_db)):
   <meta property="og:url" content="{PUBLIC_BASE_URL}/s/{kode}">
   <meta property="og:title" content="Struk Digital - TIGA PUTRA MOTOR">
   <meta property="og:description" content="Klik untuk melihat struk Anda.">
-  <meta property="og:image" content="{gambar}">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="{gambar}">
+  {tag_gambar}
   <meta http-equiv="refresh" content="0;url={tujuan}">
   <script>window.location.replace("{tujuan}");</script>
 </head>

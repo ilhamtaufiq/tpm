@@ -117,3 +117,9 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Dependensi (`nativewind`, `react-native-css-interop`, `react-native-worklets`) tidak diubah. Sempat dicoba, tapi tidak perlu.
 
 ⬅️ [[CLAUDE|Kembali ke Hub]]
+
+## Poin 11 dan 12: Penamaan Data Lama dan Rincian Per Nama (7 Nov)
+
+- **Poin 11 (rename):** dikonfirmasi berlaku juga untuk saldo awal impor. Skrip `backend/scripts/rename_piutang_hutang_lama.py` merapikan piutang dan hutang lama (invarian 41). Jalankan `python scripts/rename_piutang_hutang_lama.py` untuk melihat daftar (dry-run), lalu tambahkan `--apply` untuk menyimpan.
+- **Poin 12 (link rincian per nama):** dikonfirmasi sesuai rekomendasi. Tombol Kirim Rincian di Piutang Per Nama dan Hutang Per Nama sekarang membagikan link pendek ke halaman rincian: semua struk, nominal, sisa, dan status (invarian 40). Halaman dibaca langsung dari server dan mengikuti scope unit.
+- Tes: `tests/test_rincian_nama.py`, `tests/test_rename_piutang_hutang_lama.py`.

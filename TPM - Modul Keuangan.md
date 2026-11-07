@@ -34,3 +34,7 @@ Berlaku untuk Catat Biaya Operasional, Pemberian Kasbon/Piutang, kasbon karyawan
 > ⏳ Belum ada daftar Chart of Accounts default / struktur akun standar TPM di README — perlu digali dari `backend/app/models/` atau seed data.
 
 ⬅️ [[CLAUDE|Kembali ke Hub]]
+
+## Rincian Per Nama (link pendek)
+
+Tombol Kirim Rincian di Piutang Per Nama dan Hutang Per Nama membuat token rincian (`POST /per-nama/{piutang|hutang}/rincian-token`), lalu membagikan link pendek `/s/{kode}` yang meneruskan ke `/public/receipt/view/rincian_{piutang|hutang}/{token}`. Halaman hanya membaca data dan memuat semua struk non-BATAL dari nama itu. Aturan lengkap: invarian 40 di `TPM - Aturan Bisnis & Invariant.md`.
