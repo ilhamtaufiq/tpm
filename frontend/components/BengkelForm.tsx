@@ -1010,7 +1010,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                     className="absolute right-3 top-9"
                                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                                 >
-                                    <QrCode size={18} color="primaryColor" />
+                                    <QrCode size={18} color={themeColors.primary} />
                                 </Pressable>
                             )}
                         </View>
@@ -1037,7 +1037,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                     </View>
                     <View className="flex-row items-center gap-2">
                         <Pressable onPress={openSelectionSheet} className="flex-row items-center bg-primary/10 px-3 py-2 rounded-xl border border-primary/10">
-                            <Plus size={14} color="primaryColor" />
+                            <Plus size={14} color={themeColors.primary} />
                             <Typography className="text-primary text-[10px] ml-1 font-bold">Tambah Sparepart / Servis</Typography>
                         </Pressable>
                     </View>
@@ -1125,7 +1125,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                         {selectedServicesForDisplay.length > 0 && (
                             <View className="mb-2">
                                 <View className="flex-row items-center mb-3">
-                                    <Wrench size={16} color="primaryColor" />
+                                    <Wrench size={16} color={themeColors.primary} />
                                     <Typography variant="body2" weight="semibold" className="ml-2">Daftar Servis</Typography>
                                 </View>
                                 {selectedServicesForDisplay.map((service) => (
@@ -1248,7 +1248,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                         className="ml-2 bg-primary/10 rounded-full p-1.5"
                                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                     >
-                                        <Printer size={12} color="primaryColor" />
+                                        <Printer size={12} color={themeColors.primary} />
                                     </Pressable>
                                 )}
                             </View>
@@ -1461,7 +1461,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                         onPress={() => setPayments([...payments, { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }])}
                                         className="flex-row items-center justify-center py-2 bg-surface border border-dashed border-primary/30 rounded-xl mt-1"
                                     >
-                                        <Plus size={14} color="primaryColor" />
+                                        <Plus size={14} color={themeColors.primary} />
                                         <Typography className="text-primary text-[10px] font-bold ml-1 text-center">Tambah Metode Pembayaran</Typography>
                                     </Pressable>
                                 </View>
@@ -1499,7 +1499,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                 <Button
                     title="Cetak Order Slip"
                     variant="outline"
-                    icon={<Printer size={16} color="primaryColor" />}
+                    icon={<Printer size={16} color={themeColors.primary} />}
                     onPress={handlePrintOrderSlip}
                     className="rounded-2xl"
                     loading={isPrintingOrderSlip}

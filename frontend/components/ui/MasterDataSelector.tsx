@@ -206,7 +206,7 @@ export const MasterDataSelector = ({
                     )}
 
                     {isLoading ? (
-                        <ActivityIndicator className="mt-4" color="primaryColor" />
+                        <ActivityIndicator className="mt-4" color={themeColors.primary} />
                     ) : (
                         <View>
                             {(searchResults || []).map((item: any) => (
@@ -327,7 +327,7 @@ export const MasterDataSelector = ({
                         </View>
 
                         {isLoading ? (
-                            <ActivityIndicator className="mt-4" color="primaryColor" />
+                            <ActivityIndicator className="mt-4" color={themeColors.primary} />
                         ) : (
                             <FlatList
                                 data={searchResults || []}

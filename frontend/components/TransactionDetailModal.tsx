@@ -580,7 +580,7 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                     </View>
                     <View className="px-4">
                         <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
-                            <ArrowRight size={14} color="primaryColor" />
+                            <ArrowRight size={14} color={themeColors.primary} />
                         </View>
                     </View>
                     <View className="flex-1 items-end">
@@ -690,7 +690,7 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
                     >
                         {loading ? (
                             <View className="py-20 items-center justify-center">
-                                <ActivityIndicator size="large" color="primaryColor" />
+                                <ActivityIndicator size="large" color={themeColors.primary} />
                                 <Typography className="mt-4 text-textGray font-bold tracking-[4px] uppercase text-[10px]">Menarik Data...</Typography>
                             </View>
                         ) : (

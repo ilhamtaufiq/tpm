@@ -40,9 +40,9 @@ export function ReportPageHeader({
                     className="w-10 h-10 bg-background rounded-xl items-center justify-center border border-transparent active:opacity-80"
                 >
                     {isExporting ? (
-                        <ActivityIndicator size="small" color="primaryColor" />
+                        <ActivityIndicator size="small" color={primaryColor} />
                     ) : (
-                        <Download size={20} color="primaryColor" />
+                        <Download size={20} color={primaryColor} />
                     )}
                 </Pressable>
             ) : null}
