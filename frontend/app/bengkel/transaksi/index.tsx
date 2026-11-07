@@ -471,10 +471,19 @@ export default function BengkelTransaksiScreen() {
                 tokens.every(token => (serviceSearchIndex.get(String(service?.id)) || '').includes(token)),
             )
             .sort((a: any, b: any) => {
+                // Sama seperti sparepart: kecocokan nama dulu, item terpilih turun pada skor yang sama.
+                const skorNama = (nama: string) => {
+                    const n = String(nama || '').toLowerCase();
+                    if (n.startsWith(q)) return 3;
+                    if (n.split(/\s+/).some((w) => w.startsWith(q))) return 2;
+                    if (n.includes(q)) return 1;
+                    return 0;
+                };
+                const selisih = skorNama(b.nama) - skorNama(a.nama);
+                if (selisih !== 0) return selisih;
                 const aSelected = Boolean(selectedServices[String(a.service?.id || a.id)]);
                 const bSelected = Boolean(selectedServices[String(b.service?.id || b.id)]);
-                if (aSelected && !bSelected) return -1;
-                if (!aSelected && bSelected) return 1;
+                if (aSelected !== bSelected) return aSelected ? 1 : -1;
                 return (a.nama || '').localeCompare(b.nama || '');
             });
     }, [services, servicesAlpha, serviceSearchIndex, debouncedServiceSearch, selectedServices]);
@@ -491,34 +500,33 @@ export default function BengkelTransaksiScreen() {
         }
 
         // Sama dengan server (/spare-parts): tiap kata harus cocok (AND), bukan frasa utuh.
-        // Dengan frasa utuh, hasil server seperti "BAUD NO" -> "BAUD AS RINO" ikut tersembunyi.
+        // Item yang sudah dipilih TIDAK dikecualikan: kalau tidak cocok, tidak tampil.
         const kata = q.split(/\s+/).filter(Boolean);
-        const filtered = parts.filter((p: any) => {
-            if (selectedParts[p.id]) return true;
-            const hay = partSearchIndex.get(Number(p.id))?.hay || '';
-            return kata.every((w) => hay.includes(w));
-        });
-
-        return filtered.sort((a, b) => {
-            const aSelected = Boolean(selectedParts[a.id]);
-            const bSelected = Boolean(selectedParts[b.id]);
-            if (aSelected && !bSelected) return -1;
-            if (!aSelected && bSelected) return 1;
-
-            const ia = partSearchIndex.get(Number(a.id));
-            const ib = partSearchIndex.get(Number(b.id));
-            const nameA = ia?.name ?? String(a.nama || '').toLowerCase();
-            const nameB = ib?.name ?? String(b.nama || '').toLowerCase();
-            const codeA = ia?.code ?? String(a.kode || '').toLowerCase();
-            const codeB = ib?.code ?? String(b.kode || '').toLowerCase();
-
-            // Prioritas awalan kata/kode (r -> ru -> dst)
-            const scoreA = nameA.startsWith(q) || codeA.startsWith(q) ? 3 : (ia?.words ?? nameA.split(/\s+/)).some((w: string) => w.startsWith(q)) ? 2 : nameA.includes(q) || codeA.includes(q) ? 1 : 0;
-            const scoreB = nameB.startsWith(q) || codeB.startsWith(q) ? 3 : (ib?.words ?? nameB.split(/\s+/)).some((w: string) => w.startsWith(q)) ? 2 : nameB.includes(q) || codeB.includes(q) ? 1 : 0;
-
-            if (scoreA !== scoreB) return scoreB - scoreA;
-            return nameA.localeCompare(nameB);
-        });
+        const skor = (p: any) => {
+            const ia = partSearchIndex.get(Number(p.id));
+            const nama = ia?.name ?? String(p.nama || '').toLowerCase();
+            const kode = ia?.code ?? String(p.kode || '').toLowerCase();
+            if (nama.startsWith(q) || kode.startsWith(q)) return 3;
+            if ((ia?.words ?? nama.split(/\s+/)).some((w: string) => w.startsWith(q))) return 2;
+            if (nama.includes(q) || kode.includes(q)) return 1;
+            return 0;
+        };
+        const namaUrut = (p: any) => partSearchIndex.get(Number(p.id))?.name ?? String(p.nama || '').toLowerCase();
+        return parts
+            .filter((p: any) => {
+                const hay = partSearchIndex.get(Number(p.id))?.hay || '';
+                return kata.every((w) => hay.includes(w));
+            })
+            .sort((a: any, b: any) => {
+                // Hasil paling cocok di atas. Item yang sudah dipilih turun ke bawah pada skor yang sama,
+                // supaya item baru yang dicari tidak tertimbun item lama.
+                const selisih = skor(b) - skor(a);
+                if (selisih !== 0) return selisih;
+                const aSel = Boolean(selectedParts[a.id]);
+                const bSel = Boolean(selectedParts[b.id]);
+                if (aSel !== bSel) return aSel ? 1 : -1;
+                return namaUrut(a).localeCompare(namaUrut(b));
+            });
     }, [parts, partSearchIndex, debouncedPartSearch, selectedParts]);
     const visibleServices = serviceSearch.trim() || showServiceCatalog ? filteredServices : filteredServices.slice(0, 10);
     const getEditablePaymentStatus = (item: any) => {
