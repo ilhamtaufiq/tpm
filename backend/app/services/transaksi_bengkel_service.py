@@ -1280,6 +1280,9 @@ class TransaksiBengkelService:
              for detail in detail_services_records:
                 self.db.add(JasaAngkutPartService(muatan_id=transaksi.muatan_id, tanggal=transaksi.tanggal, tipe='service', deskripsi=f"Service: {detail.nama_jasa}", qty=detail.qty, harga_satuan=detail.harga, total=detail.subtotal, catatan=f"Trans Bengkel (EDIT): {transaksi.nomor_transaksi}"))
 
+        # Edit part/jasa saja tidak mengubah kolom induk, jadi onupdate tidak jalan.
+        # Tanggal edit harus tetap diperbarui supaya riwayat menampilkan waktu edit terbaru.
+        transaksi.updated_at = func.now()
         self.db.commit()
         self.db.refresh(transaksi)
         self._emit_change(transaksi, "updated")

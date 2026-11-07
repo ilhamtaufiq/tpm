@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Modal, ActivityIndicator } from 'react-native';
 import { appAlert } from '../../../utils/appAlert';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -597,6 +597,38 @@ export default function PurchaseScreen() {
                 {/* STEP 1: Item Selection — inline picker like transaksi */}
                 {step === 1 && (
                     <View>
+                        {/* Item dipilih: jumlah bisa diubah di sini, walau part-nya ada jauh di bawah katalog */}
+                        {items.length > 0 && (
+                            <View className="mb-4 bg-surface rounded-2xl p-3 border border-border">
+                                <Typography weight="bold" className="text-primary text-xs uppercase mb-2">Item dipilih ({items.length})</Typography>
+                                {items.map((item) => (
+                                    <View key={item.id} className="flex-row items-center py-2 border-b border-border">
+                                        <Typography className="flex-1 text-xs text-textMain" numberOfLines={1}>{item.name}</Typography>
+                                        <Pressable
+                                            onPress={() => changeItemQtyById(item.id, Number(item.qty) - 1)}
+                                            className="w-9 h-9 rounded-xl bg-background items-center justify-center"
+                                            accessibilityLabel={`Kurangi jumlah ${item.name}`}
+                                        >
+                                            <Typography weight="bold" className="text-textMain">−</Typography>
+                                        </Pressable>
+                                        <TextInput
+                                            value={String(item.qty)}
+                                            keyboardType="decimal-pad"
+                                            onChangeText={(v) => changeItemQtyById(item.id, Number(v.replace(',', '.')) || 0.01)}
+                                            className="w-16 h-9 mx-2 text-center bg-background rounded-xl text-textMain font-bold"
+                                        />
+                                        <Pressable
+                                            onPress={() => changeItemQtyById(item.id, Number(item.qty) + 1)}
+                                            className="w-9 h-9 rounded-xl bg-background items-center justify-center"
+                                            accessibilityLabel={`Tambah jumlah ${item.name}`}
+                                        >
+                                            <Typography weight="bold" className="text-textMain">+</Typography>
+                                        </Pressable>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+
                         {/* Part catalog — always visible */}
                         <View className="w-full">
                             <View className="flex-row items-center justify-between mb-3 px-1">
@@ -1080,10 +1112,16 @@ export default function PurchaseScreen() {
 
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
     const themeColors = useUIStore((s) => s.themeColors);
+    const inputRef = useRef<TextInput>(null);
+    // Fokus langsung ke kolom pencarian saat dibuka (di web autoFocus saja tidak selalu berhasil).
+    useEffect(() => {
+        const timer = setTimeout(() => inputRef.current?.focus(), 350);
+        return () => clearTimeout(timer);
+    }, []);
     return (
         <View className="flex-row items-center bg-background rounded-2xl px-3 h-11 mb-3 border border-transparent">
             <Search size={16} color={themeColors.textGray} />
-            <TextInput placeholder={placeholder} placeholderTextColor={themeColors.textGray} className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} />
+            <TextInput ref={inputRef} placeholder={placeholder} placeholderTextColor={themeColors.textGray} className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} />
             {value.length > 0 && (
                 <Pressable onPress={() => onChange('')}>
                     <X size={16} color={themeColors.textGray} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, FC } from 'react';
-import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput, Animated, Easing, Keyboard, Linking } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput, Animated, Easing, Keyboard, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, type BarcodeType } from 'expo-camera';
@@ -498,16 +498,19 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             {scanLog.length > 0 && (
                                                 <View className="w-[90%] bg-black/40 rounded-3xl p-4 border border-white/10 mt-2">
                                                     <Typography variant="caption" weight="bold" className="text-white/60 mb-3 ml-1 uppercase" style={{ letterSpacing: 1 }}>History Scan Terakhir</Typography>
-                                                    {scanLog.slice(0, 3).map((item, idx) => (
+                                                    {/* Semua item yang sudah di-scan (terbaru di atas), bisa digulir */}
+                                                    <ScrollView style={{ maxHeight: 260 }} nestedScrollEnabled showsVerticalScrollIndicator>
+                                                    {scanLog.map((item, idx) => (
                                                         <View key={item.id} className={`flex-row items-center py-2.5 px-3 mb-2 rounded-2xl ${idx === 0 ? 'bg-blue-600/30 border border-blue-500/30' : 'bg-surface/5 border border-white/5'}`}>
                                                             <View className={`w-2 h-2 rounded-full mr-3 ${idx === 0 ? 'bg-blue-400' : 'bg-surface/20'}`} />
                                                             <View className="flex-1">
                                                                 <Typography weight="bold" className="text-white text-sm" numberOfLines={1}>{item.title}</Typography>
                                                                 {item.subtitle && <Typography variant="caption" className="text-white/50 text-[10px]">{item.subtitle}</Typography>}
                                                             </View>
-                                                            <Typography variant="caption" className="text-white/40 ml-2">Baru saja</Typography>
+                                                            <Typography variant="caption" className="text-white/40 ml-2">{idx === 0 ? 'Baru saja' : ''}</Typography>
                                                         </View>
                                                     ))}
+                                                    </ScrollView>
                                                     <Typography variant="caption" weight="bold" className="text-blue-400 text-center mt-2 mb-4">Total: {scanLog.length} item tersimpan</Typography>
 
                                                     <Button

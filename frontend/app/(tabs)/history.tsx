@@ -358,7 +358,7 @@ export default function HistoryTab() {
             const itemRef = (item.ref_number || '').toLowerCase();
             if (selectedSource === 'gaji') {
                 const itemSubtitle = (item.subtitle || '').toLowerCase();
-                const isSdm = itemSource === 'gaji' || itemSource === 'kasbon' ||
+                const isSdm = itemSource === 'gaji' || itemSource === 'kasbon' || itemSource === 'absensi' ||
                               itemTitle.includes('kasbon') || itemTitle.includes('gaji') ||
                               itemRef.includes('ksb') || itemRef.includes('gji') ||
                               itemSubtitle.includes('ksb') || itemSubtitle.includes('gji');
