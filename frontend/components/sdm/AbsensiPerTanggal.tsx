@@ -1,14 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
+import { Calendar } from 'react-native-calendars';
+import CalendarIcon from 'lucide-react-native/dist/esm/icons/calendar.js';
 import { Typography } from '../ui/Typography';
 import { Card } from '../ui/Card';
-import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { sdmService, AttendanceStatus, Karyawan } from '../../services/sdm';
 import { useActiveKaryawan } from '../../hooks/useSDM';
 import { getTodayString } from '../../utils/format';
 import { getErrorMessage } from '../../utils/error';
 import { appAlert } from '../../utils/appAlert';
+import { useUIStore } from '../../store/useUIStore';
+
+const formatTanggalTampil = (iso: string) => {
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+};
 
 // Pilihan cepat per karyawan. TIDAK_HADIR disimpan sebagai ALPHA.
 const PILIHAN: { value: AttendanceStatus | 'TIDAK_HADIR'; label: string }[] = [
@@ -34,6 +41,8 @@ const dariStatus = (status: AttendanceStatus | undefined): AttendanceStatus | 'T
 // Absensi per tanggal: pilih tanggal, lalu centang status tiap karyawan dalam satu layar.
 export const AbsensiPerTanggal = () => {
     const [tanggal, setTanggal] = useState(getTodayString());
+    const [kalenderTerbuka, setKalenderTerbuka] = useState(false);
+    const themeColors = useUIStore((s) => s.themeColors);
     const [pilihan, setPilihan] = useState<Record<number, AttendanceStatus | 'TIDAK_HADIR'>>({});
     const [awal, setAwal] = useState<Record<number, AttendanceStatus | 'TIDAK_HADIR'>>({});
     const [loadingTanggal, setLoadingTanggal] = useState(false);
@@ -100,13 +109,30 @@ export const AbsensiPerTanggal = () => {
         <View className="gap-4">
             <Card className="p-4 gap-3">
                 <Typography weight="bold" className="text-textMain text-sm">Tanggal absensi</Typography>
-                <View className="flex-row gap-2 items-end">
-                    <View className="flex-1">
-                        <Input value={tanggal} onChangeText={setTanggal} placeholder="YYYY-MM-DD" maxLength={10} />
-                    </View>
-                    <Button title="Hari ini" variant="outline" size="sm" onPress={() => setTanggal(getTodayString())} />
+                <View className="flex-row gap-2 items-center">
+                    <Pressable
+                        onPress={() => setKalenderTerbuka((v) => !v)}
+                        className="flex-1 flex-row items-center justify-between bg-background rounded-2xl px-4 h-12 border border-transparent"
+                        accessibilityRole="button"
+                        accessibilityLabel="Pilih tanggal absensi"
+                    >
+                        <View className="flex-row items-center">
+                            <CalendarIcon size={18} color={themeColors.primary} />
+                            <Typography weight="bold" className="ml-3 text-textMain">{tanggalValid ? formatTanggalTampil(tanggal) : 'Pilih tanggal'}</Typography>
+                        </View>
+                        <Typography className="text-primary text-xs font-bold">{kalenderTerbuka ? 'Tutup' : 'Ubah'}</Typography>
+                    </Pressable>
+                    <Button title="Hari ini" variant="outline" size="sm" onPress={() => { setTanggal(getTodayString()); setKalenderTerbuka(false); }} />
                 </View>
-                {!tanggalValid && <Typography className="text-rose-600 text-xs">Format tanggal YYYY-MM-DD.</Typography>}
+                {kalenderTerbuka && (
+                    <Calendar
+                        current={tanggalValid ? tanggal : undefined}
+                        markedDates={tanggalValid ? { [tanggal]: { selected: true, selectedColor: themeColors.primary } } : undefined}
+                        onDayPress={(day: { dateString: string }) => { setTanggal(day.dateString); setKalenderTerbuka(false); }}
+                        maxDate={getTodayString()}
+                        theme={{ selectedDayTextColor: '#ffffff', todayTextColor: '#10B981', arrowColor: themeColors.primary }}
+                    />
+                )}
             </Card>
 
             {(loadingKaryawan || loadingTanggal) ? (

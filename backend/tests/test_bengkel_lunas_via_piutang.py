@@ -52,7 +52,7 @@ def test_bayar_piutang_bengkel_melunasi_transaksi_asal(db):
         user_id=None,
     )
     db.info["ids"].append(tx.id)
-    piutang = db.query(PiutangUsaha).filter(PiutangUsaha.nomor_referensi == tx.nomor_transaksi).one()
+    piutang = db.query(PiutangUsaha).filter(PiutangUsaha.nomor_referensi == tx.nomor_transaksi, PiutangUsaha.referensi_id == tx.id).one()
     assert piutang.status == PiutangStatus.BELUM_LUNAS
 
     PiutangService(db).process_payment_split(
