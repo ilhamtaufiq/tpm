@@ -1,3 +1,4 @@
+from sqlalchemy import func
 """Pembayaran hutang hanya boleh TUNAI atau TRANSFER, dan keterangan kas memuat metodenya.
 
 Sesuai PaymentModal (frontend) yang hanya menawarkan Tunai dan Transfer untuk hutang.
@@ -36,6 +37,8 @@ def test_keterangan_kas_pembayaran_hutang_memuat_metode():
     kas_ids = []
     pembayaran_ids = []
     try:
+        # Hanya baris kas yang dibuat tes ini: nomor hutang bisa dipakai data lain.
+        batas_id = db.query(func.max(KasBank.id)).scalar() or 0
         # Saldo awal supaya pembayaran tidak ditolak karena saldo tidak mencukupi.
         for metode, jenis in [(PaymentMethod.TUNAI, KasBankJenis.KAS_UTAMA), (PaymentMethod.TRANSFER, KasBankJenis.BANK_BCA)]:
             seed = create_kas_entry(
@@ -76,7 +79,7 @@ def test_keterangan_kas_pembayaran_hutang_memuat_metode():
 
         kas = (
             db.query(KasBank)
-            .filter(KasBank.nomor_referensi == hutang.nomor_hutang)
+            .filter(KasBank.nomor_referensi == hutang.nomor_hutang, KasBank.id > batas_id)
             .order_by(KasBank.id)
             .all()
         )
