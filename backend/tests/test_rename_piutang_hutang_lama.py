@@ -8,7 +8,7 @@ import pytest
 
 from app.database import SessionLocal
 from app.models.keuangan import HutangUsaha, PiutangUsaha
-from app.utils.constants import HutangSource, HutangStatus, PiutangSource, PiutangStatus
+from app.utils.constants import HutangSource, HutangStatus, KasBankSource, PiutangSource, PiutangStatus
 
 PREFIX = "UJI-RENAME-"
 SKRIP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts", "rename_piutang_hutang_lama.py")
@@ -58,6 +58,11 @@ def test_rename_sesuai_aturan_dan_idempoten(db):
     _piutang(db, "P6", "Sudah Bertag - Bengkel", PiutangSource.BENGKEL)
     _hutang(db, "H1", "BENGKEL TPM", HutangSource.JUAL_BELI_MOBIL)
     _hutang(db, "H2", "BENGKEL TPM", HutangSource.LAINNYA)
+    p7 = _piutang(db, "P7", "Mang Lainnya", PiutangSource.LAINNYA)
+    p7.unit = KasBankSource.JASA_ANGKUT
+    p8 = _piutang(db, "P8", "Kasbon Pribadi", PiutangSource.LAINNYA)
+    p9 = _piutang(db, "P9", "Lainnya Bengkel", PiutangSource.LAINNYA)
+    p9.unit = KasBankSource.BENGKEL
     db.commit()
 
     rencana = {p.nomor_piutang: baru for p, baru in skrip.rencana_piutang(db) if p.nomor_piutang.startswith(PREFIX)}
@@ -67,6 +72,9 @@ def test_rename_sesuai_aturan_dan_idempoten(db):
     assert PREFIX + "P4" not in rencana
     assert PREFIX + "P5" not in rencana
     assert PREFIX + "P6" not in rencana
+    assert rencana[PREFIX + "P7"] == "Mang Lainnya - Jasa Angkut"
+    assert rencana[PREFIX + "P9"] == "Lainnya Bengkel - Bengkel"
+    assert PREFIX + "P8" not in rencana
 
     hutang = {h.nomor_hutang: baru for h, baru in skrip.rencana_hutang(db) if h.nomor_hutang.startswith(PREFIX)}
     assert hutang == {PREFIX + "H1": "BENGKEL TPM - Jual Beli Mobil", PREFIX + "H2": "BENGKEL TPM - Jasa Angkut"}

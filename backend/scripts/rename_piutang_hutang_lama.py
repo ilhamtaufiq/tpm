@@ -3,6 +3,8 @@
 Aturan (sama dengan app/utils/nama_piutang.py dan invarian 36):
 - Piutang sumber BENGKEL      -> "<nama> - Bengkel"
 - Piutang sumber JASA_ANGKUT  -> "<nama> - Jasa Angkut"
+- Piutang manual sumber LAINNYA yang diberi unit BENGKEL / JASA_ANGKUT -> akhiran unit yang sama
+  (piutang LAINNYA tanpa unit, mis. kasbon atau pinjaman pribadi, tidak diubah)
 - Hutang internal "BENGKEL TPM" (sumber JUAL_BELI_MOBIL) -> "BENGKEL TPM - Jual Beli Mobil"
 - Hutang internal "BENGKEL TPM" (sumber LAINNYA)         -> "BENGKEL TPM - Jasa Angkut"
 - JB Mobil tidak diberi akhiran (namanya sudah "JB MOBIL - <plat>").
@@ -21,7 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import SessionLocal  # noqa: E402
 from app.models.keuangan import HutangUsaha, PiutangUsaha  # noqa: E402
-from app.utils.constants import HutangSource, PiutangSource, PiutangStatus, HutangStatus  # noqa: E402
+from app.utils.constants import HutangSource, KasBankSource, PiutangSource, PiutangStatus, HutangStatus  # noqa: E402
 from app.utils.nama_piutang import (  # noqa: E402
     TAG_BENGKEL,
     TAG_JASA_ANGKUT,
@@ -33,6 +35,11 @@ PIUTANG_TAG = {
     PiutangSource.BENGKEL: TAG_BENGKEL,
     PiutangSource.JASA_ANGKUT: TAG_JASA_ANGKUT,
 }
+# Piutang manual (sumber LAINNYA) yang diberi unit: unit-nya yang menentukan akhiran.
+PIUTANG_UNIT_TAG = {
+    KasBankSource.BENGKEL: TAG_BENGKEL,
+    KasBankSource.JASA_ANGKUT: TAG_JASA_ANGKUT,
+}
 NAMA_INTERNAL_BENGKEL = "BENGKEL TPM"
 
 
@@ -43,10 +50,15 @@ def _sudah_bertag(nama: str, tag: str) -> bool:
 def rencana_piutang(db):
     """Daftar (piutang, nama_baru) untuk piutang yang perlu diberi akhiran unit."""
     hasil = []
-    for p in db.query(PiutangUsaha).filter(PiutangUsaha.sumber.in_(list(PIUTANG_TAG))).all():
+    for p in db.query(PiutangUsaha).all():
         if p.status == PiutangStatus.BATAL:
             continue
-        tag = PIUTANG_TAG[p.sumber]
+        if p.sumber == PiutangSource.LAINNYA:
+            tag = PIUTANG_UNIT_TAG.get(p.unit) if p.unit else None
+        else:
+            tag = PIUTANG_TAG.get(p.sumber)
+        if tag is None:
+            continue
         nama = (p.nama_debitur or "").strip()
         if not nama or _sudah_bertag(nama, tag):
             continue
