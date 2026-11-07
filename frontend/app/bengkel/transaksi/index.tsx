@@ -490,9 +490,13 @@ export default function BengkelTransaksiScreen() {
             return [...sel, ...rest];
         }
 
+        // Sama dengan server (/spare-parts): tiap kata harus cocok (AND), bukan frasa utuh.
+        // Dengan frasa utuh, hasil server seperti "BAUD NO" -> "BAUD AS RINO" ikut tersembunyi.
+        const kata = q.split(/\s+/).filter(Boolean);
         const filtered = parts.filter((p: any) => {
             if (selectedParts[p.id]) return true;
-            return (partSearchIndex.get(Number(p.id))?.hay || '').includes(q);
+            const hay = partSearchIndex.get(Number(p.id))?.hay || '';
+            return kata.every((w) => hay.includes(w));
         });
 
         return filtered.sort((a, b) => {

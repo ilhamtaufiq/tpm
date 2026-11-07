@@ -123,3 +123,10 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - **Poin 11 (rename):** dikonfirmasi berlaku juga untuk saldo awal impor. Skrip `backend/scripts/rename_piutang_hutang_lama.py` merapikan piutang dan hutang lama (invarian 41). Jalankan `python scripts/rename_piutang_hutang_lama.py` untuk melihat daftar (dry-run), lalu tambahkan `--apply` untuk menyimpan.
 - **Poin 12 (link rincian per nama):** dikonfirmasi sesuai rekomendasi. Tombol Kirim Rincian di Piutang Per Nama dan Hutang Per Nama sekarang membagikan link pendek ke halaman rincian: semua struk, nominal, sisa, dan status (invarian 40). Halaman dibaca langsung dari server dan mengikuti scope unit.
 - Tes: `tests/test_rincian_nama.py`, `tests/test_rename_piutang_hutang_lama.py`.
+
+## Cari Part di Edit Transaksi Bengkel (data produksi 2026-11-06)
+
+- Penyebab: hasil server (`/spare-parts`) mencocokkan tiap kata secara terpisah, tetapi filter di layar edit (`app/bengkel/transaksi/index.tsx`) mencari frasa utuh. Contoh: "BAUD NO" menampilkan 21 hasil dari server, tetapi layar hanya menampilkan 2 (`BAUD AS RINO ...` hilang karena "RINO" memuat "NO").
+- Perbaikan: filter klien sekarang mensyaratkan setiap kata cocok (AND), sama dengan server. Item yang sudah dipilih tetap tampil di atas.
+- Verifikasi: 533 query dari nama part di dump produksi; hasil server yang hilang di klien turun dari 112 query menjadi 0.
+
