@@ -135,4 +135,5 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Penyebab: saat mencari, item yang sudah ada di transaksi selalu didahulukan, sehingga item baru yang cocok turun ke bawah. Transaksi BGL2610060005 punya 30 item sparepart. Pencarian "baud" menaruh 6 item lama di atas item baru yang lebih cocok. Pencarian "paku" menaruh 3 item lama di atas 3 item baru yang lebih cocok. Daftar servis juga mengurutkan item terpilih di atas dan sisanya alfabet, bukan berdasarkan kecocokan.
 - Perbaikan: saat mencari, hasil diurutkan dulu berdasarkan kecocokan (awalan nama atau kode lebih dulu). Item yang sudah dipilih hanya turun pada skor yang sama. Filter sparepart tidak lagi meloloskan item terpilih yang tidak cocok dengan pencarian.
 - Simulasi dengan data produksi: item baru yang paling cocok sekarang selalu di posisi pertama.
+- Lanjutan: di mode edit, daftar "Sparepart Transaksi Ini" (semua item lama) tetap tampil di atas hasil pencarian. Sekarang daftar itu disembunyikan selama kolom pencarian berisi teks, sehingga yang tampil hanya item yang cocok.
 

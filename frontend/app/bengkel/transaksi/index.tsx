@@ -1184,7 +1184,7 @@ export default function BengkelTransaksiScreen() {
             >
                 {step === 1 && (
                     <View className="space-y-6">
-                        {!showParts && selectedPartList.length > 0 && (
+                        {!showParts && selectedPartList.length > 0 && !serviceSearch.trim() && (
                         <View>
                             <View className="flex-row items-center justify-between mb-3">
                                 <Typography variant="body1" weight="bold" className="text-textMain">Sparepart Terpilih</Typography>
@@ -1280,7 +1280,8 @@ export default function BengkelTransaksiScreen() {
                         </View>
                         )}
 
-                        {showParts && editTransactionId && selectedPartList.length > 0 && (
+                        {/* Saat mencari, daftar item lama disembunyikan supaya hanya hasil pencarian yang tampil. */}
+                        {showParts && editTransactionId && selectedPartList.length > 0 && !partSearch.trim() && (
                         <View>
                             <View className="flex-row items-center justify-between mb-3">
                                 <Typography variant="body1" weight="bold" className="text-textMain">Sparepart Transaksi Ini</Typography>
