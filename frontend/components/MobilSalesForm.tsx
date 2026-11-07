@@ -281,7 +281,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
             {/* Unit Info Summary */}
             <Card className="bg-background border-transparent p-4 mb-6">
                 <View className="flex-row items-center mb-2">
-                    <TrendingUp size={16} color="primaryColor" />
+                    <TrendingUp size={16} color={themeColors.primary} />
                     <Typography weight="bold" className="ml-2 text-primary text-xs uppercase">Informasi Modal Unit</Typography>
                 </View>
                 <Typography variant="h3" weight="bold">{activeUnit.merek} {activeUnit.model}</Typography>
@@ -297,13 +297,13 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                         <Typography weight="bold" className="text-sm capitalize">{activeUnit.tipe_kepemilikan}</Typography>
                     </View>
                 </View>
-                {isDetailLoading && <ActivityIndicator color="primaryColor" size="small" className="mt-2" />}
+                {isDetailLoading && <ActivityIndicator color={themeColors.primary} size="small" className="mt-2" />}
             </Card>
 
             {/* Buyer Details */}
             <View className="mb-6">
                 <View className="flex-row items-center mb-4">
-                    <User size={18} color="primaryColor" />
+                    <User size={18} color={themeColors.primary} />
                     <Typography weight="bold" className="ml-2 text-primary">DATA PEMBELI</Typography>
                 </View>
                 <Input label="Nama Pembeli" placeholder="Masukkan nama lengkap" value={namaPembeli} onChangeText={setNamaPembeli} />
@@ -314,7 +314,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
             <View className="mb-6">
                 <View className="flex-row items-center justify-between mb-4">
                     <View className="flex-row items-center">
-                        <Tag size={18} color="primaryColor" />
+                        <Tag size={18} color={themeColors.primary} />
                         <Typography weight="bold" className="ml-2 text-primary uppercase">Transaksi</Typography>
                     </View>
                     <Pressable
@@ -343,7 +343,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                         <View className="flex-row justify-between items-center mb-3">
                             <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest pl-2">Alokasi DP/Bayar</Typography>
                             <Pressable onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
-                                <PlusCircle size={14} color="primaryColor" />
+                                <PlusCircle size={14} color={themeColors.primary} />
                                 <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
                             </Pressable>
                         </View>
@@ -469,7 +469,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
             <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-4">
                     <View className="flex-row items-center">
-                        <TrendingUp size={18} color="primaryColor" />
+                        <TrendingUp size={18} color={themeColors.primary} />
                         <Typography weight="bold" className="ml-2 text-primary">BIAYA TAMBAHAN PENJUALAN / KOMISI</Typography>
                     </View>
                     <Pressable onPress={addOpCost}>
@@ -521,7 +521,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
             {/* Profit Calculation Summary */}
             <Card className="bg-primary/5 border-primary/10 p-5 mb-8">
                 <View className="flex-row items-center mb-4">
-                    <Calculator size={18} color="primaryColor" />
+                    <Calculator size={18} color={themeColors.primary} />
                     <Typography weight="bold" className="ml-2 text-primary">ESTIMASI LABA</Typography>
                 </View>
 
@@ -600,7 +600,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
 
                     <View className="flex-row justify-between items-center">
                         <View className="flex-row items-center">
-                            <Wallet size={16} color="primaryColor" />
+                            <Wallet size={16} color={themeColors.primary} />
                             <Typography weight="bold" className="ml-1.5 text-primary">Net Profit TPM</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className="text-primary">{formatCurrency(labaTpm)}</Typography>

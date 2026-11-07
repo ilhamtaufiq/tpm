@@ -264,7 +264,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                 <View className="flex-row items-center justify-between mb-6">
                     <View className="flex-row items-center">
                         <View className="w-8 h-8 bg-primary/10 rounded-full items-center justify-center mr-3">
-                            <Receipt size={16} color="primaryColor" />
+                            <Receipt size={16} color={themeColors.primary} />
                         </View>
                         <Typography variant="body1" weight="bold" className="text-primary uppercase tracking-wider">Pencatatan Biaya</Typography>
                     </View>
@@ -302,7 +302,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                         <View className="flex-row justify-between items-center mb-3">
                             <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest pl-2">Alokasi Pembayaran</Typography>
                             <Pressable onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
-                                <PlusCircle size={14} color="primaryColor" />
+                                <PlusCircle size={14} color={themeColors.primary} />
                                 <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
                             </Pressable>
                         </View>
@@ -414,7 +414,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                 {(activeUnit?.biaya_lainnya || []).map((item: any) => (
                     <Card key={item.id} className="mb-4 p-4 flex-row items-center bg-surface border border-transparent rounded-[24px]">
                         <View className="w-12 h-12 bg-blue-50/50 rounded-2xl items-center justify-center mr-4">
-                            <FileText size={20} color="primaryColor" />
+                            <FileText size={20} color={themeColors.primary} />
                         </View>
                         <View className="flex-1">
                             <Typography weight="bold" className="text-textMain">{item.kategori}</Typography>
@@ -454,7 +454,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                 </View>
             )}
 
-            {isDetailLoading && <ActivityIndicator color="primaryColor" className="my-4" />}
+            {isDetailLoading && <ActivityIndicator color={themeColors.primary} className="my-4" />}
         </View>
     );
 

@@ -256,7 +256,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             <Card variant="outlined" className="p-6 mb-8 border-primary/20 bg-primary/5 rounded-[32px]">
                 <View className="flex-row items-center mb-4">
                     <View className="w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center mr-4">
-                        <Banknote size={24} color="primaryColor" />
+                        <Banknote size={24} color={themeColors.primary} />
                     </View>
                     <View className="flex-1">
                         <Typography variant="caption" className="text-primary/60 font-bold uppercase tracking-[2px] text-[9px] mb-1">Tagihan Tersisa</Typography>
@@ -288,7 +288,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             onPress={addPayment} 
                             className="bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/10 flex-row items-center"
                         >
-                            <Plus size={14} color="primaryColor" />
+                            <Plus size={14} color={themeColors.primary} />
                             <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
                         </Pressable>
                     )}
@@ -394,7 +394,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
                         {p.metode === 'TUNAI_PUSAT' && (
                             <View className="flex-row items-center mb-5 bg-primary/5 p-3 rounded-xl border border-primary/10">
-                                <Wallet size={12} color="primaryColor" />
+                                <Wallet size={12} color={themeColors.primary} />
                                 <Typography variant="caption" className="text-primary/70 ml-2 text-[10px] uppercase font-bold tracking-widest">
                                     Saldo Kas Pusat: <Typography variant="caption" weight="bold" className="text-primary">{formatCurrency(balancesInfo.cashPusat)}</Typography>
                                 </Typography>

@@ -730,7 +730,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             <View className="flex-row items-center justify-between mb-2 mt-4">
                 <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Daftar Muatan (Rit & Harga)</Typography>
                 <Pressable onPress={addJenisMuatan} className="flex-row items-center bg-primary/5 px-2 py-1 rounded-lg">
-                    <Plus size={14} color="primaryColor" />
+                    <Plus size={14} color={themeColors.primary} />
                     <Typography variant="caption" weight="bold" className="text-primary ml-1">Tambah</Typography>
                 </Pressable>
             </View>
@@ -790,7 +790,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                         onChangeText={v => updateJenisMuatan(index, 'asal', v)}
                                         containerClassName="mb-0"
                                         className="h-10 text-[12px] border-transparent"
-                                        startIcon={<MapPin size={14} color="primaryColor" />}
+                                        startIcon={<MapPin size={14} color={themeColors.primary} />}
                                     />
                                 </View>
                                 <ArrowRight size={16} color="#CBD5E1" />
@@ -1056,7 +1056,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             <View className="flex-row justify-between items-center mb-3">
                                 <Typography variant="caption" weight="bold" className="text-textGray font-bold">ALOKASI PEMBAYARAN</Typography>
                                     <Pressable onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
-                                        <PlusCircle size={14} color="primaryColor" />
+                                        <PlusCircle size={14} color={themeColors.primary} />
                                         <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
                                     </Pressable>
                                 </View>

@@ -122,7 +122,7 @@ export const MuatanSelector = ({
                         </View>
 
                         {isLoading ? (
-                            <ActivityIndicator className="mt-4" color="primaryColor" />
+                            <ActivityIndicator className="mt-4" color={themeColors.primary} />
                         ) : (
                             <FlatList
                                 data={searchResults || []}
