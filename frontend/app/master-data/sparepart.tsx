@@ -767,7 +767,7 @@ export default function SparePartMasterScreen() {
                 title="Cetak Label"
             >
                 <View className="p-4">
-                    <Typography className="text-textGray mb-6 text-center">
+                    <Typography variant="body2" className="text-textGray mb-6 text-center">
                         {selectedIds.length > 0
                             ? `Cetak label untuk ${selectedIds.length} item terpilih.`
                             : 'Pilih jenis label yang akan dicetak untuk semua data yang tampil di layar saat ini.'}
@@ -784,9 +784,9 @@ export default function SparePartMasterScreen() {
                             <View className="bg-primary/10 p-3 rounded-xl mr-4">
                                 <QrCode size={24} color={themeColors.primary} />
                             </View>
-                            <View>
+                            <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-primary">QR Code</Typography>
-                                <Typography variant="caption" className="text-textGray">Format kotak, cepat dipindai</Typography>
+                                <Typography variant="body2" className="text-textGray text-xs">Format kotak, cepat dipindai</Typography>
                             </View>
                         </Pressable>
 
@@ -800,9 +800,9 @@ export default function SparePartMasterScreen() {
                             <View className="bg-emerald-100 p-3 rounded-xl mr-4">
                                 <Barcode size={24} color="#059669" />
                             </View>
-                            <View>
+                            <View className="flex-1">
                                 <Typography variant="body1" weight="bold" className="text-emerald-700">Barcode</Typography>
-                                <Typography variant="caption" className="text-textGray">Format garis standar (Code 128)</Typography>
+                                <Typography variant="body2" className="text-textGray text-xs">Format garis standar (Code 128)</Typography>
                             </View>
                         </Pressable>
 
