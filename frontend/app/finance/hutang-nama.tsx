@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, Share } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns/format';
@@ -15,7 +15,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { namaGrupService, StrukNama } from '../../services/namaGrup';
 import { formatCurrency, formatNumber, parseNumber, getTodayString, tanggalLokal } from '../../utils/format';
 import { getErrorMessage } from '../../utils/error';
-import { buildRincianNamaPesan } from '../../utils/rincianNama';
+import { bagikanRincianNama } from '../../utils/rincianNama';
 
 const STATUS_LABEL: Record<StrukNama['status'], { text: string; cls: string }> = {
     LUNAS: { text: 'Lunas', cls: 'bg-emerald-50 text-emerald-700' },
@@ -98,7 +98,7 @@ export default function HutangNamaScreen() {
     const kirimRincian = async () => {
         if (!detailQuery.data) return;
         try {
-            await Share.share({ message: buildRincianNamaPesan('HUTANG', detailQuery.data) });
+            await bagikanRincianNama('HUTANG', detailQuery.data);
         } catch (e) {
             tampilkan('Gagal', getErrorMessage(e, 'Rincian tidak bisa dibagikan'), 'error');
         }

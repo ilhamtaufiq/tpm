@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session, joinedload
 from typing import Dict, Any, Optional
 from datetime import datetime
+import html
 import io
 import os
 from PIL import Image, ImageDraw, ImageFont, ImageOps
@@ -21,6 +22,7 @@ from app.models.jasa_angkut import MuatanJasaAngkut
 from app.models.mobil import Mobil, TransaksiPenjualanMobil
 from app.models.system_setting import SystemSetting
 from app.services.short_link_service import ShortLinkService
+from app.services.rincian_nama_service import TIPE_RINCIAN, data_rincian
 from app.services.struk_piutang_service import get_hutang_receipt, get_piutang_receipt
 
 router = APIRouter(prefix="/public/receipt", tags=["Public Receipt"])
@@ -581,12 +583,89 @@ async def view_receipt(
     Public HTML view for the receipt
     """
     try:
+        if receipt_type in TIPE_RINCIAN:
+            return HTMLResponse(generate_rincian_html(data_rincian(db, transaction_id)))
         data = load_receipt_data(db, receipt_type, transaction_id)
             
         return generate_html_receipt(data, receipt_type, transaction_id)
     except Exception as e:
         print(f"Error generating public view: {e}")
         return HTMLResponse(content="<div style='text-align:center; padding: 50px;'><h1 style='color:#EE2737;'>Struk tidak ditemukan</h1><p>Pastikan link yang Anda buka sudah benar.</p></div>", status_code=404)
+
+def _rp(nilai: float) -> str:
+    return "Rp " + f"{nilai:,.0f}".replace(",", ".")
+
+
+def _tgl(iso: Optional[str]) -> str:
+    if not iso:
+        return "-"
+    try:
+        return datetime.strptime(iso[:10], "%Y-%m-%d").strftime("%d/%m/%Y")
+    except ValueError:
+        return iso
+
+
+def generate_rincian_html(data: Dict[str, Any]) -> str:
+    """Halaman rincian per nama: semua struk, nominal, dibayar, sisa, dan status."""
+    pihak = "Piutang" if data["jenis"] == "PIUTANG" else "Hutang"
+    baris = []
+    for s in data["struk"]:
+        riwayat = "".join(
+            f"<li>{_tgl(x.get('tanggal'))}: {_rp(x.get('nominal') or 0)}"
+            + (f" ({html.escape(str(x['metode']))})" if x.get("metode") else "")
+            + "</li>"
+            for x in s.get("pembayaran") or []
+        )
+        ref = f'<div class="kecil">Ref: {html.escape(str(s["nomor_referensi"]))}</div>' if s.get("nomor_referensi") else ""
+        riwayat_html = f'<ul class="riwayat">{riwayat}</ul>' if riwayat else ""
+        baris.append(f"""
+        <tr>
+          <td><strong>{html.escape(str(s['nomor']))}</strong><br><span class="kecil">{_tgl(s['tanggal'])}</span>{ref}</td>
+          <td class="angka" data-label="Nominal">{_rp(s['nominal'])}</td>
+          <td class="angka" data-label="Dibayar">{_rp(s['total_dibayar'])}</td>
+          <td class="angka" data-label="Sisa"><strong>{_rp(s['sisa'])}</strong></td>
+          <td>{html.escape(str(s['status_label']))}{riwayat_html}</td>
+        </tr>""")
+    daftar = "".join(baris) or '<tr><td colspan="5">Tidak ada struk.</td></tr>'
+    nama = html.escape(data["nama"])
+    return f"""<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rincian {pihak} - {nama}</title>
+  <style>
+    body {{ margin: 0; font-family: system-ui, -apple-system, Segoe UI, sans-serif; background: #f4f6f8; color: #1d2733; }}
+    .kartu {{ max-width: 760px; margin: 16px auto; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }}
+    h1 {{ font-size: 20px; margin: 0 0 4px; }}
+    .kecil {{ font-size: 12px; color: #6b7785; }}
+    .total {{ display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }}
+    .total > div {{ flex: 1; min-width: 140px; background: #f4f6f8; border-radius: 8px; padding: 10px 12px; }}
+    table {{ width: 100%; border-collapse: collapse; font-size: 14px; }}
+    th, td {{ text-align: left; padding: 8px 6px; border-top: 1px solid #e5e9ee; vertical-align: top; }}
+    th {{ font-size: 12px; color: #6b7785; font-weight: 600; }}
+    .angka {{ text-align: right; white-space: nowrap; }}
+    .riwayat {{ margin: 4px 0 0; padding-left: 16px; font-size: 12px; color: #4a5664; }}
+    @media (max-width: 560px) {{ table, thead, tbody, tr, td {{ display: block; }} thead {{ display: none; }} td {{ border-top: none; padding: 3px 0; }} td.angka {{ text-align: left; }} td.angka::before {{ content: attr(data-label) ': '; color: #6b7785; font-size: 12px; }} tbody tr {{ border-top: 1px solid #e5e9ee; padding: 8px 0; }} }}
+  </style>
+</head>
+<body>
+  <div class="kartu">
+    <div class="kecil">Tiga Putra Motor</div>
+    <h1>Rincian {pihak}: {nama}</h1>
+    <div class="total">
+      <div><div class="kecil">Total sisa</div><strong>{_rp(data['total_sisa'])}</strong></div>
+      <div><div class="kecil">Total nominal</div><strong>{_rp(data['total_nominal'])}</strong></div>
+      <div><div class="kecil">Total dibayar</div><strong>{_rp(data['total_dibayar'])}</strong></div>
+    </div>
+    <table>
+      <thead><tr><th>No. struk</th><th class="angka">Nominal</th><th class="angka">Dibayar</th><th class="angka">Sisa</th><th>Status</th></tr></thead>
+      <tbody>{daftar}</tbody>
+    </table>
+  </div>
+</body>
+</html>"""
+
 
 def _qr_svg(url: str) -> str:
     """QR code sebagai SVG inline (reportlab, sudah ada di requirements)."""

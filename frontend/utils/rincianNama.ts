@@ -1,41 +1,18 @@
-import { format } from 'date-fns/format';
-import { id as localeID } from 'date-fns/locale/id';
-import { formatCurrency, tanggalLokal } from './format';
-import type { DetailNama } from '../services/namaGrup';
+import { Share } from 'react-native';
+import { formatCurrency } from './format';
+import { buildPublicShortUrl, PublicReceiptType } from './publicReceiptUrl';
+import { buildPublicReceiptViewUrl } from './sharePublicReceipt';
+import { namaGrupService, type DetailNama } from '../services/namaGrup';
 
-// Pesan rincian piutang/hutang per nama, siap dibagikan (WhatsApp, SMS, email, dsb.).
-// Memuat per struk: tanggal, nominal, status, riwayat bayar, dan tanggal pelunasan.
+// Rincian piutang/hutang per nama dibagikan sebagai link pendek ke halaman rincian di server.
+// Halaman itu memuat semua struk, nominal, sisa, dan status, dan dibaca langsung, jadi selalu terbaru.
 
-const LABEL_STATUS: Record<string, string> = {
-    LUNAS: 'LUNAS',
-    SEBAGIAN: 'SEBAGIAN',
-    BELUM_LUNAS: 'BELUM LUNAS',
-};
-
-const fmtTanggal = (value: string) => format(tanggalLokal(value), 'dd MMM yyyy', { locale: localeID });
-
-export const buildRincianNamaPesan = (jenis: 'PIUTANG' | 'HUTANG', detail: DetailNama): string => {
+export const bagikanRincianNama = async (jenis: 'PIUTANG' | 'HUTANG', detail: DetailNama): Promise<void> => {
     const pihak = jenis === 'PIUTANG' ? 'Piutang' : 'Hutang';
-    const lines: string[] = [`Rincian ${pihak} - ${detail.nama}`, ''];
-
-    detail.struk
-        .filter((s) => s.status !== 'BATAL')
-        .forEach((s) => {
-            const bayar = [...(s.pembayaran ?? [])].sort((a, b) => a.tanggal.localeCompare(b.tanggal));
-            lines.push(`No. ${s.nomor}`);
-            lines.push(`Tanggal ${pihak.toLowerCase()}: ${fmtTanggal(s.tanggal)}`);
-            lines.push(`Nominal: ${formatCurrency(s.nominal)}`);
-            lines.push(`Status: ${LABEL_STATUS[s.status] ?? s.status}`);
-            bayar.forEach((x) => {
-                lines.push(`  - Dibayar ${fmtTanggal(x.tanggal)}: ${formatCurrency(x.nominal)}${x.metode ? ` (${x.metode})` : ''}`);
-            });
-            if (s.status === 'LUNAS' && bayar.length > 0) {
-                lines.push(`Tanggal pelunasan: ${fmtTanggal(bayar[bayar.length - 1].tanggal)}`);
-            }
-            lines.push(`Sisa: ${formatCurrency(s.sisa)}`);
-            lines.push('');
-        });
-
-    lines.push(`Total sisa: ${formatCurrency(detail.total_sisa)}`);
-    return lines.join('\n');
+    const tipe: PublicReceiptType = jenis === 'PIUTANG' ? 'rincian_piutang' : 'rincian_hutang';
+    const token = await namaGrupService.buatRincianToken(jenis === 'PIUTANG' ? 'piutang' : 'hutang', detail.nama);
+    const link = (await buildPublicShortUrl(tipe, token)) ?? buildPublicReceiptViewUrl(tipe, token);
+    await Share.share({
+        message: `Rincian ${pihak} - ${detail.nama}\nTotal sisa: ${formatCurrency(detail.total_sisa)}\n${link}`,
+    });
 };

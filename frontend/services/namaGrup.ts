@@ -59,4 +59,6 @@ export const namaGrupService = {
         (await api.get('/per-nama/hutang/detail', { params: { nama, unit } })).data,
     hutangBayar: async (nama: string, payload: BayarNamaPayload): Promise<HasilBayarNama> =>
         (await api.post('/per-nama/hutang/bayar', { nama, ...payload })).data,
+    buatRincianToken: async (jenis: 'piutang' | 'hutang', nama: string): Promise<string> =>
+        (await api.post(`/per-nama/${jenis}/rincian-token`, { nama })).data.token,
 };
