@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { useRouter } from 'expo-router';
 import api from '../../utils/api';
 import { useAuthStore } from '../../store/useAuthStore';
-import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check.js';
+const TPM_LOGO = require('../../assets/logo_tpm_login.png');
 import User from 'lucide-react-native/dist/esm/icons/user.js';
 import Lock from 'lucide-react-native/dist/esm/icons/lock.js';
 import LogIn from 'lucide-react-native/dist/esm/icons/log-in.js';
@@ -137,11 +137,11 @@ export default function LoginScreen() {
                         <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-surface/5 rounded-full" />
                         <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-surface/5 rounded-full" />
 
-                        <View className="w-24 h-24 bg-surface/10 rounded-[32px] items-center justify-center mb-6 border border-white/20 overflow-hidden">
+                        <View className={`w-24 h-24 rounded-[32px] items-center justify-center mb-6 overflow-hidden ${appLogo ? 'bg-surface/10 border border-white/20' : 'bg-white p-2'}`}>
                             {appLogo ? (
                                 <Image source={{ uri: appLogo }} className="w-full h-full" resizeMode="contain" />
                             ) : (
-                                <ShieldCheck size={48} color="white" strokeWidth={1.5} />
+                                <Image source={TPM_LOGO} style={{ width: 80, height: 80 }} resizeMode="contain" />
                             )}
                         </View>
 
