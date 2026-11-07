@@ -283,7 +283,7 @@ export interface UserResponse {
 
 
 export interface ActivityItem {
-    type: 'financial' | 'workshop';
+    type: 'financial' | 'workshop' | 'transport';
     id: string;
     original_id: number;
     title: string;

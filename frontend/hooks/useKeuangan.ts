@@ -5,7 +5,9 @@ import { bengkelService } from '../services/bengkel';
 import {
     expenseUnitsParam,
     expenseToKasRow,
+    feedSourceForUnit,
     filterWalletExpenseRows,
+    mergeActivityRows,
     mergeWalletRows,
 } from '../utils/walletMerge';
 
@@ -78,6 +80,10 @@ export const useUnitWalletHistory = (
         tanggal_dari: params.tanggal_dari,
         tanggal_sampai: params.tanggal_sampai,
     }, { enabled: ready });
+    // Transaksi unit (order bengkel, muatan jasa angkut, servis stok mobil) dari feed aktivitas.
+    const feedSource = feedSourceForUnit(sumber);
+    const feedReady = ready && !!feedSource;
+    const feedQuery = useRecentActivity(params.limit ?? 20, feedSource, { enabled: feedReady });
     const data = useMemo<KasBankListResponse | undefined>(() => {
         if (!ready) return undefined;
         const a = walletQuery.data?.data ?? [];
@@ -88,12 +94,16 @@ export const useUnitWalletHistory = (
             [...a, ...b].map((item: any) => item.nomor_referensi).filter(Boolean),
         );
         const merged = mergeWalletRows(a, b, kept.map(expenseToKasRow));
-        return { ...(walletQuery.data ?? centralQuery.data ?? {}), data: merged, total: merged.length } as KasBankListResponse;
-    }, [ready, walletQuery.data, centralQuery.data, expenseQuery.data, jenis, sumber]);
+        const rows = mergeActivityRows(merged, feedQuery.data ?? [], {
+            tanggal_dari: params.tanggal_dari,
+            tanggal_sampai: params.tanggal_sampai,
+        });
+        return { ...(walletQuery.data ?? centralQuery.data ?? {}), data: rows, total: rows.length } as KasBankListResponse;
+    }, [ready, walletQuery.data, centralQuery.data, expenseQuery.data, feedQuery.data, jenis, sumber, params.tanggal_dari, params.tanggal_sampai]);
     return {
         data,
-        isLoading: ready && (walletQuery.isLoading || centralQuery.isLoading || expenseQuery.isLoading),
-        refetch: async () => { await Promise.all([walletQuery.refetch(), centralQuery.refetch(), expenseQuery.refetch()]); },
+        isLoading: ready && (walletQuery.isLoading || centralQuery.isLoading || expenseQuery.isLoading || (feedReady && feedQuery.isLoading)),
+        refetch: async () => { await Promise.all([walletQuery.refetch(), centralQuery.refetch(), expenseQuery.refetch(), feedQuery.refetch()]); },
     };
 };
 

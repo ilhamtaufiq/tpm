@@ -26,6 +26,9 @@ export const BatalkanBarisButton = ({ item }: BatalkanBarisButtonProps) => {
         }
     };
 
+    // Baris dari feed transaksi bukan baris kas: tidak ada kas yang bisa dibatalkan di sini.
+    if (item?.dari_feed) return null;
+
     return (
         <>
             <Pressable
