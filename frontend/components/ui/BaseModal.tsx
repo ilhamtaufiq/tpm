@@ -115,6 +115,8 @@ export const BaseModal = ({
                         style={{
                             transform: [{ translateY: slideAnim }],
                             opacity: opacityAnim,
+                            // Warna dari tema aktif (sama seperti surface di useUIStore), tidak hanya dari kelas NativeWind.
+                            backgroundColor: themeColors.surface,
                             maxHeight: fullScreen ? '100%' : maxHeight,
                             width: '100%',
                             zIndex: 2,
