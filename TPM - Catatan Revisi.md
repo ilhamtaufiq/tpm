@@ -53,7 +53,7 @@ Verifikasi: typecheck frontend bersih. Backend 174 lolos, 10 dilewati.
 ## Fase 3: Fitur Besar (branch `claude/revisi-fase1`, belum di-commit)
 
 - **1. Tema ciri khas TPM (tiga warna):** `frontend/store/useUIStore.ts`. Default sekarang biru (`#023C69`), abu (`#64748B`), dan putih (permukaan `#FFFFFF`). Palet lama disimpan sebagai "TPM Klasik".
-- **15. Faktur penjualan mobil:** `GET /penjualan-mobil/{id}/faktur.pdf` (A4, reportlab). Berisi nomor faktur, pembeli, data mobil, harga, DP, sisa, terbilang, tanda tangan pembeli dan penjual, serta kotak materai Rp10.000. Tombol "Faktur PDF" ada di detail unit terjual (`components/MobilDetail.tsx`). Di web dibuka di tab baru, di native dibagikan. Isi faktur, kop, dan kotak materai masih default. Belum memakai data kop dari pengaturan cetak.
+- **15. Kwitansi penjualan mobil:** `GET /penjualan-mobil/{id}/faktur.pdf` (A5 landscape, reportlab, `services/faktur_mobil_service.py`). Berisi nomor, pembeli, data mobil, harga, DP, sisa, terbilang, tanda tangan pembeli dan penjual, logo, dan label "Materai Rp10.000" (teks, tanpa bingkai). Tombol "Kwitansi PDF" ada di detail unit (`components/MobilDetail.tsx`). Di web dibuka di tab baru, di native dibagikan. Isi, kop, dan ruang materai masih default. Belum memakai data kop dari pengaturan cetak.
 - **22. Tema dan pengaturan di server:** tema tersimpan di `system_settings` (`theme_config`) lewat `PUT /settings`, dan dimuat setelah login (`app/_layout.tsx`). Admin yang mengubah tema, semua pengguna mengikuti.
 
 Asumsi yang diambil tanpa jawaban dari Anda:
