@@ -4,7 +4,7 @@
     "slug": "tpm-super-app",
     "version": "1.0.33",
     "orientation": "default",
-    "icon": "./assets/logo_tpm.png",
+    "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "light",
     "jsEngine": "hermes",
     "newArchEnabled": false,
@@ -31,7 +31,7 @@
       "package": "com.olobor.tpmsuperapp",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo_tpm.png",
+        "foregroundImage": "./assets/adaptive-foreground.png",
         "backgroundColor": "#ffffff"
       },
       "versionCode": 10033
