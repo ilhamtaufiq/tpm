@@ -1210,6 +1210,7 @@ export default function BengkelTransaksiScreen() {
                                         color="blue"
                                         allowDecimal
                                         onChangeQty={(qty) => setPartQty(row.item.id, qty)}
+                                        onRemove={() => togglePart(row.item)}
                                     />
                                 </View>
                             ))}
@@ -1305,6 +1306,7 @@ export default function BengkelTransaksiScreen() {
                                         color="blue"
                                         allowDecimal
                                         onChangeQty={(qty) => setPartQty(row.item.id, qty)}
+                                        onRemove={() => togglePart(row.item)}
                                     />
                                 </View>
                             ))}
@@ -2308,12 +2310,15 @@ function QtyControl({
     color,
     allowDecimal = false,
     onChangeQty,
+    onRemove,
 }: {
     value: number;
     color: 'blue' | 'emerald';
     /** Izinkan pecahan (sparepart bersatuan liter/kg). Servis tetap bulat. */
     allowDecimal?: boolean;
     onChangeQty: (qty: number) => void;
+    /** Dipanggil saat tombol − menurunkan kuantitas di bawah minimum: item dilepas dari pilihan. */
+    onRemove?: () => void;
 }) {
     const minQty = allowDecimal ? 0.01 : 1;
     const step = allowDecimal ? 0.5 : 1;
@@ -2345,7 +2350,13 @@ function QtyControl({
         onChangeQty(next);
     };
 
-    const adjust = (delta: number) => onChangeQty(roundQty(Math.max(minQty, value + delta)));
+    const adjust = (delta: number) => {
+        if (delta < 0 && onRemove && value + delta < minQty) {
+            onRemove();
+            return;
+        }
+        onChangeQty(roundQty(Math.max(minQty, value + delta)));
+    };
 
     return (
         <View className={`flex-row items-center self-end mt-3 bg-surface rounded-xl border ${borderColor} overflow-hidden`}>
@@ -2414,6 +2425,7 @@ const PartPickRow = memo(function PartPickRow({
                     color="blue"
                     allowDecimal
                     onChangeQty={handleQtyChange}
+                    onRemove={() => onToggle(part)}
                 />
             )}
         </Pressable>
