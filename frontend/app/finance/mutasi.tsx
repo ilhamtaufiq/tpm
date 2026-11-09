@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, Modal } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, Modal, TextInput } from 'react-native';
+import { useDebounce } from '../../hooks/useDebounce';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUIStore } from '../../store/useUIStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -120,9 +121,12 @@ export default function MutasiKasScreen() {
 
     // API Hooks
     const effectiveFilter = selectedFilter === 'all' && roleAccount ? roleAccount : selectedFilter;
+    const [searchQuery, setSearchQuery] = useState('');
+    const debouncedSearch = useDebounce(searchQuery, 350);
     const { data: txData, isLoading: isLoadingTx, refetch: refetchTx } = useKasBankList({
         limit: 50,
         jenis: effectiveFilter === 'all' ? undefined : effectiveFilter,
+        search: debouncedSearch.trim() || undefined,
     });
     const { data: balances, isLoading: isLoadingBalances, refetch: refetchBalances } = useKasBankBalances();
     const queryClient = useQueryClient();
@@ -572,7 +576,16 @@ export default function MutasiKasScreen() {
 
                         <View className="flex-row items-center px-4 bg-background h-11 rounded-2xl border border-transparent">
                             <Search size={16} color={themeColors.textGray} />
-                            <Typography className="ml-3 text-xs text-textGray font-semibold">Cari riwayat transaksi...</Typography>
+                            <TextInput
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                placeholder="Cari riwayat transaksi..."
+                                placeholderTextColor={themeColors.textGray}
+                                returnKeyType="search"
+                                autoCorrect={false}
+                                autoCapitalize="none"
+                                className="flex-1 ml-3 text-xs text-text font-semibold"
+                            />
                         </View>
                     </View>
                 </View>
@@ -736,8 +749,10 @@ export default function MutasiKasScreen() {
                     isLoadingTx ? null : (
                         <View className="mt-10">
                             <EmptyState
-                                title="Belum ada transaksi"
-                                description={selectedFilter !== 'all' ? `Belum ada riwayat untuk ${JENIS_LABEL[selectedFilter as KasBankJenis]}` : "Belum ada riwayat transaksi kas & bank."}
+                                title={debouncedSearch.trim() ? 'Tidak ditemukan' : 'Belum ada transaksi'}
+                                description={debouncedSearch.trim()
+                                    ? `Tidak ada transaksi yang cocok dengan "${debouncedSearch.trim()}".`
+                                    : selectedFilter !== 'all' ? `Belum ada riwayat untuk ${JENIS_LABEL[selectedFilter as KasBankJenis]}` : "Belum ada riwayat transaksi kas & bank."}
                                 icon={ArrowRightLeft}
                             />
                         </View>

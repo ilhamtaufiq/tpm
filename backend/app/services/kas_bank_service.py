@@ -268,12 +268,22 @@ class KasBankService:
         sort_by: str = "tanggal",
         sort_order: str = "desc",
         allowed_jenis: Optional[List[KasBankJenis]] = None,
+        search: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Get list of transactions with pagination and filters."""
         query = self.db.query(KasBank)
 
         if allowed_jenis:
             query = query.filter(KasBank.jenis.in_(allowed_jenis))
+
+        # Pencarian: setiap kata harus cocok di keterangan, nomor transaksi, atau nomor referensi.
+        for kata in (search or "").split():
+            pola = f"%{kata}%"
+            query = query.filter(or_(
+                KasBank.keterangan.ilike(pola),
+                KasBank.nomor_transaksi.ilike(pola),
+                KasBank.nomor_referensi.ilike(pola),
+            ))
 
         # Jenis filter
         if jenis:

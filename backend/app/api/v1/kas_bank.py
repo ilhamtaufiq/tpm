@@ -48,6 +48,7 @@ def list_transactions(
     tanggal_sampai: Optional[date] = None,
     sort_by: str = "tanggal",
     sort_order: str = "desc",
+    search: Optional[str] = Query(None, max_length=100),
 ):
     """Get list of transactions with pagination and filters."""
     service = KasBankService(db)
@@ -64,6 +65,7 @@ def list_transactions(
         sort_by=sort_by,
         sort_order=sort_order,
         allowed_jenis=allowed_jenis,
+        search=search,
     )
 
 
