@@ -2356,11 +2356,20 @@ function QtyControl({
     };
 
     const adjust = (delta: number) => {
-        if (delta < 0 && onRemove && value + delta < minQty) {
+        let next: number;
+        if (allowDecimal) {
+            // Sparepart pecahan: +/− selalu pindah ke kelipatan step (0,5) terdekat di arah tekan.
+            // Contoh: 0,1 lalu + menjadi 0,5; 0,1 lalu − melepas item.
+            const k = delta > 0 ? Math.floor(value / step) + 1 : Math.ceil(value / step) - 1;
+            next = roundQty(k * step);
+        } else {
+            next = value + delta;
+        }
+        if (delta < 0 && onRemove && next < minQty) {
             onRemove();
             return;
         }
-        onChangeQty(roundQty(Math.max(minQty, value + delta)));
+        onChangeQty(roundQty(Math.max(minQty, next)));
     };
 
     return (
