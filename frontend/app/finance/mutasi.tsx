@@ -33,7 +33,7 @@ import { KasBankTransaction, KasBankAllBalances, KasBankJenis } from '../../serv
 import { User } from '../../services/auth';
 import { formatCurrency, formatNumber, parseNumber, getTodayString, tanggalLokal } from '../../utils/format';
 import { DatePicker } from '../../components/ui/DatePicker';
-import { useKasBankList, useKasBankBalances, useTransfer, useCreateTransaction } from '../../hooks/useKeuangan';
+import { useKasBankInfiniteList, useKasBankBalances, useTransfer, useCreateTransaction } from '../../hooks/useKeuangan';
 import { useBatalkanKas } from '../../hooks/usePembatalan';
 import { BatalkanKasModal } from '../../components/finance/BatalkanKasModal';
 import { useUserList } from '../../hooks/useUsers';
@@ -123,11 +123,20 @@ export default function MutasiKasScreen() {
     const effectiveFilter = selectedFilter === 'all' && roleAccount ? roleAccount : selectedFilter;
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearch = useDebounce(searchQuery, 350);
-    const { data: txData, isLoading: isLoadingTx, refetch: refetchTx } = useKasBankList({
+    const {
+        data: txPages,
+        isLoading: isLoadingTx,
+        refetch: refetchTx,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useKasBankInfiniteList({
         limit: 50,
         jenis: effectiveFilter === 'all' ? undefined : effectiveFilter,
         search: debouncedSearch.trim() || undefined,
     });
+    // Ringkasan (total masuk/keluar, saldo) berasal dari halaman pertama.
+    const txData = txPages?.pages?.[0];
     const { data: balances, isLoading: isLoadingBalances, refetch: refetchBalances } = useKasBankBalances();
     const queryClient = useQueryClient();
     const transferMutation = useTransfer();
@@ -144,7 +153,7 @@ export default function MutasiKasScreen() {
         }
     }, [action]);
 
-    const transactions = txData?.data || [];
+    const transactions = useMemo(() => txPages?.pages.flatMap((page) => page.data || []) ?? [], [txPages]);
     const summary = {
         total_masuk: txData?.total_masuk || 0,
         total_keluar: txData?.total_keluar || 0,
@@ -603,6 +612,9 @@ export default function MutasiKasScreen() {
             {/* Transaction List */}
             <FlatList
                 data={transactions}
+                onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }}
+                onEndReachedThreshold={0.4}
+                ListFooterComponent={isFetchingNextPage ? <ActivityIndicator className="my-4" color={themeColors.primary} /> : null}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => {
                     const isIncome = item.tipe === 'MASUK';
