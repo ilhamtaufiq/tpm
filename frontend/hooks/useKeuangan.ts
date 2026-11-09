@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import { ActivityItem, KasBankListResponse, InvestorWithdrawalRequest, keuanganService } from '../services/keuangan';
 import { bengkelService } from '../services/bengkel';
 import {
@@ -33,6 +33,21 @@ export const useKasBankList = (
         queryKey: ['kas_bank_list', params],
         queryFn: () => keuanganService.getKasBankList(params),
         ...options,
+    });
+};
+
+// Riwayat kas/bank per halaman. Halaman berikutnya diambil saat daftar digulir sampai bawah.
+export const useKasBankInfiniteList = (params: { jenis?: any; search?: string; limit?: number }) => {
+    const pageSize = params.limit ?? 50;
+    return useInfiniteQuery<KasBankListResponse, Error, { pages: KasBankListResponse[] }, any[], number>({
+        queryKey: ['kas_bank_list_infinite', { ...params, limit: pageSize }],
+        queryFn: ({ pageParam }) => keuanganService.getKasBankList({ ...params, limit: pageSize, skip: pageParam }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, allPages) => {
+            const loaded = allPages.reduce((n, page) => n + (page.data?.length ?? 0), 0);
+            return loaded < (lastPage.total ?? 0) ? loaded : undefined;
+        },
+        placeholderData: keepPreviousData,
     });
 };
 
