@@ -2358,10 +2358,12 @@ function QtyControl({
     const adjust = (delta: number) => {
         let next: number;
         if (allowDecimal) {
-            // Sparepart pecahan: +/− selalu pindah ke kelipatan step (0,5) terdekat di arah tekan.
-            // Contoh: 0,1 lalu + menjadi 0,5; 0,1 lalu − melepas item.
-            const k = delta > 0 ? Math.floor(value / step) + 1 : Math.ceil(value / step) - 1;
-            next = roundQty(k * step);
+            // Sparepart pecahan: langkah mengikuti jumlah desimal nilai sekarang.
+            // Bilangan bulat: 1. Satu desimal: 0,1. Dua desimal: 0,01.
+            // Contoh: 0,3 + menjadi 0,4; 0,3 − menjadi 0,2; 2 + menjadi 3.
+            const desimal = (String(roundQty(value)).split('.')[1] || '').length;
+            const langkah = desimal === 0 ? 1 : Math.pow(10, -desimal);
+            next = roundQty(value + (delta > 0 ? langkah : -langkah));
         } else {
             next = value + delta;
         }
