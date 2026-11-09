@@ -499,6 +499,7 @@ export const keuanganService = {
         tanggal_sampai?: string;
         sort_by?: string;
         sort_order?: 'asc' | 'desc';
+        search?: string;
     }): Promise<KasBankListResponse> => {
         const response = await api.get('/kas-bank', { params });
         return response.data;
