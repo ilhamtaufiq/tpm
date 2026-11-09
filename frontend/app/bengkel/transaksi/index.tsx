@@ -2345,6 +2345,11 @@ function QtyControl({
 
     const resetToMin = () => {
         const parsed = Number(text);
+        // Kosong, 0, atau di bawah minimum berarti item dilepas (hanya untuk sparepart, yang punya onRemove).
+        if (onRemove && !(Number.isFinite(parsed) && parsed >= minQty)) {
+            onRemove();
+            return;
+        }
         const next = Number.isFinite(parsed) && parsed >= minQty ? roundQty(parsed) : minQty;
         setText(String(next));
         onChangeQty(next);
