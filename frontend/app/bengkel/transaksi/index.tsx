@@ -468,7 +468,7 @@ export default function BengkelTransaksiScreen() {
         const tokens = q.split(/\s+/).filter(Boolean);
         return services
             .filter((service: any) =>
-                tokens.every(token => (serviceSearchIndex.get(String(service?.id)) || '').includes(token)),
+                isSelected(service) || tokens.every(token => (serviceSearchIndex.get(String(service?.id)) || '').includes(token)),
             )
             .sort((a: any, b: any) => {
                 // Sama seperti sparepart: kecocokan nama dulu, item terpilih turun pada skor yang sama.
@@ -512,8 +512,17 @@ export default function BengkelTransaksiScreen() {
             return 0;
         };
         const namaUrut = (p: any) => partSearchIndex.get(Number(p.id))?.name ?? String(p.nama || '').toLowerCase();
-        return parts
+        // Server hanya mengirim part yang cocok dengan pencarian. Item terpilih yang tidak cocok
+        // ditambahkan dari daftar pilihan, supaya tetap bisa dikurangi/dilepas.
+        const dariServer = new Set(parts.map((p: any) => Number(p.id)));
+        const terpilihTambahan = Object.values(selectedParts)
+            .map((s) => s.item)
+            .filter((it: any) => it && !dariServer.has(Number(it.id)));
+        return [...parts, ...terpilihTambahan]
             .filter((p: any) => {
+                // Item yang sudah dipilih tetap ada agar bisa dikurangi/dilepas saat mencari.
+                // Diurutkan di bawah hasil yang cocok (skor 0).
+                if (selectedParts[p.id]) return true;
                 const hay = partSearchIndex.get(Number(p.id))?.hay || '';
                 return kata.every((w) => hay.includes(w));
             })
