@@ -2447,7 +2447,8 @@ const PartPickRow = memo(function PartPickRow({
     const outOfStock = !selected && !isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0;
     const handleQtyChange = useCallback((qty: number) => onQtyChange(part.id, qty), [onQtyChange, part.id]);
     return (
-        <Pressable disabled={outOfStock} onPress={() => onToggle(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-background border-transparent opacity-60' : selected ? 'bg-blue-500/10 border-blue-500/40' : 'bg-surface border-transparent'}`}>
+        <View className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-background border-transparent opacity-60' : selected ? 'bg-blue-500/10 border-blue-500/40' : 'bg-surface border-transparent'}`}>
+        <Pressable disabled={outOfStock} onPress={() => onToggle(part)}>
             <View className="flex-row items-start">
                 <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : outOfStock ? 'bg-background border-transparent' : 'border-transparent'}`}>
                     {selected && <Check size={16} color="white" />}
@@ -2462,6 +2463,7 @@ const PartPickRow = memo(function PartPickRow({
                     <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(part.harga_jual || 0)}</Typography>
                 </View>
             </View>
+        </Pressable>
             {selected && (
                 <QtyControl
                     value={selected.qty}
@@ -2471,7 +2473,7 @@ const PartPickRow = memo(function PartPickRow({
                     onRemove={() => onToggle(part)}
                 />
             )}
-        </Pressable>
+        </View>
     );
 });
 
