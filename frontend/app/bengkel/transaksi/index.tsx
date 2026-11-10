@@ -1295,7 +1295,20 @@ export default function BengkelTransaksiScreen() {
                         </View>
                         )}
 
-                        {/* Item yang sudah dipilih tetap tampil (dengan tombol ×) saat mencari. */}
+                                                {showParts && partSearch.trim() && (
+                        <View className="w-full">
+                            {isPartsLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleParts.map((part: any) => (
+                                <PartPickRow key={part.id} part={part} selected={selectedParts[part.id]} onToggle={togglePart} onQtyChange={setPartQty} />
+                            ))}
+                            {isFetchingNextPartsPage && (
+                                <View className="py-4">
+                                    <ActivityIndicator color={themeColors.primary} />
+                                </View>
+                            )}
+                        </View>
+                        )}
+
+{/* Item yang sudah dipilih tetap tampil (dengan tombol ×) saat mencari. */}
                         {showParts && editTransactionId && selectedPartList.length > 0 && (
                         <View>
                             <View className="flex-row items-center justify-between mb-3">
@@ -1327,7 +1340,7 @@ export default function BengkelTransaksiScreen() {
                         </View>
                         )}
 
-                        {showParts && (
+                        {showParts && !partSearch.trim() && (
                         <View className="w-full">
                             {isPartsLoading ? <ActivityIndicator color={themeColors.primary} /> : visibleParts.map((part: any) => (
                                 <PartPickRow key={part.id} part={part} selected={selectedParts[part.id]} onToggle={togglePart} onQtyChange={setPartQty} />
