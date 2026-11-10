@@ -618,11 +618,16 @@ export default function BengkelTransaksiScreen() {
     // Dibungkus useCallback (deps kosong, hanya pakai setState fungsional) supaya
     // referensi stabil dan row ter-memo tidak ikut render ulang tiap tap.
     const togglePart = useCallback((part: any) => {
-        if (!isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0) return;
         setSelectedParts(prev => {
             const next = { ...prev };
-            if (next[part.id]) delete next[part.id];
-            else next[part.id] = { item: part, qty: 1, urutan: ++urutanItemSeq };
+            if (next[part.id]) {
+                // Item yang sudah terpilih selalu bisa dilepas, walau stoknya sekarang 0.
+                delete next[part.id];
+                return next;
+            }
+            // Item baru hanya boleh dipilih bila stoknya ada.
+            if (!isAlwaysReadyStock(part.stok) && Number(part.stok || 0) <= 0) return prev;
+            next[part.id] = { item: part, qty: 1, urutan: ++urutanItemSeq };
             return next;
         });
     }, []);
