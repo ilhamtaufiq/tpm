@@ -258,6 +258,10 @@ export default function PurchaseScreen() {
         )));
     }, []);
 
+    const removeItemById = useCallback((itemId: number) => {
+        setItems(prev => prev.filter(it => it.id !== itemId));
+    }, []);
+
     const changeItemPriceById = useCallback((itemId: number, val: string) => {
         const numericVal = parseNumber(val);
         setItems(prev => prev.map(it => (
@@ -605,7 +609,7 @@ export default function PurchaseScreen() {
                                     <View key={item.id} className="flex-row items-center py-2 border-b border-border">
                                         <Typography className="flex-1 text-xs text-textMain" numberOfLines={1}>{item.name}</Typography>
                                         <Pressable
-                                            onPress={() => changeItemQtyById(item.id, Number(item.qty) - 1)}
+                                            onPress={() => (Number(item.qty) <= 1 ? removeItemById(item.id) : changeItemQtyById(item.id, Number(item.qty) - 1))}
                                             className="w-9 h-9 rounded-xl bg-background items-center justify-center"
                                             accessibilityLabel={`Kurangi jumlah ${item.name}`}
                                         >
@@ -623,6 +627,13 @@ export default function PurchaseScreen() {
                                             accessibilityLabel={`Tambah jumlah ${item.name}`}
                                         >
                                             <Typography weight="bold" className="text-textMain">+</Typography>
+                                        </Pressable>
+                                        <Pressable
+                                            onPress={() => removeItemById(item.id)}
+                                            className="w-9 h-9 ml-2 rounded-xl bg-background items-center justify-center"
+                                            accessibilityLabel={`Hapus ${item.name}`}
+                                        >
+                                            <Typography weight="bold" className="text-red-600">×</Typography>
                                         </Pressable>
                                     </View>
                                 ))}
