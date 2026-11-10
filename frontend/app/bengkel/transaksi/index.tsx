@@ -1295,8 +1295,8 @@ export default function BengkelTransaksiScreen() {
                         </View>
                         )}
 
-                        {/* Saat mencari, daftar item lama disembunyikan supaya hanya hasil pencarian yang tampil. */}
-                        {showParts && editTransactionId && selectedPartList.length > 0 && !partSearch.trim() && (
+                        {/* Item yang sudah dipilih tetap tampil (dengan tombol ×) saat mencari. */}
+                        {showParts && editTransactionId && selectedPartList.length > 0 && (
                         <View>
                             <View className="flex-row items-center justify-between mb-3">
                                 <Typography variant="body1" weight="bold" className="text-textMain">Sparepart Transaksi Ini</Typography>
