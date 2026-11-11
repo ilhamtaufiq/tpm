@@ -220,15 +220,10 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
                 <tr class="total-row" style="background-color: #f0fdf4;"><td>LABA BERSIH UNIT MOBIL</td><td class="amount positive">${formatCurrency(data.units.mobil.laba_bersih)}</td></tr>
             </table>
 
-            ${((data as any).kas_per_jenis || []).filter((f: any) => Number(f.masuk || 0) !== 0 || Number(f.keluar || 0) !== 0).length > 0 ? `
             <table>
-                <tr class="unit-header" style="background-color: #0f766e;"><td colspan="2">ARUS KAS PER AKUN (INFO MUTASI)</td></tr>
-                ${((data as any).kas_per_jenis || []).filter((f: any) => Number(f.masuk || 0) !== 0 || Number(f.keluar || 0) !== 0).map((f: any) => `
-                <tr><td>${kasJenisLabel(f.jenis)} (Net)</td><td class="amount">${formatCurrency(f.net)}</td></tr>
-                ${Number(f.masuk || 0) !== 0 ? `<tr class="sub-item"><td>Masuk</td><td class="amount">${formatCurrency(f.masuk)}</td></tr>` : ''}
-                ${Number(f.keluar || 0) !== 0 ? `<tr class="sub-item"><td>Keluar</td><td class="amount negative">(${formatCurrency(f.keluar)})</td></tr>` : ''}
-                `).join('')}
-            </table>` : ''}
+                <tr class="unit-header" style="background-color: #023C69;"><td colspan="2">BEBAN OPERASIONAL PUSAT</td></tr>
+                <tr><td>Total Beban Operasional Pusat</td><td class="amount negative">(${formatCurrency(data.summary.total_beban_umum || 0)})</td></tr>
+            </table>
 
             <div class="recap-box">
                 <div class="recap-title">REKAPITULASI FINANSIAL</div>
