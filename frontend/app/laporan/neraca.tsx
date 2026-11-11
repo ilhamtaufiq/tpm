@@ -14,6 +14,7 @@ import CheckCircle from 'lucide-react-native/dist/esm/icons/circle-check-big.js'
 import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card.js';
 import { WebView } from 'react-native-webview';
 import * as Print from 'expo-print';
+import { unduhPdfLaporanWeb } from '../../utils/unduhPdfLaporan';
 import * as Sharing from 'expo-sharing';
 import { format } from 'date-fns/format';
 import { addDays } from 'date-fns/addDays';
@@ -478,14 +479,9 @@ export default function NeracaScreen() {
                     await Print.printAsync({ html });
                 }
             } else {
-                const { uri } = await Print.printToFileAsync({ html });
+                const uri = Platform.OS === 'web' ? '' : (await Print.printToFileAsync({ html })).uri;
                 if (Platform.OS === 'web') {
-                    const link = document.createElement('a');
-                    link.href = uri;
-                    link.download = `Neraca_${headerDate.replace(/ /g, '_')}.pdf`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    await unduhPdfLaporanWeb(html, `Neraca_${headerDate.replace(/ /g, '_')}.pdf`);
                 } else if (await Sharing.isAvailableAsync()) {
                     await Sharing.shareAsync(uri, {
                         mimeType: 'application/pdf',
