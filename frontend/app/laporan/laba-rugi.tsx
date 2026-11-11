@@ -12,6 +12,7 @@ import X from 'lucide-react-native/dist/esm/icons/x.js';
 import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
 import { WebView } from 'react-native-webview';
 import * as Print from 'expo-print';
+import { unduhPdfLaporanWeb } from '../../utils/unduhPdfLaporan';
 import * as Sharing from 'expo-sharing';
 import { format } from 'date-fns/format';
 import { addDays } from 'date-fns/addDays';
@@ -157,14 +158,9 @@ export default function LabaRugiScreen() {
                     await Print.printAsync({ html });
                 }
             } else {
-                const { uri } = await Print.printToFileAsync({ html });
+                const uri = Platform.OS === 'web' ? '' : (await Print.printToFileAsync({ html })).uri;
                 if (Platform.OS === 'web') {
-                    const link = document.createElement('a');
-                    link.href = uri;
-                    link.download = `LabaRugi_${formattedDate.replace(/ /g, '_')}.pdf`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    await unduhPdfLaporanWeb(html, `LabaRugi_${formattedDate.replace(/ /g, '_')}.pdf`);
                 } else if (await Sharing.isAvailableAsync()) {
                     await Sharing.shareAsync(uri, {
                         mimeType: 'application/pdf',

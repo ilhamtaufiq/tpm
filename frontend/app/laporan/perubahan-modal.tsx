@@ -26,6 +26,7 @@ import { startOfYear } from 'date-fns/startOfYear';
 import { endOfYear } from 'date-fns/endOfYear';
 import { id as localeID } from 'date-fns/locale/id';
 import * as Print from 'expo-print';
+import { unduhPdfLaporanWeb } from '../../utils/unduhPdfLaporan';
 import * as Sharing from 'expo-sharing';
 
 import { Typography } from '../../components/ui/Typography';
@@ -224,14 +225,9 @@ export default function LaporanPerubahanModalScreen() {
                     await Print.printAsync({ html });
                 }
             } else {
-                const { uri } = await Print.printToFileAsync({ html });
+                const uri = Platform.OS === 'web' ? '' : (await Print.printToFileAsync({ html })).uri;
                 if (Platform.OS === 'web') {
-                    const link = document.createElement('a');
-                    link.href = uri;
-                    link.download = `PerubahanModal_${formattedDate.replace(/ /g, '_')}.pdf`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    await unduhPdfLaporanWeb(html, `PerubahanModal_${formattedDate.replace(/ /g, '_')}.pdf`);
                 } else if (await Sharing.isAvailableAsync()) {
                     await Sharing.shareAsync(uri, {
                         mimeType: 'application/pdf',
