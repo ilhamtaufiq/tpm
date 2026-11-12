@@ -25,6 +25,7 @@ from app.utils.constants import (
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang, KasBank
 from app.realtime import publish_realtime_event
 from app.utils.workshop_finance import workshop_finance_recognized_filters
+from app.utils.nama_piutang import TAG_JASA_ANGKUT, beri_tag_asal
 
 
 class MuatanService:
@@ -294,7 +295,8 @@ class MuatanService:
             # Generate Piutang Record for TPM share only ("share tpm nya saja")
             # Effective tagihan for piutang = gross share minus biaya_operasional (tol etc "dipotong")
             # This way "tagihan after potong tol" is what is tracked as piutang / sisa.
-            debtor_name = muatan.supir_nama or "Unknown Driver"
+            # Akhiran unit (invarian 36): piutang supir jasa angkut tampil sebagai "<nama> - Jasa Angkut".
+            debtor_name = beri_tag_asal(muatan.supir_nama or "Unknown Driver", TAG_JASA_ANGKUT)
             gross_share = muatan.laba_tpm
             net_share_for_piutang = max(Decimal("0"), gross_share - total_dynamic_cost)
             piutang = PiutangUsaha(
