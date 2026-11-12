@@ -42,6 +42,7 @@ def test_piutang_supir_muatan_memakai_akhiran_jasa_angkut():
         piutang = db.query(PiutangUsaha).filter(
             PiutangUsaha.referensi_id == mid,
             PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT,
+            PiutangUsaha.nomor_referensi == muatan.nomor_transaksi,
         ).first()
         assert piutang is not None
         assert piutang.nama_debitur == f"{supir.nama} - Jasa Angkut"

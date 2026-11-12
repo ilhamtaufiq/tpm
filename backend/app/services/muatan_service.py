@@ -727,6 +727,7 @@ class MuatanService:
         muatan.laba_supir = profit["laba_supir"]
 
         self._sesuaikan_piutang_lunas(muatan, total_dynamic_cost)
+        self._sesuaikan_piutang_belum_lunas(muatan, total_dynamic_cost)
 
         self.db.commit()
         self.db.refresh(muatan)
@@ -1185,6 +1186,45 @@ class MuatanService:
             piutang.status = PiutangStatus.SEBAGIAN
             piutang.tanggal_lunas = None
             muatan.status_bayar = PaymentStatus.BELUM_LUNAS
+
+    def _sesuaikan_piutang_belum_lunas(self, muatan: MuatanJasaAngkut, total_biaya) -> None:
+        """Piutang supir muatan BELUM_LUNAS ikut disesuaikan saat pendapatan/persentase/biaya berubah.
+
+        Sebelumnya nominal piutang hanya dihitung saat muatan dibuat, sehingga setelah diedit
+        (mis. pendapatan 1.010.000 menjadi 1.120.000 dengan bagian TPM 560.000) piutang tetap
+        menampilkan nilai lama. Bagian TPM = laba_tpm - biaya, seperti saat pembuatan.
+        """
+        if muatan.status_bayar == PaymentStatus.LUNAS:
+            return
+        piutang = self.db.query(PiutangUsaha).filter(
+            PiutangUsaha.referensi_id == muatan.id,
+            PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT,
+            PiutangUsaha.nomor_referensi == muatan.nomor_transaksi,
+            PiutangUsaha.status.in_([PiutangStatus.BELUM_LUNAS, PiutangStatus.SEBAGIAN]),
+        ).first()
+        if piutang is None:
+            return
+        dibayar = Decimal(str(piutang.total_dibayar or 0))
+        net_share = max(Decimal("0"), Decimal(str(muatan.laba_tpm)) - Decimal(str(total_biaya or 0)))
+        if net_share == Decimal(str(piutang.nominal_piutang)):
+            return
+        if net_share < dibayar:
+            self.db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Bagian TPM baru Rp{net_share:,.0f} lebih kecil dari yang sudah dibayar "
+                    f"Rp{dibayar:,.0f} lewat piutang {piutang.nomor_piutang}. "
+                    "Catat pengembalian kelebihan bayar dulu."
+                ).replace(",", "."),
+            )
+        piutang.nominal_piutang = net_share
+        piutang.sisa_piutang = net_share - dibayar
+        if piutang.sisa_piutang > 0:
+            piutang.status = PiutangStatus.SEBAGIAN if dibayar > 0 else PiutangStatus.BELUM_LUNAS
+        else:
+            piutang.status = PiutangStatus.LUNAS
+            piutang.tanggal_lunas = get_jakarta_date()
 
     @staticmethod
     def _kas_milik_muatan(KasBank, muatan):
