@@ -229,6 +229,24 @@ export default function JasaAngkutScreen() {
     const jasaAngkutHutangList = useMemo(() => (hutangData?.data || []).filter((item: any) => item.unit === 'JASA_ANGKUT'), [hutangData]);
     const jasaAngkutPiutangList = useMemo(() => (piutangData?.data || []).filter((item: any) => item.unit === 'JASA_ANGKUT'), [piutangData]);
 
+    // Sisa piutang per supir. Nama debitur piutang muatan bisa berakhiran " - Jasa Angkut", jadi diabaikan saat dicocokkan.
+    const normalisasiNamaSupir = (nama: any) => String(nama || '').replace(/\s*-\s*Jasa Angkut\s*$/i, '').trim().toLowerCase();
+    const piutangSupirByNama = useMemo(() => {
+        const m = new Map<string, number>();
+        for (const it of jasaAngkutPiutangList as any[]) {
+            if (it.status === 'LUNAS') continue;
+            const key = normalisasiNamaSupir(it.nama_debitur);
+            m.set(key, (m.get(key) || 0) + Number(it.sisa_piutang || 0));
+        }
+        return m;
+    }, [jasaAngkutPiutangList]);
+    const piutangSupirGrup = (group: any): number => {
+        const nama: string[] = groupBy === 'supir'
+            ? [group.title]
+            : Array.from(new Set<string>(group.trips.map((t: any) => t.supir_nama || t.supir?.nama).filter(Boolean)));
+        return nama.reduce((sum, n) => sum + (piutangSupirByNama.get(normalisasiNamaSupir(n)) || 0), 0);
+    };
+
     // Payment Filter Logic (Reactive)
     const stats = useMemo(() => {
         if (summaryData) {
@@ -1799,6 +1817,7 @@ export default function JasaAngkutScreen() {
                                                 </Typography>
                                                 <Typography variant="caption" className="text-textGray">
                                                     {group.subtitle ? `${group.subtitle} • ` : ''}{group.trips.length} Transaksi
+                                                    {piutangSupirGrup(group) > 0 ? ` • Piutang supir ${formatCurrency(piutangSupirGrup(group))}` : ''}
                                                 </Typography>
                                             </View>
                                         </View>
