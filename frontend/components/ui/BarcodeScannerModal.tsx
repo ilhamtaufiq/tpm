@@ -486,7 +486,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                         <View style={styles.unfocusedContainer}></View>
                                     </View>
                                     <View style={styles.unfocusedContainer}>
-                                        <View className="items-center mt-6">
+                                        <View className="items-center mt-6" style={{ flex: 1, width: '100%' }}>
                                             <Typography className="text-white text-center mb-6" style={{ opacity: 0.7 }}>
                                                 {continuous
                                                     ? 'Scan terus-menerus — arahkan ke barcode berikutnya'
@@ -494,12 +494,12 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                                 }
                                             </Typography>
 
-                                            {/* Scanner Log Overlay */}
+                                            {/* Scanner Log Overlay: mengisi sisa layar, daftar bisa digulir sampai item paling bawah dan tombol selesai */}
                                             {scanLog.length > 0 && (
-                                                <View className="w-[90%] bg-black/40 rounded-3xl p-4 border border-white/10 mt-2">
+                                                <View style={{ flex: 1, minHeight: 0, width: '90%', marginTop: 8, marginBottom: 16, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 24, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
                                                     <Typography variant="caption" weight="bold" className="text-white/60 mb-3 ml-1 uppercase" style={{ letterSpacing: 1 }}>History Scan Terakhir</Typography>
                                                     {/* Semua item yang sudah di-scan (terbaru di atas), bisa digulir */}
-                                                    <ScrollView style={{ maxHeight: 260 }} nestedScrollEnabled showsVerticalScrollIndicator>
+                                                    <ScrollView style={{ flex: 1, minHeight: 0 }} nestedScrollEnabled showsVerticalScrollIndicator>
                                                     {scanLog.map((item, idx) => (
                                                         <View key={item.id} className={`flex-row items-center py-2.5 px-3 mb-2 rounded-2xl ${idx === 0 ? 'bg-blue-600/30 border border-blue-500/30' : 'bg-surface/5 border border-white/5'}`}>
                                                             <View className={`w-2 h-2 rounded-full mr-3 ${idx === 0 ? 'bg-blue-400' : 'bg-surface/20'}`} />
