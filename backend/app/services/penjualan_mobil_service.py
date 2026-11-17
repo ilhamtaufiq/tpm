@@ -613,6 +613,9 @@ class PenjualanMobilService:
                 PiutangUsaha.nomor_referensi.in_(workshop_nos) if workshop_nos else False,
                 PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat}"),
                 PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat.replace(' ', '')}"),
+                # Nama baru (berakhiran "Jual Beli Mobil") dan nama lama yang belum dirapikan skrip
+                PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat} - %"),
+                PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat.replace(' ', '')} - %"),
             ),
             PiutangUsaha.is_internal == True,
             PiutangUsaha.status != PiutangStatus.LUNAS,

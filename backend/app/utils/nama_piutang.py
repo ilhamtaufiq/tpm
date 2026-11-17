@@ -10,10 +10,12 @@ TAG_BENGKEL = "Bengkel"
 TAG_JASA_ANGKUT = "Jasa Angkut"
 TAG_JB_MOBIL = "Jual Beli Mobil"
 
-# Tag asal per sumber piutang. JB Mobil tidak diberi tag karena namanya sudah "JB MOBIL - <plat>".
+# Tag asal per sumber piutang. Semua unit memakai bentuk seragam "<nama> - <tag unit>",
+# termasuk JB Mobil: "JB MOBIL - <plat> - Jual Beli Mobil".
 TAG_PER_SUMBER_PIUTANG = {
     PiutangSource.BENGKEL: TAG_BENGKEL,
     PiutangSource.JASA_ANGKUT: TAG_JASA_ANGKUT,
+    PiutangSource.JUAL_BELI_MOBIL: TAG_JB_MOBIL,
 }
 
 
