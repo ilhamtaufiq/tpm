@@ -17,8 +17,8 @@ def test_piutang_jasa_angkut_diberi_tag_jasa_angkut():
     assert nama_piutang_transaksi("Mang Usa", PiutangSource.JASA_ANGKUT) == "Mang Usa - Jasa Angkut"
 
 
-def test_piutang_jb_mobil_tidak_diberi_tag_karena_sudah_bertanda():
-    assert nama_piutang_transaksi("JB MOBIL - B 1 X", PiutangSource.JUAL_BELI_MOBIL) == "JB MOBIL - B 1 X"
+def test_piutang_jb_mobil_diberi_tag_jual_beli_mobil_seragam():
+    assert nama_piutang_transaksi("JB MOBIL - B 1 X", PiutangSource.JUAL_BELI_MOBIL) == "JB MOBIL - B 1 X - Jual Beli Mobil"
 
 
 def test_piutang_manual_tidak_diberi_tag():

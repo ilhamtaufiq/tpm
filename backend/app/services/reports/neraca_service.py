@@ -19,6 +19,7 @@ from app.utils.constants import (
     PaymentStatus,
     WorkshopStatus
 )
+from app.utils.nama_piutang import nama_piutang_transaksi
 from app.utils.workshop_finance import (
     internal_mobil_workshop_filters,
     workshop_finance_recognized_filters,
@@ -694,7 +695,9 @@ class NeracaService(BaseReportService):
 
                 amount = Decimal(str(trx.grand_total or 0))
                 if not piutang and amount > 0:
-                    debtor_name = trx.nama_customer or f"JB MOBIL - {trx.nomor_plat}"
+                    debtor_name = nama_piutang_transaksi(
+                        trx.nama_customer or f"JB MOBIL - {trx.nomor_plat}", PiutangSource.JUAL_BELI_MOBIL
+                    )
                     self.db.add(PiutangUsaha(
                         nomor_piutang=bengkel_service._generate_nomor_piutang(),
                         tanggal=trx.tanggal,
@@ -855,7 +858,10 @@ class NeracaService(BaseReportService):
                     nomor_piutang=bengkel_service._generate_nomor_piutang(),
                     tanggal=trx.tanggal,
                     customer_id=trx.customer_id,
-                    nama_debitur=f"JB MOBIL - {trx.nomor_plat}" if is_internal_mobil else (trx.nama_customer or "Guest"),
+                    nama_debitur=(
+                        nama_piutang_transaksi(f"JB MOBIL - {trx.nomor_plat}", PiutangSource.JUAL_BELI_MOBIL)
+                        if is_internal_mobil else (trx.nama_customer or "Guest")
+                    ),
                     nominal_piutang=trx.grand_total,
                     total_dibayar=trx.jumlah_bayar or Decimal("0"),
                     sisa_piutang=outstanding,

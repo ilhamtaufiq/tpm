@@ -68,7 +68,7 @@ def test_rename_sesuai_aturan_dan_idempoten(db):
     rencana = {p.nomor_piutang: baru for p, baru in skrip.rencana_piutang(db) if p.nomor_piutang.startswith(PREFIX)}
     assert rencana[PREFIX + "P1"] == "Pak Heri - Bengkel"
     assert rencana[PREFIX + "P2"] == "Mang Usa - Jasa Angkut"
-    assert PREFIX + "P3" not in rencana
+    assert rencana[PREFIX + "P3"] == "JB MOBIL - B 1 UJI - Jual Beli Mobil"
     assert PREFIX + "P4" not in rencana
     assert PREFIX + "P5" not in rencana
     assert PREFIX + "P6" not in rencana

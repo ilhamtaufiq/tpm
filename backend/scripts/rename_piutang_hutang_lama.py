@@ -7,7 +7,7 @@ Aturan (sama dengan app/utils/nama_piutang.py dan invarian 36):
   (piutang LAINNYA tanpa unit, mis. kasbon atau pinjaman pribadi, tidak diubah)
 - Hutang internal "BENGKEL TPM" (sumber JUAL_BELI_MOBIL) -> "BENGKEL TPM - Jual Beli Mobil"
 - Hutang internal "BENGKEL TPM" (sumber LAINNYA)         -> "BENGKEL TPM - Jasa Angkut"
-- JB Mobil tidak diberi akhiran (namanya sudah "JB MOBIL - <plat>").
+- Piutang sumber JUAL_BELI_MOBIL -> "JB MOBIL - <plat> - Jual Beli Mobil" (seragam dengan unit lain).
 - Nama yang sudah berakhiran tag tidak diubah, sehingga skrip aman dijalankan ulang.
 - Piutang/hutang dibatalkan (status BATAL) tidak diubah.
 
@@ -34,6 +34,7 @@ from app.utils.nama_piutang import (  # noqa: E402
 PIUTANG_TAG = {
     PiutangSource.BENGKEL: TAG_BENGKEL,
     PiutangSource.JASA_ANGKUT: TAG_JASA_ANGKUT,
+    PiutangSource.JUAL_BELI_MOBIL: TAG_JB_MOBIL,
 }
 # Piutang manual (sumber LAINNYA) yang diberi unit: unit-nya yang menentukan akhiran.
 PIUTANG_UNIT_TAG = {
