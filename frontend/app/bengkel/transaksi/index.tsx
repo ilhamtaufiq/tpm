@@ -413,7 +413,8 @@ export default function BengkelTransaksiScreen() {
                     stok: detail.spare_part?.stok ?? 999,
                 },
                 qty: Number(detail.qty || 1),
-                urutan: idx + 1,
+                // Pakai counter yang sama dengan item baru, supaya tidak bentrok dengan urutan input berikutnya.
+                urutan: ++urutanItemSeq,
             };
             return acc;
         }, {});
@@ -437,7 +438,7 @@ export default function BengkelTransaksiScreen() {
                     deskripsi: matchedService?.deskripsi || detail.deskripsi,
                 },
                 qty: Number(detail.qty || 1),
-                urutan: idx + 1,
+                urutan: ++urutanItemSeq,
             };
             return acc;
         }, {});
@@ -491,12 +492,9 @@ export default function BengkelTransaksiScreen() {
     const visibleParts = useMemo(() => {
         const q = debouncedPartSearch.trim().toLowerCase();
         if (!q) {
-            // Hasil identik dengan sort stabil lama (selected dulu, urutan server utuh):
-            // partisi stabil O(n) tanpa komparator.
-            const sel: any[] = [];
-            const rest: any[] = [];
-            for (const p of parts) (selectedParts[p.id] ? sel : rest).push(p);
-            return [...sel, ...rest];
+            // Urutan tetap seperti dari server. Item yang dipilih TIDAK dipindah ke atas,
+            // supaya part tidak melompat posisi saat qty diubah.
+            return parts;
         }
 
         // Sama dengan server (/spare-parts): tiap kata harus cocok (AND), bukan frasa utuh.
@@ -518,24 +516,26 @@ export default function BengkelTransaksiScreen() {
         const terpilihTambahan = Object.values(selectedParts)
             .map((s) => s.item)
             .filter((it: any) => it && !dariServer.has(Number(it.id)));
-        return [...parts, ...terpilihTambahan]
+        // Urutan hanya dihitung dari kecocokan teks dan nama, TIDAK dari status pilih.
+        // Dengan begitu part yang diklik (atau qty-nya diubah) tetap di posisinya.
+        const cocok = parts
             .filter((p: any) => {
                 // Item yang sudah dipilih tetap ada agar bisa dikurangi/dilepas saat mencari.
-                // Diurutkan di bawah hasil yang cocok (skor 0).
                 if (selectedParts[p.id]) return true;
                 const hay = partSearchIndex.get(Number(p.id))?.hay || '';
                 return kata.every((w) => hay.includes(w));
             })
             .sort((a: any, b: any) => {
-                // Hasil paling cocok di atas. Item yang sudah dipilih turun ke bawah pada skor yang sama,
-                // supaya item baru yang dicari tidak tertimbun item lama.
+                // Hasil paling cocok di atas, lalu abjad.
                 const selisih = skor(b) - skor(a);
                 if (selisih !== 0) return selisih;
-                const aSel = Boolean(selectedParts[a.id]);
-                const bSel = Boolean(selectedParts[b.id]);
-                if (aSel !== bSel) return aSel ? 1 : -1;
                 return namaUrut(a).localeCompare(namaUrut(b));
             });
+        // Item terpilih yang tidak cocok dengan pencarian diletakkan di bawah, urut input.
+        const tambahanTerpilih = terpilihTambahan
+            .slice()
+            .sort((a: any, b: any) => (selectedParts[a.id]?.urutan ?? 0) - (selectedParts[b.id]?.urutan ?? 0));
+        return [...cocok, ...tambahanTerpilih];
     }, [parts, partSearchIndex, debouncedPartSearch, selectedParts]);
     const visibleServices = serviceSearch.trim() || showServiceCatalog ? filteredServices : filteredServices.slice(0, 10);
     const getEditablePaymentStatus = (item: any) => {
