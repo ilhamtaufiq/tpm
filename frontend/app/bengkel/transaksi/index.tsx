@@ -459,12 +459,8 @@ export default function BengkelTransaksiScreen() {
         const q = debouncedServiceSearch.trim().toLowerCase();
         const isSelected = (s: any) => Boolean(selectedServices[String(s?.service?.id || s?.id)]);
         if (!q) {
-            // Hasil identik dengan sort stabil lama (selected dulu, sisanya alfabet):
-            // partisi stabil dari servicesAlpha yang sudah alfabet.
-            const sel: any[] = [];
-            const rest: any[] = [];
-            for (const s of servicesAlpha) (isSelected(s) ? sel : rest).push(s);
-            return [...sel, ...rest];
+            // Abjad tetap. Servis yang dipilih TIDAK dipindah ke atas, supaya tidak melompat saat dipilih.
+            return servicesAlpha;
         }
         const tokens = q.split(/\s+/).filter(Boolean);
         return services
@@ -472,7 +468,8 @@ export default function BengkelTransaksiScreen() {
                 isSelected(service) || tokens.every(token => (serviceSearchIndex.get(String(service?.id)) || '').includes(token)),
             )
             .sort((a: any, b: any) => {
-                // Sama seperti sparepart: kecocokan nama dulu, item terpilih turun pada skor yang sama.
+                // Sama seperti sparepart: kecocokan nama dulu, lalu abjad. Status pilih tidak ikut dihitung,
+                // supaya servis yang dipilih tetap di posisinya.
                 const skorNama = (nama: string) => {
                     const n = String(nama || '').toLowerCase();
                     if (n.startsWith(q)) return 3;
@@ -482,9 +479,6 @@ export default function BengkelTransaksiScreen() {
                 };
                 const selisih = skorNama(b.nama) - skorNama(a.nama);
                 if (selisih !== 0) return selisih;
-                const aSelected = Boolean(selectedServices[String(a.service?.id || a.id)]);
-                const bSelected = Boolean(selectedServices[String(b.service?.id || b.id)]);
-                if (aSelected !== bSelected) return aSelected ? 1 : -1;
                 return (a.nama || '').localeCompare(b.nama || '');
             });
     }, [services, servicesAlpha, serviceSearchIndex, debouncedServiceSearch, selectedServices]);
