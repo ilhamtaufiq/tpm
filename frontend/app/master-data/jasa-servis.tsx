@@ -261,7 +261,7 @@ export default function JasaServisScreen() {
                             placeholderTextColor={themeColors.textGray}
                             keyboardType="numeric"
                             value={form.harga}
-                            onChangeText={(t) => setForm({ ...form, harga: formatNumber(t) })}
+                            onChangeText={(t) => setForm({ ...form, harga: formatNumber(t.replace(/\D/g, '')) })}
                         />
                     </View>
                     <View className="flex-1">

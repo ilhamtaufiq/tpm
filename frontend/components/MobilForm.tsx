@@ -387,7 +387,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                             ))}
                         </View>
                     </View>
-                    <Input label="Kilometer" placeholder="15.000" containerClassName="flex-1" keyboardType="numeric" value={kilometer} onChangeText={(v) => setKilometer(formatNumber(v))} />
+                    <Input label="Kilometer" placeholder="15.000" containerClassName="flex-1" keyboardType="numeric" value={kilometer} onChangeText={(v) => setKilometer(formatNumber(v.replace(/\D/g, '')))} />
                 </View>
             </View>
 
@@ -417,7 +417,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                             containerClassName="flex-[1.5]"
                             keyboardType="numeric"
                             value={hargaBeli}
-                            onChangeText={(v) => setHargaBeli(formatNumber(v))}
+                            onChangeText={(v) => setHargaBeli(formatNumber(v.replace(/\D/g, '')))}
                         />
                         {!isEdit && (
                             <View className="flex-1">
@@ -449,7 +449,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                         keyboardType="numeric"
                         value={hargaJual}
                         onChangeText={(v) => {
-                            setHargaJual(formatNumber(v));
+                            setHargaJual(formatNumber(v.replace(/\D/g, '')));
                             setConfirmedPriceChange(false);
                         }}
                     />
@@ -475,7 +475,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                         keyboardType="numeric"
                                         value={dp}
                                         onChangeText={(v) => {
-                                            setDp(formatNumber(v));
+                                            setDp(formatNumber(v.replace(/\D/g, '')));
                                             // Reset sumberBayar if DP is cleared and it was Split
                                             if (parseNumber(v) <= 0 && statusBayar === 'BELUM_LUNAS') {
                                                 // Keep it as is or reset to empty
@@ -581,7 +581,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                                     value={p.jumlah}
                                                     onChangeText={(val) => {
                                                         const newP = [...payments];
-                                                        newP[idx].jumlah = formatNumber(val);
+                                                        newP[idx].jumlah = formatNumber(val.replace(/\D/g, ''));
                                                         setPayments(newP);
                                                     }}
                                                 />
@@ -635,7 +635,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                 containerClassName="flex-1"
                                 keyboardType="numeric"
                                 value={nominalInvestor}
-                                onChangeText={(v) => setNominalInvestor(formatNumber(v))}
+                                onChangeText={(v) => setNominalInvestor(formatNumber(v.replace(/\D/g, '')))}
                             />
                             <View className="flex-1">
                                 <Typography variant="body2" className="mb-1 font-medium">Bagi Hasil (%)</Typography>

@@ -1103,7 +1103,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                         const newP = [...parts];
                                                         const index = newP.findIndex((item) => item.id === part.id);
                                                         if (index !== -1) {
-                                                            newP[index].harga = formatNumber(val);
+                                                            newP[index].harga = formatNumber(val.replace(/\D/g, ''));
                                                             setParts(newP);
                                                         }
                                                     }}
@@ -1172,7 +1172,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                         const newS = [...services];
                                                         const index = newS.findIndex((item) => item.id === service.id);
                                                         if (index !== -1) {
-                                                            newS[index].harga = formatNumber(val);
+                                                            newS[index].harga = formatNumber(val.replace(/\D/g, ''));
                                                             setServices(newS);
                                                         }
                                                     }}
@@ -1380,7 +1380,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                         onChangeText={(val) => {
                                             const newP = [...payments];
                                             if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
-                                            newP[0].nominal = formatNumber(val);
+                                            newP[0].nominal = formatNumber(val.replace(/\D/g, ''));
                                             setPayments(newP);
                                         }}
                                     />
@@ -1437,7 +1437,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                                     value={p.nominal}
                                                     onChangeText={(val) => {
                                                         const newP = [...payments];
-                                                        newP[idx].nominal = formatNumber(val);
+                                                        newP[idx].nominal = formatNumber(val.replace(/\D/g, ''));
                                                         setPayments(newP);
                                                     }}
                                                 />

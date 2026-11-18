@@ -427,7 +427,7 @@ export default function PiutangUsahaScreen() {
                 keyboardType="numeric"
                 placeholder="0"
                 value={createAmount}
-                onChangeText={(t) => setCreateAmount(formatNumber(t))}
+                onChangeText={(t) => setCreateAmount(formatNumber(t.replace(/\D/g, '')))}
             />
 
             <View className="mb-6 bg-blue-50/60 border border-blue-100 rounded-2xl p-4">
@@ -505,7 +505,7 @@ export default function PiutangUsahaScreen() {
                                     placeholder="Nominal"
                                     keyboardType="numeric"
                                     value={p.nominal}
-                                    onChangeText={(t) => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, nominal: formatNumber(t) } : item))}
+                                    onChangeText={(t) => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, nominal: formatNumber(t.replace(/\D/g, '')) } : item))}
                                     containerClassName="mb-0"
                                 />
                             </Card>

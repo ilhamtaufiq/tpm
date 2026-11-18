@@ -116,7 +116,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
     const updateOpCost = (index: number, key: 'deskripsi' | 'jumlah', value: string) => {
         const newCosts = [...operationalCosts];
         if (key === 'jumlah') {
-            newCosts[index][key] = formatNumber(value);
+            newCosts[index][key] = formatNumber(value.replace(/\D/g, ''));
         } else {
             newCosts[index][key] = value;
         }
@@ -135,7 +135,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
     const updatePaymentRow = (id: number, field: string, value: string) => {
         setPayments(payments.map(p => {
             if (p.id === id) {
-                return { ...p, [field]: field === 'jumlah' ? formatNumber(value) : value };
+                return { ...p, [field]: field === 'jumlah' ? formatNumber(value.replace(/\D/g, '')) : value };
             }
             return p;
         }));
@@ -336,7 +336,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     required
                 />
 
-                <Input label="Harga Jual (Rp)" placeholder="0" keyboardType="numeric" value={hargaJual} onChangeText={(v) => setHargaJual(formatNumber(v))} />
+                <Input label="Harga Jual (Rp)" placeholder="0" keyboardType="numeric" value={hargaJual} onChangeText={(v) => setHargaJual(formatNumber(v.replace(/\D/g, '')))} />
 
                 {isSplitPayment ? (
                     <View className="mb-4">
@@ -415,7 +415,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                             placeholder="0" 
                             keyboardType="numeric" 
                             value={dp} 
-                            onChangeText={(v) => setDp(formatNumber(v))} 
+                            onChangeText={(v) => setDp(formatNumber(v.replace(/\D/g, '')))} 
                         />
                         <Typography variant="body2" className="text-textGray mb-2 font-medium pl-1">Metode Pembayaran</Typography>
                         <View className="flex-row space-x-2 mb-4">

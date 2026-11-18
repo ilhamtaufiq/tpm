@@ -1190,7 +1190,7 @@ export default function SlipGajiScreen() {
                                                 keyboardType="numeric"
                                                 placeholder="0"
                                                 value={formatNumber(p.nominal)}
-                                                onChangeText={(v) => setPayments(payments.map(pay => pay.id === p.id ? { ...pay, nominal: formatNumber(v) } : pay))}
+                                                onChangeText={(v) => setPayments(payments.map(pay => pay.id === p.id ? { ...pay, nominal: formatNumber(v.replace(/\D/g, '')) } : pay))}
                                             />
                                         </View>
                                     </View>

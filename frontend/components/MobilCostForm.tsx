@@ -90,7 +90,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     const updatePaymentRow = (id: number, field: string, value: string) => {
         setPayments(payments.map(p => {
             if (p.id === id) {
-                return { ...p, [field]: field === 'nominal' ? formatNumber(value) : value };
+                return { ...p, [field]: field === 'nominal' ? formatNumber(value.replace(/\D/g, '')) : value };
             }
             return p;
         }));
