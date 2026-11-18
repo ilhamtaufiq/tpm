@@ -151,3 +151,10 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Cari part: urutan hasil tidak lagi bergantung pada part yang sudah dipilih. Sebelumnya part terpilih pindah ke atas atau ke bawah saat diklik atau qty-nya diubah. Sekarang urutan hanya dari kecocokan teks lalu abjad. Diuji di web: part tetap di posisinya setelah dipilih dan setelah tombol `+`.
 - Hutang sisa DP beli mobil: hutang sumber PEMBELIAN_MOBIL dibuat tanpa unit, sehingga tidak muncul di menu Keuangan JB Mobil (filter `unit === JUAL_BELI_MOBIL`). Sekarang dibuat dengan unit JUAL_BELI_MOBIL. Hutang lama diisi dengan `scripts/isi_unit_hutang_pembelian_mobil.py` (dry-run default, `--apply` untuk simpan). Tes: `tests/test_mobil_dp_hutang_unit.py`.
 - Cari servis: sama seperti part, urutan hasil tidak lagi bergantung pada servis yang dipilih. Di mode tanpa pencarian, daftar tetap abjad dan servis yang dipilih tidak pindah ke atas. Diuji di web: urutan tetap setelah satu servis dipilih.
+
+## Riwayat Tidak Berubah Setelah Edit Transaksi Bengkel
+
+- Penyebab: feed riwayat (`recent_activity`) hanya dimuat ulang oleh mutasi muatan dan kas. Mutasi transaksi bengkel (buat, edit, pembayaran, status, batal) tidak me-refresh feed itu, sehingga item yang baru diedit tetap tampil dengan urutan dan waktu lama sampai cache basi (30 detik atau lebih).
+- Perbaikan: kelima mutasi transaksi bengkel kini juga me-refresh `recent_activity`.
+- Backend sudah benar: item bengkel memakai `updated_at` (waktu edit terakhir). Tes end-to-end: `tests/test_riwayat_edit_bengkel_terbaru.py`.
+- Catatan: riwayat kas di beranda bengkel hanya mencatat arus kas, jadi edit transaksi tidak muncul di sana. Edit muncul di tab Riwayat.
