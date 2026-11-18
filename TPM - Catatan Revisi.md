@@ -144,3 +144,9 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Perbaikan: input dibersihkan dari selain angka (`replace(/\D/g, '')`) sebelum diformat. Dipasang di Catat Biaya Operasional (kas unit dan Keuangan Pusat, termasuk baris split pembayaran), serta form biaya lainnya di Bengkel, Mobil, Jasa Angkut (ArmadaDetail), dan MobilCostForm.
 - Verifikasi: di web, `100.000` dihapus satu per satu menjadi `10.000`, `1.000`, `100`, `10`, `1`, `0`. Nilai tersimpan tidak berubah, hanya cara input yang diperbaiki.
 - Perluasan: pola yang sama dipasang di semua input nominal yang diketik (piutang, hutang, pencairan investor, mutasi kas, pembelian dan penjualan bengkel, penjualan dan pembelian mobil, jasa angkut, master data, SDM, slip gaji, dan form pembayaran). Tombol isi otomatis dari hasil hitung tidak diubah.
+
+## Urutan Part Input, Posisi Saat Cari, dan Hutang DP Beli Mobil
+
+- Urutan part input (transaksi bengkel dan struk): item dari transaksi yang sudah ada diberi nomor urut 1, 2, 3, sedangkan item baru memakai counter global yang mulai dari 1 lagi. Nomor keduanya bisa sama, jadi item baru bisa terselip di tengah. Sekarang item yang dimuat memakai counter yang sama dengan item baru.
+- Cari part: urutan hasil tidak lagi bergantung pada part yang sudah dipilih. Sebelumnya part terpilih pindah ke atas atau ke bawah saat diklik atau qty-nya diubah. Sekarang urutan hanya dari kecocokan teks lalu abjad. Diuji di web: part tetap di posisinya setelah dipilih dan setelah tombol `+`.
+- Hutang sisa DP beli mobil: hutang sumber PEMBELIAN_MOBIL dibuat tanpa unit, sehingga tidak muncul di menu Keuangan JB Mobil (filter `unit === JUAL_BELI_MOBIL`). Sekarang dibuat dengan unit JUAL_BELI_MOBIL. Hutang lama diisi dengan `scripts/isi_unit_hutang_pembelian_mobil.py` (dry-run default, `--apply` untuk simpan). Tes: `tests/test_mobil_dp_hutang_unit.py`.

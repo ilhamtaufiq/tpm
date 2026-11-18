@@ -278,6 +278,7 @@ class MobilService:
                 supplier_id=None, # Buying from individual/other source
                 nama_kreditur=f"Pembelian Mobil {mobil.nomor_plat}",
                 sumber=HutangSource.PEMBELIAN_MOBIL,
+                unit=KasBankSource.JUAL_BELI_MOBIL,
                 referensi_id=mobil.id,
                 nomor_referensi=mobil.kode,
                 nominal_hutang=sisa_hutang,
