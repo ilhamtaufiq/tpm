@@ -384,7 +384,7 @@ export default function KasbonScreen() {
                     keyboardType="numeric"
                     placeholder="0"
                     value={formData.jumlah}
-                    onChangeText={(text) => setFormData({ ...formData, jumlah: formatNumber(text) })}
+                    onChangeText={(text) => setFormData({ ...formData, jumlah: formatNumber(text.replace(/\D/g, '')) })}
                     containerClassName="mb-6"
                 />
 
@@ -457,7 +457,7 @@ export default function KasbonScreen() {
                                                 value={d.nominal}
                                                 onChangeText={(v) => {
                                                     const newD = [...disbursements];
-                                                    newD[index].nominal = formatNumber(v);
+                                                    newD[index].nominal = formatNumber(v.replace(/\D/g, ''));
                                                     setDisbursements(newD);
 
                                                     // Update total nominal

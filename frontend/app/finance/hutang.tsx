@@ -470,7 +470,7 @@ export default function HutangUsahaScreen() {
                 keyboardType="numeric"
                 placeholder="0"
                 value={createAmount}
-                onChangeText={(t) => setCreateAmount(formatNumber(t))}
+                onChangeText={(t) => setCreateAmount(formatNumber(t.replace(/\D/g, '')))}
             />
 
             <View className="mb-6">
@@ -558,7 +558,7 @@ export default function HutangUsahaScreen() {
                                     placeholder="Nominal"
                                     keyboardType="numeric"
                                     value={p.nominal}
-                                    onChangeText={(t) => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, nominal: formatNumber(t) } : item))}
+                                    onChangeText={(t) => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, nominal: formatNumber(t.replace(/\D/g, '')) } : item))}
                                     containerClassName="mb-0"
                                 />
                             </Card>

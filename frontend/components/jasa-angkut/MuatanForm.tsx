@@ -214,7 +214,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
     const updateField = (key: string, value: string) => {
         if (['harga_beli', 'harga_jual', 'jumlah_bayar'].includes(key)) {
-            setFormData(prev => ({ ...prev, [key]: formatNumber(value) }));
+            setFormData(prev => ({ ...prev, [key]: formatNumber(value.replace(/\D/g, '')) }));
         } else if (key === 'supir_id') {
             const selectedSupir = (activeDrivers as Supir[]).find((d: Supir) => d.id.toString() === value);
             setFormData(prev => ({
@@ -249,7 +249,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     const updatePaymentRow = (id: number, field: string, value: string) => {
         setPayments(payments.map(p => {
             if (p.id === id) {
-                return { ...p, [field]: field === 'jumlah' ? formatNumber(value) : value };
+                return { ...p, [field]: field === 'jumlah' ? formatNumber(value.replace(/\D/g, '')) : value };
             }
             return p;
         }));
@@ -308,7 +308,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         const newList = [...formData.jenis_muatan_list];
         newList[index] = {
             ...newList[index],
-            [field]: (field === 'harga_beli' || field === 'harga_jual') ? formatNumber(value) : value
+            [field]: (field === 'harga_beli' || field === 'harga_jual') ? formatNumber(value.replace(/\D/g, '')) : value
         };
         setFormData(prev => ({ ...prev, jenis_muatan_list: newList }));
 
@@ -356,7 +356,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         setFormData(prev => ({
             ...prev,
             biaya_operasional: prev.biaya_operasional.map((item, i) =>
-                i === index ? { ...item, [field]: field === 'jumlah' ? formatNumber(value) : value } : item
+                i === index ? { ...item, [field]: field === 'jumlah' ? formatNumber(value.replace(/\D/g, '')) : value } : item
             )
         }));
     };

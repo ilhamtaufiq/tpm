@@ -425,7 +425,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             keyboardType="numeric"
                             containerClassName="mb-4"
                             value={p.nominal}
-                            onChangeText={(t) => updatePayment(p.id, 'nominal', formatNumber(t))}
+                            onChangeText={(t) => updatePayment(p.id, 'nominal', formatNumber(t.replace(/\D/g, '')))}
                             startIcon={<CircleDollarSign size={18} color={themeColors.textGray} />}
                         />
 

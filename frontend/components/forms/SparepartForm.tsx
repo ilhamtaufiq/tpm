@@ -300,11 +300,11 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                 <View className="flex-row space-x-3">
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Harga Beli</Typography>
-                        <TextInput className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="0" placeholderTextColor={themeColors.textGray} keyboardType="numeric" value={form.harga_beli} onChangeText={(t) => setForm({ ...form, harga_beli: formatNumber(t) })} />
+                        <TextInput className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="0" placeholderTextColor={themeColors.textGray} keyboardType="numeric" value={form.harga_beli} onChangeText={(t) => setForm({ ...form, harga_beli: formatNumber(t.replace(/\D/g, '')) })} />
                     </View>
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Harga Jual</Typography>
-                        <TextInput className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="0" placeholderTextColor={themeColors.textGray} keyboardType="numeric" value={form.harga_jual} onChangeText={(t) => setForm({ ...form, harga_jual: formatNumber(t) })} />
+                        <TextInput className="bg-background border border-transparent rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5" placeholder="0" placeholderTextColor={themeColors.textGray} keyboardType="numeric" value={form.harga_jual} onChangeText={(t) => setForm({ ...form, harga_jual: formatNumber(t.replace(/\D/g, '')) })} />
                     </View>
                 </View>
 

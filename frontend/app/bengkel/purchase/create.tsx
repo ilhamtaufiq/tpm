@@ -218,7 +218,7 @@ export default function PurchaseScreen() {
     const handleUpdatePaymentRow = (id: number, field: string, value: string) => {
         const nextPayments = payments.map(p => {
             if (p.id === id) {
-                return { ...p, [field]: field === 'nominal' ? formatNumber(value) : value };
+                return { ...p, [field]: field === 'nominal' ? formatNumber(value.replace(/\D/g, '')) : value };
             }
             return p;
         });

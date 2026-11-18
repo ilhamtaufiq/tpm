@@ -348,7 +348,7 @@ export default function UserCashManagementScreen() {
                                         value={form.nominal}
                                         onChangeText={(val) => {
                                             const isNegative = form.type === 'adjust' && val.startsWith('-');
-                                            const formatted = formatNumber(val);
+                                            const formatted = formatNumber(val.replace(/\D/g, ''));
                                             setForm(f => f ? { ...f, nominal: isNegative ? `-${formatted}` : formatted } : null);
                                         }}
                                         keyboardType="numeric"

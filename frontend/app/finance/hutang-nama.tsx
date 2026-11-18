@@ -161,7 +161,7 @@ export default function HutangNamaScreen() {
                     )}
                     <View className="flex-row gap-2">
                         <View className="flex-1"><Input value={tanggal} onChangeText={setTanggal} placeholder="YYYY-MM-DD" maxLength={10} /></View>
-                        <View className="flex-1"><Input value={nominal} onChangeText={(t) => setNominal(formatNumber(t))} placeholder="Nominal" keyboardType="numeric" /></View>
+                        <View className="flex-1"><Input value={nominal} onChangeText={(t) => setNominal(formatNumber(t.replace(/\D/g, '')))} placeholder="Nominal" keyboardType="numeric" /></View>
                     </View>
                     <View className="flex-row gap-2">
                         {(['TUNAI', 'TRANSFER'] as const).map((m) => (

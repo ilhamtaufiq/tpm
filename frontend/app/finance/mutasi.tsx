@@ -452,7 +452,7 @@ export default function MutasiKasScreen() {
                         keyboardType="numeric"
                         placeholder="0"
                         value={transferForm.nominal}
-                        onChangeText={(v) => setTransferForm((p) => ({ ...p, nominal: formatNumber(v) }))}
+                        onChangeText={(v) => setTransferForm((p) => ({ ...p, nominal: formatNumber(v.replace(/\D/g, '')) }))}
                     />
 
                     <Input
@@ -521,7 +521,7 @@ export default function MutasiKasScreen() {
                         keyboardType="numeric"
                         placeholder="0"
                         value={modalForm.nominal}
-                        onChangeText={(v) => setModalForm((p) => ({ ...p, nominal: formatNumber(v) }))}
+                        onChangeText={(v) => setModalForm((p) => ({ ...p, nominal: formatNumber(v.replace(/\D/g, '')) }))}
                     />
 
                     <Input

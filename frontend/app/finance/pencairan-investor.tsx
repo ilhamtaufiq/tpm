@@ -513,7 +513,7 @@ export default function PencairanInvestorScreen() {
                                     placeholder="0"
                                     keyboardType="numeric"
                                     value={p.nominal}
-                                    onChangeText={(text) => handleUpdatePayment(index, 'nominal', formatNumber(text))}
+                                    onChangeText={(text) => handleUpdatePayment(index, 'nominal', formatNumber(text.replace(/\D/g, '')))}
                                     containerClassName={isWithdraw ? 'mb-4' : 'mb-0'}
                                 />
 
@@ -549,7 +549,7 @@ export default function PencairanInvestorScreen() {
                         placeholder={isWithdraw ? 'Maksimal sesuai sisa dana investor' : 'Opsional (Isi jika bayar parsial)'}
                         keyboardType="numeric"
                         value={payments[0]?.nominal || ''}
-                        onChangeText={(text) => handleUpdatePayment(0, 'nominal', formatNumber(text))}
+                        onChangeText={(text) => handleUpdatePayment(0, 'nominal', formatNumber(text.replace(/\D/g, '')))}
                         startIcon={<CircleDollarSign size={18} color={themeColors.textGray} />}
                         containerClassName="mb-6"
                     />

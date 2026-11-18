@@ -1173,7 +1173,7 @@ export default function BengkelTransaksiScreen() {
                                 placeholder="Diskon transaksi"
                                 placeholderTextColor={themeColors.textGray}
                                 value={discount}
-                                onChangeText={(value) => setDiscount(formatNumber(value))}
+                                onChangeText={(value) => setDiscount(formatNumber(value.replace(/\D/g, '')))}
                                 keyboardType="number-pad"
                                 inputMode="numeric"
                                 className="bg-background rounded-2xl px-4 h-11 text-sm text-textMain border border-transparent"
@@ -1800,7 +1800,7 @@ export default function BengkelTransaksiScreen() {
                                     </View>
                                     <TextInput
                                         value={discount}
-                                        onChangeText={(value) => setDiscount(formatNumber(value))}
+                                        onChangeText={(value) => setDiscount(formatNumber(value.replace(/\D/g, '')))}
                                         placeholder="0"
                                         placeholderTextColor={themeColors.textGray}
                                         keyboardType="number-pad"
@@ -1869,7 +1869,7 @@ export default function BengkelTransaksiScreen() {
                                                     <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Tunai</Typography>
                                                     <TextInput
                                                         value={splitTunai}
-                                                        onChangeText={(value) => setSplitTunai(formatNumber(value))}
+                                                        onChangeText={(value) => setSplitTunai(formatNumber(value.replace(/\D/g, '')))}
                                                         placeholder="0"
                                                         placeholderTextColor={themeColors.textGray}
                                                         keyboardType="number-pad"
@@ -1881,7 +1881,7 @@ export default function BengkelTransaksiScreen() {
                                                     <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Transfer</Typography>
                                                     <TextInput
                                                         value={splitTransfer}
-                                                        onChangeText={(value) => setSplitTransfer(formatNumber(value))}
+                                                        onChangeText={(value) => setSplitTransfer(formatNumber(value.replace(/\D/g, '')))}
                                                         placeholder="0"
                                                         placeholderTextColor={themeColors.textGray}
                                                         keyboardType="number-pad"
@@ -1908,7 +1908,7 @@ export default function BengkelTransaksiScreen() {
                                             </View>
                                             <TextInput
                                                 value={paymentAmount}
-                                                onChangeText={(value) => setPaymentAmount(formatNumber(value))}
+                                                onChangeText={(value) => setPaymentAmount(formatNumber(value.replace(/\D/g, '')))}
                                                 placeholder={formatNumber(subtotal)}
                                                 placeholderTextColor={themeColors.textGray}
                                                 keyboardType="number-pad"

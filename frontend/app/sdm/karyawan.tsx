@@ -763,7 +763,7 @@ export default function KaryawanScreen() {
                                 placeholder="Rp 0"
                                 placeholderTextColor={themeColors.textGray}
                                 value={formData.gaji_pokok}
-                                onChangeText={(text: string) => setFormData({ ...formData, gaji_pokok: formatNumber(text) })}
+                                onChangeText={(text: string) => setFormData({ ...formData, gaji_pokok: formatNumber(text.replace(/\D/g, '')) })}
                                 keyboardType="numeric"
                             />
                         </View>
@@ -775,7 +775,7 @@ export default function KaryawanScreen() {
                                 placeholder="Rp 0"
                                 placeholderTextColor={themeColors.textGray}
                                 value={formData.tunjangan}
-                                onChangeText={(text: string) => setFormData({ ...formData, tunjangan: formatNumber(text) })}
+                                onChangeText={(text: string) => setFormData({ ...formData, tunjangan: formatNumber(text.replace(/\D/g, '')) })}
                                 keyboardType="numeric"
                             />
                         </View>
