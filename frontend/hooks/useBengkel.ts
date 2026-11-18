@@ -55,6 +55,7 @@ export const useCreateTransaksiBengkel = () => {
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_detail'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
             queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
@@ -73,6 +74,7 @@ export const useUpdateTransaksiBengkel = () => {
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_detail'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
             queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
@@ -91,6 +93,7 @@ export const useUpdateTransaksiBengkelPayment = () => {
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_detail'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
             queryClient.invalidateQueries({ queryKey: ['piutang'] });
             queryClient.invalidateQueries({ queryKey: ['laba_rugi_report'] });
         },
@@ -106,6 +109,7 @@ export const useUpdateTransaksiBengkelStatus = () => {
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_detail'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
         },
     });
 };
@@ -118,6 +122,7 @@ export const useVoidTransaksiBengkel = () => {
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_detail'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
             queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
