@@ -1145,7 +1145,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                             keyboardType="numeric"
                                             startIcon={<Typography weight="bold" className="text-textGray">Rp</Typography>}
                                             value={expenseForm.jumlah}
-                                            onChangeText={v => setExpenseForm(prev => ({ ...prev, jumlah: formatNumber(v) }))}
+                                            onChangeText={v => setExpenseForm(prev => ({ ...prev, jumlah: formatNumber(v.replace(/\D/g, '')) }))}
                                         />
                                     </View>
                                 )}

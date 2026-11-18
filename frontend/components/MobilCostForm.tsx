@@ -373,7 +373,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                                 placeholder="0"
                                 keyboardType="numeric"
                                 value={newLainnya.jumlah}
-                                onChangeText={(val) => setNewLainnya({ ...newLainnya, jumlah: formatNumber(val) })}
+                                onChangeText={(val) => setNewLainnya({ ...newLainnya, jumlah: formatNumber(val.replace(/\D/g, '')) })}
                                 className="font-bold text-primary"
                             />
                         </View>

@@ -137,3 +137,10 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Simulasi dengan data produksi: item baru yang paling cocok sekarang selalu di posisi pertama.
 - Lanjutan: di mode edit, daftar "Sparepart Transaksi Ini" (semua item lama) tetap tampil di atas hasil pencarian. Sekarang daftar itu disembunyikan selama kolom pencarian berisi teks, sehingga yang tampil hanya item yang cocok.
 
+
+## Input Nominal Biaya Operasional Terhapus Berantakan
+
+- Penyebab: input nominal memformat ulang teks setiap ketik. Setelah satu digit dihapus dari `100.000`, teks menjadi `100.00`, dan `formatNumber` membacanya sebagai angka desimal API lalu membuang `.00`. Akibatnya backspace berikutnya menghapus banyak digit sekaligus.
+- Perbaikan: input dibersihkan dari selain angka (`replace(/\D/g, '')`) sebelum diformat. Dipasang di Catat Biaya Operasional (kas unit dan Keuangan Pusat, termasuk baris split pembayaran), serta form biaya lainnya di Bengkel, Mobil, Jasa Angkut (ArmadaDetail), dan MobilCostForm.
+- Verifikasi: di web, `100.000` dihapus satu per satu menjadi `10.000`, `1.000`, `100`, `10`, `1`, `0`. Nilai tersimpan tidak berubah, hanya cara input yang diperbaiki.
+- Catatan: input nominal lain (piutang, hutang, mutasi, karyawan, dll.) masih memakai pola lama dan belum diubah.

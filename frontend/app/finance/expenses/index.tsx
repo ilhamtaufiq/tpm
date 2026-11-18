@@ -444,7 +444,7 @@ export default function ExpensesScreen() {
                                     placeholder="0"
                                     keyboardType="numeric"
                                     value={jumlah}
-                                    onChangeText={(val) => setJumlah(formatNumber(val))}
+                                    onChangeText={(val) => setJumlah(formatNumber(val.replace(/\D/g, '')))}
                                     startIcon={<Typography weight="bold" className="text-primary/40 mr-1">Rp</Typography>}
                                     className="font-bold text-xl text-primary"
                                     containerClassName="mb-0"
@@ -509,7 +509,7 @@ export default function ExpensesScreen() {
                                                     value={split.jumlah}
                                                     onChangeText={(text) => {
                                                         const newSplits = [...splitPayments];
-                                                        newSplits[index].jumlah = formatNumber(text);
+                                                        newSplits[index].jumlah = formatNumber(text.replace(/\D/g, ''));
                                                         setSplitPayments(newSplits);
                                                     }}
                                                     keyboardType="numeric"

@@ -1606,7 +1606,7 @@ export default function BengkelScreen() {
                                 placeholder="0"
                                 keyboardType="numeric"
                                 value={expenseAmount}
-                                onChangeText={(val) => setExpenseAmount(formatNumber(val))}
+                                onChangeText={(val) => setExpenseAmount(formatNumber(val.replace(/\D/g, '')))}
                                 className={`bg-background p-5 rounded-3xl text-2xl font-bold ${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} border border-transparent`}
                             />
                         </View>
