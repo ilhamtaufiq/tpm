@@ -27,6 +27,8 @@ interface BarcodeScannerModalProps {
     onScan: (data: string) => boolean | Promise<boolean>;
     scanLog?: { id: string; title: string; subtitle?: string; timestamp: number }[];
     continuous?: boolean;
+    /** Optional: tombol "Lanjut ke Checkout" setelah scan selesai (tutup scanner lalu buka checkout). */
+    onLanjut?: () => void;
     /** Optional: 1D-only mode (excludes QR). Default scans QR + barcode together. */
     preferLinearBarcode?: boolean;
 }
@@ -53,6 +55,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     onScan,
     scanLog = [],
     continuous = false,
+    onLanjut,
     preferLinearBarcode = false,
 }) => {
     const insets = useSafeAreaInsets();
@@ -519,6 +522,14 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                                         onPress={onClose}
                                                         className="h-12 rounded-2xl"
                                                     />
+                                                    {onLanjut && (
+                                                        <Button
+                                                            title="Lanjut ke Checkout"
+                                                            variant="secondary"
+                                                            onPress={onLanjut}
+                                                            className="h-12 rounded-2xl mt-3"
+                                                        />
+                                                    )}
                                                 </View>
                                             )}
                                         </View>
@@ -581,6 +592,14 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                                     onPress={onClose}
                                                     className="h-12 rounded-2xl"
                                                 />
+                                                {onLanjut && (
+                                                    <Button
+                                                        title="Lanjut ke Checkout"
+                                                        variant="secondary"
+                                                        onPress={onLanjut}
+                                                        className="h-12 rounded-2xl mt-3"
+                                                    />
+                                                )}
                                             </View>
                                         )}
                                     </View>
