@@ -408,7 +408,7 @@ export default function DiskonReportScreen() {
                 </View>
             </ScrollView>
 
-            {detailOpen && (
+            <Modal visible={detailOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setDetailOpen(false)}>
                 <BottomSheetContainer onClose={() => setDetailOpen(false)} insets={insets} maxHeight="88%">
                     <View className="flex-1 px-6 pb-6">
                         <View className="flex-row justify-between items-center mb-6">
@@ -500,7 +500,7 @@ export default function DiskonReportScreen() {
                         )}
                     </View>
                 </BottomSheetContainer>
-            )}
+            </Modal>
 
             <ReportExportSheet
                 visible={showExportMenu}
