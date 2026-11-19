@@ -168,3 +168,4 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Tes: `tests/test_laporan_diskon_bengkel.py`.
 - Layout laporan diskon disamakan dengan laporan bengkel (header dengan tombol export, statistik, filter periode, daftar nota).
 - Export: menu Preview, Cetak, dan Download PDF, seperti laporan lain. Preview tampil di dalam aplikasi.
+- Kartu transaksi berdiskon bisa diklik. Detail sheet menampilkan customer, plat, tanggal, status, daftar sparepart dan jasa servis, serta subtotal, diskon, dan total.
