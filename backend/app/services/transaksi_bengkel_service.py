@@ -1504,6 +1504,75 @@ class TransaksiBengkelService:
             "counts": counts,
         }
 
+    def laporan_diskon(
+        self,
+        tanggal_dari: Optional[date] = None,
+        tanggal_sampai: Optional[date] = None,
+        kategori: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Statistik diskon dan daftar transaksi yang memakai diskon (tidak termasuk yang dibatalkan)."""
+        query = self.db.query(TransaksiPenjualanBengkel).filter(
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.diskon > 0,
+        )
+        if tanggal_dari:
+            query = query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            query = query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
+        if kategori:
+            query = query.filter(TransaksiPenjualanBengkel.kategori == kategori)
+        rows = query.order_by(TransaksiPenjualanBengkel.tanggal.desc(), TransaksiPenjualanBengkel.id.desc()).all()
+
+        def persen(diskon: Decimal, subtotal: Decimal) -> float:
+            return round(float(diskon) / float(subtotal) * 100, 2) if subtotal and subtotal > 0 else 0.0
+
+        total_diskon = sum((Decimal(r.diskon or 0) for r in rows), Decimal("0"))
+        total_subtotal = sum((Decimal(r.subtotal or 0) for r in rows), Decimal("0"))
+
+        per_kategori: Dict[str, Dict[str, Any]] = {}
+        for r in rows:
+            k = r.kategori or "umum"
+            g = per_kategori.setdefault(k, {"kategori": k, "jumlah_transaksi": 0, "total_diskon": Decimal("0"), "total_subtotal": Decimal("0")})
+            g["jumlah_transaksi"] += 1
+            g["total_diskon"] += Decimal(r.diskon or 0)
+            g["total_subtotal"] += Decimal(r.subtotal or 0)
+        kategori_list = [
+            {
+                "kategori": g["kategori"],
+                "jumlah_transaksi": g["jumlah_transaksi"],
+                "total_diskon": float(g["total_diskon"]),
+                "persen_rata": persen(g["total_diskon"], g["total_subtotal"]),
+            }
+            for g in sorted(per_kategori.values(), key=lambda x: x["total_diskon"], reverse=True)
+        ]
+
+        return {
+            "summary": {
+                "jumlah_transaksi": len(rows),
+                "total_diskon": float(total_diskon),
+                "total_subtotal": float(total_subtotal),
+                "persen_rata": persen(total_diskon, total_subtotal),
+                "rata_per_transaksi": round(float(total_diskon) / len(rows), 2) if rows else 0.0,
+            },
+            "per_kategori": kategori_list,
+            "rows": [
+                {
+                    "id": r.id,
+                    "nomor_transaksi": r.nomor_transaksi,
+                    "tanggal": r.tanggal.isoformat() if r.tanggal else None,
+                    "kategori": r.kategori or "umum",
+                    "nama": r.nama_customer or r.nomor_plat or "-",
+                    "nomor_plat": r.nomor_plat,
+                    "subtotal": float(r.subtotal or 0),
+                    "diskon": float(r.diskon or 0),
+                    "persen": persen(r.diskon or 0, r.subtotal or 0),
+                    "grand_total": float(r.grand_total or 0),
+                    "status_bayar": getattr(r.status_bayar, "value", r.status_bayar),
+                }
+                for r in rows
+            ],
+        }
+
     def get_summary(
         self,
         tanggal_dari: Optional[date] = None,
