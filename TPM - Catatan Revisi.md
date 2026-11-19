@@ -166,3 +166,5 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Daftar: setiap transaksi berdiskon dengan nomor, tanggal, nama, kategori, status, subtotal, diskon (nominal dan persen), dan total.
 - API: `GET /transaksi-bengkel/diskon?tanggal_dari&tanggal_sampai&kategori`. Hanya membaca data. Transaksi yang dibatalkan tidak ikut.
 - Tes: `tests/test_laporan_diskon_bengkel.py`.
+- Layout laporan diskon disamakan dengan laporan bengkel (header dengan tombol export, statistik, filter periode, daftar nota).
+- Export: menu Preview, Cetak, dan Download PDF, seperti laporan lain. Preview tampil di dalam aplikasi.
