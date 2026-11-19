@@ -91,6 +91,18 @@ def get_transaksi_summary(
     )
 
 
+@router.get("/diskon")
+def get_laporan_diskon(
+    db: DBSession,
+    current_user: UnitManagerUser,
+    tanggal_dari: Optional[date] = None,
+    tanggal_sampai: Optional[date] = None,
+    kategori: Optional[str] = None,
+):
+    """Statistik diskon bengkel dan daftar transaksi yang memakai diskon."""
+    service = TransaksiBengkelService(db)
+    return service.laporan_diskon(tanggal_dari=tanggal_dari, tanggal_sampai=tanggal_sampai, kategori=kategori)
+
 
 @router.get("/daily/{tanggal}")
 def get_daily_summary(

@@ -6,6 +6,7 @@ import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left.js';
 import Package from 'lucide-react-native/dist/esm/icons/package.js';
 import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart.js';
 import Car from 'lucide-react-native/dist/esm/icons/car.js';
+import Percent from 'lucide-react-native/dist/esm/icons/percent.js';
 import Wrench from 'lucide-react-native/dist/esm/icons/wrench.js';
 import Truck from 'lucide-react-native/dist/esm/icons/truck.js';
 import BarChart3 from 'lucide-react-native/dist/esm/icons/chart-column.js';
@@ -70,6 +71,7 @@ const make_REPORT_GROUPS = (themeColors: ThemeColors): ReportGroup[] => ([
         reports: [
             { title: 'Bengkel', icon: Wrench, path: '/laporan/penjualan-bengkel', size: 'large', color: themeColors.primary, desc: 'Rekap transaksi & penjualan unit bengkel' },
             { title: 'Jasa Angkut', icon: Truck, path: '/laporan/jasa-angkut', size: 'large', color: '#6366F1', desc: 'Performa muatan & pendapatan jasa angkut' },
+            { title: 'Diskon', icon: Percent, path: '/laporan/diskon', size: 'small', color: '#F43F5E', desc: 'Statistik diskon & transaksi berdiskon' },
         ],
     },
     {

@@ -91,6 +91,11 @@ export const bengkelService = {
         return response.data;
     },
 
+    getLaporanDiskon: async (params?: any) => {
+        const response = await api.get('/transaksi-bengkel/diskon', { params });
+        return response.data;
+    },
+
     createTransaksi: async (data: any) => {
         const response = await api.post('/transaksi-bengkel', data);
         return response.data;

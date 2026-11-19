@@ -1749,7 +1749,18 @@ export default function BengkelTransaksiScreen() {
                 )}
             </View>
 
-            <BarcodeScannerModal visible={scannerOpen} onClose={() => setScannerOpen(false)} onScan={handleScan} scanLog={scanLog} continuous />
+            <BarcodeScannerModal
+                visible={scannerOpen}
+                onClose={() => setScannerOpen(false)}
+                onScan={handleScan}
+                scanLog={scanLog}
+                continuous
+                onLanjut={() => {
+                    // Tutup scanner, lalu jalankan Lanjut yang sama dengan tombol di bawah (dengan validasinya).
+                    setScannerOpen(false);
+                    next();
+                }}
+            />
             <Modal visible={paymentSheetOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setPaymentSheetOpen(false)}>
                 <BottomSheetContainer
                     onClose={() => setPaymentSheetOpen(false)}

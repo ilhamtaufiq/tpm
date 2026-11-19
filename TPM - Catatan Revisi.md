@@ -158,3 +158,11 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Perbaikan: kelima mutasi transaksi bengkel kini juga me-refresh `recent_activity`.
 - Backend sudah benar: item bengkel memakai `updated_at` (waktu edit terakhir). Tes end-to-end: `tests/test_riwayat_edit_bengkel_terbaru.py`.
 - Catatan: riwayat kas di beranda bengkel hanya mencatat arus kas, jadi edit transaksi tidak muncul di sana. Edit muncul di tab Riwayat.
+
+## Laporan Diskon Bengkel
+
+- Halaman baru: Laporan → Bengkel & Jasa Angkut → Diskon (`frontend/app/laporan/diskon.tsx`). Filter periode harian, bulanan, tahunan, dan kategori (Bengkel, Jual Beli Mobil, Jasa Angkut).
+- Statistik: total diskon, jumlah transaksi berdiskon, rata-rata per transaksi, dan persentase dari subtotal. Ada juga rincian per kategori.
+- Daftar: setiap transaksi berdiskon dengan nomor, tanggal, nama, kategori, status, subtotal, diskon (nominal dan persen), dan total.
+- API: `GET /transaksi-bengkel/diskon?tanggal_dari&tanggal_sampai&kategori`. Hanya membaca data. Transaksi yang dibatalkan tidak ikut.
+- Tes: `tests/test_laporan_diskon_bengkel.py`.
