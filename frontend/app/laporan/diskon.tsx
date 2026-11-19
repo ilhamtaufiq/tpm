@@ -38,6 +38,7 @@ import {
     ReportFilterType,
 } from '../../components/laporan';
 import { useUIStore } from '../../store/useUIStore';
+import { BottomSheetContainer, BoundedSheetScrollView } from '../../components/ui/BottomSheetContainer';
 
 // Kategori transaksi bengkel. Kosong = semua kategori.
 const KATEGORI_FILTER: { value: string; label: string }[] = [
@@ -79,6 +80,10 @@ export default function DiskonReportScreen() {
     const [showPdfPreview, setShowPdfPreview] = useState(false);
     const [previewHtml, setPreviewHtml] = useState('');
 
+    const [detailOpen, setDetailOpen] = useState(false);
+    const [detailLoading, setDetailLoading] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+
     const range = useMemo(() => {
         if (filterType === 'daily') {
             const d = format(date, 'yyyy-MM-dd');
@@ -117,6 +122,22 @@ export default function DiskonReportScreen() {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    const openDetail = async (item: any) => {
+        setSelectedTransaction(item);
+        setDetailOpen(true);
+        setDetailLoading(true);
+        try {
+            const detail = await bengkelService.getDetailTransaksi(item.id);
+            setSelectedTransaction(detail);
+        } catch (error) {
+            console.error('Gagal memuat detail transaksi:', error);
+            appAlert('Error', 'Gagal memuat detail transaksi');
+            setDetailOpen(false);
+        } finally {
+            setDetailLoading(false);
+        }
+    };
 
     const handlePrev = () => {
         if (filterType === 'daily') setDate(d => subDays(d, 1));
@@ -361,7 +382,7 @@ export default function DiskonReportScreen() {
                         </View>
                     ) : (
                         rows.map((r: any) => (
-                            <View key={r.id} className="bg-background rounded-3xl p-4 mb-3 border border-border">
+                            <Pressable key={r.id} onPress={() => openDetail(r)} className="bg-background rounded-3xl p-4 mb-3 border border-border">
                                 <View className="flex-row justify-between items-start">
                                     <View className="flex-1 pr-3">
                                         <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1}>{r.nama}</Typography>
@@ -381,11 +402,105 @@ export default function DiskonReportScreen() {
                                     </Typography>
                                     <Typography weight="bold" className="text-textMain text-sm">{formatCurrency(r.grand_total)}</Typography>
                                 </View>
-                            </View>
+                            </Pressable>
                         ))
                     )}
                 </View>
             </ScrollView>
+
+            {detailOpen && (
+                <BottomSheetContainer onClose={() => setDetailOpen(false)} insets={insets} maxHeight="88%">
+                    <View className="flex-1 px-6 pb-6">
+                        <View className="flex-row justify-between items-center mb-6">
+                            <View>
+                                <Typography variant="h2" weight="bold">Detail Transaksi</Typography>
+                                <Typography className="text-textGray text-xs mt-1">Rincian diskon per nota</Typography>
+                            </View>
+                            <Pressable onPress={() => setDetailOpen(false)} className="w-8 h-8 bg-background rounded-full items-center justify-center">
+                                <X size={16} color={themeColors.textGray} />
+                            </Pressable>
+                        </View>
+
+                        {detailLoading || !selectedTransaction ? (
+                            <View className="py-16 items-center">
+                                <ActivityIndicator size="large" color={themeColors.primary} />
+                                <Typography className="mt-4 text-textGray">Memuat detail...</Typography>
+                            </View>
+                        ) : (
+                            <BoundedSheetScrollView showsVerticalScrollIndicator={false}>
+                                <View className="bg-background p-5 rounded-2xl mb-6 border border-transparent">
+                                    <View className="flex-row justify-between mb-4">
+                                        <View className="flex-1 pr-3">
+                                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Customer</Typography>
+                                            <Typography weight="bold" className="text-lg">{selectedTransaction.customer_nama || selectedTransaction.nama_customer || '-'}</Typography>
+                                            <Typography className="text-textGray text-xs font-semibold">{selectedTransaction.nomor_plat || selectedTransaction.plat_nomor || '-'}</Typography>
+                                        </View>
+                                        <View className="items-end">
+                                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Tanggal</Typography>
+                                            <Typography weight="bold">{selectedTransaction.tanggal ? format(tanggalLokal(selectedTransaction.tanggal), 'dd MMM yyyy', { locale: localeID }) : '-'}</Typography>
+                                        </View>
+                                    </View>
+                                    <View className="flex-row justify-between">
+                                        <View>
+                                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">Status</Typography>
+                                            <Badge label={STATUS_LABEL[selectedTransaction.status_bayar] || selectedTransaction.status_bayar || '-'} variant="neutral" />
+                                        </View>
+                                        <View className="items-end">
+                                            <Typography className="text-textGray text-[10px] font-bold uppercase mb-1">No. Nota</Typography>
+                                            <Typography weight="medium" className="text-text">{selectedTransaction.nomor_transaksi}</Typography>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <Typography variant="body1" weight="bold" className="mb-3">Sparepart</Typography>
+                                {(selectedTransaction.detail_parts || []).length === 0 ? (
+                                    <Typography className="text-textGray text-xs mb-4">Tidak ada sparepart.</Typography>
+                                ) : (
+                                    (selectedTransaction.detail_parts || []).map((p: any) => (
+                                        <View key={`p-${p.id}`} className="flex-row justify-between py-2 border-b border-border">
+                                            <View className="flex-1 pr-3">
+                                                <Typography weight="bold" className="text-textMain text-sm" numberOfLines={2}>{p.spare_part_nama || 'Sparepart'}</Typography>
+                                                <Typography className="text-textGray text-xs">{Number(p.qty)} x {formatCurrency(p.harga_jual)}</Typography>
+                                            </View>
+                                            <Typography weight="bold" className="text-textMain text-sm">{formatCurrency(p.subtotal)}</Typography>
+                                        </View>
+                                    ))
+                                )}
+
+                                <Typography variant="body1" weight="bold" className="mt-5 mb-3">Jasa Servis</Typography>
+                                {(selectedTransaction.detail_services || []).length === 0 ? (
+                                    <Typography className="text-textGray text-xs mb-4">Tidak ada jasa servis.</Typography>
+                                ) : (
+                                    (selectedTransaction.detail_services || []).map((s: any) => (
+                                        <View key={`s-${s.id}`} className="flex-row justify-between py-2 border-b border-border">
+                                            <View className="flex-1 pr-3">
+                                                <Typography weight="bold" className="text-textMain text-sm" numberOfLines={2}>{s.nama_jasa}</Typography>
+                                                <Typography className="text-textGray text-xs">{Number(s.qty)} x {formatCurrency(s.harga)}</Typography>
+                                            </View>
+                                            <Typography weight="bold" className="text-textMain text-sm">{formatCurrency(s.subtotal)}</Typography>
+                                        </View>
+                                    ))
+                                )}
+
+                                <View className="mt-6 bg-background p-5 rounded-2xl border border-border">
+                                    <View className="flex-row justify-between mb-2">
+                                        <Typography className="text-textGray text-sm">Subtotal</Typography>
+                                        <Typography weight="bold" className="text-textMain text-sm">{formatCurrency(selectedTransaction.subtotal || 0)}</Typography>
+                                    </View>
+                                    <View className="flex-row justify-between mb-2">
+                                        <Typography className="text-rose-500 text-sm">Diskon</Typography>
+                                        <Typography weight="bold" className="text-rose-500 text-sm">-{formatCurrency(selectedTransaction.diskon || 0)}</Typography>
+                                    </View>
+                                    <View className="flex-row justify-between pt-2 border-t border-border">
+                                        <Typography weight="bold" className="text-textMain">Total</Typography>
+                                        <Typography weight="bold" className="text-textMain">{formatCurrency(selectedTransaction.grand_total || 0)}</Typography>
+                                    </View>
+                                </View>
+                            </BoundedSheetScrollView>
+                        )}
+                    </View>
+                </BottomSheetContainer>
+            )}
 
             <ReportExportSheet
                 visible={showExportMenu}
