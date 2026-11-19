@@ -37,6 +37,7 @@ export default function LaporanLayout() {
             <Stack.Screen name="perubahan-modal" options={{ headerShown: false }} />
             <Stack.Screen name="stock-sparepart" options={{ headerShown: false }} />
             <Stack.Screen name="arus-kas-akun" options={{ headerShown: false }} />
+            <Stack.Screen name="diskon" options={{ headerShown: false }} />
         </Stack>
     );
 }
