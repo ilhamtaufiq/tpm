@@ -86,6 +86,7 @@ class KaryawanService:
             gaji_pokok=data.gaji_pokok,
             tunjangan=data.tunjangan,
             status=EmployeeStatus.AKTIF,
+            hari_gajian=data.hari_gajian,
             catatan=data.catatan,
         )
 

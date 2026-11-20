@@ -50,6 +50,8 @@ class Karyawan(Base, TimestampMixin, SoftDeleteMixin):
         SQLEnum(EmployeeStatus),
         default=EmployeeStatus.AKTIF,
     )
+    # Hari gajian: SABTU (periode Senin–Sabtu) atau KAMIS (periode Kamis s/d Rabu).
+    hari_gajian: Mapped[str] = mapped_column(String(10), default="SABTU", server_default="SABTU")
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships
