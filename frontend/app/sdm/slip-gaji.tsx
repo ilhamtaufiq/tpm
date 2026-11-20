@@ -114,7 +114,15 @@ export default function SlipGajiScreen() {
     // gaji dari absensi, hadir tidak bisa diubah manual, dan slip hanya setelah periode selesai.
     const GAJI_AKRUAL_MULAI = '2026-10-12';
     const isAkrualPeriod = startDate >= GAJI_AKRUAL_MULAI;
-    const periodeSelesai = endDate < getTodayString();
+    // Karyawan gajian Kamis: periode Kamis s/d Rabu, Rabu-nya tepat sebelum Sabtu periode yang dipilih.
+    const kamisRange = useMemo(() => {
+        const sabtu = new Date(`${endDate}T00:00:00`);
+        const rabu = new Date(sabtu);
+        rabu.setDate(sabtu.getDate() - 3);
+        const kamis = new Date(rabu);
+        kamis.setDate(rabu.getDate() - 6);
+        return { start: getTodayString(kamis), end: getTodayString(rabu) };
+    }, [endDate]);
     const [datePickingMode, setDatePickingMode] = useState<'start' | 'end' | 'slip'>('slip');
 
     // The "Tanggal Slip" user chooses
@@ -196,6 +204,7 @@ export default function SlipGajiScreen() {
 
     // 3. Pending (Employees without slips) - NOW RANGE BASED
     const { data: previewData, isLoading: isLoadingPreview, refetch: refetchPreview } = useSlipGajiPreviewRange(startDate, endDate, true);
+    const { data: previewKamis } = useSlipGajiPreviewRange(kamisRange.start, kamisRange.end, true);
 
     const createBulkMutation = useCreatePayroll();
     const processPaymentMutation = useProcessPayrollPayment();
@@ -206,7 +215,15 @@ export default function SlipGajiScreen() {
         () => listData?.pages.flatMap((page: any) => page.data || []) || [],
         [listData]
     );
-    const pendingEmployees = previewData?.items || [];
+    // Pending per hari gajian: Sabtu (dan default) memakai periode yang dipilih, Kamis memakai periode Kamis s/d Rabu.
+    const pendingEmployees = useMemo(() => [
+        ...(previewData?.items || [])
+            .filter((i: any) => i.hari_gajian !== 'KAMIS')
+            .map((i: any) => ({ ...i, periode_dari: startDate, periode_sampai: endDate })),
+        ...(previewKamis?.items || [])
+            .filter((i: any) => i.hari_gajian === 'KAMIS')
+            .map((i: any) => ({ ...i, periode_dari: kamisRange.start, periode_sampai: kamisRange.end })),
+    ], [previewData, previewKamis, startDate, endDate, kamisRange]);
 
     // Filtered Lists
     const filteredPending = useMemo(() => {
@@ -299,8 +316,8 @@ export default function SlipGajiScreen() {
 
         try {
             const result = await createBulkMutation.mutateAsync({
-                tanggalDari: startDate,
-                tanggalSampai: endDate,
+                tanggalDari: (item as any).periode_dari ?? startDate,
+                tanggalSampai: (item as any).periode_sampai ?? endDate,
                 items: [{ ...item, jumlah_hadir: finalAttendance, potongan_kasbon: finalKasbon, uang_lembur: finalOvertime }],
             });
             const skippedDetail: string[] = result?.skipped_detail || [];
@@ -330,21 +347,35 @@ export default function SlipGajiScreen() {
         if (filteredPending.length === 0) return;
 
         try {
-            const itemsToGenerate = filteredPending.map((item: SlipGajiPreviewItem) => ({
-                ...item,
-                jumlah_hadir: getAttendanceValue(item),
-                potongan_kasbon: getKasbonValue(item),
-                uang_lembur: getOvertimeValue(item)
-            }));
-
-            const result = await createBulkMutation.mutateAsync({
-                tanggalDari: startDate,
-                tanggalSampai: endDate,
-                items: itemsToGenerate,
+            // Satu panggilan per periode (Sabtu dan Kamis punya rentang berbeda).
+            const kelompok = new Map<string, { dari: string; sampai: string; items: any[] }>();
+            filteredPending.forEach((item: any) => {
+                const dari = item.periode_dari ?? startDate;
+                const sampai = item.periode_sampai ?? endDate;
+                const key = `${dari}|${sampai}`;
+                if (!kelompok.has(key)) kelompok.set(key, { dari, sampai, items: [] });
+                kelompok.get(key)!.items.push({
+                    ...item,
+                    jumlah_hadir: getAttendanceValue(item),
+                    potongan_kasbon: getKasbonValue(item),
+                    uang_lembur: getOvertimeValue(item)
+                });
             });
 
-            const created = result?.created ?? itemsToGenerate.length;
-            const skippedDetail: string[] = result?.skipped_detail || [];
+            let created = 0;
+            let total = 0;
+            const skippedDetail: string[] = [];
+            for (const grup of kelompok.values()) {
+                const result = await createBulkMutation.mutateAsync({
+                    tanggalDari: grup.dari,
+                    tanggalSampai: grup.sampai,
+                    items: grup.items,
+                });
+                created += result?.created ?? grup.items.length;
+                total += grup.items.length;
+                skippedDetail.push(...(result?.skipped_detail || []));
+            }
+
             setDialogConfig({
                 visible: true,
                 title: created > 0 ? 'Sukses' : 'Tidak Dibuat',
@@ -629,14 +660,14 @@ export default function SlipGajiScreen() {
 
                     <Pressable
                         onPress={() => handleGenerateSingle(item)}
-                        disabled={isGenerating || !!generatingId || !periodeSelesai}
-                        className={`h-14 px-4 sm:px-6 rounded-2xl flex-row items-center justify-center flex-shrink-0 ${isGenerating ? 'bg-background' : periodeSelesai ? 'bg-primary shadow-lg shadow-primary/30' : 'bg-border'}`}
+                        disabled={isGenerating || !!generatingId}
+                        className={`h-14 px-4 sm:px-6 rounded-2xl flex-row items-center justify-center flex-shrink-0 ${isGenerating ? 'bg-background' : 'bg-primary shadow-lg shadow-primary/30'}`}
                     >
                         {isGenerating ? (
                             <ActivityIndicator size="small" color={themeColors.primary} />
                         ) : (
                             <>
-                                <Typography className="text-white text-xs font-black uppercase tracking-widest mr-2">{periodeSelesai ? 'Proses' : 'Belum Selesai'}</Typography>
+                                <Typography className="text-white text-xs font-black uppercase tracking-widest mr-2">Proses</Typography>
                                 <ArrowRight size={16} color="white" />
                             </>
                         )}
@@ -917,13 +948,13 @@ export default function SlipGajiScreen() {
                         <View className="absolute left-6 right-6" style={{ bottom: 100, elevation: 5, zIndex: 50 }}>
                             <Pressable
                                 onPress={handleGenerateBulk}
-                                disabled={createBulkMutation.isPending || !periodeSelesai}
-                                className={`h-16 rounded-[24px] items-center justify-center flex-row shadow-2xl border border-white/20 ${periodeSelesai ? 'bg-primary' : 'bg-border'}`}
+                                disabled={createBulkMutation.isPending}
+                                className="h-16 rounded-[24px] items-center justify-center flex-row shadow-2xl border border-white/20 bg-primary"
                             >
                                 {createBulkMutation.isPending ? <ActivityIndicator color="white" /> : (
                                     <>
                                         <Typography weight="bold" className="text-white text-lg mr-2">
-                                            {periodeSelesai ? `Generate Semua (${filteredPending.length})` : `Periode belum selesai (s/d ${endDate})`}
+                                            {`Generate Semua (${filteredPending.length})`}
                                         </Typography>
                                         <TrendingUp size={20} color="white" />
                                     </>

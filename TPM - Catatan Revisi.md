@@ -169,3 +169,10 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Layout laporan diskon disamakan dengan laporan bengkel (header dengan tombol export, statistik, filter periode, daftar nota).
 - Export: menu Preview, Cetak, dan Download PDF, seperti laporan lain. Preview tampil di dalam aplikasi.
 - Kartu transaksi berdiskon bisa diklik. Detail sheet menampilkan customer, plat, tanggal, status, daftar sparepart dan jasa servis, serta subtotal, diskon, dan total.
+
+## Slip Gaji: Hari Gajian per Karyawan dan Proses Kapan Saja
+
+- Karyawan punya hari gajian: `SABTU` (default, periode Senin s/d Sabtu) atau `KAMIS` (periode Kamis s/d Rabu). Diatur di form karyawan. Kolom baru `karyawan.hari_gajian` (migrasi `a7c1e2d4f6b8`).
+- Generate Semua dan Proses tidak lagi dibatasi selesainya periode. Periode yang sedang berjalan bisa diproses kapan saja, dengan absensi yang sudah ada. Absensi yang sudah masuk slip tetap terkunci (untuk mengubahnya, hapus slip yang belum dibayar dulu).
+- Karyawan Kamis dihitung dengan periode Kamis s/d Rabu yang berakhir tepat sebelum Sabtu periode yang dipilih. Generate Semua membuat slip per periode.
+- Tes: `tests/test_hari_gajian_karyawan.py`, `tests/test_gaji_akrual.py` (periode berjalan boleh dibuat).

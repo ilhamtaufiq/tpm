@@ -102,6 +102,7 @@ export default function KaryawanScreen() {
         tunjangan: '',
         tanggal_lahir: '',
         tanggal_bergabung: '',
+        hari_gajian: 'SABTU',
         catatan: '',
     });
 
@@ -184,6 +185,7 @@ export default function KaryawanScreen() {
             tunjangan: '',
             tanggal_lahir: '',
             tanggal_bergabung: getTodayString(),
+            hari_gajian: 'SABTU',
             catatan: '',
         });
         setViewMode('form');
@@ -203,6 +205,7 @@ export default function KaryawanScreen() {
             tunjangan: formatNumber(karyawan.tunjangan?.toString() || ''),
             tanggal_lahir: karyawan.tanggal_lahir || '',
             tanggal_bergabung: karyawan.tanggal_bergabung || '',
+            hari_gajian: (karyawan as any).hari_gajian === 'KAMIS' ? 'KAMIS' : 'SABTU',
             catatan: karyawan.catatan || '',
         });
         setViewMode('form');
@@ -230,6 +233,7 @@ export default function KaryawanScreen() {
                 tunjangan: formData.tunjangan ? parseNumber(formData.tunjangan) : 0,
                 tanggal_lahir: formData.tanggal_lahir || undefined,
                 tanggal_bergabung: formData.tanggal_bergabung,
+                hari_gajian: formData.hari_gajian === 'KAMIS' ? 'KAMIS' : 'SABTU',
                 catatan: formData.catatan || undefined,
             };
 
@@ -778,6 +782,26 @@ export default function KaryawanScreen() {
                                 onChangeText={(text: string) => setFormData({ ...formData, tunjangan: formatNumber(text.replace(/\D/g, '')) })}
                                 keyboardType="numeric"
                             />
+                        </View>
+                    </View>
+
+                    <View className="mt-4">
+                        <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Hari Gajian</Typography>
+                        <View className="flex-row gap-2">
+                            {(['SABTU', 'KAMIS'] as const).map((h) => {
+                                const aktif = (formData.hari_gajian === 'KAMIS' ? 'KAMIS' : 'SABTU') === h;
+                                return (
+                                    <Pressable
+                                        key={h}
+                                        onPress={() => setFormData({ ...formData, hari_gajian: h })}
+                                        className={`flex-1 py-3 rounded-2xl items-center border ${aktif ? 'bg-primary border-primary' : 'bg-background border-border'}`}
+                                    >
+                                        <Typography weight="bold" className={`text-xs ${aktif ? 'text-white' : 'text-textGray'}`}>
+                                            {h === 'SABTU' ? 'Sabtu (Senin–Sabtu)' : 'Kamis (Kamis–Rabu)'}
+                                        </Typography>
+                                    </Pressable>
+                                );
+                            })}
                         </View>
                     </View>
 

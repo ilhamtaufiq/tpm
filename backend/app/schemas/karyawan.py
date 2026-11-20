@@ -1,6 +1,6 @@
 from datetime import date, time, datetime
 from decimal import Decimal
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 
 from pydantic import BaseModel, Field
 from app.schemas.tanggal import TanggalTransaksi, OptionalTanggalTransaksi
@@ -38,6 +38,7 @@ class KaryawanCreate(KaryawanBase):
 
     kode: Optional[str] = Field(None, max_length=20)
     tanggal_bergabung: date
+    hari_gajian: Literal["SABTU", "KAMIS"] = "SABTU"
 
 
 class KaryawanUpdate(BaseModel):
@@ -53,6 +54,7 @@ class KaryawanUpdate(BaseModel):
     gaji_pokok: Optional[Decimal] = Field(None, ge=0)
     tunjangan: Optional[Decimal] = Field(None, ge=0)
     status: Optional[EmployeeStatus] = None
+    hari_gajian: Optional[Literal["SABTU", "KAMIS"]] = None
     tanggal_keluar: Optional[date] = None
     catatan: Optional[str] = None
 
@@ -75,6 +77,7 @@ class KaryawanResponse(BaseModel):
     tunjangan: Decimal
     total_gaji: Decimal
     status: EmployeeStatus
+    hari_gajian: str = "SABTU"
     catatan: Optional[str] = None
     created_at: datetime
     updated_at: datetime
