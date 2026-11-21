@@ -176,3 +176,9 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Generate Semua dan Proses tidak lagi dibatasi selesainya periode. Periode yang sedang berjalan bisa diproses kapan saja, dengan absensi yang sudah ada. Absensi yang sudah masuk slip tetap terkunci (untuk mengubahnya, hapus slip yang belum dibayar dulu).
 - Karyawan Kamis dihitung dengan periode Kamis s/d Rabu yang berakhir tepat sebelum Sabtu periode yang dipilih. Generate Semua membuat slip per periode.
 - Tes: `tests/test_hari_gajian_karyawan.py`, `tests/test_gaji_akrual.py` (periode berjalan boleh dibuat).
+
+## Hapus Biaya Lainnya per Armada/Mobil Tidak Terhubung ke Neraca
+
+- Penyebab: biaya lainnya per mobil disimpan dua kali (baris `mobil_biaya_lainnya` dan `pengeluaran_bengkel` plus kas). Catatan baris `mobil_biaya_lainnya` hanya berisi `ID Pengeluaran: <id>`, sedangkan fungsi hapus mencari format lama `|<nomor>`. Akibatnya baris ledger dan kas tidak ikut terhapus, dan neraca tetap menghitungnya.
+- Perbaikan: nomor transaksi diambil dari baris `pengeluaran_bengkel` yang ID-nya ada di catatan, lalu baris ledger dan kas dengan nomor itu dihapus. Format lama tetap didukung.
+- Tes: `tests/test_hapus_biaya_mobil_ledger.py` (gagal di kode lama, lolos setelah perbaikan).

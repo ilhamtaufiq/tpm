@@ -773,9 +773,25 @@ class MobilService:
                 detail="Biaya tidak ditemukan",
             )
 
-        match = re.search(r"\|([A-Za-z0-9-]+)\s*$", biaya.catatan or "")
-        if match:
-            nomor_transaksi = match.group(1)
+        # Catatan biaya berisi "ID Pengeluaran: <id>" (add_biaya). Dari baris PengeluaranBengkel itulah
+        # nomor transaksinya diambil untuk menghapus baris kas dan ledger yang terkait.
+        nomor_transaksi = None
+        match_id = re.search(r"ID Pengeluaran:\s*(\d+)", biaya.catatan or "")
+        if match_id:
+            pengeluaran = (
+                self.db.query(PengeluaranBengkel)
+                .filter(PengeluaranBengkel.id == int(match_id.group(1)))
+                .first()
+            )
+            if pengeluaran:
+                nomor_transaksi = pengeluaran.nomor_transaksi
+        else:
+            # Format lama: "ID Pengeluaran: <id>|<nomor>"
+            match = re.search(r"\|([A-Za-z0-9-]+)\s*$", biaya.catatan or "")
+            if match:
+                nomor_transaksi = match.group(1)
+
+        if nomor_transaksi:
             self.db.query(KasBank).filter(
                 KasBank.nomor_referensi == nomor_transaksi,
             ).delete(synchronize_session=False)
