@@ -33,6 +33,8 @@ export function ReturPembelianModal({ visible, pembelian, onClose, onSuccess }: 
     const [qtyInput, setQtyInput] = useState<Record<number, string>>({});
     const [metodeRefund, setMetodeRefund] = useState<(typeof METODE_REFUND)[number]>('TUNAI');
     const [selisihSebagai, setSelisihSebagai] = useState<SelisihSebagai>('KAS');
+    // true: seluruh nilai retur jadi piutang ke supplier, hutang pembelian tidak dipotong.
+    const [sebagaiPiutangSemua, setSebagaiPiutangSemua] = useState(false);
     const [catatan, setCatatan] = useState('');
     const [error, setError] = useState('');
 
@@ -41,6 +43,7 @@ export function ReturPembelianModal({ visible, pembelian, onClose, onSuccess }: 
             setQtyInput({});
             setMetodeRefund('TUNAI');
             setSelisihSebagai('KAS');
+            setSebagaiPiutangSemua(false);
             setCatatan('');
             setError('');
         }
@@ -70,8 +73,8 @@ export function ReturPembelianModal({ visible, pembelian, onClose, onSuccess }: 
 
     const tanggal = useMemo(() => format(new Date(), 'yyyy-MM-dd'), [visible]);
     const requestBody = useMemo(
-        () => ({ tanggal, detail: items, selisih_sebagai: selisihSebagai }),
-        [tanggal, items, selisihSebagai]
+        () => ({ tanggal, detail: items, selisih_sebagai: selisihSebagai, sebagai_piutang_semua: sebagaiPiutangSemua }),
+        [tanggal, items, selisihSebagai, sebagaiPiutangSemua]
     );
 
     const preview = useReturPembelianPreview(pembelian?.id, requestBody, items.length > 0);
@@ -152,6 +155,28 @@ export function ReturPembelianModal({ visible, pembelian, onClose, onSuccess }: 
                         })}
 
                         {items.length > 0 && (
+                            <View className="mt-4">
+                                <Typography variant="caption" className="text-textGray font-medium mb-2">Nilai retur diperlakukan sebagai</Typography>
+                                <View className="flex-row space-x-2">
+                                    {([
+                                        { nilai: false, label: 'Potong hutang dulu' },
+                                        { nilai: true, label: 'Jadikan piutang ke supplier' },
+                                    ] as const).map((opsi) => (
+                                        <Pressable
+                                            key={opsi.label}
+                                            onPress={() => setSebagaiPiutangSemua(opsi.nilai)}
+                                            className={`flex-1 px-4 py-3 rounded-xl border ${sebagaiPiutangSemua === opsi.nilai ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
+                                        >
+                                            <Typography weight="bold" className={`${sebagaiPiutangSemua === opsi.nilai ? 'text-white' : 'text-textMain'} text-xs text-center`}>
+                                                {opsi.label}
+                                            </Typography>
+                                        </Pressable>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        {items.length > 0 && (
                             <View className="mt-2 p-4 bg-surface border border-transparent rounded-2xl">
                                 <Typography variant="caption" className="text-textGray font-bold uppercase text-[10px] mb-2">Pembagian nilai</Typography>
                                 {preview.isFetching && <Typography variant="caption" className="text-textGray">Menghitung...</Typography>}
@@ -180,7 +205,7 @@ export function ReturPembelianModal({ visible, pembelian, onClose, onSuccess }: 
                             </View>
                         )}
 
-                        {adaSelisih && (
+                        {adaSelisih && !sebagaiPiutangSemua && (
                             <View className="mt-4">
                                 <Typography variant="caption" className="text-textGray font-medium mb-2">Selisih setelah hutang dipotong</Typography>
                                 <View className="flex-row space-x-2">
