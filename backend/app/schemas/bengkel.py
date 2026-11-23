@@ -514,6 +514,8 @@ class ReturPembelianCreate(BaseModel):
     tanggal: TanggalTransaksi
     detail: List[ReturPembelianItem] = Field(..., min_length=1)
     selisih_sebagai: Literal["KAS", "PIUTANG"] = "KAS"
+    # True: seluruh nilai retur dicatat sebagai piutang ke supplier, tanpa memotong hutang pembelian.
+    sebagai_piutang_semua: bool = False
     metode_refund: Optional[PaymentMethod] = None
     kas_jenis: Optional[KasBankJenis] = None
     catatan: Optional[str] = Field(None, max_length=500)

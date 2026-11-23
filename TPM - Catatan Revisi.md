@@ -183,3 +183,10 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Perbaikan: nomor transaksi diambil dari baris `pengeluaran_bengkel` yang ID-nya ada di catatan, lalu baris ledger dan kas dengan nomor itu dihapus. Format lama tetap didukung.
 - Tes: `tests/test_hapus_biaya_mobil_ledger.py` (gagal di kode lama, lolos setelah perbaikan).
 - Skrip pembersih sisa lama: `backend/scripts/bersihkan_biaya_mobil_yatim.py`. Dry-run default menampilkan kandidat (pengeluaran mobil tanpa pasangan `mobil_biaya_lainnya`). `--apply` hanya menghapus nomor transaksi yang disebutkan di `--nomor`, dan menolak nomor yang bukan kandidat. Tes: `tests/test_bersihkan_biaya_mobil_yatim.py`.
+
+## Retur Pembelian: Opsi Jadikan Piutang ke Supplier
+
+- Sebelumnya, retur pembelian yang masih punya hutang terbuka selalu memotong hutang dulu. Pilihan piutang hanya muncul untuk sisa setelah hutang, sehingga tidak ada cara untuk mencatat seluruh nilai retur sebagai piutang.
+- Sekarang di modal retur ada pilihan **"Jadikan piutang ke supplier"**. Seluruh nilai retur menjadi piutang (`piutang_usaha`, sumber LAINNYA, dengan referensi nomor retur), hutang pembelian tidak dipotong, dan tidak ada kas yang keluar. Batalkan retur akan membatalkan piutang itu.
+- API: `ReturPembelianCreate.sebagai_piutang_semua` (default `false`, perilaku lama tetap).
+- Tes: `tests/test_retur_pembelian_spare_part.py::test_retur_sebagai_piutang_semua_tanpa_potong_hutang`.

@@ -329,3 +329,42 @@ def test_kredit_sebagian_bayar_selisih_jadi_piutang_dan_void_ditolak_bila_sudah_
         svc.void(r.id, user_id=None)
     finally:
         _bersihkan(db, [part], [pb], [supplier])
+
+
+def test_retur_sebagai_piutang_semua_tanpa_potong_hutang(db):
+    """Opsi 'jadikan piutang': seluruh nilai retur jadi piutang ke supplier, hutang pembelian tidak dipotong."""
+    from app.models.keuangan import PiutangUsaha
+    from app.utils.constants import PiutangSource, PiutangStatus
+
+    supplier = _supplier(db)
+    part = _part(db, 0)
+    pb = _beli(db, supplier, part, 2, "100000", metode=PaymentMethod.SPLIT, bayar="50000")
+    try:
+        svc = ReturPembelianService(db)
+        hutang_awal = db.query(HutangUsaha).filter(HutangUsaha.nomor_referensi == pb.nomor_transaksi).one()
+        sisa_awal = Decimal(str(hutang_awal.sisa_hutang))
+
+        req = ReturPembelianCreate(
+            tanggal=date(2026, 10, 2),
+            detail=[ReturPembelianItem(detail_pembelian_id=pb.detail[0].id, qty=Decimal("1"))],
+            sebagai_piutang_semua=True,
+        )
+        preview = svc.preview(pb.id, req)
+        assert preview["nilai_hutang"] == 0 and preview["nilai_kas"] == 0 and preview["nilai_piutang"] == Decimal("100000")
+
+        r = svc.create(pb.id, req, user_id=None)
+        assert r.nilai_hutang == 0 and r.nilai_kas == 0 and r.nilai_piutang == Decimal("100000")
+
+        db.expire_all()
+        assert Decimal(str(db.get(HutangUsaha, hutang_awal.id).sisa_hutang)) == sisa_awal
+        piutang = db.query(PiutangUsaha).filter(PiutangUsaha.nomor_referensi == r.nomor_retur).one()
+        assert piutang.sumber == PiutangSource.LAINNYA
+        assert piutang.nominal_piutang == Decimal("100000") and piutang.status == PiutangStatus.BELUM_LUNAS
+        assert db.query(KasBank).filter(KasBank.nomor_referensi == r.nomor_retur).count() == 0
+
+        svc.void(r.id, user_id=None)
+        db.expire_all()
+        assert db.get(PiutangUsaha, piutang.id).status == PiutangStatus.BATAL
+        assert Decimal(str(db.get(HutangUsaha, hutang_awal.id).sisa_hutang)) == sisa_awal
+    finally:
+        _bersihkan(db, [part], [pb], [supplier])

@@ -204,11 +204,17 @@ class ReturPembelianService:
             and hutang.status in (HutangStatus.BELUM_LUNAS, HutangStatus.SEBAGIAN)
             and hutang.sisa_hutang > 0
         )
-        nilai_hutang = min(total, Decimal(str(hutang.sisa_hutang))) if hutang_terbuka else Decimal("0")
-        # Sisa setelah memotong hutang: dicairkan ke kas, atau jadi piutang ke supplier.
-        selisih = total - nilai_hutang
-        nilai_kas = selisih if data.selisih_sebagai == "KAS" else Decimal("0")
-        nilai_piutang = selisih if data.selisih_sebagai == "PIUTANG" else Decimal("0")
+        if data.sebagai_piutang_semua:
+            # Seluruh nilai retur jadi piutang ke supplier; hutang pembelian tidak dipotong.
+            nilai_hutang = Decimal("0")
+            nilai_kas = Decimal("0")
+            nilai_piutang = total
+        else:
+            nilai_hutang = min(total, Decimal(str(hutang.sisa_hutang))) if hutang_terbuka else Decimal("0")
+            # Sisa setelah memotong hutang: dicairkan ke kas, atau jadi piutang ke supplier.
+            selisih = total - nilai_hutang
+            nilai_kas = selisih if data.selisih_sebagai == "KAS" else Decimal("0")
+            nilai_piutang = selisih if data.selisih_sebagai == "PIUTANG" else Decimal("0")
 
         return {
             "lines": lines,
