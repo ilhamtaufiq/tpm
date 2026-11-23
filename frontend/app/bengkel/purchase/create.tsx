@@ -85,6 +85,8 @@ export default function PurchaseScreen() {
 
     // UI State — transaksi pattern
     const [showPartSearch, setShowPartSearch] = useState(false);
+    // Tab di langkah 1: katalog part (dengan pencarian) atau keranjang (item yang sudah masuk).
+    const [tabLangkah1, setTabLangkah1] = useState<'katalog' | 'keranjang'>('katalog');
     const [partSearch, setPartSearch] = useState('');
     const debouncedPartSearch = useDebounce(partSearch, 300);
     const [scannerOpen, setScannerOpen] = useState(false);
@@ -587,8 +589,29 @@ export default function PurchaseScreen() {
                     );
                 })()}
 
+                {/* Tab langkah 1: Katalog / Keranjang */}
+                {step === 1 && (
+                    <View className="flex-row bg-background rounded-2xl p-1 mb-4">
+                        {(['katalog', 'keranjang'] as const).map((tab) => {
+                            const aktif = tabLangkah1 === tab;
+                            return (
+                                <Pressable
+                                    key={tab}
+                                    onPress={() => setTabLangkah1(tab)}
+                                    className={`flex-1 py-2.5 rounded-xl items-center ${aktif ? 'bg-primary' : ''}`}
+                                    accessibilityLabel={tab === 'katalog' ? 'Tab katalog' : 'Tab keranjang'}
+                                >
+                                    <Typography weight="bold" className={`text-xs ${aktif ? 'text-white' : 'text-textGray'}`}>
+                                        {tab === 'katalog' ? 'Katalog' : `Keranjang (${items.length})`}
+                                    </Typography>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+                )}
+
                 {/* Search sparepart: di bawah pilihan "Mulai isi dari" */}
-                {step === 1 && showPartSearch && (
+                {step === 1 && tabLangkah1 === 'katalog' && showPartSearch && (
                     <View className="mb-4">
                         <SearchBox
                             value={partSearch}
@@ -601,13 +624,19 @@ export default function PurchaseScreen() {
                 {/* STEP 1: Item Selection — inline picker like transaksi */}
                 {step === 1 && (
                     <View>
-                        {/* Item dipilih: jumlah bisa diubah di sini, walau part-nya ada jauh di bawah katalog */}
-                        {items.length > 0 && (
+                        {/* Keranjang: item yang sudah masuk, jumlah bisa diubah di sini */}
+                        {tabLangkah1 === 'keranjang' && (
                             <View className="mb-4 bg-surface rounded-2xl p-3 border border-border">
-                                <Typography weight="bold" className="text-primary text-xs uppercase mb-2">Item dipilih ({items.length})</Typography>
+                                <Typography weight="bold" className="text-primary text-xs uppercase mb-2">Keranjang ({items.length} item)</Typography>
+                                {items.length === 0 && (
+                                    <Typography className="text-textGray text-xs py-4 text-center">Keranjang masih kosong. Pilih part di tab Katalog.</Typography>
+                                )}
                                 {items.map((item) => (
                                     <View key={item.id} className="flex-row items-center py-2 border-b border-border">
-                                        <Typography className="flex-1 text-xs text-textMain" numberOfLines={1}>{item.name}</Typography>
+                                        <View className="flex-1 pr-2">
+                                            <Typography className="text-xs text-textMain" numberOfLines={1}>{item.name}</Typography>
+                                            <Typography className="text-[10px] text-textGray">{formatCurrency(Number(parseNumber(item.price) || 0) * Number(item.qty || 0))}</Typography>
+                                        </View>
                                         <Pressable
                                             onPress={() => (Number(item.qty) <= 1 ? removeItemById(item.id) : changeItemQtyById(item.id, Number(item.qty) - 1))}
                                             className="w-9 h-9 rounded-xl bg-background items-center justify-center"
@@ -637,10 +666,17 @@ export default function PurchaseScreen() {
                                         </Pressable>
                                     </View>
                                 ))}
+                                {items.length > 0 && (
+                                    <View className="flex-row justify-between items-center pt-3">
+                                        <Typography weight="bold" className="text-textMain text-xs uppercase">Total</Typography>
+                                        <Typography weight="bold" className="text-primary text-sm">{formatCurrency(total)}</Typography>
+                                    </View>
+                                )}
                             </View>
                         )}
 
-                        {/* Part catalog — always visible */}
+                        {/* Katalog part */}
+                        {tabLangkah1 === 'katalog' && (
                         <View className="w-full">
                             <View className="flex-row items-center justify-between mb-3 px-1">
                                 <View className="flex-row items-center">
@@ -670,6 +706,7 @@ export default function PurchaseScreen() {
                                 </View>
                             )}
                         </View>
+                        )}
                     </View>
                 )}
 
