@@ -592,12 +592,16 @@ class TransaksiBengkelService:
     ) -> Optional[TransaksiPenjualanBengkel]:
         """Edit nota yang periodenya sudah diposting.
 
-        - Item lama, diskon, tanggal, kategori, dan tautan unit tidak boleh berubah
-          (laporan periode itu sudah final) -> 409.
-        - Item yang bertambah (qty naik atau baris baru) dibuat sebagai NOTA TAMBAHAN
-          di periode terbuka (tanggal hari ini) dengan unit/kategori yang sama.
-        - Tanpa penambahan: kembalikan None, edit lanjut lewat alur biasa
-          (mis. ganti status pengerjaan, catatan).
+        Payload dibandingkan dengan nota asal (A) dan nota tambahan turunannya (C):
+        - Item asal tidak boleh berkurang, dihapus, atau berubah harga -> 409.
+        - Penambahan bersih = payload - A - C. Item yang sudah dipindah ke nota
+          tambahan (C) tidak dibuat ulang, jadi percobaan Update ulang tidak
+          menggandakan nota tambahan.
+        - Penambahan bersih > 0 -> nota tambahan baru di periode terbuka.
+        - Nota asal TIDAK ditulis ulang. Hanya status pengerjaan dan catatan yang
+          diterapkan langsung.
+        Kembali None hanya bila tidak ada apa pun yang perlu dibuat (dipakai caller
+        untuk tahu bahwa nota asal sudah dikembalikan apa adanya).
         """
         if data.tanggal and data.tanggal != transaksi.tanggal:
             self._tolak_periode_diposting(transaksi, "Tanggal nota tidak bisa diubah.")
@@ -609,90 +613,114 @@ class TransaksiBengkelService:
         if self._q2(data.diskon) != self._q2(transaksi.diskon):
             self._tolak_periode_diposting(transaksi, "Diskon tidak bisa diubah.")
 
-        # Harga jual efektif item baru (default harga master bila kosong)
+        anak = self.db.query(TransaksiPenjualanBengkel).filter(
+            TransaksiPenjualanBengkel.induk_nomor == transaksi.nomor_transaksi
+        ).all()
+
         ids = [i.spare_part_id for i in data.detail_parts]
         master = {
             sp.id: sp for sp in self.db.query(SparePart).filter(SparePart.id.in_(ids)).all()
         } if ids else {}
 
-        lama_part: Dict[tuple, Decimal] = {}
+        # A: item asal
+        a_part: Dict[tuple, Decimal] = {}
         for d in transaksi.detail_parts:
             k = (d.spare_part_id, self._q2(d.harga_jual))
-            lama_part[k] = lama_part.get(k, Decimal("0")) + self._q2(d.qty)
-        baru_part: Dict[tuple, Decimal] = {}
+            a_part[k] = a_part.get(k, Decimal("0")) + self._q2(d.qty)
+        a_jasa: Dict[tuple, int] = {}
+        for d in transaksi.detail_services:
+            k = ((d.nama_jasa or "").strip().lower(), (d.deskripsi or "").strip(), self._q2(d.harga))
+            a_jasa[k] = a_jasa.get(k, 0) + int(d.qty)
+
+        # C: item yang sudah dipindah ke nota tambahan
+        c_part: Dict[tuple, Decimal] = {}
+        c_jasa: Dict[tuple, int] = {}
+        for ch in anak:
+            for d in ch.detail_parts:
+                k = (d.spare_part_id, self._q2(d.harga_jual))
+                c_part[k] = c_part.get(k, Decimal("0")) + self._q2(d.qty)
+            for d in ch.detail_services:
+                k = ((d.nama_jasa or "").strip().lower(), (d.deskripsi or "").strip(), self._q2(d.harga))
+                c_jasa[k] = c_jasa.get(k, 0) + int(d.qty)
+
+        # P: payload
+        p_part: Dict[tuple, Decimal] = {}
         for i in data.detail_parts:
             sp = master.get(i.spare_part_id)
             hj = i.harga_jual if i.harga_jual else (sp.harga_jual if sp else 0)
             k = (i.spare_part_id, self._q2(hj))
-            baru_part[k] = baru_part.get(k, Decimal("0")) + self._q2(i.qty)
-
-        lama_jasa: Dict[tuple, int] = {}
-        for d in transaksi.detail_services:
-            k = ((d.nama_jasa or "").strip().lower(), (d.deskripsi or "").strip(), self._q2(d.harga))
-            lama_jasa[k] = lama_jasa.get(k, 0) + int(d.qty)
-        baru_jasa: Dict[tuple, int] = {}
+            p_part[k] = p_part.get(k, Decimal("0")) + self._q2(i.qty)
+        p_jasa: Dict[tuple, int] = {}
+        asli_jasa: Dict[tuple, Any] = {}
         for i in data.detail_services:
             k = ((i.nama_jasa or "").strip().lower(), (i.deskripsi or "").strip(), self._q2(i.harga))
-            baru_jasa[k] = baru_jasa.get(k, 0) + int(i.qty)
+            p_jasa[k] = p_jasa.get(k, 0) + int(i.qty)
+            asli_jasa[k] = i
 
-        for k, q in lama_part.items():
-            if baru_part.get(k, Decimal("0")) < q:
+        # Asal tidak boleh berkurang
+        for k, q in a_part.items():
+            if p_part.get(k, Decimal("0")) < q:
                 self._tolak_periode_diposting(transaksi, "Item part lama tidak bisa dikurangi, dihapus, atau diubah harganya.")
-        for k, q in lama_jasa.items():
-            if baru_jasa.get(k, 0) < q:
+        for k, q in a_jasa.items():
+            if p_jasa.get(k, 0) < q:
                 self._tolak_periode_diposting(transaksi, "Item jasa lama tidak bisa dikurangi, dihapus, atau diubah harganya.")
 
-        tambah_part = [
-            DetailPartCreate(spare_part_id=k[0], qty=q - lama_part.get(k, Decimal("0")), harga_jual=k[1])
-            for k, q in baru_part.items() if q > lama_part.get(k, Decimal("0"))
-        ]
-        # nama/deskripsi asli item jasa baru diambil dari payload
-        asli_jasa = {
-            ((i.nama_jasa or "").strip().lower(), (i.deskripsi or "").strip(), self._q2(i.harga)): i
-            for i in data.detail_services
-        }
-        tambah_jasa = [
-            DetailServiceCreate(
-                nama_jasa=asli_jasa[k].nama_jasa,
-                deskripsi=asli_jasa[k].deskripsi,
-                harga=asli_jasa[k].harga,
-                qty=q - lama_jasa.get(k, 0),
-            )
-            for k, q in baru_jasa.items() if q > lama_jasa.get(k, 0)
-        ]
-        if not tambah_part and not tambah_jasa:
-            return None
+        # Penambahan bersih: payload - asal - yang sudah dipindah
+        tambah_part = []
+        for k, q in p_part.items():
+            net = q - a_part.get(k, Decimal("0")) - c_part.get(k, Decimal("0"))
+            if net > 0:
+                tambah_part.append(DetailPartCreate(spare_part_id=k[0], qty=net, harga_jual=k[1]))
+        tambah_jasa = []
+        for k, q in p_jasa.items():
+            net = q - a_jasa.get(k, 0) - c_jasa.get(k, 0)
+            if net > 0:
+                asli = asli_jasa[k]
+                tambah_jasa.append(DetailServiceCreate(
+                    nama_jasa=asli.nama_jasa, deskripsi=asli.deskripsi, harga=asli.harga, qty=net,
+                ))
 
-        hari_ini = get_jakarta_date()
-        PeriodePostingService(self.db).pastikan_terbuka(hari_ini, "Nota tambahan tidak bisa dibuat")
-        status_kerja = transaksi.status_pengerjaan
-        if status_kerja in (WorkshopStatus.SELESAI, WorkshopStatus.BATAL):
-            status_kerja = WorkshopStatus.PROSES
-        tambahan = self.create(
-            TransaksiBengkelCreate(
-                customer_id=transaksi.customer_id,
-                nama_customer=transaksi.nama_customer,
-                nomor_plat=transaksi.nomor_plat,
-                jenis_kendaraan=transaksi.jenis_kendaraan,
-                kategori=transaksi.kategori or "umum",
-                muatan_id=transaksi.muatan_id,
-                armada_id=transaksi.armada_id,
-                mobil_id=transaksi.mobil_id,
-                detail_parts=tambah_part,
-                detail_services=tambah_jasa,
-                diskon=Decimal("0"),
-                tampilkan_diskon_struk=bool(getattr(transaksi, "tampilkan_diskon_struk", True)),
-                metode_bayar=PaymentMethod.TUNAI,
-                jumlah_bayar=Decimal("0"),
-                payments=[],
-                status_pengerjaan=status_kerja,
-                catatan=f"Tambahan dari nota {transaksi.nomor_transaksi}",
-            ),
-            user_id=user_id,
-        )
-        tambahan.induk_nomor = transaksi.nomor_transaksi
+        tambahan = None
+        if tambah_part or tambah_jasa:
+            hari_ini = get_jakarta_date()
+            PeriodePostingService(self.db).pastikan_terbuka(hari_ini, "Nota tambahan tidak bisa dibuat")
+            status_kerja = transaksi.status_pengerjaan
+            if status_kerja in (WorkshopStatus.SELESAI, WorkshopStatus.BATAL):
+                status_kerja = WorkshopStatus.PROSES
+            tambahan = self.create(
+                TransaksiBengkelCreate(
+                    customer_id=transaksi.customer_id,
+                    nama_customer=transaksi.nama_customer,
+                    nomor_plat=transaksi.nomor_plat,
+                    jenis_kendaraan=transaksi.jenis_kendaraan,
+                    kategori=transaksi.kategori or "umum",
+                    muatan_id=transaksi.muatan_id,
+                    armada_id=transaksi.armada_id,
+                    mobil_id=transaksi.mobil_id,
+                    detail_parts=tambah_part,
+                    detail_services=tambah_jasa,
+                    diskon=Decimal("0"),
+                    tampilkan_diskon_struk=bool(getattr(transaksi, "tampilkan_diskon_struk", True)),
+                    metode_bayar=PaymentMethod.TUNAI,
+                    jumlah_bayar=Decimal("0"),
+                    payments=[],
+                    status_pengerjaan=status_kerja,
+                    catatan=f"Tambahan dari nota {transaksi.nomor_transaksi}",
+                ),
+                user_id=user_id,
+            )
+            tambahan.induk_nomor = transaksi.nomor_transaksi
+            self.db.commit()
+
+        # Status pengerjaan dan catatan nota asal diterapkan langsung (tanpa menulis ulang item).
+        if data.status_pengerjaan and data.status_pengerjaan != transaksi.status_pengerjaan:
+            transaksi.status_pengerjaan = data.status_pengerjaan
+        if data.catatan is not None and data.catatan != transaksi.catatan:
+            transaksi.catatan = data.catatan
         self.db.commit()
-        self.db.refresh(tambahan)
+        self.db.refresh(transaksi)
+        if tambahan is None:
+            return None
         return tambahan
 
     def create(
@@ -1183,13 +1211,10 @@ class TransaksiBengkelService:
         periode = PeriodePostingService(self.db)
         if periode.is_posted(tanggal_lama):
             tambahan = self._edit_pada_periode_diposting(transaksi, data, user_id)
+            transaksi = self.get_by_id(transaksi_id)
             if tambahan is not None:
-                # Perubahan non-item (mis. status pengerjaan) tetap diterapkan lewat alur biasa.
-                if data.status_pengerjaan and data.status_pengerjaan != transaksi.status_pengerjaan:
-                    self.update_status(transaksi_id, data.status_pengerjaan, user_id)
-                transaksi = self.get_by_id(transaksi_id)
                 transaksi.nota_tambahan_nomor = tambahan.nomor_transaksi
-                return transaksi
+            return transaksi
         elif effective_tanggal != tanggal_lama:
             periode.pastikan_terbuka(effective_tanggal, "Tanggal nota tidak bisa dipindah ke periode terkunci")
 
