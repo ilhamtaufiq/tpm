@@ -1534,8 +1534,13 @@ class TransaksiBengkelService:
         sort_order: str = "desc",
         status_pengerjaan: Optional[str] = None,
         pembayaran: Optional[str] = None,
+        sembunyikan_tambahan: bool = False,
     ) -> Dict[str, Any]:
         """Get list of transactions with pagination and filters.
+
+        sembunyikan_tambahan: True untuk antrian bengkel. Nota tambahan (hasil posting
+        bulanan, induk_nomor terisi) disembunyikan dari antrian, termasuk hitungan chip.
+        Laporan dan riwayat tidak memakai flag ini.
 
         status_pengerjaan: ALL (kecuali BATAL), ANTRE, PROSES, SELESAI, BATAL.
         pembayaran: ALL, LUNAS, BELUM_LUNAS, BELUM_BAYAR, BATAL, INTERNAL.
@@ -1599,6 +1604,9 @@ class TransaksiBengkelService:
             query = query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
         if tanggal_sampai:
             query = query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
+
+        if sembunyikan_tambahan:
+            query = query.filter(TransaksiPenjualanBengkel.induk_nomor.is_(None))
 
         # Hitungan chip dihitung dari basis ini (tanggal & pencarian), sebelum filter status.
         counts = _hitung_counts_antrian(query)

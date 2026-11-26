@@ -251,3 +251,28 @@ def test_skrip_pindah_baris_ke_nota_tambahan_menjaga_stok_dan_total(tmp_path):
     finally:
         _bersihkan(db, nomor)
         db.close()
+
+
+def test_antrian_menyembunyikan_nota_tambahan_termasuk_hitungan():
+    db = SessionLocal()
+    nomor = []
+    try:
+        sp = _sp(db)
+        svc = TransaksiBengkelService(db)
+        induk = svc.create(_payload(sp, 1, jasa=[("Servis antrian uji", "5000")]), user_id=None)
+        nomor.append(induk.nomor_transaksi)
+        anak = svc.create(_payload(sp, 1, jasa=[("Susulan antrian uji", "5000")]), user_id=None)
+        nomor.append(anak.nomor_transaksi)
+        anak_row = db.get(TransaksiPenjualanBengkel, anak.id)
+        anak_row.induk_nomor = induk.nomor_transaksi
+        db.commit()
+
+        nomor_dengan = [r.nomor_transaksi for r in svc.get_list(limit=500, search="UJI", sembunyikan_tambahan=False)["data"]]
+        nomor_tanpa = svc.get_list(limit=500, search="UJI", sembunyikan_tambahan=True)
+        daftar_tanpa = [r.nomor_transaksi for r in nomor_tanpa["data"]]
+        assert anak.nomor_transaksi in nomor_dengan
+        assert anak.nomor_transaksi not in daftar_tanpa
+        assert induk.nomor_transaksi in daftar_tanpa
+    finally:
+        _bersihkan(db, nomor)
+        db.close()
