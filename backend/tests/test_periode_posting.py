@@ -396,6 +396,9 @@ def test_detail_nota_induk_memuat_nota_tambahan():
 
         induk = svc.get_by_id(t.id)
         assert [a["nomor_transaksi"] for a in induk.nota_tambahan] == [hasil.nota_tambahan_nomor]
+        bagian = induk.nota_tambahan[0]
+        assert len(bagian["detail_parts"]) == 1 and bagian["detail_parts"][0]["qty"] == 1
+        assert bagian["detail_parts"][0]["spare_part_nama"]
         anak = svc.get_by_nomor(hasil.nota_tambahan_nomor)
         detail_anak = svc.get_by_id(anak.id)
         assert detail_anak.induk_nomor == t.nomor_transaksi

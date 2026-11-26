@@ -104,6 +104,11 @@ export default function QueueScreen() {
     const { data: selectedAntrianDetail } = useTransaksiBengkelDetail(selectedItem?.id ?? null, {
         enabled: detailModalOpen && !!selectedItem?.id,
     });
+    // Item nota tambahan ikut ditampilkan di Rincian Item nota induknya.
+    const itemTambahanParts = (selectedAntrianDetail?.nota_tambahan ?? []).flatMap((anak: any) =>
+        (anak.detail_parts ?? []).map((p: any) => ({ ...p, _dari: anak.nomor_transaksi })));
+    const itemTambahanJasa = (selectedAntrianDetail?.nota_tambahan ?? []).flatMap((anak: any) =>
+        (anak.detail_services ?? []).map((sv: any) => ({ ...sv, _dari: anak.nomor_transaksi })));
 
     // Print State
     const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
@@ -906,11 +911,11 @@ export default function QueueScreen() {
                                             <Typography variant="caption" weight="bold" className="ml-2 text-primary uppercase tracking-widest">Rincian Item</Typography>
                                         </View>
                                         <Typography variant="caption" className="text-textGray">
-                                            {(selectedItem?.detail_services?.length || 0) + (selectedItem?.detail_parts?.length || 0)} baris
+                                            {(selectedItem?.detail_services?.length || 0) + (selectedItem?.detail_parts?.length || 0) + itemTambahanJasa.length + itemTambahanParts.length} baris
                                         </Typography>
                                     </View>
 
-                                    {((selectedItem?.detail_services) || []).map((s: any, idx: number) => (
+                                    {[...((selectedItem?.detail_services) || []), ...itemTambahanJasa].map((s: any, idx: number) => (
                                         <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{s.nama_jasa}</Typography>
@@ -920,7 +925,7 @@ export default function QueueScreen() {
                                         </View>
                                     ))}
 
-                                    {((selectedItem?.detail_parts) || []).map((p: any, idx: number) => (
+                                    {[...((selectedItem?.detail_parts) || []), ...itemTambahanParts].map((p: any, idx: number) => (
                                         <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>
