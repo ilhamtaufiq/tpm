@@ -1496,6 +1496,25 @@ class TransaksiBengkelService:
             transaksi.piutang_id = piutang.id
             transaksi.jumlah_bayar = piutang.total_dibayar
         # No else needed, transaksi.jumlah_bayar already exists on the model
+
+        # Nota tambahan turunan (posting bulanan): tampil di detail nota induknya.
+        anak = (
+            self.db.query(TransaksiPenjualanBengkel)
+            .filter(TransaksiPenjualanBengkel.induk_nomor == transaksi.nomor_transaksi)
+            .order_by(TransaksiPenjualanBengkel.tanggal, TransaksiPenjualanBengkel.id)
+            .all()
+        )
+        transaksi.nota_tambahan = [
+            {
+                "id": a.id,
+                "nomor_transaksi": a.nomor_transaksi,
+                "tanggal": a.tanggal.isoformat() if a.tanggal else None,
+                "grand_total": float(a.grand_total or 0),
+                "status_pengerjaan": getattr(a.status_pengerjaan, "value", a.status_pengerjaan),
+                "status_bayar": getattr(a.status_bayar, "value", a.status_bayar),
+            }
+            for a in anak
+        ]
             
         return transaksi
 

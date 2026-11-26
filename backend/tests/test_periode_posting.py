@@ -377,3 +377,28 @@ def test_update_diulang_tidak_menggandakan_nota_tambahan():
     finally:
         _bersihkan(db, nomor)
         db.close()
+
+
+def test_detail_nota_induk_memuat_nota_tambahan():
+    db = SessionLocal()
+    nomor = []
+    try:
+        sp = _sp(db)
+        svc = TransaksiBengkelService(db)
+        t = svc.create(_payload(sp, 1, jasa=[("Servis detail uji", "20000")]), user_id=None)
+        nomor.append(t.nomor_transaksi)
+        t = db.get(TransaksiPenjualanBengkel, t.id)
+        t.tanggal = date(TAHUN_UJI, BULAN_UJI, 23)
+        db.commit()
+        PeriodePostingService(db).posting(TAHUN_UJI, BULAN_UJI, None)
+        hasil = svc.update(t.id, _payload(sp, 2, jasa=[("Servis detail uji", "20000")]), user_id=None)
+        nomor.append(hasil.nota_tambahan_nomor)
+
+        induk = svc.get_by_id(t.id)
+        assert [a["nomor_transaksi"] for a in induk.nota_tambahan] == [hasil.nota_tambahan_nomor]
+        anak = svc.get_by_nomor(hasil.nota_tambahan_nomor)
+        detail_anak = svc.get_by_id(anak.id)
+        assert detail_anak.induk_nomor == t.nomor_transaksi
+    finally:
+        _bersihkan(db, nomor)
+        db.close()
