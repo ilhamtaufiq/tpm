@@ -32,6 +32,7 @@ export default function FinanceLayout() {
             <Stack.Screen name="piutang" options={{ headerShown: false }} />
             <Stack.Screen name="hutang" options={{ headerShown: false }} />
             <Stack.Screen name="hutang-investor" options={{ headerShown: false }} />
+            <Stack.Screen name="posting" options={{ headerShown: false }} />
         </Stack>
     );
 }

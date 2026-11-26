@@ -190,3 +190,12 @@ Asumsi yang diambil tanpa jawaban dari Anda:
 - Sekarang di modal retur ada pilihan **"Jadikan piutang ke supplier"**. Seluruh nilai retur menjadi piutang (`piutang_usaha`, sumber LAINNYA, dengan referensi nomor retur), hutang pembelian tidak dipotong, dan tidak ada kas yang keluar. Batalkan retur akan membatalkan piutang itu.
 - API: `ReturPembelianCreate.sebagai_piutang_semua` (default `false`, perilaku lama tetap).
 - Tes: `tests/test_retur_pembelian_spare_part.py::test_retur_sebagai_piutang_semua_tanpa_potong_hutang`.
+
+## Posting Bulanan dan Nota Tambahan (selaras Excel)
+
+- Masalah: item yang diinput di bulan N pada nota bertanggal bulan N-1 ikut laporan bulan N-1 di aplikasi, sedangkan Excel memasukkannya ke bulan N (diketik di blok minggu bulan N). Contoh November 2026: 114 baris part dari 7 nota Oktober (penjualan Rp17.740.500, HPP Rp14.679.952) dihitung Excel di November, sehingga laba kotor bengkel Excel Rp30.627.342 vs aplikasi Rp27.566.794 (selisih Rp3.060.548).
+- Perilaku baru: tabel `periode_posting` dan halaman Keuangan > Posting Bulanan. Bulan yang diposting terkunci untuk nota bengkel; penambahan item pada nota di bulan terkunci otomatis menjadi nota tambahan di bulan berjalan (kolom baru `transaksi_penjualan_bengkel.induk_nomor`, migrasi `b3d5f7a9c1e2`). Laporan tidak diubah, karena nota tambahan hanyalah nota biasa di periode terbuka.
+- Verifikasi (salinan database dump 25 Nov, 87 baris Oktober dipindah ke nota tambahan November lewat skrip): stok total dan Σ grand_total/HPP nota tidak berubah; Neraca 30 Nov identik dan seimbang (total aktiva Rp2.744.267.031, laba ditahan Rp180.232.681); Neraca 31 Okt seimbang; laba kotor bengkel Oktober Rp58.102.101 menjadi Rp55.852.188, November Rp27.566.794 menjadi Rp29.816.707. Sisa selisih ke Excel Rp810.635 berasal dari 27 baris Excel yang tidak ditemukan atau tidak cocok di nota asal (lihat rincian di lampiran analisa).
+- Skrip data lama: `backend/scripts/pindah_baris_ke_nota_tambahan.py` (dry-run default, `--apply` untuk simpan). Baris yang tidak cocok dilewati dan dilaporkan. Jalankan sebelum memposting Oktober.
+- Catatan: Alat Perbaikan Data tidak ikut dikunci. Pembayaran/cicilan tidak dikunci.
+- Tes: `backend/tests/test_periode_posting.py`. Rancangan: `docs/Rancangan Posting Bulanan.md`.

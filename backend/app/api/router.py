@@ -7,6 +7,7 @@ from app.api.v1 import (
     spare_parts,
     pembelian_parts,
     transaksi_bengkel,
+    periode_posting,
     pengeluaran,
     mobil,
     penjualan_mobil,
@@ -55,6 +56,7 @@ api_router.include_router(spare_parts.router)
 api_router.include_router(jasa_servis.router, prefix="/jasa-servis", tags=["Jasa Servis"])
 api_router.include_router(pembelian_parts.router)
 api_router.include_router(transaksi_bengkel.router)
+api_router.include_router(periode_posting.router)
 api_router.include_router(pengeluaran.router)
 api_router.include_router(mobil.router)
 api_router.include_router(penjualan_mobil.router)

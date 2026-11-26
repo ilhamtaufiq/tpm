@@ -30,6 +30,7 @@ import { Input } from '../../../components/ui/Input';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { offlineAwareWrite, enqueueOfflineAction } from '../../../services/offlineQueue';
+import { getErrorMessage } from '../../../utils/error';
 import { useCreateTransaksiBengkel, useSparePartsList, useTransaksiBengkelDetail, useTransaksiBengkelList, useUpdateTransaksiBengkel, useUpdateTransaksiBengkelPayment } from '../../../hooks/useBengkel';
 import { useDebounce } from '../../../hooks';
 import { useJasaList } from '../../../hooks/useJasaServis';
@@ -1088,15 +1089,28 @@ export default function BengkelTransaksiScreen() {
                 }
                 transaction = result.data;
             }
+            if (transactionToUpdateId && transaction?.nota_tambahan_nomor) {
+                setConfirmSubmitOpen(false);
+                setPaymentSheetOpen(false);
+                showNotice(
+                    'info',
+                    'Nota Tambahan Dibuat',
+                    `Periode nota ini sudah diposting, jadi nota ${transaction.nomor_transaksi} tidak diubah. Item tambahan dicatat sebagai nota ${transaction.nota_tambahan_nomor} di periode berjalan.`
+                );
+                return;
+            }
             setCreatedTransaction(transaction);
             setReceiptActionMessage('');
             setConfirmSubmitOpen(false);
             setPaymentSheetOpen(false);
             setSuccessWithPayment(shouldPay);
             setSuccessModalOpen(true);
-        } catch {
+        } catch (error: any) {
             setConfirmSubmitOpen(false);
-            showNotice('error', 'Error', transactionToUpdateId ? 'Gagal memperbarui transaksi bengkel.' : 'Gagal membuat transaksi bengkel.');
+            const fallback = transactionToUpdateId ? 'Gagal memperbarui transaksi bengkel.' : 'Gagal membuat transaksi bengkel.';
+            // 409 dari posting bulanan membawa pesan yang menjelaskan periode terkunci.
+            const pesan = error?.response?.status === 409 ? getErrorMessage(error, fallback) : fallback;
+            showNotice('error', 'Error', pesan);
         }
     };
 

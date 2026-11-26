@@ -13,10 +13,13 @@ interface AlasanBatalDialogProps {
     loading?: boolean;
     onClose: () => void;
     onSubmit: (alasan: string) => void;
+    labelAlasan?: string;
+    placeholder?: string;
+    submitText?: string;
 }
 
 // Dialog pembatalan transaksi bengkel: alasan wajib diisi (minimal 5 karakter).
-export const AlasanBatalDialog = ({ visible, title, message, loading = false, onClose, onSubmit }: AlasanBatalDialogProps) => {
+export const AlasanBatalDialog = ({ visible, title, message, loading = false, onClose, onSubmit, labelAlasan = 'Alasan pembatalan (wajib)', placeholder = 'Contoh: salah input jenis part', submitText = 'Batalkan Transaksi' }: AlasanBatalDialogProps) => {
     const [alasan, setAlasan] = useState('');
 
     useEffect(() => {
@@ -32,10 +35,10 @@ export const AlasanBatalDialog = ({ visible, title, message, loading = false, on
                     <Typography weight="bold" className="text-textMain text-base">{title}</Typography>
                     <Typography className="text-textGray text-sm">{message}</Typography>
                     <Input
-                        label="Alasan pembatalan (wajib)"
+                        label={labelAlasan}
                         value={alasan}
                         onChangeText={setAlasan}
-                        placeholder="Contoh: salah input jenis part"
+                        placeholder={placeholder}
                         maxLength={255}
                         multiline
                     />
@@ -45,7 +48,7 @@ export const AlasanBatalDialog = ({ visible, title, message, loading = false, on
                     <View className="flex-row gap-2">
                         <Button title="Kembali" variant="outline" className="flex-1" onPress={onClose} />
                         <Button
-                            title="Batalkan Transaksi"
+                            title={submitText}
                             variant="danger"
                             className="flex-1"
                             disabled={!valid || loading}

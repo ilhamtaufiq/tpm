@@ -235,6 +235,9 @@ class TransaksiPenjualanBengkel(Base, TimestampMixin):
         nullable=True,
     )
 
+    # Nota tambahan: nomor nota asal yang periodenya sudah diposting.
+    induk_nomor: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, index=True)
+
     # Totals
     total_parts: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     total_jasa: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
