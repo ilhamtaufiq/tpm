@@ -49,6 +49,7 @@ import { id as localeID } from 'date-fns/locale/id';
 import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import {
     useTransaksiBengkelAntrian,
+    useTransaksiBengkelDetail,
     useTransaksiBengkelSummary,
     useUpdateTransaksiBengkelStatus,
     useUpdateTransaksiBengkelPayment,
@@ -99,6 +100,15 @@ export default function QueueScreen() {
     // Detail Modal State
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
+    // Detail nota (memuat nota tambahan turunan) hanya diambil saat sheet detail dibuka.
+    const { data: selectedAntrianDetail } = useTransaksiBengkelDetail(selectedItem?.id ?? null, {
+        enabled: detailModalOpen && !!selectedItem?.id,
+    });
+    // Item nota tambahan ikut ditampilkan di Rincian Item nota induknya.
+    const itemTambahanParts = (selectedAntrianDetail?.nota_tambahan ?? []).flatMap((anak: any) =>
+        (anak.detail_parts ?? []).map((p: any) => ({ ...p, _dari: anak.nomor_transaksi })));
+    const itemTambahanJasa = (selectedAntrianDetail?.nota_tambahan ?? []).flatMap((anak: any) =>
+        (anak.detail_services ?? []).map((sv: any) => ({ ...sv, _dari: anak.nomor_transaksi })));
 
     // Print State
     const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
@@ -873,6 +883,27 @@ export default function QueueScreen() {
                                 </View>
 
                                 {/* Item Order Card */}
+                                {(selectedAntrianDetail?.nota_tambahan?.length ?? 0) > 0 || selectedItem?.induk_nomor ? (
+                                    <Card variant="outlined" className="p-4 border-transparent mb-4 bg-surface/60 rounded-2xl">
+                                        <View className="flex-row items-center mb-3">
+                                            <Receipt size={15} color={themeColors.primary} />
+                                            <Typography variant="caption" weight="bold" className="ml-2 text-primary uppercase tracking-widest">Nota Tambahan</Typography>
+                                        </View>
+                                        {selectedItem?.induk_nomor ? (
+                                            <Typography variant="caption" className="text-textGray mb-2">Nota induk: {selectedItem.induk_nomor}</Typography>
+                                        ) : null}
+                                        {(selectedAntrianDetail?.nota_tambahan ?? []).map((anak: any) => (
+                                            <View key={anak.nomor_transaksi} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
+                                                <View className="flex-1 mr-3">
+                                                    <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{anak.nomor_transaksi}</Typography>
+                                                    <Typography variant="caption" className="text-textGray">{anak.tanggal ?? '-'} • {formatBengkelWorkStatusLabel(String(anak.status_pengerjaan ?? '').toLowerCase())}</Typography>
+                                                </View>
+                                                <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(anak.grand_total)}</Typography>
+                                            </View>
+                                        ))}
+                                    </Card>
+                                ) : null}
+
                                 <Card variant="outlined" className="p-4 border-transparent mb-4 bg-surface/60 rounded-2xl">
                                     <View className="flex-row items-center justify-between mb-3">
                                         <View className="flex-row items-center">
@@ -880,11 +911,11 @@ export default function QueueScreen() {
                                             <Typography variant="caption" weight="bold" className="ml-2 text-primary uppercase tracking-widest">Rincian Item</Typography>
                                         </View>
                                         <Typography variant="caption" className="text-textGray">
-                                            {(selectedItem?.detail_services?.length || 0) + (selectedItem?.detail_parts?.length || 0)} baris
+                                            {(selectedItem?.detail_services?.length || 0) + (selectedItem?.detail_parts?.length || 0) + itemTambahanJasa.length + itemTambahanParts.length} baris
                                         </Typography>
                                     </View>
 
-                                    {((selectedItem?.detail_services) || []).map((s: any, idx: number) => (
+                                    {[...((selectedItem?.detail_services) || []), ...itemTambahanJasa].map((s: any, idx: number) => (
                                         <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{s.nama_jasa}</Typography>
@@ -894,7 +925,7 @@ export default function QueueScreen() {
                                         </View>
                                     ))}
 
-                                    {((selectedItem?.detail_parts) || []).map((p: any, idx: number) => (
+                                    {[...((selectedItem?.detail_parts) || []), ...itemTambahanParts].map((p: any, idx: number) => (
                                         <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>

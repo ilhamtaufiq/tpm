@@ -1512,6 +1512,24 @@ class TransaksiBengkelService:
                 "grand_total": float(a.grand_total or 0),
                 "status_pengerjaan": getattr(a.status_pengerjaan, "value", a.status_pengerjaan),
                 "status_bayar": getattr(a.status_bayar, "value", a.status_bayar),
+                "detail_parts": [
+                    {
+                        "spare_part_nama": d.spare_part.nama if d.spare_part else None,
+                        "qty": float(d.qty or 0),
+                        "harga_jual": float(d.harga_jual or 0),
+                        "subtotal": float(d.subtotal or 0),
+                    }
+                    for d in a.detail_parts
+                ],
+                "detail_services": [
+                    {
+                        "nama_jasa": s.nama_jasa,
+                        "qty": s.qty,
+                        "harga": float(s.harga or 0),
+                        "subtotal": float(s.subtotal or 0),
+                    }
+                    for s in a.detail_services
+                ],
             }
             for a in anak
         ]
