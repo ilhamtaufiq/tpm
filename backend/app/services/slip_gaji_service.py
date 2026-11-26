@@ -209,15 +209,7 @@ class SlipGajiService:
             )
 
         # Check if already exists for the period
-        existing = (
-            self.db.query(SlipGaji)
-            .filter(
-                SlipGaji.karyawan_id == data.karyawan_id,
-                SlipGaji.periode_minggu == data.periode_minggu,
-                SlipGaji.periode_tahun == data.periode_tahun,
-            )
-            .first()
-        )
+        existing = self._slip_bentrok(data.karyawan_id, *get_week_dates(data.periode_tahun, data.periode_minggu), data.periode_minggu, data.periode_tahun)
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -284,15 +276,7 @@ class SlipGajiService:
         items = []
         for emp in employees:
             # Check if already exists
-            existing = (
-                self.db.query(SlipGaji)
-                .filter(
-                    SlipGaji.karyawan_id == emp.id,
-                    SlipGaji.periode_minggu == minggu,
-                    SlipGaji.periode_tahun == tahun,
-                )
-                .first()
-            )
+            existing = self._slip_bentrok(emp.id, *get_week_dates(tahun, minggu), minggu, tahun)
             if existing:
                 continue
 
@@ -400,15 +384,7 @@ class SlipGajiService:
                 jumlah_hadir = item.get("jumlah_hadir", 0)
 
                 # Skip if already exists
-                existing = (
-                    self.db.query(SlipGaji)
-                    .filter(
-                        SlipGaji.karyawan_id == karyawan_id,
-                        SlipGaji.periode_minggu == minggu,
-                        SlipGaji.periode_tahun == tahun,
-                    )
-                    .first()
-                )
+                existing = self._slip_bentrok(karyawan_id, *get_week_dates(tahun, minggu), minggu, tahun)
                 if existing:
                     continue
 
@@ -559,15 +535,7 @@ class SlipGajiService:
 
         for emp in employees:
             # Skip if already exists
-            existing = (
-                self.db.query(SlipGaji)
-                .filter(
-                    SlipGaji.karyawan_id == emp.id,
-                    SlipGaji.periode_minggu == minggu,
-                    SlipGaji.periode_tahun == tahun,
-                )
-                .first()
-            )
+            existing = self._slip_bentrok(emp.id, *get_week_dates(tahun, minggu), minggu, tahun)
             if existing:
                 skipped += 1
                 continue
