@@ -49,6 +49,7 @@ import { id as localeID } from 'date-fns/locale/id';
 import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import {
     useTransaksiBengkelAntrian,
+    useTransaksiBengkelDetail,
     useTransaksiBengkelSummary,
     useUpdateTransaksiBengkelStatus,
     useUpdateTransaksiBengkelPayment,
@@ -99,6 +100,10 @@ export default function QueueScreen() {
     // Detail Modal State
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
+    // Detail nota (memuat nota tambahan turunan) hanya diambil saat sheet detail dibuka.
+    const { data: selectedAntrianDetail } = useTransaksiBengkelDetail(selectedItem?.id ?? null, {
+        enabled: detailModalOpen && !!selectedItem?.id,
+    });
 
     // Print State
     const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
@@ -873,6 +878,27 @@ export default function QueueScreen() {
                                 </View>
 
                                 {/* Item Order Card */}
+                                {(selectedAntrianDetail?.nota_tambahan?.length ?? 0) > 0 || selectedItem?.induk_nomor ? (
+                                    <Card variant="outlined" className="p-4 border-transparent mb-4 bg-surface/60 rounded-2xl">
+                                        <View className="flex-row items-center mb-3">
+                                            <Receipt size={15} color={themeColors.primary} />
+                                            <Typography variant="caption" weight="bold" className="ml-2 text-primary uppercase tracking-widest">Nota Tambahan</Typography>
+                                        </View>
+                                        {selectedItem?.induk_nomor ? (
+                                            <Typography variant="caption" className="text-textGray mb-2">Nota induk: {selectedItem.induk_nomor}</Typography>
+                                        ) : null}
+                                        {(selectedAntrianDetail?.nota_tambahan ?? []).map((anak: any) => (
+                                            <View key={anak.nomor_transaksi} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
+                                                <View className="flex-1 mr-3">
+                                                    <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{anak.nomor_transaksi}</Typography>
+                                                    <Typography variant="caption" className="text-textGray">{anak.tanggal ?? '-'} • {formatBengkelWorkStatusLabel(String(anak.status_pengerjaan ?? '').toLowerCase())}</Typography>
+                                                </View>
+                                                <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(anak.grand_total)}</Typography>
+                                            </View>
+                                        ))}
+                                    </Card>
+                                ) : null}
+
                                 <Card variant="outlined" className="p-4 border-transparent mb-4 bg-surface/60 rounded-2xl">
                                     <View className="flex-row items-center justify-between mb-3">
                                         <View className="flex-row items-center">
