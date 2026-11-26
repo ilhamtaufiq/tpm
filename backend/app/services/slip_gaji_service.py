@@ -156,17 +156,15 @@ class SlipGajiService:
         minggu: int,
         tahun: int,
     ) -> Optional[SlipGaji]:
-        """Slip yang menghalangi pembuatan slip baru: satu slip per karyawan per minggu
-        (unique constraint) atau rentang tanggal yang tumpang tindih (akrual tidak boleh
-        dibayar dua kali)."""
+        """Slip yang menghalangi pembuatan slip baru: hanya rentang tanggal yang tumpang
+        tindih (akrual tidak boleh dibayar dua kali). Nomor minggu tidak dipakai lagi
+        sebagai aturan periode; periode bebas, mengikuti tanggal absensi."""
         return (
             self.db.query(SlipGaji)
             .filter(
                 SlipGaji.karyawan_id == karyawan_id,
-                or_(
-                    and_(SlipGaji.periode_minggu == minggu, SlipGaji.periode_tahun == tahun),
-                    and_(SlipGaji.tanggal_mulai <= tanggal_akhir, SlipGaji.tanggal_akhir >= tanggal_mulai),
-                ),
+                SlipGaji.tanggal_mulai <= tanggal_akhir,
+                SlipGaji.tanggal_akhir >= tanggal_mulai,
             )
             .first()
         )
