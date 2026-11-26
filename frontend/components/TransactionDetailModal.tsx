@@ -521,6 +521,23 @@ function TransactionDetailModalInner({ item, visible, onClose }: TransactionDeta
 
     const renderWorkshopDetail = () => (
         <>
+            {(details?.induk_nomor || (details?.nota_tambahan?.length ?? 0) > 0) && (
+                <BentoSection title="Nota Tambahan">
+                    {details?.induk_nomor ? (
+                        <DetailRow label="Nota Induk" value={details.induk_nomor} icon={Hash} color="#6366F1" />
+                    ) : null}
+                    {(details?.nota_tambahan ?? []).map((anak: any) => (
+                        <DetailRow
+                            key={anak.nomor_transaksi}
+                            label={`${anak.nomor_transaksi} • ${anak.tanggal ?? '-'}`}
+                            value={`${formatCurrency(anak.grand_total)} • ${anak.status_pengerjaan ?? '-'}`}
+                            icon={Hash}
+                            color="#10B981"
+                        />
+                    ))}
+                </BentoSection>
+            )}
+
             <BentoSection title="Data Kendaraan">
                 <DetailRow label="Plat Nomor" value={details?.nomor_plat || details?.plat_nomor || '-'} icon={Hash} color="#3B82F6" />
                 <DetailRow label="Tipe Unit" value={details?.jenis_kendaraan || details?.tipe_motor || '-'} icon={Car} color="#6366F1" />

@@ -276,3 +276,129 @@ def test_antrian_menyembunyikan_nota_tambahan_termasuk_hitungan():
     finally:
         _bersihkan(db, nomor)
         db.close()
+
+
+def test_edit_nota_terkunci_lalu_bayar_tidak_error():
+    """Urutan layar Update: edit nota periode terkunci (+part), lalu pembayaran pada nota asal."""
+    from app.schemas.bengkel import PaymentItem
+    from app.utils.constants import PaymentMethod as PM
+
+    db = SessionLocal()
+    nomor = []
+    try:
+        sp = _sp(db)
+        svc = TransaksiBengkelService(db)
+        t = svc.create(_payload(sp, 1, jasa=[("Servis bayar uji", "20000")], jumlah_bayar=Decimal("0")), user_id=None)
+        nomor.append(t.nomor_transaksi)
+        t = db.get(TransaksiPenjualanBengkel, t.id)
+        t.tanggal = date(TAHUN_UJI, BULAN_UJI, 20)
+        db.commit()
+        PeriodePostingService(db).posting(TAHUN_UJI, BULAN_UJI, None)
+        stok_awal = db.get(SparePart, sp.id).stok
+
+        edit = _payload(sp, 2, jasa=[("Servis bayar uji", "20000")])
+        hasil = svc.update(t.id, edit, user_id=None)
+        assert hasil.nota_tambahan_nomor
+        nomor.append(hasil.nota_tambahan_nomor)
+        db.expire_all()
+        assert db.get(SparePart, sp.id).stok == stok_awal - 1  # nota tambahan memotong 1 unit
+        asal = svc.get_by_nomor(t.nomor_transaksi)
+        assert asal.status_bayar == t.status_bayar
+
+        # Pembayaran pada nota asal yang sudah terkunci harus tetap bisa dicatat (tanpa error)
+        svc.update_payment(
+            asal.id,
+            jumlah_bayar=Decimal("5000"),
+            metode_bayar=PM.TUNAI,
+            payments=[PaymentItem(metode=PM.TUNAI, jumlah=Decimal("5000"))],
+            user_id=None,
+        )
+    finally:
+        _bersihkan(db, nomor)
+        db.close()
+
+
+def test_edit_nota_terkunci_dengan_ubah_status_selesai():
+    """Edit nota terkunci + tambah part + status SELESAI dalam satu submit (urutan layar Update)."""
+    db = SessionLocal()
+    nomor = []
+    try:
+        sp = _sp(db)
+        svc = TransaksiBengkelService(db)
+        t = svc.create(_payload(sp, 1, jasa=[("Servis selesai uji", "20000")]), user_id=None)
+        nomor.append(t.nomor_transaksi)
+        t = db.get(TransaksiPenjualanBengkel, t.id)
+        t.tanggal = date(TAHUN_UJI, BULAN_UJI, 21)
+        db.commit()
+        PeriodePostingService(db).posting(TAHUN_UJI, BULAN_UJI, None)
+        stok_awal = db.get(SparePart, sp.id).stok
+
+        edit = _payload(sp, 2, jasa=[("Servis selesai uji", "20000")], status_pengerjaan=WorkshopStatus.SELESAI)
+        hasil = svc.update(t.id, edit, user_id=None)
+        nomor.append(hasil.nota_tambahan_nomor)
+        db.expire_all()
+        assert db.get(SparePart, sp.id).stok == stok_awal - 1
+    finally:
+        _bersihkan(db, nomor)
+        db.close()
+
+
+def test_update_diulang_tidak_menggandakan_nota_tambahan():
+    """Update yang sama dikirim dua kali ke nota terkunci hanya boleh membuat satu nota tambahan."""
+    db = SessionLocal()
+    nomor = []
+    try:
+        sp = _sp(db)
+        svc = TransaksiBengkelService(db)
+        t = svc.create(_payload(sp, 1, jasa=[("Servis ulang uji", "20000")]), user_id=None)
+        nomor.append(t.nomor_transaksi)
+        t = db.get(TransaksiPenjualanBengkel, t.id)
+        t.tanggal = date(TAHUN_UJI, BULAN_UJI, 22)
+        db.commit()
+        PeriodePostingService(db).posting(TAHUN_UJI, BULAN_UJI, None)
+        stok_awal = db.get(SparePart, sp.id).stok
+
+        edit = _payload(sp, 2, jasa=[("Servis ulang uji", "20000")])
+        pertama = svc.update(t.id, edit, user_id=None)
+        assert pertama.nota_tambahan_nomor
+        nomor.append(pertama.nota_tambahan_nomor)
+        # Frontend memuat ulang nota asal (tanpa item tambahan) lalu mengirim ulang payload yang sama
+        kedua = svc.update(t.id, _payload(sp, 2, jasa=[("Servis ulang uji", "20000")]), user_id=None)
+        assert kedua.nota_tambahan_nomor is None or kedua.nota_tambahan_nomor == pertama.nota_tambahan_nomor
+        db.expire_all()
+        anak = db.query(TransaksiPenjualanBengkel).filter(
+            TransaksiPenjualanBengkel.induk_nomor == t.nomor_transaksi
+        ).all()
+        assert len(anak) == 1
+        assert db.get(SparePart, sp.id).stok == stok_awal - 1  # hanya satu unit terpotong
+        asal = svc.get_by_nomor(t.nomor_transaksi)
+        assert [d.spare_part_id for d in asal.detail_parts] == [sp.id]
+        assert sum(d.qty for d in asal.detail_parts) == 1  # nota asal tidak ditulis ulang
+    finally:
+        _bersihkan(db, nomor)
+        db.close()
+
+
+def test_detail_nota_induk_memuat_nota_tambahan():
+    db = SessionLocal()
+    nomor = []
+    try:
+        sp = _sp(db)
+        svc = TransaksiBengkelService(db)
+        t = svc.create(_payload(sp, 1, jasa=[("Servis detail uji", "20000")]), user_id=None)
+        nomor.append(t.nomor_transaksi)
+        t = db.get(TransaksiPenjualanBengkel, t.id)
+        t.tanggal = date(TAHUN_UJI, BULAN_UJI, 23)
+        db.commit()
+        PeriodePostingService(db).posting(TAHUN_UJI, BULAN_UJI, None)
+        hasil = svc.update(t.id, _payload(sp, 2, jasa=[("Servis detail uji", "20000")]), user_id=None)
+        nomor.append(hasil.nota_tambahan_nomor)
+
+        induk = svc.get_by_id(t.id)
+        assert [a["nomor_transaksi"] for a in induk.nota_tambahan] == [hasil.nota_tambahan_nomor]
+        anak = svc.get_by_nomor(hasil.nota_tambahan_nomor)
+        detail_anak = svc.get_by_id(anak.id)
+        assert detail_anak.induk_nomor == t.nomor_transaksi
+    finally:
+        _bersihkan(db, nomor)
+        db.close()
