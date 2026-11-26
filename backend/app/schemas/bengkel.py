@@ -367,6 +367,9 @@ class TransaksiBengkelResponse(BaseModel):
 
     id: int
     nomor_transaksi: str
+    induk_nomor: Optional[str] = None
+    # Terisi hanya pada respons edit nota di periode terposting: nota tambahan yang dibuat.
+    nota_tambahan_nomor: Optional[str] = None
     alasan_batal: Optional[str] = None
     public_receipt_token: Optional[str] = None
     tanggal: date

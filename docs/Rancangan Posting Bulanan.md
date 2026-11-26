@@ -1,6 +1,6 @@
 # Rancangan Posting Bulanan (Draft, belum diimplementasi)
 
-Status: rancangan. Belum ada perubahan kode atau data. Sesuai guardrail finance, setelah diimplementasi perilaku baru wajib dicatat di `TPM - Aturan Bisnis & Invariant.md` dan `TPM - Catatan Revisi.md`.
+Status: DIIMPLEMENTASI (opsi B, nota tambahan). Lihat invariant 42 di `TPM - Aturan Bisnis & Invariant.md` dan bagian Posting Bulanan di `TPM - Catatan Revisi.md`. Sesuai guardrail finance, setelah diimplementasi perilaku baru wajib dicatat di `TPM - Aturan Bisnis & Invariant.md` dan `TPM - Catatan Revisi.md`.
 
 ## 1. Tujuan
 - Laporan bulan yang sudah diposting tidak berubah lagi.

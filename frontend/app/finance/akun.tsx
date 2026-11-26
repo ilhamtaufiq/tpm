@@ -424,13 +424,21 @@ export default function AkunKeuanganScreen() {
             >
                 <View className="mb-6 flex-row items-center justify-between">
                     <Typography variant="h3" weight="bold" className="text-text">Daftar Rekening</Typography>
-                    <Pressable
-                        onPress={() => router.push('/finance/laporan')}
-                        className="flex-row items-center bg-primary/5 px-3 py-1.5 rounded-full"
-                    >
-                        <FileText size={12} color={themeColors.primary} />
-                        <Typography className="text-primary text-[10px] font-bold ml-1.5 uppercase">Buka Laporan</Typography>
-                    </Pressable>
+                    <View className="flex-row items-center">
+                        <Pressable
+                            onPress={() => router.push('/finance/posting')}
+                            className="flex-row items-center bg-primary/5 px-3 py-1.5 rounded-full mr-2"
+                        >
+                            <Typography className="text-primary text-[10px] font-bold uppercase">Posting Bulanan</Typography>
+                        </Pressable>
+                        <Pressable
+                            onPress={() => router.push('/finance/laporan')}
+                            className="flex-row items-center bg-primary/5 px-3 py-1.5 rounded-full"
+                        >
+                            <FileText size={12} color={themeColors.primary} />
+                            <Typography className="text-primary text-[10px] font-bold ml-1.5 uppercase">Buka Laporan</Typography>
+                        </Pressable>
+                    </View>
                 </View>
 
                 {isLoading ? (
