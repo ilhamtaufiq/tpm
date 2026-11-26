@@ -1601,7 +1601,7 @@ class TransaksiBengkelService:
         """Get list of transactions with pagination and filters.
 
         sembunyikan_tambahan: True untuk antrian bengkel. Nota tambahan (hasil posting
-        bulanan, induk_nomor terisi) disembunyikan dari antrian, termasuk hitungan chip.
+        bulanan, induk_nomor terisi) disembunyikan dari antrian saat tanpa pencarian, termasuk hitungan chip.
         Laporan dan riwayat tidak memakai flag ini.
 
         status_pengerjaan: ALL (kecuali BATAL), ANTRE, PROSES, SELESAI, BATAL.
@@ -1667,7 +1667,8 @@ class TransaksiBengkelService:
         if tanggal_sampai:
             query = query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
 
-        if sembunyikan_tambahan:
+        # Pencarian eksplisit (kata kunci) selalu menampilkan nota tambahan juga.
+        if sembunyikan_tambahan and not search:
             query = query.filter(TransaksiPenjualanBengkel.induk_nomor.is_(None))
 
         # Hitungan chip dihitung dari basis ini (tanggal & pencarian), sebelum filter status.

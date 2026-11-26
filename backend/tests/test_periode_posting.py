@@ -268,7 +268,7 @@ def test_antrian_menyembunyikan_nota_tambahan_termasuk_hitungan():
         db.commit()
 
         nomor_dengan = [r.nomor_transaksi for r in svc.get_list(limit=500, search="UJI", sembunyikan_tambahan=False)["data"]]
-        nomor_tanpa = svc.get_list(limit=500, search="UJI", sembunyikan_tambahan=True)
+        nomor_tanpa = svc.get_list(limit=500, sembunyikan_tambahan=True)
         daftar_tanpa = [r.nomor_transaksi for r in nomor_tanpa["data"]]
         assert anak.nomor_transaksi in nomor_dengan
         assert anak.nomor_transaksi not in daftar_tanpa
@@ -402,6 +402,27 @@ def test_detail_nota_induk_memuat_nota_tambahan():
         anak = svc.get_by_nomor(hasil.nota_tambahan_nomor)
         detail_anak = svc.get_by_id(anak.id)
         assert detail_anak.induk_nomor == t.nomor_transaksi
+    finally:
+        _bersihkan(db, nomor)
+        db.close()
+
+
+def test_cari_nomor_nota_tambahan_di_antrian_tetap_muncul():
+    db = SessionLocal()
+    nomor = []
+    try:
+        sp = _sp(db)
+        svc = TransaksiBengkelService(db)
+        induk = svc.create(_payload(sp, 1, jasa=[("Cari tambahan uji", "5000")]), user_id=None)
+        nomor.append(induk.nomor_transaksi)
+        anak = svc.create(_payload(sp, 1, jasa=[("Cari tambahan susulan", "5000")]), user_id=None)
+        nomor.append(anak.nomor_transaksi)
+        db.get(TransaksiPenjualanBengkel, anak.id).induk_nomor = induk.nomor_transaksi
+        db.commit()
+        cari = svc.get_list(limit=50, search=anak.nomor_transaksi, sembunyikan_tambahan=True)
+        assert anak.nomor_transaksi in [r.nomor_transaksi for r in cari["data"]]
+        tanpa_cari = svc.get_list(limit=500, sembunyikan_tambahan=True)
+        assert anak.nomor_transaksi not in [r.nomor_transaksi for r in tanpa_cari["data"]]
     finally:
         _bersihkan(db, nomor)
         db.close()
