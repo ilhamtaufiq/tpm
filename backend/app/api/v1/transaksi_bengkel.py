@@ -46,11 +46,13 @@ def list_transaksi(
     sort_order: str = "desc",
     status_pengerjaan: Optional[str] = None,
     pembayaran: Optional[str] = None,
+    sembunyikan_tambahan: bool = Query(False, description="Sembunyikan nota tambahan posting bulanan (antrian)"),
 ):
 
     """Get list of workshop transactions with pagination and filters."""
     service = TransaksiBengkelService(db)
     return service.get_list(
+        sembunyikan_tambahan=sembunyikan_tambahan,
         skip=skip,
         limit=limit,
         search=search,

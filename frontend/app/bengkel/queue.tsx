@@ -158,6 +158,8 @@ export default function QueueScreen() {
         search: debouncedSearch || undefined,
         status_pengerjaan: queueWorkStatusFilter === 'ALL' ? 'ALL' : queueWorkStatusFilter.toUpperCase(),
         pembayaran: queuePaymentFilter,
+        // Nota tambahan posting bulanan bukan order baru; sembunyikan dari antrian.
+        sembunyikan_tambahan: true,
     }, { placeholderData: keepPreviousData });
 
     const { data: summary, refetch: refetchSummary } = useTransaksiBengkelSummary({
