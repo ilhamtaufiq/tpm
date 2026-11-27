@@ -407,7 +407,7 @@ def test_detail_nota_induk_memuat_nota_tambahan():
         db.close()
 
 
-def test_cari_nomor_nota_tambahan_di_antrian_tetap_muncul():
+def test_cari_nomor_nota_tambahan_di_antrian_tetap_disembunyikan():
     db = SessionLocal()
     nomor = []
     try:
@@ -420,7 +420,9 @@ def test_cari_nomor_nota_tambahan_di_antrian_tetap_muncul():
         db.get(TransaksiPenjualanBengkel, anak.id).induk_nomor = induk.nomor_transaksi
         db.commit()
         cari = svc.get_list(limit=50, search=anak.nomor_transaksi, sembunyikan_tambahan=True)
-        assert anak.nomor_transaksi in [r.nomor_transaksi for r in cari["data"]]
+        assert anak.nomor_transaksi not in [r.nomor_transaksi for r in cari["data"]]
+        cari_induk = svc.get_list(limit=50, search=induk.nomor_transaksi, sembunyikan_tambahan=True)
+        assert induk.nomor_transaksi in [r.nomor_transaksi for r in cari_induk["data"]]
         tanpa_cari = svc.get_list(limit=500, sembunyikan_tambahan=True)
         assert anak.nomor_transaksi not in [r.nomor_transaksi for r in tanpa_cari["data"]]
     finally:
