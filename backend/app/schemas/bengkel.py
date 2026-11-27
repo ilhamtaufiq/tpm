@@ -334,6 +334,7 @@ class DetailPartResponse(BaseModel):
     harga_beli: Decimal
     harga_jual: Decimal
     subtotal: Decimal
+    created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
@@ -347,6 +348,7 @@ class DetailServiceResponse(BaseModel):
     harga: Decimal
     qty: int
     subtotal: Decimal
+    created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

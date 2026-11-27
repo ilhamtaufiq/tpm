@@ -4,6 +4,7 @@ from typing import Optional, List, TYPE_CHECKING
 import enum
 
 from sqlalchemy import (
+    func,
     String,
     Text,
     Integer,
@@ -341,6 +342,8 @@ class DetailTransaksiSpareParts(Base):
     harga_beli: Mapped[Decimal] = mapped_column(Numeric(15, 2))  # HPP
     harga_jual: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     subtotal: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    # Tanggal item dicatat (input part). Dipertahankan saat nota diedit untuk item yang tidak berubah.
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
 
     # Relationships
     transaksi: Mapped["TransaksiPenjualanBengkel"] = relationship(
@@ -420,6 +423,8 @@ class DetailTransaksiServices(Base):
     harga: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     qty: Mapped[int] = mapped_column(Integer, default=1)
     subtotal: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    # Tanggal jasa dicatat. Dipertahankan saat nota diedit untuk jasa yang tidak berubah.
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
 
     # Relationships
     transaksi: Mapped["TransaksiPenjualanBengkel"] = relationship(

@@ -428,3 +428,35 @@ def test_cari_nomor_nota_tambahan_di_antrian_tetap_disembunyikan():
     finally:
         _bersihkan(db, nomor)
         db.close()
+
+
+def test_tanggal_input_item_dipertahankan_saat_edit():
+    """Item yang tidak berubah saat nota diedit mempertahankan tanggal inputnya; item baru mendapat tanggal baru."""
+    from datetime import datetime, timedelta
+
+    db = SessionLocal()
+    nomor = []
+    try:
+        sp = _sp(db)
+        svc = TransaksiBengkelService(db)
+        t = svc.create(_payload(sp, 1, jasa=[("Servis tanggal uji", "15000")]), user_id=None)
+        nomor.append(t.nomor_transaksi)
+        # Mundurkan tanggal input baris supaya perubahan terlihat
+        lama = (datetime.now() - timedelta(days=3)).replace(microsecond=0)
+        for d in db.get(TransaksiPenjualanBengkel, t.id).detail_parts:
+            d.created_at = lama
+        for d in db.get(TransaksiPenjualanBengkel, t.id).detail_services:
+            d.created_at = lama
+        db.commit()
+
+        # Edit tanpa mengubah item lama, sekaligus menambah jasa baru
+        svc.update(t.id, _payload(sp, 1, jasa=[("Servis tanggal uji", "15000"), ("Jasa baru uji", "9000")]), user_id=None)
+        db.expire_all()
+        hasil = db.get(TransaksiPenjualanBengkel, t.id)
+        lama_ketemu = [s for s in hasil.detail_services if s.nama_jasa == "Servis tanggal uji"]
+        baru_ketemu = [s for s in hasil.detail_services if s.nama_jasa == "Jasa baru uji"]
+        assert lama_ketemu and lama_ketemu[0].created_at == lama
+        assert baru_ketemu and baru_ketemu[0].created_at > lama
+    finally:
+        _bersihkan(db, nomor)
+        db.close()

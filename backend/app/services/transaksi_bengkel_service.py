@@ -127,6 +127,24 @@ def _terapkan_filter_antrian(query, status_pengerjaan: Optional[str], pembayaran
     return query
 
 
+def _ambil_created_lama(lama: list, spare_part_id: int, qty: Decimal, harga_jual: Decimal):
+    """Ambil tanggal input item lama yang identik (part, qty, harga jual); tiap baris dipakai sekali."""
+    for i, (sp_id, q, hj, tgl) in enumerate(lama):
+        if sp_id == spare_part_id and q == qty and hj == harga_jual:
+            lama.pop(i)
+            return tgl
+    return None
+
+
+def _ambil_created_jasa_lama(lama: list, nama: str, harga: Decimal, qty: int):
+    """Ambil tanggal input jasa lama yang identik (nama, harga, qty); tiap baris dipakai sekali."""
+    for i, (n, h, q, tgl) in enumerate(lama):
+        if n == nama and h == harga and q == qty:
+            lama.pop(i)
+            return tgl
+    return None
+
+
 class TransaksiBengkelService:
     """Service for workshop sales transactions."""
 
@@ -1236,6 +1254,15 @@ class TransaksiBengkelService:
         harga_beli_historis = {
             d.spare_part_id: Decimal(d.harga_beli) for d in transaksi.detail_parts
         }
+        # Tanggal input item lama: dipertahankan untuk item yang tidak berubah (qty/harga/jasa sama).
+        created_part_lama = [
+            [d.spare_part_id, Decimal(d.qty), Decimal(d.harga_jual), d.created_at]
+            for d in transaksi.detail_parts
+        ]
+        created_jasa_lama = [
+            [d.nama_jasa, Decimal(d.harga), int(d.qty), d.created_at]
+            for d in transaksi.detail_services
+        ]
 
         # 2. Delete old details
         self.db.query(DetailTransaksiSpareParts).filter(DetailTransaksiSpareParts.transaksi_id == transaksi_id).delete(synchronize_session=False)
@@ -1272,6 +1299,7 @@ class TransaksiBengkelService:
             # biaya historis pada nota ini untuk dipertahankan.
             harga_beli = harga_beli_historis.get(item.spare_part_id, sp.harga_beli)
             hpp_parts += harga_beli * item.qty
+            tgl_item = _ambil_created_lama(created_part_lama, item.spare_part_id, Decimal(item.qty), Decimal(harga_jual))
             detail_parts_records.append(
                 DetailTransaksiSpareParts(
                     transaksi_id=transaksi.id,
@@ -1280,6 +1308,7 @@ class TransaksiBengkelService:
                     harga_beli=harga_beli,
                     harga_jual=harga_jual,
                     subtotal=subtotal,
+                    **({"created_at": tgl_item} if tgl_item else {}),
                 )
             )
 
@@ -1289,6 +1318,7 @@ class TransaksiBengkelService:
         for item in data.detail_services:
             subtotal = item.harga * item.qty
             total_jasa += subtotal
+            tgl_jasa = _ambil_created_jasa_lama(created_jasa_lama, item.nama_jasa, Decimal(item.harga), int(item.qty))
             detail_services_records.append(
                 DetailTransaksiServices(
                     transaksi_id=transaksi.id,
@@ -1297,6 +1327,7 @@ class TransaksiBengkelService:
                     harga=item.harga,
                     qty=item.qty,
                     subtotal=subtotal,
+                    **({"created_at": tgl_jasa} if tgl_jasa else {}),
                 )
             )
 
@@ -1518,6 +1549,7 @@ class TransaksiBengkelService:
                         "qty": float(d.qty or 0),
                         "harga_jual": float(d.harga_jual or 0),
                         "subtotal": float(d.subtotal or 0),
+                        "created_at": d.created_at.isoformat() if d.created_at else None,
                     }
                     for d in a.detail_parts
                 ],
@@ -1527,6 +1559,7 @@ class TransaksiBengkelService:
                         "qty": s.qty,
                         "harga": float(s.harga or 0),
                         "subtotal": float(s.subtotal or 0),
+                        "created_at": s.created_at.isoformat() if s.created_at else None,
                     }
                     for s in a.detail_services
                 ],

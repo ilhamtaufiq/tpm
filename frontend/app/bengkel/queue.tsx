@@ -919,7 +919,7 @@ export default function QueueScreen() {
                                         <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{s.nama_jasa}</Typography>
-                                                <Typography variant="caption" className="text-textGray">Jasa</Typography>
+                                                <Typography variant="caption" className="text-textGray">Jasa{s.created_at ? ` • diinput ${formatDateTime(String(s.created_at))}` : ''}</Typography>
                                             </View>
                                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(s.harga)}</Typography>
                                         </View>
@@ -931,7 +931,7 @@ export default function QueueScreen() {
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>
                                                     {p.spare_part_nama || p.spare_part?.nama || 'Sparepart'}
                                                 </Typography>
-                                                <Typography variant="caption" className="text-textGray">Part x{formatQty(p.qty || 0)}</Typography>
+                                                <Typography variant="caption" className="text-textGray">Part x{formatQty(p.qty || 0)}{p.created_at ? ` • diinput ${formatDateTime(String(p.created_at))}` : ''}</Typography>
                                             </View>
                                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(p.subtotal || 0)}</Typography>
                                         </View>
