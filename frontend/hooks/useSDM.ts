@@ -258,6 +258,14 @@ export const useDeleteSlipGaji = () => {
 // =============================================
 export const usePayrollList = useSlipGajiList;
 export const usePayrollSummary = useSlipGajiWeeklySummary;
+
+export const useSlipGajiPeriodeSummary = (tanggalDari: string, tanggalSampai: string) => {
+    return useQuery({
+        queryKey: ['slip_gaji_periode', tanggalDari, tanggalSampai],
+        queryFn: () => sdmService.getSlipGajiPeriodeSummary(tanggalDari, tanggalSampai),
+        enabled: !!tanggalDari && !!tanggalSampai,
+    });
+};
 export const useCreatePayroll = useCreateBulkSlipGajiRange;
 export const useProcessPayrollPayment = useProcessSlipGajiPayment;
 export const useDeletePayroll = useDeleteSlipGaji;

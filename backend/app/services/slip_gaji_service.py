@@ -804,6 +804,41 @@ class SlipGajiService:
 
         return True
 
+    def get_summary_periode(self, tanggal_mulai: date, tanggal_akhir: date) -> Dict[str, Any]:
+        """Ringkasan slip untuk rentang tanggal bebas: slip yang rentangnya beririsan dengan periode."""
+        query = self.db.query(SlipGaji).filter(
+            SlipGaji.tanggal_mulai <= tanggal_akhir,
+            SlipGaji.tanggal_akhir >= tanggal_mulai,
+        )
+        total_slips = query.count()
+        aggregates = query.with_entities(
+            func.sum(SlipGaji.gaji_pokok).label("total_gaji_pokok"),
+            func.sum(SlipGaji.uang_lembur).label("total_uang_lembur"),
+            func.sum(SlipGaji.potongan_kasbon).label("total_potongan_kasbon"),
+            func.sum(SlipGaji.gaji_bersih).label("total_gaji_bersih"),
+        ).first()
+        paid_total = (
+            query.filter(SlipGaji.status == PaymentStatus.LUNAS)
+            .with_entities(func.sum(SlipGaji.gaji_bersih))
+            .scalar()
+        ) or Decimal("0")
+        unpaid_total = (
+            query.filter(SlipGaji.status != PaymentStatus.LUNAS)
+            .with_entities(func.sum(SlipGaji.gaji_bersih))
+            .scalar()
+        ) or Decimal("0")
+        return {
+            "tanggal_mulai": tanggal_mulai.isoformat(),
+            "tanggal_akhir": tanggal_akhir.isoformat(),
+            "total_karyawan": total_slips,
+            "total_gaji_pokok": float(aggregates.total_gaji_pokok or 0),
+            "total_uang_lembur": float(aggregates.total_uang_lembur or 0),
+            "total_potongan_kasbon": float(aggregates.total_potongan_kasbon or 0),
+            "total_gaji_bersih": float(aggregates.total_gaji_bersih or 0),
+            "total_dibayar": float(paid_total),
+            "total_belum_dibayar": float(unpaid_total),
+        }
+
     def get_weekly_summary(
         self,
         minggu: int,

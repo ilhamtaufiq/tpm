@@ -151,6 +151,24 @@ def list_slip_gaji(
     )
 
 
+@router.get("/summary-periode")
+def get_summary_periode(
+    db: DBSession,
+    current_user: ManagerUser,
+    tanggal_dari: str = Query(..., description="YYYY-MM-DD"),
+    tanggal_sampai: str = Query(..., description="YYYY-MM-DD"),
+):
+    """Ringkasan slip untuk rentang tanggal bebas."""
+    try:
+        mulai = datetime.strptime(tanggal_dari, "%Y-%m-%d").date()
+        akhir = datetime.strptime(tanggal_sampai, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Format tanggal harus YYYY-MM-DD")
+    if akhir < mulai:
+        raise HTTPException(status_code=400, detail="Tanggal selesai tidak boleh sebelum tanggal mulai")
+    return SlipGajiService(db).get_summary_periode(mulai, akhir)
+
+
 @router.get("/summary/{tahun}/{minggu}")
 def get_weekly_summary(
     tahun: int,

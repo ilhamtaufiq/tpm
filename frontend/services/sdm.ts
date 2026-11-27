@@ -503,6 +503,13 @@ export const sdmService = {
         return response.data;
     },
 
+    getSlipGajiPeriodeSummary: async (tanggalDari: string, tanggalSampai: string): Promise<any> => {
+        const response = await api.get('/slip-gaji/summary-periode', {
+            params: { tanggal_dari: tanggalDari, tanggal_sampai: tanggalSampai },
+        });
+        return response.data;
+    },
+
     getSlipGajiPreview: async (tahun: number, minggu: number): Promise<SlipGajiPreview> => {
         const response = await api.get(`/slip-gaji/preview/${tahun}/${minggu}`);
         return response.data;
