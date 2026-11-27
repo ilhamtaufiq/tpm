@@ -25,7 +25,7 @@ import { Calendar as RNCalendar } from 'react-native-calendars';
 import { useQuery } from '@tanstack/react-query';
 import { SlipGaji, SlipGajiPreviewItem, PaymentStatus, sdmService } from '../../services/sdm';
 import { formatCurrency, formatDate, formatNumber, parseNumber, getTodayString } from '../../utils/format';
-import { useSlipGajiListInfinite, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange, useVoidSlipGajiPayment, useDeletePayroll } from '../../hooks/useSDM';
+import { useSlipGajiListInfinite, useSlipGajiPeriodeSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange, useVoidSlipGajiPayment, useDeletePayroll } from '../../hooks/useSDM';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -35,7 +35,7 @@ import { useUIStore, findPaletteBorder } from '../../store/useUIStore';
 
 type RiwayatFilter = 'MINGGU' | 'BULAN' | 'TAHUN' | 'SEMUA';
 const RIWAYAT_FILTER_LABEL: Record<RiwayatFilter, string> = {
-    MINGGU: 'Minggu',
+    MINGGU: 'Periode',
     BULAN: 'Bulan',
     TAHUN: 'Tahun',
     SEMUA: 'Semua',
@@ -163,7 +163,8 @@ export default function SlipGajiScreen() {
     const riwayatParams = useMemo(() => {
         const acuan = new Date(startDate);
         if (riwayatFilter === 'MINGGU') {
-            return { limit: 100, periode_minggu: getWeekNumber(acuan), periode_tahun: acuan.getFullYear() };
+            // Riwayat mengikuti rentang tanggal yang dipilih.
+            return { limit: 100, periode_dari: startDate, periode_sampai: endDate };
         }
         if (riwayatFilter === 'BULAN') {
             const awal = new Date(acuan.getFullYear(), acuan.getMonth(), 1);
@@ -174,7 +175,7 @@ export default function SlipGajiScreen() {
             return { limit: 100, periode_tahun: acuan.getFullYear() };
         }
         return { limit: 100 };
-    }, [riwayatFilter, startDate]);
+    }, [riwayatFilter, startDate, endDate]);
     const {
         data: listData,
         isLoading: isLoadingList,
@@ -185,9 +186,10 @@ export default function SlipGajiScreen() {
     } = useSlipGajiListInfinite(riwayatParams);
 
     // 2. Summary
-    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePayrollSummary(
-        new Date(startDate).getFullYear(),
-        getWeekNumber(new Date(startDate))
+    // Ringkasan mengikuti rentang tanggal yang dipilih (bukan nomor minggu).
+    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = useSlipGajiPeriodeSummary(
+        startDate,
+        endDate
     );
 
     // Fetch attendance list for the selected slip details
@@ -862,7 +864,7 @@ export default function SlipGajiScreen() {
                                                     <CheckCircle2 size={40} color={findPaletteBorder(themeColors)} />
                                                 </View>
                                                 <Typography className="text-textGray text-center font-medium">
-                                                    Semua karyawan minggu ini sudah diproses.
+                                                    Semua karyawan di periode ini sudah diproses.
                                                 </Typography>
                                             </>
                                         )}
@@ -883,10 +885,10 @@ export default function SlipGajiScreen() {
                                         {summary && (
                                             <View className="bg-surface rounded-3xl p-4 mb-4 border border-transparent shadow-sm">
                                                 <Typography className="text-textGray text-[10px] font-black uppercase tracking-wider">
-                                                    Ringkasan minggu {summary.periode_minggu} · {formatDate(summary.tanggal_mulai)} – {formatDate(summary.tanggal_akhir)}
+                                                    Ringkasan periode · {formatDate(summary.tanggal_mulai)} – {formatDate(summary.tanggal_akhir)}
                                                 </Typography>
                                                 {summary.total_karyawan === 0 ? (
-                                                    <Typography className="text-textGray text-sm mt-2">Belum ada slip di minggu ini.</Typography>
+                                                    <Typography className="text-textGray text-sm mt-2">Belum ada slip di periode ini.</Typography>
                                                 ) : (
                                                     <View className="flex-row mt-3">
                                                         <View className="flex-1 mr-2">

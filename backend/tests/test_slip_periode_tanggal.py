@@ -82,3 +82,23 @@ def test_dua_slip_minggu_sama_boleh_disimpan_di_database():
             db.delete(s)
         db.commit()
         db.close()
+
+
+def test_ringkasan_periode_mengikuti_rentang_tanggal():
+    db = SessionLocal()
+    slips = []
+    try:
+        k = _karyawan(db)
+        slips.append(_slip(db, k, date(2026, 11, 16), date(2026, 11, 21), "UJI-TGL-F"))
+        slips.append(_slip(db, k, date(2026, 11, 22), date(2026, 11, 26), "UJI-TGL-G"))
+        svc = SlipGajiService(db)
+        ringkas = svc.get_summary_periode(date(2026, 11, 21), date(2026, 11, 26))
+        # 16–21 beririsan di 21; 22–26 juga: keduanya masuk ringkasan
+        assert ringkas["total_karyawan"] >= 2
+        kosong = svc.get_summary_periode(date(2001, 1, 1), date(2001, 1, 2))
+        assert kosong["total_karyawan"] == 0
+    finally:
+        for s in slips:
+            db.delete(s)
+        db.commit()
+        db.close()
