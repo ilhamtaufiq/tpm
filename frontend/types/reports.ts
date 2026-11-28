@@ -44,7 +44,13 @@ export interface NeracaAsetTetap {
         kode: string;
         nama: string;
         harga_beli: number;
+        nilai_buku?: number;
+        akumulasi_penyusutan?: number;
+        penyusutan_per_bulan?: number;
+        sumber_aset?: string;
     }>;
+    akumulasi_penyusutan?: number;
+    beban_penyusutan_periode?: number;
 }
 
 export interface NeracaModal {

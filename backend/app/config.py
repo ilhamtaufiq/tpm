@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Application
     app_name: str = "TPM Backend"
     app_version: str = "2.3.0"
+    # Posting bulanan (kunci periode nota bengkel). False = fitur nonaktif: tidak ada penguncian,
+    # tombol posting disembunyikan. Data nota tambahan yang sudah ada tetap dibaca.
+    posting_bulanan_aktif: bool = False
     debug: bool = True
     environment: str = "development"
     frontend_url: str = "http://localhost:3000"

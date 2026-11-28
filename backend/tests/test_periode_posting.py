@@ -17,6 +17,14 @@ from app.utils.constants import PaymentMethod, WorkshopStatus
 TAHUN_UJI, BULAN_UJI = 2001, 3  # bulan lampau yang tidak dipakai data nyata
 
 
+@pytest.fixture(autouse=True)
+def _posting_aktif_untuk_tes(monkeypatch):
+    """Fitur posting nonaktif secara default; tes ini menguji perilakunya, jadi diaktifkan selama tes."""
+    from app.config import settings
+    monkeypatch.setattr(settings, "posting_bulanan_aktif", True)
+    yield
+
+
 def _sp(db):
     sp = db.query(SparePart).filter(SparePart.deleted_at.is_(None), SparePart.stok > 10).first()
     if sp is None:

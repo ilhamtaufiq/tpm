@@ -104,6 +104,13 @@ export default function QueueScreen() {
     const { data: selectedAntrianDetail } = useTransaksiBengkelDetail(selectedItem?.id ?? null, {
         enabled: detailModalOpen && !!selectedItem?.id,
     });
+    // Rincian Item: yang lama di atas, yang terbaru di paling bawah. Item tanpa tanggal input (data lama) di atas.
+    const urutTerbaru = (arr: any[]) =>
+        [...arr].sort((a, b) => {
+            const ta = a?.created_at ? new Date(a.created_at).getTime() : 0;
+            const tb = b?.created_at ? new Date(b.created_at).getTime() : 0;
+            return ta - tb;
+        });
     // Item nota tambahan ikut ditampilkan di Rincian Item nota induknya.
     const itemTambahanParts = (selectedAntrianDetail?.nota_tambahan ?? []).flatMap((anak: any) =>
         (anak.detail_parts ?? []).map((p: any) => ({ ...p, _dari: anak.nomor_transaksi })));
@@ -915,7 +922,7 @@ export default function QueueScreen() {
                                         </Typography>
                                     </View>
 
-                                    {[...((selectedItem?.detail_services) || []), ...itemTambahanJasa].map((s: any, idx: number) => (
+                                    {urutTerbaru([...((selectedItem?.detail_services) || []), ...itemTambahanJasa]).map((s: any, idx: number) => (
                                         <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{s.nama_jasa}</Typography>
@@ -925,7 +932,7 @@ export default function QueueScreen() {
                                         </View>
                                     ))}
 
-                                    {[...((selectedItem?.detail_parts) || []), ...itemTambahanParts].map((p: any, idx: number) => (
+                                    {urutTerbaru([...((selectedItem?.detail_parts) || []), ...itemTambahanParts]).map((p: any, idx: number) => (
                                         <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-transparent">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>

@@ -278,7 +278,12 @@ export default function NeracaScreen() {
                     <View className="w-full pl-2">
                         {at.detail_aset && at.detail_aset.length > 0 ? (
                             at.detail_aset.map((aset: any, index: number) => (
-                                <FinancialRow key={index} label={`${aset.kode} - ${aset.nama}`} value={aset.harga_beli} small />
+                                <FinancialRow
+                                    key={index}
+                                    label={`${aset.kode} - ${aset.nama}`}
+                                    value={aset.nilai_buku ?? aset.harga_beli}
+                                    small
+                                />
                             ))
                         ) : (
                             <View className="py-4 items-center">
@@ -286,7 +291,7 @@ export default function NeracaScreen() {
                             </View>
                         )}
                         <View className="h-[1px] bg-background w-full my-3" />
-                        <FinancialRow label="Total Aktiva Tetap" value={at.total_aktiva_tetap} bold color="text-indigo-700" />
+                        <FinancialRow label="Total Aktiva Tetap (Nilai Buku)" value={at.total_aktiva_tetap} bold color="text-indigo-700" />
                     </View>
                 </View>
             </Card>
