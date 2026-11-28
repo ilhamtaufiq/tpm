@@ -407,14 +407,29 @@ class BaseReportService:
             Aset.status == AssetStatus.AKTIF,
             Aset.tanggal_beli <= tanggal_sampai
         ).all()
+        # Aset yang sudah dijual tetap ikut basis historis (modal) dan beban penyusutan
+        # sampai tanggal jualnya; laba/rugi pelepasan diakui di periode penjualan.
+        aset_historis_list = self.db.query(Aset).filter(
+            Aset.status.in_([AssetStatus.AKTIF, AssetStatus.DIJUAL]),
+            Aset.tanggal_beli <= tanggal_sampai
+        ).all()
         # Penyusutan hanya diakui sampai hari ini (periode mendatang tidak punya beban tercatat).
         dep_sampai = min(tanggal_sampai, get_jakarta_date())
-        aset_tetap_gross = float(sum(Decimal(a.harga_beli or 0) for a in aset_aktif_list))
+        aset_tetap_gross = float(sum(Decimal(a.harga_beli or 0) for a in aset_historis_list))
         akumulasi_aset = float(sum(a.akumulasi_pada(dep_sampai) for a in aset_aktif_list))
-        aset_tetap = aset_tetap_gross - akumulasi_aset
+        aset_tetap = float(sum(Decimal(a.harga_beli or 0) for a in aset_aktif_list)) - akumulasi_aset
         beban_penyusutan = float(sum(
             a.akumulasi_pada(dep_sampai) - a.akumulasi_pada(min(tanggal_dari - timedelta(days=1), dep_sampai))
-            for a in aset_aktif_list
+            for a in aset_historis_list
+        ))
+        # Laba/rugi pelepasan aset yang dijual dalam periode: harga jual - nilai buku pada tanggal jual
+        laba_pelepasan_aset = float(sum(
+            Decimal(a.harga_jual or 0) - (Decimal(a.harga_beli or 0) - a.akumulasi_pada(a.tanggal_jual))
+            for a in self.db.query(Aset).filter(
+                Aset.status == AssetStatus.DIJUAL,
+                Aset.tanggal_jual >= tanggal_dari,
+                Aset.tanggal_jual <= tanggal_sampai,
+            ).all()
         ))
         
         # Part Stock
@@ -1113,6 +1128,7 @@ class BaseReportService:
             - gaji_pokok
             - gaji_lembur
             - beban_penyusutan
+            + laba_pelepasan_aset
         )
 
         # Revaluation reserve for spare part harga_beli changes.
@@ -1251,6 +1267,7 @@ class BaseReportService:
                 "tetap_gross": aset_tetap_gross,
                 "akumulasi_penyusutan": akumulasi_aset,
                 "beban_penyusutan": beban_penyusutan,
+                "laba_pelepasan_aset": laba_pelepasan_aset,
                 "persediaan_part": part_stock,
                 "persediaan_mobil": {
                     "total": car_stock,

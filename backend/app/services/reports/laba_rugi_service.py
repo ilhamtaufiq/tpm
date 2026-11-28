@@ -112,7 +112,9 @@ class LabaRugiService(BaseReportService):
         # `internal_jbm_profit` is kept as an informational trace only.
         # Beban penyusutan aset tetap (straight-line) diperlakukan sebagai beban pusat.
         beban_penyusutan = float(data.get("assets", {}).get("beban_penyusutan", 0) or 0)
-        total_laba_operasional = (b_laba_bersih + ja_laba_bersih + m_laba_bersih) - overhead_pusat - beban_penyusutan
+        # Laba/rugi pelepasan aset tetap (aset dijual periode ini) masuk laba operasional.
+        laba_pelepasan = float(data.get("assets", {}).get("laba_pelepasan_aset", 0) or 0)
+        total_laba_operasional = (b_laba_bersih + ja_laba_bersih + m_laba_bersih) - overhead_pusat - beban_penyusutan + laba_pelepasan
         laba_bersih_akhir = total_laba_operasional - prive
 
         # Arus kas per jenis akun selama periode (info, bukan komponen laba).
@@ -186,6 +188,7 @@ class LabaRugiService(BaseReportService):
             },
             "summary": {
                 "beban_penyusutan": beban_penyusutan,
+                "laba_pelepasan_aset": laba_pelepasan,
                 "total_revenue": total_revenue,
                 "total_hpp": total_hpp,
                 "total_laba_kotor": total_laba_kotor,

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.services.asset_service import AssetService
-from app.schemas.keuangan import AssetCreate, AssetUpdate, AssetResponse, AssetList
+from app.schemas.keuangan import AssetCreate, AssetUpdate, AssetResponse, AssetList, AssetJualRequest
 from app.utils.constants import AssetStatus
 
 router = APIRouter(prefix="/assets", tags=["Assets"])
@@ -57,6 +57,28 @@ def get_asset(
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
     return asset
+
+
+@router.post("/{id}/jual")
+def jual_asset(
+    id: int,
+    data: AssetJualRequest,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Jual / lepas aset tetap. Kas masuk sebesar harga jual; laba atau rugi pelepasan dicatat di periode penjualan."""
+    service = AssetService(db)
+    hasil = service.jual(id, data.tanggal_jual, data.harga_jual, data.metode, data.kas_jenis, current_user.id)
+    aset = hasil["aset"]
+    return {
+        "id": aset.id,
+        "kode": aset.kode,
+        "status": aset.status.value if hasattr(aset.status, "value") else aset.status,
+        "tanggal_jual": aset.tanggal_jual.isoformat(),
+        "harga_jual": float(aset.harga_jual or 0),
+        "nilai_buku": float(hasil["nilai_buku"]),
+        "laba_rugi_pelepasan": float(hasil["laba_rugi_pelepasan"]),
+    }
 
 
 @router.put("/{id}", response_model=AssetResponse)

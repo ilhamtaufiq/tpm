@@ -281,6 +281,51 @@ class AssetService:
         self.db.refresh(db_obj)
         return db_obj
 
+    def jual(self, id: int, tanggal_jual, harga_jual, metode: PaymentMethod, kas_jenis, user_id: Optional[int]) -> dict:
+        """Lepas (jual) aset tetap: status DIJUAL, kas masuk sebesar harga jual, selisih
+        terhadap nilai buku dicatat sebagai laba/rugi pelepasan di periode penjualan."""
+        from app.services.kas_bank_integration import create_kas_entry
+        aset = self.db.get(Aset, id)
+        if aset is None:
+            raise HTTPException(http_status.HTTP_404_NOT_FOUND, "Aset tidak ditemukan")
+        if aset.status != AssetStatus.AKTIF:
+            raise HTTPException(http_status.HTTP_409_CONFLICT, "Hanya aset yang masih aktif bisa dijual")
+        if tanggal_jual < aset.tanggal_beli:
+            raise HTTPException(http_status.HTTP_400_BAD_REQUEST, "Tanggal jual tidak boleh sebelum tanggal beli")
+        if tanggal_jual > get_jakarta_date():
+            raise HTTPException(http_status.HTTP_400_BAD_REQUEST, "Tanggal jual tidak boleh di masa depan")
+        harga = Decimal(harga_jual or 0)
+        if harga < 0:
+            raise HTTPException(http_status.HTTP_400_BAD_REQUEST, "Harga jual tidak boleh negatif")
+        if harga > 0 and metode not in (PaymentMethod.TUNAI, PaymentMethod.TRANSFER):
+            raise HTTPException(http_status.HTTP_400_BAD_REQUEST, "Metode pembayaran harus TUNAI atau TRANSFER")
+        nilai_buku = Decimal(aset.harga_beli or 0) - aset.akumulasi_pada(tanggal_jual)
+        try:
+            aset.status = AssetStatus.DIJUAL
+            aset.tanggal_jual = tanggal_jual
+            aset.harga_jual = harga
+            if harga > 0:
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=tanggal_jual,
+                    tipe=KasBankType.MASUK,
+                    nominal=harga,
+                    sumber=KasBankSource.ASET,
+                    metode_bayar=metode,
+                    referensi_id=aset.id,
+                    nomor_referensi=aset.kode,
+                    keterangan=f"Penjualan aset {aset.kode} - {aset.nama}",
+                    user_id=user_id,
+                    kas_jenis=kas_jenis,
+                    commit=False,
+                )
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
+        self.db.refresh(aset)
+        return {"aset": aset, "nilai_buku": nilai_buku, "laba_rugi_pelepasan": harga - nilai_buku}
+
     def delete(self, id: int) -> bool:
         """Hapus aset. Kas pembelian dibalik dengan jurnal [VOID]; hutang yang
         belum dibayar ikut dihapus. Hutang yang sudah dicicil -> tolak."""

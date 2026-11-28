@@ -376,6 +376,9 @@ class Aset(Base, TimestampMixin):
     # Asal aset: MANUAL (input biasa), ARMADA (unit jasa angkut), MOBIL (unit JB Mobil).
     sumber_aset: Mapped[str] = mapped_column(String(10), default="MANUAL", server_default="MANUAL")
     referensi_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # Pelepasan (aset dijual): tanggal dan harga jual. Penyusutan berhenti di tanggal ini.
+    tanggal_jual: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    harga_jual: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 2), nullable=True)
     created_by: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id"),
         nullable=True,
@@ -401,6 +404,8 @@ class Aset(Base, TimestampMixin):
         as_of = as_of or get_jakarta_date()
         if not self.tanggal_beli or as_of < self.tanggal_beli:
             return Decimal("0")
+        if self.tanggal_jual and as_of > self.tanggal_jual:
+            as_of = self.tanggal_jual  # penyusutan berhenti saat dijual
         m_beli = self.tanggal_beli.year * 12 + self.tanggal_beli.month
         m_as_of = as_of.year * 12 + as_of.month
         bulan_berjalan = min(m_as_of - m_beli + 1, int(self.umur_ekonomis or 0) * 12)

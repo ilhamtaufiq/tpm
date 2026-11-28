@@ -398,7 +398,7 @@ class AssetCreate(BaseModel):
     sumber_dana: Optional[str] = Field(None, pattern="^(KAS|HUTANG|SETORAN_MODAL)$")
     # Asal aset. ARMADA: unit jasa angkut yang didaftarkan sebagai aset tetap (harga wajib diisi,
     # dicatat sebagai setoran modal non-kas). MANUAL: input biasa.
-    sumber_aset: str = Field("MANUAL", pattern="^(MANUAL|ARMADA|MOBIL)$")
+    sumber_aset: str = Field("MANUAL", pattern="^(MANUAL|MOBIL)$")
     referensi_id: Optional[int] = None
     payments: List["AssetPaymentItem"] = []
     supplier_id: Optional[int] = None
@@ -448,9 +448,20 @@ class AssetResponse(BaseModel):
     penyusutan_per_bulan: Optional[Decimal] = None
     akumulasi_penyusutan: Optional[Decimal] = None
     nilai_buku: Optional[Decimal] = None
+    tanggal_jual: Optional[date] = None
+    harga_jual: Optional[Decimal] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class AssetJualRequest(BaseModel):
+    """Pelepasan aset: jual dengan kas, atau nominal 0 untuk dihapus (hilang/rusak)."""
+
+    tanggal_jual: TanggalTransaksi
+    harga_jual: Decimal = Field(0, ge=0)
+    metode: PaymentMethod = PaymentMethod.TUNAI
+    kas_jenis: Optional[KasBankJenis] = None
 
 
 class AssetList(BaseModel):

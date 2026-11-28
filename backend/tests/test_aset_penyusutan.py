@@ -65,54 +65,6 @@ def test_beban_penyusutan_masuk_laba_rugi_periode_november():
         db.close()
 
 
-def test_armada_jadi_aset_setoran_modal_dengan_harga_manual():
-    db = SessionLocal()
-    armada = None
-    aset_id = None
-    try:
-        armada = ArmadaJasaAngkut(nama="Uji Armada Aset", nopol="UJI-AS-1", jenis="Uji")
-        db.add(armada)
-        db.commit()
-        svc = AssetService(db)
-        obj = AssetCreate(
-            tanggal_beli=date(2026, 11, 1), nama="Uji Armada Aset", kategori=AssetCategory.KENDARAAN,
-            harga_beli=Decimal("150000000"), umur_ekonomis=5, nilai_residu=Decimal("0"),
-            sumber_aset="ARMADA", referensi_id=armada.id,
-        )
-        hasil = svc.create(obj, user_id=None)
-        aset_id = hasil.id
-        assert hasil.sumber_aset == "ARMADA"
-        assert hasil.referensi_id == armada.id
-        assert hasil.sumber_dana == "SETORAN_MODAL"
-        assert hasil.harga_beli == Decimal("150000000")
-    finally:
-        if aset_id:
-            db.query(Aset).filter(Aset.id == aset_id).delete(synchronize_session=False)
-        if armada is not None:
-            db.delete(armada)
-        db.commit()
-        db.close()
-
-
-def test_armada_tanpa_harga_ditolak():
-    db = SessionLocal()
-    armada = None
-    try:
-        armada = ArmadaJasaAngkut(nama="Uji Armada Tanpa Harga", nopol="UJI-AS-2", jenis="Uji")
-        db.add(armada)
-        db.commit()
-        with pytest.raises(Exception):
-            AssetCreate(
-                tanggal_beli=date(2026, 11, 1), nama="Uji", harga_beli=Decimal("0"), sumber_aset="ARMADA",
-                referensi_id=armada.id,
-            )
-    finally:
-        if armada is not None:
-            db.delete(armada)
-            db.commit()
-        db.close()
-
-
 def test_unit_mobil_tanpa_id_ditolak_404():
     from fastapi import HTTPException
     db = SessionLocal()
@@ -177,31 +129,41 @@ def test_unit_mobil_dipindah_keluar_stok_tanpa_penjualan():
         db.close()
 
 
-def test_armada_tidak_bisa_didaftarkan_dua_kali():
-    from fastapi import HTTPException
+def test_jual_aset_laba_rugi_dan_neraca_seimbang():
+    """Aset dijual: kas masuk, status DIJUAL, penyusutan berhenti, laba/rugi pelepasan = harga jual - nilai buku."""
+    from datetime import timedelta
+    from app.utils.helpers import get_jakarta_date
+    from app.services.reports.neraca_service import NeracaService
+    from app.services.reports.laba_rugi_service import LabaRugiService
+    from app.models.keuangan import KasBank
+    from app.utils.constants import KasBankSource, PaymentMethod, KasBankJenis
     db = SessionLocal()
-    armada = None
     aset_id = None
     try:
-        armada = ArmadaJasaAngkut(nama="Uji Armada Ganda", nopol="UJI-AS-3", jenis="Uji")
-        db.add(armada)
-        db.commit()
+        hari = get_jakarta_date()
+        beli = hari - timedelta(days=60)
         svc = AssetService(db)
-        pertama = svc.create(AssetCreate(
-            tanggal_beli=date(2026, 11, 1), nama="Uji Armada Ganda", harga_beli=Decimal("1000000"),
-            sumber_aset="ARMADA", referensi_id=armada.id,
-        ), user_id=None)
-        aset_id = pertama.id
-        with pytest.raises(HTTPException) as exc:
-            svc.create(AssetCreate(
-                tanggal_beli=date(2026, 11, 2), nama="Uji Armada Ganda 2", harga_beli=Decimal("1000000"),
-                sumber_aset="ARMADA", referensi_id=armada.id,
-            ), user_id=None)
-        assert exc.value.status_code == 409
+        a = svc.create(AssetCreate(tanggal_beli=beli, nama="Uji jual aset", kategori=AssetCategory.PERALATAN,
+                                   harga_beli=Decimal("12000000"), umur_ekonomis=1, nilai_residu=Decimal("0"),
+                                   sumber_dana="SETORAN_MODAL"), user_id=None)
+        aset_id = a.id
+        jual_tgl = hari - timedelta(days=30)
+        nb = Decimal("12000000") - a.akumulasi_pada(jual_tgl)
+        hasil = svc.jual(aset_id, jual_tgl, Decimal("5000000"), PaymentMethod.TUNAI, KasBankJenis.KAS_UTAMA, None)
+        db.refresh(a)
+        assert a.status.value == "DIJUAL" and a.tanggal_jual == jual_tgl
+        assert hasil["laba_rugi_pelepasan"] == Decimal("5000000") - nb
+        assert a.akumulasi_pada(hari) == a.akumulasi_pada(jual_tgl)  # penyusutan berhenti
+        kas = db.query(KasBank).filter(KasBank.referensi_id == aset_id, KasBank.sumber == KasBankSource.ASET).all()
+        assert [float(k.nominal) for k in kas] == [5000000.0]
+        neraca = NeracaService(db).get_report(hari)
+        assert neraca["is_balanced"] is True
+        assert all(d["kode"] != a.kode for d in neraca["aktiva_tetap"]["detail_aset"])
+        lr = LabaRugiService(db).get_report(jual_tgl.replace(day=1), hari)
+        assert abs(lr["summary"]["laba_pelepasan_aset"] - float(hasil["laba_rugi_pelepasan"])) < 1
     finally:
         if aset_id:
+            db.query(KasBank).filter(KasBank.referensi_id == aset_id, KasBank.sumber == KasBankSource.ASET).delete(synchronize_session=False)
             db.query(Aset).filter(Aset.id == aset_id).delete(synchronize_session=False)
-        if armada is not None:
-            db.delete(armada)
         db.commit()
         db.close()

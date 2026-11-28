@@ -56,6 +56,7 @@ def test_rekap_laba_rugi_foot(db):
         - lr["total_hpp"]
         - lr["total_beban_operasional"]
         - lr["total_beban_umum"]
+        + lr.get("laba_pelepasan_aset", 0)
     )
     assert abs(rekap - lr["laba_operasional"]) < TOL, (
         f"rekap {rekap:,.0f} != laba_operasional {lr['laba_operasional']:,.0f}"
@@ -140,5 +141,6 @@ def test_tidak_ada_field_unit_yang_dijumlah_ganda(db):
         - lr["total_hpp"]
         - lr["total_beban_operasional"]
         - lr["total_beban_umum"]
+        + lr.get("laba_pelepasan_aset", 0)
         - lr["laba_operasional"]
     ) < TOL
