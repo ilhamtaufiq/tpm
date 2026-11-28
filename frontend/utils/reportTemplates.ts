@@ -108,7 +108,7 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
 
                 <tr class="section-title"><td colspan="2">II. AKTIVA TETAP</td></tr>
                 ${data.aktiva_tetap.detail_aset.map(aset => `
-                    <tr><td>${aset.nama}</td><td class="amount">${formatCurrency(aset.harga_beli)}</td></tr>
+                    <tr><td>${aset.nama}</td><td class="amount">${formatCurrency(aset.nilai_buku ?? aset.harga_beli)}</td></tr>
                 `).join('')}
                 <tr class="total-row"><td>TOTAL AKTIVA TETAP</td><td class="amount">${formatCurrency(data.aktiva_tetap.total_aktiva_tetap)}</td></tr>
                 <tr class="grand-total"><td>TOTAL AKTIVA</td><td class="amount">${formatCurrency(data.total_aktiva)}</td></tr>
