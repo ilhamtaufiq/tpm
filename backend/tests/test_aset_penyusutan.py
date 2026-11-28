@@ -175,3 +175,33 @@ def test_unit_mobil_dipindah_keluar_stok_tanpa_penjualan():
             mobil.tanggal_aset = None
         db.commit()
         db.close()
+
+
+def test_armada_tidak_bisa_didaftarkan_dua_kali():
+    from fastapi import HTTPException
+    db = SessionLocal()
+    armada = None
+    aset_id = None
+    try:
+        armada = ArmadaJasaAngkut(nama="Uji Armada Ganda", nopol="UJI-AS-3", jenis="Uji")
+        db.add(armada)
+        db.commit()
+        svc = AssetService(db)
+        pertama = svc.create(AssetCreate(
+            tanggal_beli=date(2026, 11, 1), nama="Uji Armada Ganda", harga_beli=Decimal("1000000"),
+            sumber_aset="ARMADA", referensi_id=armada.id,
+        ), user_id=None)
+        aset_id = pertama.id
+        with pytest.raises(HTTPException) as exc:
+            svc.create(AssetCreate(
+                tanggal_beli=date(2026, 11, 2), nama="Uji Armada Ganda 2", harga_beli=Decimal("1000000"),
+                sumber_aset="ARMADA", referensi_id=armada.id,
+            ), user_id=None)
+        assert exc.value.status_code == 409
+    finally:
+        if aset_id:
+            db.query(Aset).filter(Aset.id == aset_id).delete(synchronize_session=False)
+        if armada is not None:
+            db.delete(armada)
+        db.commit()
+        db.close()

@@ -124,6 +124,15 @@ class AssetService:
             armada = self.db.get(ArmadaJasaAngkut, obj_in.referensi_id) if obj_in.referensi_id else None
             if armada is None or armada.deleted_at is not None:
                 raise HTTPException(http_status.HTTP_404_NOT_FOUND, "Armada tidak ditemukan")
+            sudah_aset = self.db.query(Aset.id).filter(
+                Aset.sumber_aset == "ARMADA",
+                Aset.referensi_id == armada.id,
+            ).first()
+            if sudah_aset is not None:
+                raise HTTPException(
+                    http_status.HTTP_409_CONFLICT,
+                    "Armada ini sudah terdaftar sebagai aset tetap",
+                )
             if sumber_dana not in (None, "SETORAN_MODAL"):
                 raise HTTPException(
                     http_status.HTTP_400_BAD_REQUEST,
