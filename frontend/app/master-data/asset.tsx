@@ -386,6 +386,11 @@ export default function AssetScreen() {
                     <Typography className="text-textGray text-xs mb-2">{item.kategori} • {item.lokasi || 'Tanpa Lokasi'}</Typography>
 
                     <Typography weight="bold" className="text-primary text-sm">{formatCurrency(item.harga_beli)}</Typography>
+                    {item.penyusutan_per_bulan ? (
+                        <Typography className="text-textGray text-[11px] mt-1">
+                            Nilai buku {formatCurrency(item.nilai_buku ?? item.harga_beli)} • Penyusutan {formatCurrency(item.penyusutan_per_bulan)}/bulan
+                        </Typography>
+                    ) : null}
                 </View>
                 <View className="ml-2 w-8 h-8 rounded-full bg-background items-center justify-center">
                     <MoreVertical size={16} color={themeColors.textGray} />

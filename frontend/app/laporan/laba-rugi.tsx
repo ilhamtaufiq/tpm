@@ -353,6 +353,9 @@ export default function LabaRugiScreen() {
             </View>
 
             <View className="p-5 w-full">
+                {(reportData?.summary?.beban_penyusutan || 0) > 0 && (
+                    <FinancialRow label="Beban Penyusutan Aset" value={reportData?.summary?.beban_penyusutan || 0} isNegative />
+                )}
                 <FinancialRow label="Total Beban Operasional Pusat" value={reportData?.summary?.total_beban_umum || 0} isNegative bold large color="text-textMain" />
                 {(reportData?.summary?.internal_profit_elimination || 0) > 0 && (
                     <FinancialRow
