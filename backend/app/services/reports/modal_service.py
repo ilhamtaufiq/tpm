@@ -1,4 +1,5 @@
 from app.utils.constants import AssetStatus
+from app.models.mobil import stok_pada
 from app.utils.constants import CarStatus
 from datetime import date, timedelta
 from typing import Dict, Any
@@ -564,11 +565,14 @@ class ModalService(BaseReportService):
         lembur = float(bp.get("lembur", 0))
         
         # Breakdown Beban Operasional
+        # Beban penyusutan aset tetap (straight-line) ikut beban umum periode ini.
+        beban_penyusutan = float(data_period.get("assets", {}).get("beban_penyusutan", 0) or 0)
         ops_umum = (
             float(bp.get("common_expenses", 0)) +
             float(data_period.get("admin_fees_unrecorded", 0)) +
             float(data_period.get("ja_untracked_gap", 0)) +
-            float(data_period.get("manual_hutang_non_pinjaman", 0))
+            float(data_period.get("manual_hutang_non_pinjaman", 0)) +
+            beban_penyusutan
         )
         ops_bengkel = float(bp.get("total_expenses", 0))
         # Mobil Breakdown: Only general overhead.
@@ -1111,10 +1115,7 @@ class ModalService(BaseReportService):
         # 1. Base Purchase Price
         price_q = self.db.query(func.sum(Mobil.harga_beli)).filter(
             Mobil.tanggal_masuk <= as_of,
-            or_(
-                Mobil.tanggal_terjual.is_(None),
-                Mobil.tanggal_terjual > as_of
-            ),
+            stok_pada(as_of),
             Mobil.deleted_at.is_(None)
         )
         total_price = float(price_q.scalar() or 0)
@@ -1123,10 +1124,7 @@ class ModalService(BaseReportService):
         # We include all costs because internal piutang is eliminated in consolidated report
         prep_q = self.db.query(func.sum(MobilBiayaLainnya.jumlah)).join(Mobil).filter(
             Mobil.tanggal_masuk <= as_of,
-            or_(
-                Mobil.tanggal_terjual.is_(None),
-                Mobil.tanggal_terjual > as_of
-            ),
+            stok_pada(as_of),
             MobilBiayaLainnya.tanggal <= as_of
         )
         total_prep = float(prep_q.scalar() or 0)
@@ -1138,7 +1136,7 @@ class ModalService(BaseReportService):
             TransaksiPenjualanBengkel.mobil_id.in_(
                 self.db.query(Mobil.id).filter(
                     Mobil.tanggal_masuk <= as_of,
-                    or_(Mobil.tanggal_terjual.is_(None), Mobil.tanggal_terjual > as_of),
+                    stok_pada(as_of),
                     Mobil.deleted_at.is_(None)
                 )
             ),

@@ -236,6 +236,11 @@ class PenjualanMobilService:
 
         # Validate car
         mobil = self._validate_mobil(data.mobil_id)
+        if mobil.tanggal_aset:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Unit ini sudah dipindah ke aset tetap, tidak bisa dijual",
+            )
 
         # Validate customer if provided
         if data.customer_id:

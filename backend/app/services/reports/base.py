@@ -1,8 +1,10 @@
 from app.utils.constants import HutangSource, AssetStatus
+from app.models.mobil import stok_pada
 from app.models import PembayaranHutang
 from app.services.pembelian_part_service import PembelianPartService
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from app.utils.helpers import get_jakarta_date
 from typing import Optional, Dict, Any, List
 from sqlalchemy import func, or_, and_, case
 from sqlalchemy.orm import Session
@@ -399,10 +401,21 @@ class BaseReportService:
 
 
         # Assets & Stock (Snapshot as of tanggal_sampai)
-        aset_tetap = float(self.db.query(func.sum(Aset.harga_beli)).filter(
+        # Aset tetap disajikan NETO (harga beli - akumulasi penyusutan s/d tanggal_sampai).
+        # Beban penyusutan periode mengurangi laba ditahan (lihat retained_earnings).
+        aset_aktif_list = self.db.query(Aset).filter(
             Aset.status == AssetStatus.AKTIF,
             Aset.tanggal_beli <= tanggal_sampai
-        ).scalar() or 0)
+        ).all()
+        # Penyusutan hanya diakui sampai hari ini (periode mendatang tidak punya beban tercatat).
+        dep_sampai = min(tanggal_sampai, get_jakarta_date())
+        aset_tetap_gross = float(sum(Decimal(a.harga_beli or 0) for a in aset_aktif_list))
+        akumulasi_aset = float(sum(a.akumulasi_pada(dep_sampai) for a in aset_aktif_list))
+        aset_tetap = aset_tetap_gross - akumulasi_aset
+        beban_penyusutan = float(sum(
+            a.akumulasi_pada(dep_sampai) - a.akumulasi_pada(min(tanggal_dari - timedelta(days=1), dep_sampai))
+            for a in aset_aktif_list
+        ))
         
         # Part Stock
         # Keep consistent with spare part stock valuation rules:
@@ -483,7 +496,7 @@ class BaseReportService:
         # Total Capitalized Value = Purchase Price + Prep + Repairs for unsold cars
         car_stock = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
             Mobil.tanggal_masuk <= tanggal_sampai,
-            or_(Mobil.tanggal_terjual.is_(None), Mobil.tanggal_terjual > tanggal_sampai),
+            stok_pada(tanggal_sampai),
             Mobil.deleted_at.is_(None)
         ).scalar() or 0)
         
@@ -491,7 +504,7 @@ class BaseReportService:
         # This ensures inventory valuation remains consistent even if we filter for a single day in the future.
         unsold_car_ids = [m.id for m in self.db.query(Mobil.id).filter(
             Mobil.tanggal_masuk <= tanggal_sampai,
-            or_(Mobil.tanggal_terjual.is_(None), Mobil.tanggal_terjual > tanggal_sampai),
+            stok_pada(tanggal_sampai),
             Mobil.deleted_at.is_(None)
         ).all()]
         
@@ -1099,6 +1112,7 @@ class BaseReportService:
             - total_operasional
             - gaji_pokok
             - gaji_lembur
+            - beban_penyusutan
         )
 
         # Revaluation reserve for spare part harga_beli changes.
@@ -1234,6 +1248,9 @@ class BaseReportService:
             "ja_untracked_gap": ja_untracked_gap,
             "assets": {
                 "tetap": aset_tetap,
+                "tetap_gross": aset_tetap_gross,
+                "akumulasi_penyusutan": akumulasi_aset,
+                "beban_penyusutan": beban_penyusutan,
                 "persediaan_part": part_stock,
                 "persediaan_mobil": {
                     "total": car_stock,

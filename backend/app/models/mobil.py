@@ -86,6 +86,9 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
     )
     tanggal_masuk: Mapped[date] = mapped_column(Date)
     tanggal_terjual: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    # Unit dipindah ke aset tetap (bukan terjual). Keluar dari stok mulai tanggal ini,
+    # tanpa dihitung sebagai penjualan (tidak ada pendapatan/HPP penjualan).
+    tanggal_aset: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_by: Mapped[Optional[int]] = mapped_column(
@@ -401,3 +404,13 @@ class InvestorWithdrawal(Base, TimestampMixin):
     )
 
     mobil: Mapped["Mobil"] = relationship(back_populates="penarikan_dana")
+
+
+def stok_pada(as_of: date):
+    """Kondisi SQL: unit masih di stok pada tanggal `as_of` (belum terjual dan belum dipindah ke aset)."""
+    from sqlalchemy import or_ as _or, and_ as _and
+    return _and(
+        _or(Mobil.tanggal_terjual.is_(None), Mobil.tanggal_terjual > as_of),
+        _or(Mobil.tanggal_aset.is_(None), Mobil.tanggal_aset > as_of),
+    )
+

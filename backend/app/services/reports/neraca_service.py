@@ -204,7 +204,8 @@ class NeracaService(BaseReportService):
         # again as Setoran Modal Non-Kas.
         modal_persediaan = total_stock_parts
         modal_stok_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
-        modal_aset_tetap = total_fixed_assets
+        # Setoran non-kas memakai harga perolehan (bruto); penyusutan masuk laba ditahan.
+        modal_aset_tetap = float(hist.get("assets", {}).get("tetap_gross", total_fixed_assets))
         
         # ═══════════════════════════════════════════════════════════════
         # MODAL NON-KAS (Auto-balancing for imported/existing assets)
@@ -441,8 +442,18 @@ class NeracaService(BaseReportService):
             },
             "aktiva_tetap": {
                 "total_aktiva_tetap": total_fixed_assets,
+                "akumulasi_penyusutan": float(hist.get("assets", {}).get("akumulasi_penyusutan", 0)),
+                "beban_penyusutan_periode": float(hist.get("assets", {}).get("beban_penyusutan", 0)),
                 "detail_aset": [
-                    {"kode": a.kode, "nama": a.nama, "harga_beli": float(a.harga_beli)} 
+                    {
+                        "kode": a.kode,
+                        "nama": a.nama,
+                        "sumber_aset": a.sumber_aset,
+                        "harga_beli": float(a.harga_beli),
+                        "penyusutan_per_bulan": float(a.penyusutan_per_bulan),
+                        "akumulasi_penyusutan": float(a.akumulasi_pada(min(as_of_date, get_jakarta_date()))),
+                        "nilai_buku": float(a.harga_beli) - float(a.akumulasi_pada(min(as_of_date, get_jakarta_date()))),
+                    }
                     for a in assets_list
                 ]
             },
