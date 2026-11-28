@@ -45,6 +45,9 @@ class PeriodePostingService:
         )
 
     def is_posted(self, tanggal: Optional[date]) -> bool:
+        from app.config import settings
+        if not settings.posting_bulanan_aktif:
+            return False
         if tanggal is None:
             return False
         row = self._row(tanggal.year, tanggal.month)
@@ -93,6 +96,15 @@ class PeriodePostingService:
     # Posting dan buka kembali
     # ------------------------------------------------------------------
     @staticmethod
+    def _pastikan_aktif() -> None:
+        from app.config import settings
+        if not settings.posting_bulanan_aktif:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Fitur posting bulanan sedang nonaktif",
+            )
+
+    @staticmethod
     def _validasi_bulan(tahun: int, bulan: int) -> None:
         if not (1 <= bulan <= 12) or not (2000 <= tahun <= 2100):
             raise HTTPException(status_code=422, detail="Tahun atau bulan tidak valid")
@@ -111,6 +123,7 @@ class PeriodePostingService:
         )
 
     def posting(self, tahun: int, bulan: int, user_id: Optional[int], catatan: Optional[str] = None) -> Dict[str, Any]:
+        self._pastikan_aktif()
         self._validasi_bulan(tahun, bulan)
         akhir = date(tahun, bulan, calendar.monthrange(tahun, bulan)[1])
         if akhir >= get_jakarta_date():
@@ -142,6 +155,7 @@ class PeriodePostingService:
         return self._to_dict(tahun, bulan, row)
 
     def buka_kembali(self, tahun: int, bulan: int, user_id: Optional[int], alasan: str) -> Dict[str, Any]:
+        self._pastikan_aktif()
         self._validasi_bulan(tahun, bulan)
         alasan = (alasan or "").strip()
         if len(alasan) < 5:

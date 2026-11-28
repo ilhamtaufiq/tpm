@@ -78,6 +78,9 @@ const LEGACY_ACCOUNTS: KasBankJenis[] = [
     'BANK_LAINNYA',
 ];
 
+// Fitur posting bulanan nonaktif (data tetap ada). Ubah ke true untuk menampilkan tombolnya.
+const POSTING_BULANAN_AKTIF = false;
+
 export default function AkunKeuanganScreen() {
     const themeColors = useUIStore((s) => s.themeColors);
     const insets = useSafeAreaInsets();
@@ -425,12 +428,12 @@ export default function AkunKeuanganScreen() {
                 <View className="mb-6 flex-row items-center justify-between">
                     <Typography variant="h3" weight="bold" className="text-text">Daftar Rekening</Typography>
                     <View className="flex-row items-center">
-                        <Pressable
+                        {POSTING_BULANAN_AKTIF ? (<Pressable
                             onPress={() => router.push('/finance/posting')}
                             className="flex-row items-center bg-primary/5 px-3 py-1.5 rounded-full mr-2"
                         >
                             <Typography className="text-primary text-[10px] font-bold uppercase">Posting Bulanan</Typography>
-                        </Pressable>
+                        </Pressable>) : null}
                         <Pressable
                             onPress={() => router.push('/finance/laporan')}
                             className="flex-row items-center bg-primary/5 px-3 py-1.5 rounded-full"
