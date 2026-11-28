@@ -71,6 +71,19 @@ class AssetService:
         """
         sumber_dana = obj_in.sumber_dana
         harga = Decimal(obj_in.harga_beli)
+        sumber_aset = getattr(obj_in, "sumber_aset", "MANUAL") or "MANUAL"
+        if sumber_aset == "ARMADA":
+            from app.models.jasa_angkut import ArmadaJasaAngkut
+            armada = self.db.get(ArmadaJasaAngkut, obj_in.referensi_id) if obj_in.referensi_id else None
+            if armada is None or armada.deleted_at is not None:
+                raise HTTPException(http_status.HTTP_404_NOT_FOUND, "Armada tidak ditemukan")
+            if sumber_dana not in (None, "SETORAN_MODAL"):
+                raise HTTPException(
+                    http_status.HTTP_400_BAD_REQUEST,
+                    "Unit armada dicatat sebagai setoran modal (non-kas), tidak dari kas atau hutang",
+                )
+            # Harga unit armada wajib diisi manual (armada tidak menyimpan harga beli).
+            sumber_dana = "SETORAN_MODAL"
         payments = list(obj_in.payments or []) if sumber_dana == "KAS" else []
         total_bayar = sum((Decimal(p.jumlah) for p in payments), Decimal("0"))
 
@@ -105,6 +118,7 @@ class AssetService:
             kode=self._generate_kode(),
             created_by=user_id,
         )
+        db_obj.sumber_dana = sumber_dana
         self.db.add(db_obj)
         self.db.flush()
 

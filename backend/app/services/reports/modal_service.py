@@ -564,11 +564,14 @@ class ModalService(BaseReportService):
         lembur = float(bp.get("lembur", 0))
         
         # Breakdown Beban Operasional
+        # Beban penyusutan aset tetap (straight-line) ikut beban umum periode ini.
+        beban_penyusutan = float(data_period.get("assets", {}).get("beban_penyusutan", 0) or 0)
         ops_umum = (
             float(bp.get("common_expenses", 0)) +
             float(data_period.get("admin_fees_unrecorded", 0)) +
             float(data_period.get("ja_untracked_gap", 0)) +
-            float(data_period.get("manual_hutang_non_pinjaman", 0))
+            float(data_period.get("manual_hutang_non_pinjaman", 0)) +
+            beban_penyusutan
         )
         ops_bengkel = float(bp.get("total_expenses", 0))
         # Mobil Breakdown: Only general overhead.

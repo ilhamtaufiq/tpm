@@ -373,6 +373,9 @@ class Aset(Base, TimestampMixin):
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # KAS / HUTANG / SETORAN_MODAL — NULL untuk aset lama & import saldo awal.
     sumber_dana: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    # Asal aset: MANUAL (input biasa), ARMADA (unit jasa angkut), MOBIL (unit JB Mobil).
+    sumber_aset: Mapped[str] = mapped_column(String(10), default="MANUAL", server_default="MANUAL")
+    referensi_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     created_by: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id"),
         nullable=True,
@@ -380,6 +383,38 @@ class Aset(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<Aset(id={self.id}, nama='{self.nama}', harga={self.harga_beli})>"
+
+    # --- Penyusutan garis lurus (straight-line) ---
+    # Dasar: (harga beli - nilai residu) / (umur ekonomis x 12) per bulan.
+    # Bulan pembelian dihitung sebagai bulan pertama penyusutan.
+    @property
+    def penyusutan_per_bulan(self) -> Decimal:
+        bisa_disusut = Decimal(self.harga_beli or 0) - Decimal(self.nilai_residu or 0)
+        bulan = int(self.umur_ekonomis or 0) * 12
+        if bisa_disusut <= 0 or bulan <= 0:
+            return Decimal("0")
+        return (bisa_disusut / bulan).quantize(Decimal("0.01"))
+
+    def akumulasi_pada(self, as_of=None) -> Decimal:
+        """Akumulasi penyusutan sampai akhir bulan `as_of` (inklusif)."""
+        from app.utils.helpers import get_jakarta_date
+        as_of = as_of or get_jakarta_date()
+        if not self.tanggal_beli or as_of < self.tanggal_beli:
+            return Decimal("0")
+        m_beli = self.tanggal_beli.year * 12 + self.tanggal_beli.month
+        m_as_of = as_of.year * 12 + as_of.month
+        bulan_berjalan = min(m_as_of - m_beli + 1, int(self.umur_ekonomis or 0) * 12)
+        bisa_disusut = Decimal(self.harga_beli or 0) - Decimal(self.nilai_residu or 0)
+        nilai = self.penyusutan_per_bulan * bulan_berjalan
+        return min(nilai, bisa_disusut).quantize(Decimal("0.01"))
+
+    @property
+    def akumulasi_penyusutan(self) -> Decimal:
+        return self.akumulasi_pada()
+
+    @property
+    def nilai_buku(self) -> Decimal:
+        return Decimal(self.harga_beli or 0) - self.akumulasi_pada()
 
 
 class UserCashAdjustment(Base, TimestampMixin):

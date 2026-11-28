@@ -22,6 +22,7 @@ import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
 import { useRouter } from 'expo-router';
 import { Asset } from '../../services/masterData';
 import { useAssetList, useCreateAsset, useUpdateAsset, useDeleteAsset, useAssetStats } from '../../hooks/useMasterData';
+import { useArmadaList } from '../../hooks/useJasaAngkut';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
@@ -138,6 +139,11 @@ export default function AssetScreen() {
     const [splitRows, setSplitRows] = useState<{ id: number; sumber: SumberKas; nominal: string }[]>([]);
     const [supplier, setSupplier] = useState<any>(null);
     const [namaPenjual, setNamaPenjual] = useState('');
+    // Asal aset: input manual, atau unit armada jasa angkut (harga tetap diisi manual).
+    const [sumberAset, setSumberAset] = useState<'MANUAL' | 'ARMADA'>('MANUAL');
+    const [armadaId, setArmadaId] = useState<number | null>(null);
+    const { data: armadaResp } = useArmadaList({ is_active: true, limit: 200 });
+    const armadaList: any[] = Array.isArray(armadaResp) ? armadaResp : (armadaResp?.data ?? []);
 
     const harga = parseInt(formData.harga_beli || '0', 10) || 0;
     const isKas = sumberDana === 'UTAMA_TUNAI' || sumberDana === 'UTAMA_TRANSFER';
@@ -156,6 +162,8 @@ export default function AssetScreen() {
         ]);
         setSupplier(null);
         setNamaPenjual('');
+        setSumberAset('MANUAL');
+        setArmadaId(null);
     };
 
     const [dialogConfig, setDialogConfig] = useState<{
@@ -276,7 +284,10 @@ export default function AssetScreen() {
 
         const warn = (message: string) => setDialogConfig({ visible: true, title: 'Validasi', message, variant: 'warning' });
         let pembelian: Record<string, any> = {};
-        if (!selectedAsset) {
+        if (!selectedAsset && sumberAset === 'ARMADA') {
+            if (!armadaId) return warn('Pilih unit armada');
+            pembelian = { sumber_dana: 'SETORAN_MODAL', sumber_aset: 'ARMADA', referensi_id: armadaId };
+        } else if (!selectedAsset) {
             if (!sumberDana) return warn('Pilih sumber dana pembelian aset');
             if (isKas) {
                 const payments = (isSplit
@@ -372,6 +383,42 @@ export default function AssetScreen() {
 
     const renderPembelian = () => (
         <View>
+            <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Asal Aset *</Typography>
+            <View className="flex-row mb-4">
+                {(['MANUAL', 'ARMADA'] as const).map(opt => (
+                    <Pressable
+                        key={opt}
+                        onPress={() => { setSumberAset(opt); setArmadaId(null); }}
+                        className={`flex-1 mr-2 py-3 rounded-2xl border items-center ${sumberAset === opt ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
+                    >
+                        <Typography weight="bold" className={sumberAset === opt ? 'text-white' : 'text-textGray'}>
+                            {opt === 'MANUAL' ? 'Input Manual' : 'Dari Armada'}
+                        </Typography>
+                    </Pressable>
+                ))}
+            </View>
+            {sumberAset === 'ARMADA' ? (
+                <View>
+                    <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Unit Armada *</Typography>
+                    {armadaList.length === 0 ? (
+                        <Typography className="text-textGray text-xs mb-3">Belum ada armada aktif.</Typography>
+                    ) : armadaList.map((a: any) => (
+                        <Pressable
+                            key={a.id}
+                            onPress={() => setArmadaId(a.id)}
+                            className={`mb-2 p-3 rounded-2xl border ${armadaId === a.id ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
+                        >
+                            <Typography weight="bold" className={armadaId === a.id ? 'text-white' : 'text-textMain'}>{a.nama} • {a.nopol}</Typography>
+                        </Pressable>
+                    ))}
+                    <View className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl mb-3">
+                        <Typography className="text-emerald-700 text-xs">
+                            Unit armada dicatat sebagai setoran pemilik (non-kas). Isi harga beli di atas; penyusutan dihitung dari tanggal beli, umur ekonomis, dan nilai residu.
+                        </Typography>
+                    </View>
+                </View>
+            ) : null}
+            {sumberAset === 'MANUAL' ? (<>
             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Sumber Dana *</Typography>
             <View className="flex-row flex-wrap">
                 {SUMBER_DANA_OPTIONS.map(opt => (
@@ -522,6 +569,7 @@ export default function AssetScreen() {
                     </View>
                 </View>
             )}
+            </>) : null}
         </View>
     );
 

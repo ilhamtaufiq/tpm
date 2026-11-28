@@ -396,6 +396,10 @@ class AssetCreate(BaseModel):
     #   HUTANG        : seluruh harga jadi hutang ke penjual
     #   SETORAN_MODAL : aset disetor pemilik (non-kas), tidak ada kas/hutang
     sumber_dana: Optional[str] = Field(None, pattern="^(KAS|HUTANG|SETORAN_MODAL)$")
+    # Asal aset. ARMADA: unit jasa angkut yang didaftarkan sebagai aset tetap (harga wajib diisi,
+    # dicatat sebagai setoran modal non-kas). MANUAL: input biasa.
+    sumber_aset: str = Field("MANUAL", pattern="^(MANUAL|ARMADA)$")
+    referensi_id: Optional[int] = None
     payments: List["AssetPaymentItem"] = []
     supplier_id: Optional[int] = None
     nama_penjual: Optional[str] = Field(None, max_length=100)
@@ -439,6 +443,11 @@ class AssetResponse(BaseModel):
     lokasi: Optional[str] = None
     catatan: Optional[str] = None
     sumber_dana: Optional[str] = None
+    sumber_aset: str = "MANUAL"
+    referensi_id: Optional[int] = None
+    penyusutan_per_bulan: Optional[Decimal] = None
+    akumulasi_penyusutan: Optional[Decimal] = None
+    nilai_buku: Optional[Decimal] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -69,7 +69,9 @@ def test_pembelian_aset_kas_hutang_setoran_dan_hapus():
         back1, nonkas1, modal1 = _laba_dan_backdate(db)
         assert abs(back1 - back0) < TOL, "pembelian aset menggeser penyesuaian backdate"
         assert abs((nonkas1 - nonkas0) - 4000000) < TOL, "setoran aset tidak tampil sebagai non-kas"
-        assert abs((modal1 - modal0) - 4000000) < TOL, "hanya setoran pemilik yang menambah modal"
+        # Setoran pemilik menambah modal; penyusutan kedua aset (bulan pembelian) mengurangi laba ditahan.
+        penyusutan_hari_ini = float(kas.akumulasi_pada(hari) + setoran.akumulasi_pada(hari))
+        assert abs((modal1 - modal0) - (4000000 - penyusutan_hari_ini)) < TOL, "hanya setoran pemilik yang menambah modal (dikurangi penyusutan)"
 
         with pytest.raises(HTTPException):
             svc.create(AssetCreate(tanggal_beli=hari, nama="UJI Tanpa Penjual",

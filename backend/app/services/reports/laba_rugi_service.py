@@ -110,7 +110,9 @@ class LabaRugiService(BaseReportService):
         # Total Laba Operasional (Bengkel + Jasa Angkut + Mobil)
         # Internal JB Mobil work is recognized immediately as Bengkel profit.
         # `internal_jbm_profit` is kept as an informational trace only.
-        total_laba_operasional = (b_laba_bersih + ja_laba_bersih + m_laba_bersih) - overhead_pusat
+        # Beban penyusutan aset tetap (straight-line) diperlakukan sebagai beban pusat.
+        beban_penyusutan = float(data.get("assets", {}).get("beban_penyusutan", 0) or 0)
+        total_laba_operasional = (b_laba_bersih + ja_laba_bersih + m_laba_bersih) - overhead_pusat - beban_penyusutan
         laba_bersih_akhir = total_laba_operasional - prive
 
         # Arus kas per jenis akun selama periode (info, bukan komponen laba).
@@ -183,15 +185,16 @@ class LabaRugiService(BaseReportService):
                 }
             },
             "summary": {
+                "beban_penyusutan": beban_penyusutan,
                 "total_revenue": total_revenue,
                 "total_hpp": total_hpp,
                 "total_laba_kotor": total_laba_kotor,
                 # Dua field bernilai SAMA membuat UI yang menjumlahkan keduanya
                 # menghitung overhead pusat dua kali (dan tetap tak nyambung ke
                 # laba_operasional). total_beban_operasional = Σ beban ketiga
-                # unit; total_beban_umum = overhead pusat saja.
+                # unit; total_beban_umum = overhead pusat + beban penyusutan aset tetap.
                 "total_beban_operasional": total_beban_unit,
-                "total_beban_umum": overhead_pusat,
+                "total_beban_umum": overhead_pusat + beban_penyusutan,
                 "internal_elimination": elimination,
                 "internal_profit_elimination": internal_jbm_profit,
                 "prive": prive,
