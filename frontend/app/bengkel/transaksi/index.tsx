@@ -1108,8 +1108,9 @@ export default function BengkelTransaksiScreen() {
         } catch (error: any) {
             setConfirmSubmitOpen(false);
             const fallback = transactionToUpdateId ? 'Gagal memperbarui transaksi bengkel.' : 'Gagal membuat transaksi bengkel.';
-            // 409 dari posting bulanan membawa pesan yang menjelaskan periode terkunci.
-            const pesan = error?.response?.status === 409 ? getErrorMessage(error, fallback) : fallback;
+            // 400 (mis. stok tidak cukup) dan 409 (periode terkunci) membawa alasan dari server.
+            const statusError = error?.response?.status;
+            const pesan = statusError === 400 || statusError === 409 ? getErrorMessage(error, fallback) : fallback;
             showNotice('error', 'Error', pesan);
         }
     };
