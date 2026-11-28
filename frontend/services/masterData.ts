@@ -66,7 +66,27 @@ export interface Asset {
     penyusutan_per_bulan?: number;
     akumulasi_penyusutan?: number;
     nilai_buku?: number;
+    sumber_aset?: 'MANUAL' | 'MOBIL' | 'ARMADA' | null;
+    tanggal_jual?: string | null;
+    harga_jual?: number | null;
     created_at: string;
+}
+
+export interface AssetJualPayload {
+    tanggal_jual: string;
+    harga_jual: number;
+    metode: 'TUNAI' | 'TRANSFER';
+    kas_jenis: 'KAS_UTAMA' | 'BANK_UTAMA';
+}
+
+export interface AssetJualResult {
+    id: number;
+    kode: string;
+    status: string;
+    tanggal_jual: string;
+    harga_jual: number;
+    nilai_buku: number;
+    laba_rugi_pelepasan: number;
 }
 
 export interface AssetPaymentItem {
@@ -225,6 +245,11 @@ export const masterDataService = {
 
     updateAsset: async (id: number, data: Partial<Asset>): Promise<Asset> => {
         const response = await api.put(`/assets/${id}`, data);
+        return response.data;
+    },
+
+    jualAsset: async (id: number, payload: AssetJualPayload): Promise<AssetJualResult> => {
+        const response = await api.post(`/assets/${id}/jual`, payload);
         return response.data;
     },
 

@@ -21,8 +21,7 @@ import Clock from 'lucide-react-native/dist/esm/icons/clock.js';
 import Wallet from 'lucide-react-native/dist/esm/icons/wallet.js';
 import { useRouter } from 'expo-router';
 import { Asset } from '../../services/masterData';
-import { useAssetList, useCreateAsset, useUpdateAsset, useDeleteAsset, useAssetStats } from '../../hooks/useMasterData';
-import { useArmadaList } from '../../hooks/useJasaAngkut';
+import { useAssetList, useCreateAsset, useUpdateAsset, useDeleteAsset, useJualAsset, useAssetStats } from '../../hooks/useMasterData';
 import { useQuery } from '@tanstack/react-query';
 import { mobilService } from '../../services/mobil';
 import { SkeletonCard } from '../../components/ui/Skeleton';
@@ -82,6 +81,11 @@ export default function AssetScreen() {
     const debouncedSearch = useDebounce(searchQuery, 350);
     const [selectedFilter, setSelectedFilter] = useState<string>('all');
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+    const jualMutation = useJualAsset();
+    const [jualOpen, setJualOpen] = useState(false);
+    const [jualTanggal, setJualTanggal] = useState(() => new Date().toISOString().slice(0, 10));
+    const [jualHarga, setJualHarga] = useState('');
+    const [jualMetode, setJualMetode] = useState<'TUNAI' | 'TRANSFER'>('TUNAI');
     const [viewMode, setViewMode] = useState<'detail' | 'form'>('detail');
     const [refreshing, setRefreshing] = useState(false);
 
@@ -141,11 +145,9 @@ export default function AssetScreen() {
     const [splitRows, setSplitRows] = useState<{ id: number; sumber: SumberKas; nominal: string }[]>([]);
     const [supplier, setSupplier] = useState<any>(null);
     const [namaPenjual, setNamaPenjual] = useState('');
-    // Asal aset: input manual, atau unit armada jasa angkut (harga tetap diisi manual).
-    const [sumberAset, setSumberAset] = useState<'MANUAL' | 'ARMADA' | 'MOBIL'>('MANUAL');
-    const [armadaId, setArmadaId] = useState<number | null>(null);
-    const { data: armadaResp } = useArmadaList({ is_active: true, limit: 200 });
-    const armadaList: any[] = Array.isArray(armadaResp) ? armadaResp : (armadaResp?.data ?? []);
+    // Asal aset: input manual, atau unit JB Mobil yang dipindah dari stok.
+    const [sumberAset, setSumberAset] = useState<'MANUAL' | 'MOBIL'>('MANUAL');
+    const [mobilId, setMobilId] = useState<number | null>(null);
     // Unit JB Mobil milik TPM yang masih di stok (bukan investor, belum terjual/dipindah).
     const { data: mobilResp } = useQuery({
         queryKey: ['mobil_stok_aset'],
@@ -173,7 +175,7 @@ export default function AssetScreen() {
         setSupplier(null);
         setNamaPenjual('');
         setSumberAset('MANUAL');
-        setArmadaId(null);
+        setMobilId(null);
     };
 
     const [dialogConfig, setDialogConfig] = useState<{
@@ -294,12 +296,9 @@ export default function AssetScreen() {
 
         const warn = (message: string) => setDialogConfig({ visible: true, title: 'Validasi', message, variant: 'warning' });
         let pembelian: Record<string, any> = {};
-        if (!selectedAsset && sumberAset === 'ARMADA') {
-            if (!armadaId) return warn('Pilih unit armada');
-            pembelian = { sumber_dana: 'SETORAN_MODAL', sumber_aset: 'ARMADA', referensi_id: armadaId };
-        } else if (!selectedAsset && sumberAset === 'MOBIL') {
-            if (!armadaId) return warn('Pilih unit mobil');
-            pembelian = { sumber_aset: 'MOBIL', referensi_id: armadaId };
+        if (!selectedAsset && sumberAset === 'MOBIL') {
+            if (!mobilId) return warn('Pilih unit mobil');
+            pembelian = { sumber_aset: 'MOBIL', referensi_id: mobilId };
         } else if (!selectedAsset) {
             if (!sumberDana) return warn('Pilih sumber dana pembelian aset');
             if (isKas) {
@@ -341,6 +340,38 @@ export default function AssetScreen() {
         } catch (error) {
             console.error('Failed to save asset:', error);
             setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal menyimpan aset'), variant: 'error' });
+        }
+    };
+
+    const handleJual = async () => {
+        if (!selectedAsset) return;
+        const harga = parseNumber(jualHarga);
+        const warn = (message: string) => setDialogConfig({ visible: true, title: 'Validasi', message, variant: 'warning' });
+        if (!jualTanggal) return warn('Isi tanggal penjualan');
+        if (jualTanggal < selectedAsset.tanggal_beli) return warn('Tanggal jual tidak boleh sebelum tanggal beli');
+        if (harga < 0) return warn('Harga jual tidak valid');
+        try {
+            const hasil = await jualMutation.mutateAsync({
+                id: selectedAsset.id,
+                payload: {
+                    tanggal_jual: jualTanggal,
+                    harga_jual: harga,
+                    metode: jualMetode,
+                    kas_jenis: jualMetode === 'TRANSFER' ? 'BANK_UTAMA' : 'KAS_UTAMA',
+                },
+            });
+            setSelectedAsset({ ...selectedAsset, status: 'DIJUAL', tanggal_jual: hasil.tanggal_jual, harga_jual: hasil.harga_jual });
+            setJualOpen(false);
+            setJualHarga('');
+            const laba = hasil.laba_rugi_pelepasan;
+            setDialogConfig({
+                visible: true,
+                title: 'Aset Dilepas',
+                message: `Harga jual ${formatCurrency(hasil.harga_jual)}, nilai buku ${formatCurrency(hasil.nilai_buku)}. ${laba >= 0 ? 'Laba' : 'Rugi'} pelepasan ${formatCurrency(Math.abs(laba))} dicatat di periode penjualan.`,
+                variant: 'success',
+            });
+        } catch (error) {
+            setDialogConfig({ visible: true, title: 'Gagal', message: getErrorMessage(error), variant: 'error' });
         }
     };
 
@@ -403,14 +434,14 @@ export default function AssetScreen() {
         <View>
             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Asal Aset *</Typography>
             <View className="flex-row mb-4">
-                {(['MANUAL', 'ARMADA', 'MOBIL'] as const).map(opt => (
+                {(['MANUAL', 'MOBIL'] as const).map(opt => (
                     <Pressable
                         key={opt}
-                        onPress={() => { setSumberAset(opt); setArmadaId(null); }}
+                        onPress={() => { setSumberAset(opt); setMobilId(null); }}
                         className={`flex-1 mr-2 py-3 rounded-2xl border items-center ${sumberAset === opt ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
                     >
                         <Typography weight="bold" className={sumberAset === opt ? 'text-white' : 'text-textGray'}>
-                            {opt === 'MANUAL' ? 'Input Manual' : opt === 'ARMADA' ? 'Dari Armada' : 'Dari Unit Mobil'}
+                            {opt === 'MANUAL' ? 'Input Manual' : 'Dari Unit Mobil'}
                         </Typography>
                     </Pressable>
                 ))}
@@ -423,36 +454,15 @@ export default function AssetScreen() {
                     ) : mobilList.map((m: any) => (
                         <Pressable
                             key={m.id}
-                            onPress={() => setArmadaId(m.id)}
-                            className={`mb-2 p-3 rounded-2xl border ${armadaId === m.id ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
+                            onPress={() => setMobilId(m.id)}
+                            className={`mb-2 p-3 rounded-2xl border ${mobilId === m.id ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
                         >
-                            <Typography weight="bold" className={armadaId === m.id ? 'text-white' : 'text-textMain'}>{m.merek} {m.model} • {m.nomor_plat}</Typography>
+                            <Typography weight="bold" className={mobilId === m.id ? 'text-white' : 'text-textMain'}>{m.merek} {m.model} • {m.nomor_plat}</Typography>
                         </Pressable>
                     ))}
                     <View className="bg-amber-50 border border-amber-100 p-4 rounded-2xl mb-3">
                         <Typography className="text-amber-700 text-xs">
                             Nilai aset mengikuti nilai stok unit (harga beli + persiapan + perbaikan) pada tanggal beli. Unit keluar dari stok tanpa dicatat sebagai penjualan.
-                        </Typography>
-                    </View>
-                </View>
-            ) : null}
-            {sumberAset === 'ARMADA' ? (
-                <View>
-                    <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Unit Armada *</Typography>
-                    {armadaList.length === 0 ? (
-                        <Typography className="text-textGray text-xs mb-3">Belum ada armada aktif.</Typography>
-                    ) : armadaList.map((a: any) => (
-                        <Pressable
-                            key={a.id}
-                            onPress={() => setArmadaId(a.id)}
-                            className={`mb-2 p-3 rounded-2xl border ${armadaId === a.id ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
-                        >
-                            <Typography weight="bold" className={armadaId === a.id ? 'text-white' : 'text-textMain'}>{a.nama} • {a.nopol}</Typography>
-                        </Pressable>
-                    ))}
-                    <View className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl mb-3">
-                        <Typography className="text-emerald-700 text-xs">
-                            Unit armada dicatat sebagai setoran pemilik (non-kas). Isi harga beli di atas; penyusutan dihitung dari tanggal beli, umur ekonomis, dan nilai residu.
                         </Typography>
                     </View>
                 </View>
@@ -694,6 +704,49 @@ export default function AssetScreen() {
                             <Typography variant="h3" weight="bold" className="mb-2 text-base">Catatan</Typography>
                             <Typography className="text-textGray leading-relaxed">{selectedAsset.catatan}</Typography>
                         </Card>
+                    )}
+
+                    {selectedAsset.status === 'DIJUAL' ? (
+                        <Card className="p-5 mb-6 border border-transparent rounded-[24px]">
+                            <Typography weight="bold" className="text-base">Sudah dilepas</Typography>
+                            <Typography className="text-textGray text-xs mt-1">
+                                Tanggal {selectedAsset.tanggal_jual} • Harga jual {formatCurrency(selectedAsset.harga_jual ?? 0)}
+                            </Typography>
+                        </Card>
+                    ) : jualOpen ? (
+                        <Card className="p-5 mb-6 border border-transparent rounded-[24px]">
+                            <Typography weight="bold" className="mb-3 text-base">Jual / Lepas Aset</Typography>
+                            <DatePicker label="Tanggal Jual" value={jualTanggal} onChange={setJualTanggal} required />
+                            <Typography className="mb-2 mt-3 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Harga Jual (Rp) *</Typography>
+                            <TextInput
+                                value={jualHarga}
+                                onChangeText={(v) => setJualHarga(formatNumber(parseNumber(v)))}
+                                placeholder="0"
+                                placeholderTextColor={placeholder}
+                                keyboardType="number-pad"
+                                inputMode="numeric"
+                                className="bg-surface rounded-2xl px-4 h-12 text-base text-textMain border border-primary/20 mb-3"
+                            />
+                            <View className="flex-row mb-4">
+                                {(['TUNAI', 'TRANSFER'] as const).map(opt => (
+                                    <Pressable
+                                        key={opt}
+                                        onPress={() => setJualMetode(opt)}
+                                        className={`flex-1 mr-2 py-3 rounded-2xl border items-center ${jualMetode === opt ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
+                                    >
+                                        <Typography weight="bold" className={jualMetode === opt ? 'text-white' : 'text-textGray'}>
+                                            {opt === 'TUNAI' ? 'Tunai' : 'Transfer'}
+                                        </Typography>
+                                    </Pressable>
+                                ))}
+                            </View>
+                            <View className="flex-row space-x-3">
+                                <Button title="Batal" onPress={() => setJualOpen(false)} variant="outline" className="flex-1" />
+                                <Button title="Simpan Penjualan" onPress={handleJual} loading={jualMutation.isPending} disabled={jualMutation.isPending} className="flex-1" />
+                            </View>
+                        </Card>
+                    ) : (
+                        <Button title="Jual / Lepas Aset" onPress={() => setJualOpen(true)} variant="outline" className="mb-4" />
                     )}
 
                     <View className="flex-row space-x-3">

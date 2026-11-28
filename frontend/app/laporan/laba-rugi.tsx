@@ -356,6 +356,13 @@ export default function LabaRugiScreen() {
                 {(reportData?.summary?.beban_penyusutan || 0) > 0 && (
                     <FinancialRow label="Beban Penyusutan Aset" value={reportData?.summary?.beban_penyusutan || 0} isNegative />
                 )}
+                {(reportData?.summary?.laba_pelepasan_aset || 0) !== 0 && (
+                    <FinancialRow
+                        label={(reportData?.summary?.laba_pelepasan_aset || 0) > 0 ? 'Laba Pelepasan Aset' : 'Rugi Pelepasan Aset'}
+                        value={Math.abs(reportData?.summary?.laba_pelepasan_aset || 0)}
+                        isNegative={(reportData?.summary?.laba_pelepasan_aset || 0) < 0}
+                    />
+                )}
                 <FinancialRow label="Total Beban Operasional Pusat" value={reportData?.summary?.total_beban_umum || 0} isNegative bold large color="text-textMain" />
                 {(reportData?.summary?.internal_profit_elimination || 0) > 0 && (
                     <FinancialRow

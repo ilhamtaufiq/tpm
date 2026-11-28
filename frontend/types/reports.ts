@@ -162,6 +162,7 @@ export interface LabaRugiReport {
         internal_elimination?: number;
         internal_profit_elimination?: number;
         beban_penyusutan?: number;
+        laba_pelepasan_aset?: number;
         laba_operasional: number;
         prive: number;
         laba_bersih: number;

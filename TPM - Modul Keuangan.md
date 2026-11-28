@@ -26,6 +26,14 @@ Berlaku untuk Catat Biaya Operasional, Pemberian Kasbon/Piutang, kasbon karyawan
 - Ditolak bila: alasan kurang dari 5 karakter; dokumen sebelum saldo awal; piutang sudah ada pembayaran atau piutang dari transaksi unit; saldo akun tujuan transfer jadi negatif.
 - Detail aturan: invariant 35 di [[TPM - Aturan Bisnis & Invariant]].
 
+## Aset Tetap (Penyusutan & Pelepasan)
+
+- **Sumber aset**: `MANUAL` (input harga dan sumber dana pembelian) atau `MOBIL` (unit JB Mobil dari stok). Unit `MOBIL` dinilai sebesar nilai stok unit pada tanggal beli, tidak ada kas keluar, dan unit keluar dari stok (`mobil.tanggal_aset`) tanpa dicatat sebagai penjualan. Sumber `ARMADA` tidak lagi diterima untuk input baru; data lama tetap terbaca.
+- **Penyusutan garis lurus**: (harga beli - nilai residu) / (umur ekonomis x 12) per bulan, dimulai dari bulan beli. Hanya diakui sampai hari ini dan berhenti pada tanggal jual.
+- **Dampak laporan**: beban penyusutan masuk Laba Rugi sebagai beban umum. Neraca menampilkan aset tetap sebesar nilai buku (harga beli - akumulasi penyusutan). Perubahan Modal ikut mengurangi laba melalui beban operasional umum.
+- **Pelepasan (jual)** via `POST /assets/{id}/jual`: status menjadi `DIJUAL`, dengan `tanggal_jual` dan `harga_jual`. Kas masuk sebesar harga jual (sumber `ASET`). Laba/rugi pelepasan = harga jual - nilai buku, dicatat di periode penjualan dan tampil di Laba Rugi sebagai "Laba/Rugi Pelepasan Aset".
+- Unit mobil yang sudah dipindah ke aset tidak bisa dijual lewat menu penjualan mobil. Penjualan aset dilakukan lewat menu aset.
+
 ## Lokasi Kode
 
 - Service laporan: `backend/app/services/reports/` (Laba Rugi, Neraca, Modal).

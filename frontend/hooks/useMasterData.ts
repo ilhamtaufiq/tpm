@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { masterDataService } from '../services/masterData';
+import { masterDataService, AssetJualPayload } from '../services/masterData';
 
 // =============================================
 // CUSTOMER
@@ -186,6 +186,16 @@ export const useUpdateAsset = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['assets'] });
             queryClient.invalidateQueries({ queryKey: ['asset_stats'] });
+        },
+    });
+};
+
+export const useJualAsset = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, payload }: { id: number; payload: AssetJualPayload }) => masterDataService.jualAsset(id, payload),
+        onSuccess: () => {
+            ASSET_FINANCE_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
         },
     });
 };
