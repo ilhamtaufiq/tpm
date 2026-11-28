@@ -63,6 +63,9 @@ export interface Asset {
     catatan?: string;
     /** KAS / HUTANG / SETORAN_MODAL — kosong untuk aset lama / import saldo awal. */
     sumber_dana?: 'KAS' | 'HUTANG' | 'SETORAN_MODAL' | null;
+    penyusutan_per_bulan?: number;
+    akumulasi_penyusutan?: number;
+    nilai_buku?: number;
     created_at: string;
 }
 
