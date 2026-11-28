@@ -1,4 +1,5 @@
 from app.utils.constants import AssetStatus
+from app.models.mobil import stok_pada
 from app.utils.constants import CarStatus
 from datetime import date, timedelta
 from typing import Dict, Any
@@ -1114,10 +1115,7 @@ class ModalService(BaseReportService):
         # 1. Base Purchase Price
         price_q = self.db.query(func.sum(Mobil.harga_beli)).filter(
             Mobil.tanggal_masuk <= as_of,
-            or_(
-                Mobil.tanggal_terjual.is_(None),
-                Mobil.tanggal_terjual > as_of
-            ),
+            stok_pada(as_of),
             Mobil.deleted_at.is_(None)
         )
         total_price = float(price_q.scalar() or 0)
@@ -1126,10 +1124,7 @@ class ModalService(BaseReportService):
         # We include all costs because internal piutang is eliminated in consolidated report
         prep_q = self.db.query(func.sum(MobilBiayaLainnya.jumlah)).join(Mobil).filter(
             Mobil.tanggal_masuk <= as_of,
-            or_(
-                Mobil.tanggal_terjual.is_(None),
-                Mobil.tanggal_terjual > as_of
-            ),
+            stok_pada(as_of),
             MobilBiayaLainnya.tanggal <= as_of
         )
         total_prep = float(prep_q.scalar() or 0)
@@ -1141,7 +1136,7 @@ class ModalService(BaseReportService):
             TransaksiPenjualanBengkel.mobil_id.in_(
                 self.db.query(Mobil.id).filter(
                     Mobil.tanggal_masuk <= as_of,
-                    or_(Mobil.tanggal_terjual.is_(None), Mobil.tanggal_terjual > as_of),
+                    stok_pada(as_of),
                     Mobil.deleted_at.is_(None)
                 )
             ),

@@ -23,6 +23,8 @@ import { useRouter } from 'expo-router';
 import { Asset } from '../../services/masterData';
 import { useAssetList, useCreateAsset, useUpdateAsset, useDeleteAsset, useAssetStats } from '../../hooks/useMasterData';
 import { useArmadaList } from '../../hooks/useJasaAngkut';
+import { useQuery } from '@tanstack/react-query';
+import { mobilService } from '../../services/mobil';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
@@ -140,10 +142,18 @@ export default function AssetScreen() {
     const [supplier, setSupplier] = useState<any>(null);
     const [namaPenjual, setNamaPenjual] = useState('');
     // Asal aset: input manual, atau unit armada jasa angkut (harga tetap diisi manual).
-    const [sumberAset, setSumberAset] = useState<'MANUAL' | 'ARMADA'>('MANUAL');
+    const [sumberAset, setSumberAset] = useState<'MANUAL' | 'ARMADA' | 'MOBIL'>('MANUAL');
     const [armadaId, setArmadaId] = useState<number | null>(null);
     const { data: armadaResp } = useArmadaList({ is_active: true, limit: 200 });
     const armadaList: any[] = Array.isArray(armadaResp) ? armadaResp : (armadaResp?.data ?? []);
+    // Unit JB Mobil milik TPM yang masih di stok (bukan investor, belum terjual/dipindah).
+    const { data: mobilResp } = useQuery({
+        queryKey: ['mobil_stok_aset'],
+        queryFn: () => mobilService.getAvailableCars(),
+        enabled: sumberAset === 'MOBIL',
+    });
+    const mobilList: any[] = (Array.isArray(mobilResp) ? mobilResp : (mobilResp?.data ?? []))
+        .filter((m: any) => m.tipe_kepemilikan !== 'INVESTOR' && !m.tanggal_terjual && !m.tanggal_aset);
 
     const harga = parseInt(formData.harga_beli || '0', 10) || 0;
     const isKas = sumberDana === 'UTAMA_TUNAI' || sumberDana === 'UTAMA_TRANSFER';
@@ -287,6 +297,9 @@ export default function AssetScreen() {
         if (!selectedAsset && sumberAset === 'ARMADA') {
             if (!armadaId) return warn('Pilih unit armada');
             pembelian = { sumber_dana: 'SETORAN_MODAL', sumber_aset: 'ARMADA', referensi_id: armadaId };
+        } else if (!selectedAsset && sumberAset === 'MOBIL') {
+            if (!armadaId) return warn('Pilih unit mobil');
+            pembelian = { sumber_aset: 'MOBIL', referensi_id: armadaId };
         } else if (!selectedAsset) {
             if (!sumberDana) return warn('Pilih sumber dana pembelian aset');
             if (isKas) {
@@ -385,18 +398,39 @@ export default function AssetScreen() {
         <View>
             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Asal Aset *</Typography>
             <View className="flex-row mb-4">
-                {(['MANUAL', 'ARMADA'] as const).map(opt => (
+                {(['MANUAL', 'ARMADA', 'MOBIL'] as const).map(opt => (
                     <Pressable
                         key={opt}
                         onPress={() => { setSumberAset(opt); setArmadaId(null); }}
                         className={`flex-1 mr-2 py-3 rounded-2xl border items-center ${sumberAset === opt ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
                     >
                         <Typography weight="bold" className={sumberAset === opt ? 'text-white' : 'text-textGray'}>
-                            {opt === 'MANUAL' ? 'Input Manual' : 'Dari Armada'}
+                            {opt === 'MANUAL' ? 'Input Manual' : opt === 'ARMADA' ? 'Dari Armada' : 'Dari Unit Mobil'}
                         </Typography>
                     </Pressable>
                 ))}
             </View>
+            {sumberAset === 'MOBIL' ? (
+                <View>
+                    <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Unit Mobil di Stok *</Typography>
+                    {mobilList.length === 0 ? (
+                        <Typography className="text-textGray text-xs mb-3">Tidak ada unit TPM di stok.</Typography>
+                    ) : mobilList.map((m: any) => (
+                        <Pressable
+                            key={m.id}
+                            onPress={() => setArmadaId(m.id)}
+                            className={`mb-2 p-3 rounded-2xl border ${armadaId === m.id ? 'bg-primary border-primary' : 'bg-surface border-transparent'}`}
+                        >
+                            <Typography weight="bold" className={armadaId === m.id ? 'text-white' : 'text-textMain'}>{m.merek} {m.model} • {m.nomor_plat}</Typography>
+                        </Pressable>
+                    ))}
+                    <View className="bg-amber-50 border border-amber-100 p-4 rounded-2xl mb-3">
+                        <Typography className="text-amber-700 text-xs">
+                            Nilai aset mengikuti nilai stok unit (harga beli + persiapan + perbaikan) pada tanggal beli. Unit keluar dari stok tanpa dicatat sebagai penjualan.
+                        </Typography>
+                    </View>
+                </View>
+            ) : null}
             {sumberAset === 'ARMADA' ? (
                 <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Unit Armada *</Typography>

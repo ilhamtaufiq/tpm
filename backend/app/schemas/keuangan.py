@@ -398,7 +398,7 @@ class AssetCreate(BaseModel):
     sumber_dana: Optional[str] = Field(None, pattern="^(KAS|HUTANG|SETORAN_MODAL)$")
     # Asal aset. ARMADA: unit jasa angkut yang didaftarkan sebagai aset tetap (harga wajib diisi,
     # dicatat sebagai setoran modal non-kas). MANUAL: input biasa.
-    sumber_aset: str = Field("MANUAL", pattern="^(MANUAL|ARMADA)$")
+    sumber_aset: str = Field("MANUAL", pattern="^(MANUAL|ARMADA|MOBIL)$")
     referensi_id: Optional[int] = None
     payments: List["AssetPaymentItem"] = []
     supplier_id: Optional[int] = None

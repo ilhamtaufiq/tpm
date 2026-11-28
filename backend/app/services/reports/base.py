@@ -1,4 +1,5 @@
 from app.utils.constants import HutangSource, AssetStatus
+from app.models.mobil import stok_pada
 from app.models import PembayaranHutang
 from app.services.pembelian_part_service import PembelianPartService
 from datetime import date, datetime, time, timedelta
@@ -495,7 +496,7 @@ class BaseReportService:
         # Total Capitalized Value = Purchase Price + Prep + Repairs for unsold cars
         car_stock = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
             Mobil.tanggal_masuk <= tanggal_sampai,
-            or_(Mobil.tanggal_terjual.is_(None), Mobil.tanggal_terjual > tanggal_sampai),
+            stok_pada(tanggal_sampai),
             Mobil.deleted_at.is_(None)
         ).scalar() or 0)
         
@@ -503,7 +504,7 @@ class BaseReportService:
         # This ensures inventory valuation remains consistent even if we filter for a single day in the future.
         unsold_car_ids = [m.id for m in self.db.query(Mobil.id).filter(
             Mobil.tanggal_masuk <= tanggal_sampai,
-            or_(Mobil.tanggal_terjual.is_(None), Mobil.tanggal_terjual > tanggal_sampai),
+            stok_pada(tanggal_sampai),
             Mobil.deleted_at.is_(None)
         ).all()]
         

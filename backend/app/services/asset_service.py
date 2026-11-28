@@ -25,6 +25,34 @@ from app.utils.constants import (
 _PEMBELIAN_FIELDS = {"payments", "supplier_id", "nama_penjual"}
 
 
+def nilai_stok_unit_mobil(db, mobil, as_of) -> Decimal:
+    """Nilai stok satu unit pada tanggal `as_of`, sama dengan perhitungan stok di laporan:
+    harga beli + biaya persiapan + perbaikan eksternal + perbaikan internal bengkel."""
+    from sqlalchemy import func
+    from app.models.bengkel import PengeluaranBengkel, TransaksiPenjualanBengkel
+    from app.utils.constants import ExpenseCategory, PaymentMethod
+    from app.utils.workshop_finance import internal_mobil_workshop_filters
+
+    prep = db.query(func.sum(PengeluaranBengkel.jumlah)).filter(
+        PengeluaranBengkel.mobil_id == mobil.id,
+        PengeluaranBengkel.kategori == ExpenseCategory.BIAYA_LAINNYA,
+        PengeluaranBengkel.metode_bayar != PaymentMethod.INTERNAL,
+        PengeluaranBengkel.tanggal <= as_of,
+    ).scalar() or 0
+    rep_ext = db.query(func.sum(PengeluaranBengkel.jumlah)).filter(
+        PengeluaranBengkel.mobil_id == mobil.id,
+        PengeluaranBengkel.kategori == ExpenseCategory.BIAYA_OPERASIONAL,
+        PengeluaranBengkel.metode_bayar != PaymentMethod.INTERNAL,
+        PengeluaranBengkel.tanggal <= as_of,
+    ).scalar() or 0
+    rep_int = db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
+        TransaksiPenjualanBengkel.mobil_id == mobil.id,
+        *internal_mobil_workshop_filters(),
+        TransaksiPenjualanBengkel.tanggal <= as_of,
+    ).scalar() or 0
+    return (Decimal(mobil.harga_beli or 0) + Decimal(prep) + Decimal(rep_ext) + Decimal(rep_int)).quantize(Decimal("0.01"))
+
+
 class AssetService:
     """Service for managing fixed assets (Aset)."""
 
@@ -72,6 +100,25 @@ class AssetService:
         sumber_dana = obj_in.sumber_dana
         harga = Decimal(obj_in.harga_beli)
         sumber_aset = getattr(obj_in, "sumber_aset", "MANUAL") or "MANUAL"
+        nilai_unit_mobil = None
+        if sumber_aset == "MOBIL":
+            from app.models.mobil import Mobil
+            from app.utils.constants import OwnershipType
+            mobil = self.db.get(Mobil, obj_in.referensi_id) if obj_in.referensi_id else None
+            if mobil is None or mobil.deleted_at is not None:
+                raise HTTPException(http_status.HTTP_404_NOT_FOUND, "Unit mobil tidak ditemukan")
+            if mobil.tipe_kepemilikan == OwnershipType.INVESTOR:
+                raise HTTPException(http_status.HTTP_400_BAD_REQUEST, "Unit milik investor tidak bisa dipindah ke aset tetap")
+            if mobil.tanggal_terjual or mobil.tanggal_aset:
+                raise HTTPException(http_status.HTTP_400_BAD_REQUEST, "Unit sudah terjual atau sudah dipindah ke aset")
+            if obj_in.tanggal_beli < mobil.tanggal_masuk:
+                raise HTTPException(http_status.HTTP_400_BAD_REQUEST, "Tanggal aset tidak boleh sebelum unit masuk stok")
+            if sumber_dana not in (None,):
+                raise HTTPException(http_status.HTTP_400_BAD_REQUEST, "Unit mobil dipindah dari stok, tanpa kas atau hutang")
+            # Nilai aset = nilai stok unit pada tanggal pindah (harga beli + persiapan + perbaikan),
+            # supaya pemindahan netral di Neraca: stok turun, aset naik sebesar yang sama.
+            nilai_unit_mobil = nilai_stok_unit_mobil(self.db, mobil, obj_in.tanggal_beli)
+            sumber_dana = None
         if sumber_aset == "ARMADA":
             from app.models.jasa_angkut import ArmadaJasaAngkut
             armada = self.db.get(ArmadaJasaAngkut, obj_in.referensi_id) if obj_in.referensi_id else None
@@ -119,6 +166,9 @@ class AssetService:
             created_by=user_id,
         )
         db_obj.sumber_dana = sumber_dana
+        if sumber_aset == "MOBIL":
+            db_obj.harga_beli = nilai_unit_mobil
+            mobil.tanggal_aset = db_obj.tanggal_beli
         self.db.add(db_obj)
         self.db.flush()
 
