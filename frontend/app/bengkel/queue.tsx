@@ -104,12 +104,12 @@ export default function QueueScreen() {
     const { data: selectedAntrianDetail } = useTransaksiBengkelDetail(selectedItem?.id ?? null, {
         enabled: detailModalOpen && !!selectedItem?.id,
     });
-    // Rincian Item: terbaru di atas. Item tanpa tanggal input (data lama) ditaruh paling bawah.
+    // Rincian Item: yang lama di atas, yang terbaru di paling bawah. Item tanpa tanggal input (data lama) di atas.
     const urutTerbaru = (arr: any[]) =>
         [...arr].sort((a, b) => {
             const ta = a?.created_at ? new Date(a.created_at).getTime() : 0;
             const tb = b?.created_at ? new Date(b.created_at).getTime() : 0;
-            return tb - ta;
+            return ta - tb;
         });
     // Item nota tambahan ikut ditampilkan di Rincian Item nota induknya.
     const itemTambahanParts = (selectedAntrianDetail?.nota_tambahan ?? []).flatMap((anak: any) =>
